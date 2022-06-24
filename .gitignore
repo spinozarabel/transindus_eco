@@ -1,0 +1,6 @@
+transindus_eco_config.php
+pods.export
+# ignore all files ending with config.php
+*config.php
+# ignore all files that have config.php anywhere in between
+*config.php*

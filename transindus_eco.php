@@ -78,7 +78,7 @@ function my_api_tools_render($config)
     {
         case 'Get_Studer_Readings':
             $config_index = sanitize_text_field( $_POST['config_index'] );
-            echo "<pre>" . print_r($config, true) . "</pre>";
+            // echo "<pre>" . print_r($config, true) . "</pre>";
             $studer_readings_obj = get_studer_readings($config, $config_index);
             echo "<pre>" . "Studer Inverter Output (KW): " .    $studer_readings_obj->pout_inverter_ac_kw . "</pre>";
             echo "<pre>" . "Studer Solar Output(KW): " .        $studer_readings_obj->psolar_kw .           "</pre>";
@@ -103,8 +103,8 @@ function get_studer_readings(array $config, int $user_index): ?object
  $Rb = 0.0;       // value of resistance from DC junction to Battery terminals
 
  $base_url  = $config['studer_api_baseurl'];
- $uhash     = $config[$user_index]['uhash'];
- $phash     = $config[$user_index]['phash'];
+ $uhash     = $config['accounts'][$user_index]['uhash'];
+ $phash     = $config['accounts'][$user_index]['phash'];
 
  $studer_api = new studer_api($uhash, $phash, $base_url);
 

@@ -122,6 +122,10 @@ function get_studer_readings(array $config, int $user_index): ?object
                         "infoAssembly"  => "Master"
                     ),
                 array(
+                        "userRef"       =>  3080,   // Energy from Grid Yesterday
+                        "infoAssembly"  => "Master"
+                    ),
+                array(
                         "userRef"       =>  11011,   // Energy from Battery Yesterday
                         "infoAssembly"  => "1"
                     ),

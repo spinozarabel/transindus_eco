@@ -175,6 +175,7 @@ class class_transindus_eco
                                                 $solar_yesterday, $grid_yesterday, $consumed_yesterday,
                                                 $battery_voltage, $solar, $grid_staus   );
         }
+        $output .= '</table>';
 
         return $output;
     }

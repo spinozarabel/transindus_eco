@@ -137,14 +137,14 @@ class class_transindus_eco
         $output .= '
         <table style="width:100%">
         <tr>
-            <th>Home</th>
+            <th>Install</th>
             <th>Solar Capacity KWPk</th>
             <th>Battery Capacity KWH</th>
             <th>Solar Units Yesterday</th>
             <th>Grid Units Yesterday</th>
             <th>Consumed Units Yesterday</th>
-            <th>Prsentt Battery V</th>
-            <th>Prsentt Solar KW</th>
+            <th>Present Battery V</th>
+            <th>Present Solar KW</th>
             <th>Grid Status</th>
         </tr>';
 

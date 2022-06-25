@@ -131,7 +131,7 @@ function studer_readings_page_render()
             </div>
 
     ';
-    $output = "Hello There!";
+
     return $output;
 }
 

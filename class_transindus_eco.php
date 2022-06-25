@@ -444,7 +444,7 @@ class class_transindus_eco
        
         $solar_pv_adc = round($solar_pv_adc, 1);
        
-        // calculate the current into/out of battery
+        // calculate the current into/out of battery and battery instantaneous power
         $battery_charge_adc  = round($solar_pv_adc + $inverter_current_adc, 1); // + is charge, - is discharge
         $pbattery_kw         = round($battery_voltage_vdc * $battery_charge_adc * 0.001, 2); //$psolar_kw - $pout_inverter_ac_kw;
        
@@ -455,12 +455,13 @@ class class_transindus_eco
         // conditional class names for battery charge down or up arrow
         if ($battery_charge_adc > 0.0)
         {
-          // current is positive so battery is charging so arrow is down and to left. Also arrow shall be green to indicate charging
+          // current is positive so battery is charging so arrow is down and to left. Also arrow shall be red to indicate charging
           $battery_charge_arrow_class = "fa fa-long-arrow-down fa-rotate-45 rediconcolor";
           // battery animation class is from ne-sw
           $battery_charge_animation_class = "arrowSliding_ne_sw";
        
-          // also good time to compensate for IR drop
+          // also good time to compensate for IR drop.
+          // Actual voltage is smaller than indicated, when charging 
           $battery_voltage_vdc = round($battery_voltage_vdc + abs($inverter_current_adc) * $Ra - abs($battery_charge_adc) * $Rb, 2);
         }
         else
@@ -469,7 +470,7 @@ class class_transindus_eco
           $battery_charge_arrow_class = "fa fa-long-arrow-up fa-rotate-45 greeniconcolor";
           $battery_charge_animation_class = "arrowSliding_sw_ne";
        
-          // also good time to compensate for IR drop
+          // Actual battery voltage is larger than indicated when discharging
           $battery_voltage_vdc = round($battery_voltage_vdc + abs($inverter_current_adc) * $Ra + abs($battery_charge_adc) * $Rb, 2);
         }
        

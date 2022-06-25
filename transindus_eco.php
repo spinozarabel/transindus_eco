@@ -133,6 +133,7 @@ function studer_readings_page_render($config)
             </div>
 
     ';
+    return $output;
 }
 
 /**

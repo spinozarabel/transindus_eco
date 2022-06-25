@@ -86,6 +86,7 @@ function my_api_tools_render($config)
             echo "<pre>" . "Solar Generated Yesterday (KWH): ". $studer_readings_obj->psolar_kw_yesterday . "</pre>";
             echo "<pre>" . "Battery Discharged Yesterday (KWH): ". $studer_readings_obj->energyout_battery_yesterday . "</pre>";
             echo "<pre>" . "Grid Energy In Yesterday (KWH): ".  $studer_readings_obj->energy_grid_yesterday . "</pre>";
+            echo "<pre>" . "Energy Consumed Yesterday (KWH): ".  $studer_readings_obj->energy_consumed_yesterday . "</pre>";
             echo nl2br("/n");
             break;
     }
@@ -100,7 +101,7 @@ function my_api_tools_render($config)
 function get_studer_readings(array $config, int $user_index): ?object
 {
  $Ra = 0.0;       // value of resistance from DC junction to Inverter
- $Rb = 0.0;       // value of resistance from DC junction to Battery terminals
+ $Rb = 0.025;       // value of resistance from DC junction to Battery terminals
 
  $base_url  = $config['studer_api_baseurl'];
  $uhash     = $config['accounts'][$user_index]['uhash'];
@@ -119,6 +120,10 @@ function get_studer_readings(array $config, int $user_index): ?object
                     ),
                 array(
                         "userRef"       =>  3076,   // Energy from Battery Yesterday
+                        "infoAssembly"  => "Master"
+                    ),
+                array(
+                        "userRef"       =>  3082,   // Energy consumed yesterday
                         "infoAssembly"  => "Master"
                     ),
                 array(
@@ -242,6 +247,11 @@ function get_studer_readings(array $config, int $user_index): ?object
 
       case ( $user_value->reference == 3080 ) :
         $energy_grid_yesterday = round($user_value->value, 2);
+ 
+      break;
+
+      case ( $user_value->reference == 3082 ) :
+        $energy_consumed_yesterday = round($user_value->value, 2);
  
       break;
 
@@ -449,6 +459,7 @@ $battery_vdc_state      = json_decode($battery_vdc_state_json, true);
  $studer_readings_obj->grid_input_arrow_class      = $grid_input_arrow_class;
  $studer_readings_obj->aux1_relay_state            = $aux1_relay_state;
  $studer_readings_obj->energy_grid_yesterday       = $energy_grid_yesterday;
+ $studer_readings_obj->energy_consumed_yesterday   = $energy_consumed_yesterday;
 
 
  // update the object with the fontawesome cdn from Studer API object

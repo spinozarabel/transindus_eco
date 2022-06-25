@@ -129,6 +129,8 @@ function studer_readings_page_render()
             <div class="col">' . 
                 'Solar KW Now' . ' 
             </div>
+        </div>
+    </div>
 
     ';
 

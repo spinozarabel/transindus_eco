@@ -122,37 +122,95 @@ class class_transindus_eco
 
         $output .= '
         <style>
-        .rediconcolor {color:red;}
-
-        .greeniconcolor {color:green;}
+            table {
+                border-collapse: collapse;
+                }
+                th, td {
+                border: 1px solid orange;
+                padding: 10px;
+                text-align: left;
+                }
+                .rediconcolor {color:red;}
+                .greeniconcolor {color:green;}
         </style>';
-        $output .= '
-        <div class="container">
-            <div class="row">
-                <div class="col">' . 
-                    'Home' . ' 
-                </div>
-                <div class="col">' . 
-                    'Solar KWH Yesterday' . ' 
-                </div>
-                <div class="col">' . 
-                    'Grid KWH yesterday' . ' 
-                </div>
-                <div class="col">' . 
-                    'Consumed KWH Yesterday' . ' 
-                </div>
-                <div class="col">' . 
-                    'Battery Vdc Now' . ' 
-                </div>
-                <div class="col">' . 
-                    'Solar KW Now' . ' 
-                </div>
-            </div>
-        </div>
 
-        ';
+        $output .= '
+        <table style="width:100%">
+        <tr>
+            <th>Home</th>
+            <th>Solar Capacity KWPk</th>
+            <th>Battery Capacity KWH</th>
+            <th>Solar Units Yesterday</th>
+            <th>Grid Units Yesterday</th>
+            <th>Consumed Units Yesterday</th>
+            <th>Prsentt Battery V</th>
+            <th>Prsentt Solar KW</th>
+            <th>Grid Status</th>
+        </tr>';
+
+        // loop through all of the users in the config
+        foreach ($this->config['accounts'] as $user_index => $account) 
+        {
+            $home = $account['home'];
+
+            $studer_readings_obj = $this->get_studer_readings($user_index);
+
+            if ($studer_readings_obj->grid_pin_ac_kw < 0.1)
+            {
+                $grid_staus = 'Off-Grid';
+            }
+            else
+            {
+                $grid_staus = 'On-Grid';
+            }
+            $solar_capacity         =   $account['solar_pk_install'];
+            $battery_capacity       =   $account['battery_capacity'];
+            $solar_yesterday        =   $studer_readings_obj->psolar_kw_yesterday;
+            $grid_yesterday         =   $studer_readings_obj->energy_grid_yesterday;
+            $consumed_yesterday     =   $studer_readings_obj->energy_consumed_yesterday;
+            $battery_voltage        =   $studer_readings_obj->battery_voltage_vdc;
+            $solar                  =   $studer_readings_obj->psolar_kw;
+
+            $output .= print_row_table(     $home, $solar_capacity, $battery_capacity, 
+                                            $solar_yesterday, $grid_yesterday, $consumed_yesterday,
+                                            $battery_voltage, $solar, $grid_staus   );
+        }
 
         return $output;
+    }
+
+    public function print_row_table(    $home, $solar_capacity, $battery_capacity, 
+                                        $solar_yesterday, $grid_yesterday, $consumed_yesterday,
+                                        $battery_voltage, $solar, $grid_staus   )
+    {
+
+        if (stripos($param_value, "yes") !== false)
+        {
+            // the 2 strings are equal. So it means a Yes! so colour it Green
+            $param_value = '<font color="green">' . $param_value;
+        }
+        elseif (stripos($param_value, "no") !== false)
+        {
+            $param_value = '<font color="red">' . $param_value;
+        }
+        else
+        {
+            // no class applied so do nothing
+        }
+
+        $returnstring =
+        '<tr>' .
+            '<td>' . $home .                                            '</td>' .
+            '<td>' . $solar_capacity .                                  '</td>' .
+            '<td>' . $battery_capacity .                                '</td>' .
+            '<td>' . '<font color="green">' . $solar_yesterday .        '</td>' .
+            '<td>' . '<font color="red">' .   $grid_yesterday .         '</td>' .
+            '<td>' . $consumed_yesterday .      '</td>' .
+            '<td>' . $battery_voltage .         '</td>' .
+            '<td>' . '<font color="green">' . $solar .                  '</td>' .
+            '<td>' . $grid_staus .              '</td>' .
+        '</tr>';
+        return $returnstring;
     }
 
     public function my_api_tools_render()

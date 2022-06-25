@@ -29,7 +29,7 @@ if ( is_admin() )
             );
 
  // add support for SVG file types
- add_filter('upload_mimes', 'add_file_types_to_uploads');
+ // add_filter('upload_mimes', 'add_file_types_to_uploads');
 
 }
 

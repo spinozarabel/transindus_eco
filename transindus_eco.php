@@ -109,7 +109,7 @@ function studer_readings_page_render()
        .greeniconcolor {color:green;}
     </style>';
     $output .= '
-    <div class="container-fluid">
+    <div class="container">
         <div class="row">
             <div class="col">' . 
                 'Home' . ' 

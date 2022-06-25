@@ -34,7 +34,11 @@ if ( is_admin() )
 }
 
 // register shortcode for pages. This is for showing the page with studer readings
-add_shortcode( 'transindus-studer-readings', 'studer_readings_page_render' );
+add_shortcode( 'transindus-studer-readings', function() use ($config) 
+                                                                    { 
+                                                                        studer_readings_page_render($config);            
+                                                                    }
+);
 
 // add action to load the javascripts on non-admin page
 // add_action( 'wp_enqueue_scripts', 'add_my_scripts' );
@@ -90,6 +94,45 @@ function my_api_tools_render($config)
             echo nl2br("/n");
             break;
     }
+}
+
+/**
+ *  This is the callback for the shortcode with same name.
+ *  It displays the readings from the Studer system for each home
+ */
+function studer_readings_page_render($config)
+{
+    $output = '<script src="' . $config['fontawesome_cdn'] . '"></script>';
+
+    $output .= '
+    <style>
+       .rediconcolor {color:red;}
+
+       .greeniconcolor {color:green;}
+    </style>';
+    $output .= '
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">' . 
+                'Home' . ' 
+            </div>
+            <div class="col">' . 
+                'Solar KWH Yesterday' . ' 
+            </div>
+            <div class="col">' . 
+                'Grid KWH yesterday' . ' 
+            </div>
+            <div class="col">' . 
+                'Consumed KWH Yesterday' . ' 
+            </div>
+            <div class="col">' . 
+                'Battery Vdc Now' . ' 
+            </div>
+            <div class="col">' . 
+                'Solar KW Now' . ' 
+            </div>
+
+    ';
 }
 
 /**

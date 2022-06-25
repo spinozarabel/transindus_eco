@@ -171,9 +171,9 @@ class class_transindus_eco
             $battery_voltage        =   $studer_readings_obj->battery_voltage_vdc;
             $solar                  =   $studer_readings_obj->psolar_kw;
 
-            $output .= print_row_table(     $home, $solar_capacity, $battery_capacity, 
-                                            $solar_yesterday, $grid_yesterday, $consumed_yesterday,
-                                            $battery_voltage, $solar, $grid_staus   );
+            $output .= $this->print_row_table(  $home, $solar_capacity, $battery_capacity, 
+                                                $solar_yesterday, $grid_yesterday, $consumed_yesterday,
+                                                $battery_voltage, $solar, $grid_staus   );
         }
 
         return $output;

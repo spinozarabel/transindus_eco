@@ -102,8 +102,9 @@ function my_api_tools_render($config)
  */
 function studer_readings_page_render($config)
 {
-    $script = '"' . $config['fontawesome_cdn'] . '"';
-    $output = '<script src="' . $config['fontawesome_cdn'] . '"></script>';
+    // $script = '"' . $config['fontawesome_cdn'] . '"';
+    // $output = '<script src="' . $config['fontawesome_cdn'] . '"></script>';
+    $output = '';
 
     $output .= '
     <style>

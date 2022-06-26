@@ -138,14 +138,14 @@ class class_transindus_eco
         <table style="width:100%">
         <tr>
             <th>Install</th>
-            <th>Solar Capacity KWPk</th>
-            <th>Battery Capacity KWH</th>
-            <th>Solar Units Yesterday</th>
-            <th>Grid Units Yesterday</th>
-            <th>Consumed Units Yesterday</th>
-            <th>Present Battery V</th>
-            <th>Present Solar KW</th>
-            <th>Grid Status</th>
+            <th>Solar KWPk</th>
+            <th>Batt.KWH</th>
+            <th>Solar Ysrdy</th>
+            <th>Grid Ysrdy</th>
+            <th>Cnsmd Ysrdy</th>
+            <th>BattV Now</th>
+            <th>Solar KW Now</th>
+            <th>Status</th>
         </tr>';
 
         // loop through all of the users in the config

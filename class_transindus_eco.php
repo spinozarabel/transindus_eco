@@ -284,15 +284,15 @@ class class_transindus_eco
                                "infoAssembly"  => "Master"
                            ),
                        array(
-                               "userRef"       =>  3080,   // Energy from Grid Yesterday
+                               "userRef"       =>  3080,   // Energy from Grid yesterda
                                "infoAssembly"  => "Master"
                            ),
                        array(
-                               "userRef"       =>  11011,   // Energy from Battery Yesterday
+                               "userRef"       =>  11011,   // Solar Production from Panel set1 yesterday
                                "infoAssembly"  => "1"
                            ),
                        array(
-                               "userRef"       =>  11011,   // Energy from Battery Yesterday
+                               "userRef"       =>  11011,   // Solar Production from Panel set 2 yesterday
                                "infoAssembly"  => "2"
                            ),
                       array(

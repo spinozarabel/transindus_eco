@@ -132,6 +132,7 @@ class class_transindus_eco
                 }
                 .rediconcolor {color:red;}
                 .greeniconcolor {color:green;}
+                .img-pow-genset { max-width: 59px; }
         </style>';
 
         $output .= '

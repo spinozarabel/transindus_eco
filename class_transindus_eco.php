@@ -143,13 +143,14 @@ class class_transindus_eco
               <span class="fa-stack fa-2x">
                 <i class="fa-solid fa-calendar-minus fa-stack-2x"></i>
                 <i class="fa-solid fa-solar-panel fa-stack-2x"></i>
-          </span>
+              </span>
+            </th>
             <th>
               <span class="fa-stack fa-2x">
                 <i class="fa-solid fa-calendar-minus fa-stack-2x"></i>
                 <i class="fa-solid fa-plug-circle-check fa-stack-2x"></i>
-          </span>
-            /th>
+              </span>
+            </th>
             <th>Cnsmd Ystrdy</th>
             <th>BattStatus</th>
             <th><i class="fa-solid fa-2xl fa-solar-panel"></i></th>

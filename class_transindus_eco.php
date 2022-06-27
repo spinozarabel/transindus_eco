@@ -173,7 +173,7 @@ class class_transindus_eco
 
             $output .= $this->print_row_table(  $home, $solar_capacity, $battery_capacity, 
                                                 $solar_yesterday, $grid_yesterday, $consumed_yesterday,
-                                                $battery_voltage, $solar, $grid_staus   );
+                                                $battery_icon_class, $solar, $grid_staus   );
         }
         $output .= '</table>';
 

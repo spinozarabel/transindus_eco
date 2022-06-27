@@ -116,9 +116,9 @@ class class_transindus_eco
 
     public function studer_readings_page_render()
     {
-        $script = '"' . $config['fontawesome_cdn'] . '"';
-        $output = '<script src="' . $config['fontawesome_cdn'] . '"></script>';
-        // $output = '';
+        // $script = '"' . $config['fontawesome_cdn'] . '"';
+        //$output = '<script src="' . $config['fontawesome_cdn'] . '"></script>';
+        $output = '';
 
         $output .= '
         <style>

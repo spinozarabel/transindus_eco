@@ -142,12 +142,12 @@ class class_transindus_eco
               Install
             </th>
             <th>
-                <i class="fa-solid fa-calendar-minus"></i>
-                <i class="fa-solid fa-solar-panel"></i>
+                <i class="fa-solid fa-1xl fa-calendar-minus"></i>
+                <i class="fa-solid fa-1xl fa-solar-panel"></i>
             </th>
             <th>
-                <i class="fa-solid fa-calendar-minus"></i>
-                <i class="fa-solid fa-plug-circle-check"></i>
+                <i class="fa-solid fa-1xl fa-calendar-minus"></i>
+                <i class="fa-solid fa-1xl fa-plug-circle-check"></i>
             </th>
             <th>BattStatus</th>
             <th><i class="fa-solid fa-2xl fa-solar-panel"></i></th>

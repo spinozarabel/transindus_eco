@@ -573,20 +573,25 @@ class class_transindus_eco
        // select battery icon based on charge level
         switch(true)
         {
-          case ($battery_voltage_vdc < $config['battery_vdc_state']["25p"] ):
+          case ($battery_voltage_vdc < $battery_vdc_state["25p"] ):
+            $battery_icon_class = "fa fa-3x fa-solid fa-battery-empty";
+          break;
+
+          case ($battery_voltage_vdc >= $config['battery_vdc_state']["25p"] &&
+                $battery_voltage_vdc <  $config['battery_vdc_state']["50p"] ):
             $battery_icon_class = "fa fa-3x fa-solid fa-battery-quarter";
           break;
        
-          case ($battery_voltage_vdc >= $config['battery_vdc_state']["25p"] && 
-                $battery_voltage_vdc <  $config['battery_vdc_state']["50p"] ):
+          case ($battery_voltage_vdc >= $config['battery_vdc_state']["50p"] && 
+                $battery_voltage_vdc <  $config['battery_vdc_state']["75p"] ):
             $battery_icon_class = "fa fa-3x fa-solid fa-battery-half";
           break;
        
-          case ($battery_voltage_vdc >= $$battery_vdc_state["50p"] && $battery_voltage_vdc < $battery_vdc_state["75p"] ):
+          case ($battery_voltage_vdc >= $$battery_vdc_state["75p"] && $battery_voltage_vdc < $battery_vdc_state["100p"] ):
             $battery_icon_class = "fa fa-3x fa-solid fa-battery-three-quarters";
           break;
        
-          case ($battery_voltage_vdc >= $battery_vdc_state["75p"] ):
+          case ($battery_voltage_vdc >= $battery_vdc_state["100p"] ):
             $battery_icon_class = "fa fa-3x fa-solid fa-battery-full";
           break;
         }

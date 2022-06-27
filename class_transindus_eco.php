@@ -116,9 +116,9 @@ class class_transindus_eco
 
     public function studer_readings_page_render()
     {
-        // $script = '"' . $config['fontawesome_cdn'] . '"';
-        // $output = '<script src="' . $config['fontawesome_cdn'] . '"></script>';
-        $output = '';
+        $script = '"' . $config['fontawesome_cdn'] . '"';
+        $output = '<script src="' . $config['fontawesome_cdn'] . '"></script>';
+        // $output = '';
 
         $output .= '
         <style>
@@ -144,7 +144,7 @@ class class_transindus_eco
             <th>Grid Ysrdy</th>
             <th>Cnsmd Ysrdy</th>
             <th>BattV Now</th>
-            <th>Solar KW Now</th>
+            <th><img id="pow-pv-img" src="https://sritoni.org/6076/wp-content/uploads/sites/14/2021/02/simple_pv.svg" class="img-pow-pv"/></th>
             <th>Status</th>
         </tr>';
 
@@ -572,11 +572,12 @@ class class_transindus_eco
        // select battery icon based on charge level
         switch(true)
         {
-          case ($battery_voltage_vdc < $battery_vdc_state["25p"] ):
+          case ($battery_voltage_vdc < $config['battery_vdc_state']["25p"] ):
             $battery_icon_class = "fa fa-3x fa-battery-quarter fa-rotate-270";
           break;
        
-          case ($battery_voltage_vdc >= $battery_vdc_state["25p"] && $battery_voltage_vdc < $$battery_vdc_state["50p"] ):
+          case ($battery_voltage_vdc >= $config['battery_vdc_state']["25p"] && 
+                $battery_voltage_vdc <  $config['battery_vdc_state']["50p"] ):
             $battery_icon_class = "fa fa-3x fa-battery-half fa-rotate-270";
           break;
        

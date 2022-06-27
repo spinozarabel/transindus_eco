@@ -162,7 +162,7 @@ class class_transindus_eco
             }
             else
             {
-                $grid_staus = '<i class="fa-solid fa-plug-circle-check"></i>';
+                $grid_staus_icon = '<i class="fa-solid fa-plug-circle-check"></i>';
             }
             $solar_capacity         =   $account['solar_pk_install'];
             $battery_capacity       =   $account['battery_capacity'];
@@ -183,7 +183,7 @@ class class_transindus_eco
 
     public function print_row_table(    $home, $solar_capacity, $battery_capacity, 
                                         $solar_yesterday, $grid_yesterday, $consumed_yesterday,
-                                        $battery_icon_class, $solar, $grid_staus   )
+                                        $battery_icon_class, $solar, $grid_staus_icon   )
     {
         $battery_icon_class = '<i class="' . $battery_icon_class . '"></i>';
 

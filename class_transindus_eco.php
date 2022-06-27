@@ -145,7 +145,7 @@ class class_transindus_eco
             <th>Cnsmd Ysrdy</th>
             <th>BattStatus</th>
             <th><i class="fa-solid fa-lg fa-solar-panel"></i></th>
-            <th>Status</th>
+            <th><img id="pow-genset-img" src="https://sritoni.org/6076/wp-content/uploads/sites/14/2021/02/grid_genset.svg" class="img-pow-genset"/></th>
         </tr>';
 
         // loop through all of the users in the config

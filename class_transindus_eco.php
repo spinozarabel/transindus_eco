@@ -144,7 +144,7 @@ class class_transindus_eco
             <th>Grid Ysrdy</th>
             <th>Cnsmd Ysrdy</th>
             <th>BattStatus</th>
-            <th><i class="fa-solid fa-solar-panel"></i></th>
+            <th><i class="fa-solid fa-lg fa-solar-panel"></i></th>
             <th>Status</th>
         </tr>';
 

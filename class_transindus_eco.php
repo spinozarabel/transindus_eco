@@ -139,14 +139,12 @@ class class_transindus_eco
         <table style="width:100%">
         <tr>
             <th>Install</th>
-            <th>Solar KWPk</th>
-            <th>Batt.KWH</th>
             <th>Solar Ysrdy</th>
-            <th>Grid Ysrdy</th>
-            <th>Cnsmd Ysrdy</th>
+            <th>Grid Ystrdy/th>
+            <th>Cnsmd Ystrdy</th>
             <th>BattStatus</th>
             <th><i class="fa-solid fa-2xl fa-solar-panel"></i></th>
-            <th><img id="pow-genset-img" src="https://sritoni.org/6076/wp-content/uploads/sites/14/2021/02/grid_genset.svg" class="img-pow-genset"/></th>
+            <th><i class="fa-solid fa-2xl fa-plug-circle-bolt"></i></th>
         </tr>';
 
         // loop through all of the users in the config
@@ -204,8 +202,6 @@ class class_transindus_eco
         $returnstring =
         '<tr>' .
             '<td>' . $home .                                            '</td>' .
-            '<td>' . $solar_capacity .                                  '</td>' .
-            '<td>' . $battery_capacity .                                '</td>' .
             '<td>' . '<font color="green">' . $solar_yesterday .        '</td>' .
             '<td>' . '<font color="red">' .   $grid_yesterday .         '</td>' .
             '<td>' . $consumed_yesterday .      '</td>' .

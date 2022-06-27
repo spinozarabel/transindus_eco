@@ -590,11 +590,12 @@ class class_transindus_eco
             $battery_icon_class = "fa fa-2xl fa-solid fa-battery-half";
           break;
        
-          case ($battery_voltage_vdc >= $$battery_vdc_state["75p"] && $battery_voltage_vdc < $battery_vdc_state["100p"] ):
+          case ($battery_voltage_vdc >= $config['battery_vdc_state']["75p"] && 
+                $battery_voltage_vdc <  $config['battery_vdc_state']["100p"] ):
             $battery_icon_class = "fa fa-2xl fa-solid fa-battery-three-quarters";
           break;
        
-          case ($battery_voltage_vdc >= $battery_vdc_state["100p"] ):
+          case ($battery_voltage_vdc >= $config['battery_vdc_state']["100p"] ):
             $battery_icon_class = "fa fa-2xl fa-solid fa-battery-full";
           break;
         }

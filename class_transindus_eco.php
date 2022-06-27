@@ -143,7 +143,7 @@ class class_transindus_eco
             <th>Solar Ysrdy</th>
             <th>Grid Ysrdy</th>
             <th>Cnsmd Ysrdy</th>
-            <th>BattV Now</th>
+            <th>BattStatus</th>
             <th><i class="fa-solid fa-solar-panel"></i></th>
             <th>Status</th>
         </tr>';
@@ -168,7 +168,7 @@ class class_transindus_eco
             $solar_yesterday        =   $studer_readings_obj->psolar_kw_yesterday;
             $grid_yesterday         =   $studer_readings_obj->energy_grid_yesterday;
             $consumed_yesterday     =   $studer_readings_obj->energy_consumed_yesterday;
-            $battery_voltage        =   $studer_readings_obj->battery_voltage_vdc;
+            $battery_icon_class     =   $studer_readings_obj->battery_icon_class;
             $solar                  =   $studer_readings_obj->psolar_kw;
 
             $output .= $this->print_row_table(  $home, $solar_capacity, $battery_capacity, 
@@ -182,7 +182,7 @@ class class_transindus_eco
 
     public function print_row_table(    $home, $solar_capacity, $battery_capacity, 
                                         $solar_yesterday, $grid_yesterday, $consumed_yesterday,
-                                        $battery_voltage, $solar, $grid_staus   )
+                                        $battery_icon_class, $solar, $grid_staus   )
     {
 
         if (stripos($param_value, "yes") !== false)
@@ -207,7 +207,7 @@ class class_transindus_eco
             '<td>' . '<font color="green">' . $solar_yesterday .        '</td>' .
             '<td>' . '<font color="red">' .   $grid_yesterday .         '</td>' .
             '<td>' . $consumed_yesterday .      '</td>' .
-            '<td>' . $battery_voltage .         '</td>' .
+            '<td>' . $battery_icon_class .      '</td>' .
             '<td>' . '<font color="green">' . $solar .                  '</td>' .
             '<td>' . $grid_staus .              '</td>' .
         '</tr>';
@@ -573,20 +573,20 @@ class class_transindus_eco
         switch(true)
         {
           case ($battery_voltage_vdc < $config['battery_vdc_state']["25p"] ):
-            $battery_icon_class = "fa fa-3x fa-battery-quarter fa-rotate-270";
+            $battery_icon_class = "fa fa-3x fa-battery-quarter";
           break;
        
           case ($battery_voltage_vdc >= $config['battery_vdc_state']["25p"] && 
                 $battery_voltage_vdc <  $config['battery_vdc_state']["50p"] ):
-            $battery_icon_class = "fa fa-3x fa-battery-half fa-rotate-270";
+            $battery_icon_class = "fa fa-3x fa-battery-half";
           break;
        
           case ($battery_voltage_vdc >= $$battery_vdc_state["50p"] && $battery_voltage_vdc < $battery_vdc_state["75p"] ):
-            $battery_icon_class = "fa fa-3x fa-battery-three-quarters fa-rotate-270";
+            $battery_icon_class = "fa fa-3x fa-battery-three-quarters";
           break;
        
           case ($battery_voltage_vdc >= $battery_vdc_state["75p"] ):
-            $battery_icon_class = "fa fa-3x fa-battery-full fa-rotate-270";
+            $battery_icon_class = "fa fa-3x fa-battery-full";
           break;
         }
        

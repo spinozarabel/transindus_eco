@@ -144,7 +144,7 @@ class class_transindus_eco
             <th>Grid Ysrdy</th>
             <th>Cnsmd Ysrdy</th>
             <th>BattV Now</th>
-            <th><img id="pow-pv-img" src="https://sritoni.org/6076/wp-content/uploads/sites/14/2021/02/simple_pv.svg" class="img-pow-pv"/></th>
+            <th><i class="fa-solid fa-solar-panel"></i></th>
             <th>Status</th>
         </tr>';
 

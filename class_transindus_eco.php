@@ -139,8 +139,17 @@ class class_transindus_eco
         <table>
         <tr>
             <th>Install</th>
-            <th>Solar Ysrdy</th>
-            <th>Grid Ystrdy/th>
+            <th>
+              <span class="fa-stack fa-2x">
+                <i class="fa-solid fa-calendar-minus fa-stack-2x"></i>
+                <i class="fa-solid fa-solar-panel fa-stack-2x"></i>
+          </span>
+            <th>
+              <span class="fa-stack fa-2x">
+                <i class="fa-solid fa-calendar-minus fa-stack-2x"></i>
+                <i class="fa-solid fa-plug-circle-check fa-stack-2x"></i>
+          </span>
+            /th>
             <th>Cnsmd Ystrdy</th>
             <th>BattStatus</th>
             <th><i class="fa-solid fa-2xl fa-solar-panel"></i></th>
@@ -204,7 +213,6 @@ class class_transindus_eco
             '<td>' . $home .                                            '</td>' .
             '<td>' . '<font color="green">' . $solar_yesterday .        '</td>' .
             '<td>' . '<font color="red">' .   $grid_yesterday .         '</td>' .
-            '<td>' . $consumed_yesterday .      '</td>' .
             '<td>' . $battery_icon_class .      '</td>' .
             '<td>' . '<font color="green">' . $solar .                  '</td>' .
             '<td>' . $grid_staus_icon .              '</td>' .

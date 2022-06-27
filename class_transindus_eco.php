@@ -579,7 +579,7 @@ class class_transindus_eco
        
           case ($battery_voltage_vdc >= $config['battery_vdc_state']["25p"] && 
                 $battery_voltage_vdc <  $config['battery_vdc_state']["50p"] ):
-            $battery_icon_class = "fa fa-3x fa-soldi fa-battery-half";
+            $battery_icon_class = "fa fa-3x fa-solid fa-battery-half";
           break;
        
           case ($battery_voltage_vdc >= $$battery_vdc_state["50p"] && $battery_voltage_vdc < $battery_vdc_state["75p"] ):

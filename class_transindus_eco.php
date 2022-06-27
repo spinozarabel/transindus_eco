@@ -184,6 +184,7 @@ class class_transindus_eco
                                         $solar_yesterday, $grid_yesterday, $consumed_yesterday,
                                         $battery_icon_class, $solar, $grid_staus   )
     {
+        $battery_icon_class = '<i class="' . $battery_icon_class . '"></i>';
 
         if (stripos($param_value, "yes") !== false)
         {

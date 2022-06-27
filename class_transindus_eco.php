@@ -158,11 +158,11 @@ class class_transindus_eco
 
             if ($studer_readings_obj->grid_pin_ac_kw < 0.1)
             {
-                $grid_staus = 'Off-Grid';
+                $grid_staus_icon = '<i class="fa-solid fa-plug-circle-xmark"></i>';
             }
             else
             {
-                $grid_staus = 'On-Grid';
+                $grid_staus = '<i class="fa-solid fa-plug-circle-check"></i>';
             }
             $solar_capacity         =   $account['solar_pk_install'];
             $battery_capacity       =   $account['battery_capacity'];
@@ -174,7 +174,7 @@ class class_transindus_eco
 
             $output .= $this->print_row_table(  $home, $solar_capacity, $battery_capacity, 
                                                 $solar_yesterday, $grid_yesterday, $consumed_yesterday,
-                                                $battery_icon_class, $solar, $grid_staus   );
+                                                $battery_icon_class, $solar, $grid_staus_icon   );
         }
         $output .= '</table>';
 
@@ -211,7 +211,7 @@ class class_transindus_eco
             '<td>' . $consumed_yesterday .      '</td>' .
             '<td>' . $battery_icon_class .      '</td>' .
             '<td>' . '<font color="green">' . $solar .                  '</td>' .
-            '<td>' . $grid_staus .              '</td>' .
+            '<td>' . $grid_staus_icon .              '</td>' .
         '</tr>';
         return $returnstring;
     }

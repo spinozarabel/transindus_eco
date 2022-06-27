@@ -142,11 +142,11 @@ class class_transindus_eco
               Install
             </th>
             <th>
-                <i class="fa-solid fa-2xl fa-calendar-minus"></i>
+                <i class="fa-regular fa-2xl fa-calendar-minus"></i>
                 <i class="fa-solid fa-2xl fa-solar-panel"></i>
             </th>
             <th>
-                <i class="fa-solid fa-2xl fa-calendar-minus"></i>
+                <i class="fa-regular fa-2xl fa-calendar-minus"></i>
                 <i class="fa-solid fa-2xl fa-plug-circle-check"></i>
             </th>
             <th><i class="fa-solid fa-2xl fa-charging-station"></i></th>

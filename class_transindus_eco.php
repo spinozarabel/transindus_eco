@@ -136,7 +136,7 @@ class class_transindus_eco
         </style>';
 
         $output .= '
-        <table style="width:100%">
+        <table>
         <tr>
             <th>Install</th>
             <th>Solar Ysrdy</th>

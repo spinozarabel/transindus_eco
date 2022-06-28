@@ -450,7 +450,7 @@ class class_transindus_eco
           // battery animation class is from ne-sw
           $battery_charge_animation_class = "arrowSliding_ne_sw";
 
-          $battery_color_style = 'style="color: Green;"';
+          $battery_color_style = 'style="color: green;"';
        
           // also good time to compensate for IR drop.
           // Actual voltage is smaller than indicated, when charging 
@@ -461,7 +461,7 @@ class class_transindus_eco
           // current is -ve so battery is discharging so arrow is up and icon color shall be red
           $battery_charge_arrow_class = "fa fa-long-arrow-up fa-rotate-45 greeniconcolor";
           $battery_charge_animation_class = "arrowSliding_sw_ne";
-          $battery_color_style = 'style="color: Red;"';
+          $battery_color_style = 'style="color: red;"';
        
           // Actual battery voltage is larger than indicated when discharging
           $battery_voltage_vdc = round($battery_voltage_vdc + abs($inverter_current_adc) * $Ra + abs($battery_charge_adc) * $Rb, 2);

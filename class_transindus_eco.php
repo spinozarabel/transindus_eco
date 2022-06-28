@@ -151,7 +151,7 @@ class class_transindus_eco
             </th>
             <th><i class="fa-solid fa-2xl fa-charging-station"></i></th>
             <th><i class="fa-solid fa-2xl fa-solar-panel"></i></th>
-            <th><i class="fa-solid fa-2xl fa-tower-observation"></i></th>
+            <th><i class="fa-solid fa-2xl fa-house"></i></th>
         </tr>';
 
         // loop through all of the users in the config
@@ -176,10 +176,11 @@ class class_transindus_eco
             $consumed_yesterday     =   $studer_readings_obj->energy_consumed_yesterday;
             $battery_icon_class     =   $studer_readings_obj->battery_icon_class;
             $solar                  =   $studer_readings_obj->psolar_kw;
+            $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
 
             $output .= $this->print_row_table(  $home, $solar_capacity, $battery_capacity, 
                                                 $solar_yesterday, $grid_yesterday, $consumed_yesterday,
-                                                $battery_icon_class, $solar, $grid_staus_icon   );
+                                                $battery_icon_class, $solar, $grid_staus_icon, $pout_inverter_ac_kw   );
         }
         $output .= '</table>';
 
@@ -188,7 +189,7 @@ class class_transindus_eco
 
     public function print_row_table(    $home, $solar_capacity, $battery_capacity, 
                                         $solar_yesterday, $grid_yesterday, $consumed_yesterday,
-                                        $battery_icon_class, $solar, $grid_staus_icon   )
+                                        $battery_icon_class, $solar, $grid_staus_icon, $pout_inverter_ac_kw   )
     {
         $battery_icon_class = '<i class="' . $battery_icon_class . '"></i>';
 
@@ -213,7 +214,7 @@ class class_transindus_eco
             '<td>' . '<font color="red">' .   $grid_yesterday .         '</td>' .
             '<td>' . $battery_icon_class .      '</td>' .
             '<td>' . '<font color="green">' . $solar .                  '</td>' .
-            '<td>' . $grid_staus_icon .              '</td>' .
+            '<td>' . $grid_staus_icon .       $pout_inverter_ac_kw  .   '</td>' .
         '</tr>';
         return $returnstring;
     }

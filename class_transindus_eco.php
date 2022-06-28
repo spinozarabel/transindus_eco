@@ -262,7 +262,7 @@ class class_transindus_eco
         $config = $this->config;
 
         $Ra = 0.0;       // value of resistance from DC junction to Inverter
-        $Rb = 0.03;       // value of resistance from DC junction to Battery terminals
+        $Rb = 0.025;       // value of resistance from DC junction to Battery terminals
        
         $base_url  = $config['studer_api_baseurl'];
         $uhash     = $config['accounts'][$user_index]['uhash'];

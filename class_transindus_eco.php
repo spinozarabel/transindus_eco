@@ -177,10 +177,11 @@ class class_transindus_eco
             $battery_icon_class     =   $studer_readings_obj->battery_icon_class;
             $solar                  =   $studer_readings_obj->psolar_kw;
             $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
+            $battery_span_fontawesome = $studer_readings_obj->battery_span_fontawesome;
 
             $output .= $this->print_row_table(  $home, $solar_capacity, $battery_capacity, 
                                                 $solar_yesterday, $grid_yesterday, $consumed_yesterday,
-                                                $battery_icon_class, $solar, $grid_staus_icon, $pout_inverter_ac_kw   );
+                                                $battery_span_fontawesome, $solar, $grid_staus_icon, $pout_inverter_ac_kw   );
         }
         $output .= '</table>';
 
@@ -189,30 +190,14 @@ class class_transindus_eco
 
     public function print_row_table(    $home, $solar_capacity, $battery_capacity, 
                                         $solar_yesterday, $grid_yesterday, $consumed_yesterday,
-                                        $battery_icon_class, $solar, $grid_staus_icon, $pout_inverter_ac_kw   )
+                                        $battery_span_fontawesome, $solar, $grid_staus_icon, $pout_inverter_ac_kw   )
     {
-        $battery_icon_class = '<i class="' . $battery_icon_class . '"></i>';
-
-        if (stripos($param_value, "yes") !== false)
-        {
-            // the 2 strings are equal. So it means a Yes! so colour it Green
-            $param_value = '<font color="green">' . $param_value;
-        }
-        elseif (stripos($param_value, "no") !== false)
-        {
-            $param_value = '<font color="red">' . $param_value;
-        }
-        else
-        {
-            // no class applied so do nothing
-        }
-
         $returnstring =
         '<tr>' .
             '<td>' . $home .                                            '</td>' .
             '<td>' . '<font color="green">' . $solar_yesterday .        '</td>' .
             '<td>' . '<font color="red">' .   $grid_yesterday .         '</td>' .
-            '<td>' . $battery_icon_class .      '</td>' .
+            '<td>' . $battery_span_fontawesome .      '</td>' .
             '<td>' . '<font color="green">' . $solar .                  '</td>' .
             '<td>' . $grid_staus_icon .       $pout_inverter_ac_kw  .   '</td>' .
         '</tr>';
@@ -464,6 +449,8 @@ class class_transindus_eco
           $battery_charge_arrow_class = "fa fa-long-arrow-down fa-rotate-45 rediconcolor";
           // battery animation class is from ne-sw
           $battery_charge_animation_class = "arrowSliding_ne_sw";
+
+          $battery_color_style = 'style="color: Green;"';
        
           // also good time to compensate for IR drop.
           // Actual voltage is smaller than indicated, when charging 
@@ -474,6 +461,7 @@ class class_transindus_eco
           // current is -ve so battery is discharging so arrow is up and icon color shall be red
           $battery_charge_arrow_class = "fa fa-long-arrow-up fa-rotate-45 greeniconcolor";
           $battery_charge_animation_class = "arrowSliding_sw_ne";
+          $battery_color_style = 'style="color: Red;"';
        
           // Actual battery voltage is larger than indicated when discharging
           $battery_voltage_vdc = round($battery_voltage_vdc + abs($inverter_current_adc) * $Ra + abs($battery_charge_adc) * $Rb, 2);
@@ -600,6 +588,14 @@ class class_transindus_eco
             $battery_icon_class = "fa fa-2xl fa-solid fa-battery-full";
           break;
         }
+
+        $battery_span_fontawesome = '
+                                    <span>' . $battery_color_style . '>
+                                      <i class="' . $battery_icon_class . '">
+                                    </span>';
+
+        // select battery icon color: Green if charging, Red if discharging
+
        
         // update the object with battery data read
         $studer_readings_obj->battery_charge_adc          = abs($battery_charge_adc);
@@ -630,6 +626,7 @@ class class_transindus_eco
         $studer_readings_obj->aux1_relay_state            = $aux1_relay_state;
         $studer_readings_obj->energy_grid_yesterday       = $energy_grid_yesterday;
         $studer_readings_obj->energy_consumed_yesterday   = $energy_consumed_yesterday;
+        $studer_readings_obj->battery_span_fontawesome    = $battery_span_fontawesome;
        
        
         // update the object with the fontawesome cdn from Studer API object

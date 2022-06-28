@@ -151,7 +151,7 @@ class class_transindus_eco
             </th>
             <th><i class="fa-solid fa-2xl fa-charging-station"></i></th>
             <th><i class="fa-solid fa-2xl fa-solar-panel greeniconcolor"></i></th>
-            <th><i class="fa-solid fa-2xl fa-house rediconcolor"></i></th>
+            <th><i class="fa-solid fa-2xl fa-house"></i></th>
         </tr>';
 
         // loop through all of the users in the config

@@ -143,14 +143,14 @@ class class_transindus_eco
             </th>
             <th>
                 <i class="fa-regular fa-2xl fa-calendar-minus"></i>
-                <i class="fa-solid fa-2xl fa-solar-panel greenincolor"></i>
+                <i class="fa-solid fa-2xl fa-solar-panel greeniconcolor"></i>
             </th>
             <th>
                 <i class="fa-regular fa-2xl fa-calendar-minus"></i>
-                <i class="fa-solid fa-2xl fa-plug-circle-check"></i>
+                <i class="fa-solid fa-2xl fa-plug-circle-check rediconcolor"></i>
             </th>
             <th><i class="fa-solid fa-2xl fa-charging-station"></i></th>
-            <th><i class="fa-solid fa-2xl fa-solar-panel greenincolor"></i></th>
+            <th><i class="fa-solid fa-2xl fa-solar-panel greeniconcolor"></i></th>
             <th><i class="fa-solid fa-2xl fa-house"></i></th>
         </tr>';
 

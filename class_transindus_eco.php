@@ -591,7 +591,7 @@ class class_transindus_eco
 
         $battery_span_fontawesome = '
                                     <span>' . $battery_color_style . '>
-                                      <i class="' . $battery_icon_class . '">
+                                      <i class="' . $battery_icon_class . '"></i>
                                     </span>';
 
         // select battery icon color: Green if charging, Red if discharging

@@ -48,7 +48,7 @@ class shelly_cloud_api
 
       if ( $curlResponse->isok )
           {
-              return $curlResponse->data;
+              return $curlResponse;
           }
       else
           {

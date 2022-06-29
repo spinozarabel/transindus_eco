@@ -218,10 +218,12 @@ class class_transindus_eco
 
         <?php
 
-        switch ($_POST['button'])
+        $config_index = sanitize_text_field( $_POST['config_index'] );
+        $button_text  = sanitize_text_field( $_POST['button'] );
+
+        switch ($button_text)
         {
             case 'Get_Studer_Readings':
-                $config_index = sanitize_text_field( $_POST['config_index'] );
 
                 // echo "<pre>" . print_r($config, true) . "</pre>";
                 $studer_readings_obj = $this->get_studer_readings($config_index);
@@ -234,8 +236,35 @@ class class_transindus_eco
                 echo "<pre>" . "Grid Energy In Yesterday (KWH): ".  $studer_readings_obj->energy_grid_yesterday . "</pre>";
                 echo "<pre>" . "Energy Consumed Yesterday (KWH): ".  $studer_readings_obj->energy_consumed_yesterday . "</pre>";
                 echo nl2br("/n");
-                break;
+            break;
+
+            case "Get_Shelly_Device_Status":
+                $acin_shelly_switch_data = get_shelly_device_status($config_index);
+                echo "<pre>" . "ACIN Shelly Switch State: " .    $acin_shelly_switch_data->switch_status . "</pre>";
+                echo "<pre>" . "ACIN Shelly Switch Voltage: " .  $acin_shelly_switch_data->switch_voltage . "</pre>";
+                echo "<pre>" . "ACIN Shelly Switch Power: " .    $acin_shelly_switch_data->switch_power . "</pre>";
+                echo "<pre>" . "ACIN Shelly Switch Current: " .  $acin_shelly_switch_data->switch_current . "</pre>";
+            break;
         }
+    }
+
+    public function get_shelly_device_status(int $user_index): ?object
+    {
+        $config = $this->config;
+        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id'];
+
+        $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+
+        $shelly_device_status = $shelly_api->get_shelly_device_status();
+
+        $acin_shelly_switch_data = new stdClass;
+        $acin_shelly_switch_data->switch_status   = $shelly_device_status->switch[0]->output;
+        $acin_shelly_switch_data->switch_voltage  = $shelly_device_status->switch[0]->voltage;
+        $acin_shelly_switch_data->switch_power    = $shelly_device_status->switch[0]->apower;
+        $acin_shelly_switch_data->switch_current  = $shelly_device_status->switch[0]->current;
+        return $acin_shelly_switch_data;
     }
 
     /**

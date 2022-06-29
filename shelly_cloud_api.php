@@ -43,7 +43,9 @@ class shelly_cloud_api
 
       $endpoint = $this->server_uri . "/device/status";
 
+      // already json decoded into object
       $curlResponse   = $this->postCurl($endpoint, $headers, $params);
+      error_log( "This is the response while querying for your Studer parameter" . print_r($curlResponse, true) );
 
 
       if ( $curlResponse->isok )
@@ -86,7 +88,7 @@ class shelly_cloud_api
 
       $curlResponse   = $this->postCurl($endpoint, $headers, $params);
 
-      // the curlResponse is JSON encoded and needs to be decoded in calling routine
+      // the curlResponse is already JSON decoded as object
       return $curlResponse;
     }
 

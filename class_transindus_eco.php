@@ -250,7 +250,7 @@ class class_transindus_eco
                 echo "<pre>" . "ACIN Shelly Switch Voltage: " .  $acin_shelly_switch_data->switch_voltage . "</pre>";
                 echo "<pre>" . "ACIN Shelly Switch Power: " .    $acin_shelly_switch_data->switch_power . "</pre>";
                 echo "<pre>" . "ACIN Shelly Switch Current: " .  $acin_shelly_switch_data->switch_current . "</pre>";
-                echo "<pre>" . "ACIN Shelly device data: " .  print_r($acin_shelly_switch_data) . "</pre>";
+                echo "<pre>" . "ACIN Shelly device data: " .  print_r($acin_shelly_switch_data, true) . "</pre>";
             break;
         }
     }

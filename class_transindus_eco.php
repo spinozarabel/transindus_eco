@@ -244,7 +244,7 @@ class class_transindus_eco
 
             case "Get_Shelly_Device_Status":
                 // Get the Shelly device status whose id is listed in the config.
-                $acin_shelly_switch_data = get_shelly_device_status($config_index);
+                $acin_shelly_switch_data = $this->get_shelly_device_status($config_index);
 
                 echo "<pre>" . "ACIN Shelly Switch State: " .    $acin_shelly_switch_data->switch_status . "</pre>";
                 echo "<pre>" . "ACIN Shelly Switch Voltage: " .  $acin_shelly_switch_data->switch_voltage . "</pre>";

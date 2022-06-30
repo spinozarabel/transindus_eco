@@ -257,7 +257,7 @@ class class_transindus_eco
             case "turn_Shelly_Switch_ON":
                 // command the Shelly ACIN switch to ON
                 $shelly_api_device_response = $this->turn_on_off_shelly_switch($config_index, "on");
-                sleep(5);
+                sleep(1);
 
                 // get a fresh status
                 $shelly_api_device_response = $this->get_shelly_device_status($config_index);
@@ -267,7 +267,7 @@ class class_transindus_eco
             case "turn_Shelly_Switch_OFF":
                 // command the Shelly ACIN switch to ON
                 $shelly_api_device_response = $this->turn_on_off_shelly_switch($config_index, "off");
-                sleep(5);
+                sleep(1);
 
                 // get a fresh status
                 $shelly_api_device_response = $this->get_shelly_device_status($config_index);

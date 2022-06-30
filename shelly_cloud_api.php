@@ -32,7 +32,7 @@ class shelly_cloud_api
        // parameters for query string
       $params     = array
       (
-          "channel_id"  => 0,
+          "channel"     => 0,
           'turn'        => $desired_state           ,
           "id"          => $this->shelly_device_id  ,
           "auth_key"    => $this->auth_key          ,

@@ -44,7 +44,7 @@ class shelly_cloud_api
       $endpoint = $this->server_uri . "/device/status";
 
       // already json decoded into object
-      $curlResponse   = $this->postCurl($endpoint, $headers, $params);
+      $curlResponse   = $this->getCurl($endpoint, $headers, $params);
       error_log( "This is the response while querying for your Studer parameter" . print_r($curlResponse, true) );
 
 
@@ -120,7 +120,7 @@ class shelly_cloud_api
       curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
 
       $returnData = curl_exec($ch);
-      $this->verbose ? error_log("curl reposne" . print_r($returnData,true)) : false;
+      $this->verbose ? error_log("curl response Shelly Device" . print_r($returnData,true)) : false;
 
       curl_close($ch);
 
@@ -156,12 +156,17 @@ class shelly_cloud_api
        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 1); // verifies the authenticity of the peer's certificate
        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2); // verify the certificate's name against host
        $returnData = curl_exec($ch);
-       $this->verbose ? error_log("curl reposne" . print_r($returnData,true)) : false;
+
+       $this->verbose ? error_log("getCurl resposne from Shelly Device" . print_r($returnData,true)) : false;
        curl_close($ch);
-       if ($returnData != "")
-       {
-        return json_decode($returnData, false);     // returns object not array
-       }
-       return NULL;
+
+       if ( !empty( $returnData ) ) 
+        {
+          return json_decode($returnData, false);     // returns object not array
+        }
+        else
+        {
+          return NULL;
+        }
     }
 }

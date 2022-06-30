@@ -24,6 +24,39 @@ class shelly_cloud_api
       $this->shelly_device_id = $shelly_device_id;
     }       // end construct function
 
+    /**
+     * @param string:$desired_state is "on" or 'off'
+     */
+    public function turn_on_off_shelly_switch($desired_state)
+    {
+       // parameters for query string
+      $params     = array
+      (
+          "channel_id"  => 0,
+          'turn'        => $desired_state           ,
+          "id"          => $this->shelly_device_id  ,
+          "auth_key"    => $this->auth_key          ,
+      );
+
+      $headers  = [];
+
+      $endpoint = $this->server_uri . "/device/relay/control";
+
+      $curlResponse   = $this->postCurl($endpoint, $headers, $params);
+
+      if ( $curlResponse->isok )
+          {
+              return $curlResponse;
+          }
+      else
+          {
+              if ($this->verbose)
+              {
+                  error_log( "This is the response when turn ON_OFF of your Shelly device" . print_r($curlResponse, true) );
+              }
+              return null;
+          }
+    }
 
 
     /**
@@ -105,15 +138,16 @@ class shelly_cloud_api
       {
          if ( count($params) )
          {
-             $endpoint = $endpoint . '?' . http_build_query($params);
+             $postFields = http_build_query($params);
          }
       }
 
       $ch = curl_init();
       curl_setopt($ch, CURLOPT_URL, $endpoint);
       curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+      curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded'));
       // curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-      // curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
       curl_setopt($ch, CURLOPT_TIMEOUT, 10);
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
       curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 1);

@@ -251,13 +251,13 @@ class class_transindus_eco
                 $shelly_api_device_response = $this->get_shelly_device_status($config_index);
                 $shelly_api_device_status = $shelly_api_device_response->data->device_status;
                 $switch0 = "switch:0";
-                print_r($shelly_api_device_status->{"switch:0"}, false);
+                //print_r($shelly_api_device_status->{"switch:0"}, false);
 
-                //echo "<pre>" . "ACIN Shelly Switch State: " .    $shelly_api_device_status->switch_status . "</pre>";
-                //echo "<pre>" . "ACIN Shelly Switch Voltage: " .  $acin_shelly_switch_data->switch_voltage . "</pre>";
-                //echo "<pre>" . "ACIN Shelly Switch Power: " .    $acin_shelly_switch_data->switch_power . "</pre>";
-                //echo "<pre>" . "ACIN Shelly Switch Current: " .  $acin_shelly_switch_data->switch_current . "</pre>";
-                //echo "<pre>" . "ACIN Shelly device data: " .  print_r($shelly_api_device_status, false) . "</pre>";
+                echo "<pre>" . "ACIN Shelly Switch State: " .    $shelly_api_device_status->{"switch:0"}->output . "</pre>";
+                echo "<pre>" . "ACIN Shelly Switch Voltage: " .  $shelly_api_device_status->{"switch:0"}->voltage . "</pre>";
+                echo "<pre>" . "ACIN Shelly Switch Power: " .    $shelly_api_device_status->{"switch:0"}->apower . "</pre>";
+                echo "<pre>" . "ACIN Shelly Switch Current: " .  $shelly_api_device_status->{"switch:0"}->current . "</pre>";
+                echo "<pre>" . "ACIN Shelly device data: " .  print_r($shelly_api_device_status, false) . "</pre>";
             break;
         }
     }

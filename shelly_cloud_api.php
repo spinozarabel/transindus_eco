@@ -56,7 +56,7 @@ class shelly_cloud_api
           {
               if ($this->verbose)
               {
-                  error_log( "This is the response while querying for your Studer parameter" . print_r($curlResponse, true) );
+                  error_log( "This is the response while querying for your Shelly device" . print_r($curlResponse, true) );
               }
               return null;
           }
@@ -100,11 +100,20 @@ class shelly_cloud_api
          'Content-Type: application/json', 
          'Content-Length: ' . strlen($postFields));
 
+      // check if anything exists in $params. If so make a query string out of it
+      if ($params)
+      {
+         if ( count($params) )
+         {
+             $endpoint = $endpoint . '?' . http_build_query($params);
+         }
+      }
+
       $ch = curl_init();
       curl_setopt($ch, CURLOPT_URL, $endpoint);
       curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
       // curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-      curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
+      // curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
       curl_setopt($ch, CURLOPT_TIMEOUT, 10);
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
       curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 1);

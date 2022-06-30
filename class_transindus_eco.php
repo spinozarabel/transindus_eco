@@ -217,6 +217,8 @@ class class_transindus_eco
                 <input type="text"   id ="config_index" name="config_index"/>
                 <input type="submit" name="button" 	value="Get_Studer_Readings"/>
                 <input type="submit" name="button" 	value="Get_Shelly_Device_Status"/>
+                <input type="submit" name="button" 	value="turn_Shelly_Switch_ON"/>
+                <input type="submit" name="button" 	value="turn_Shelly_Switch_OFF"/>
             </form>
 
 
@@ -250,9 +252,29 @@ class class_transindus_eco
                 // Get the Shelly device status whose id is listed in the config.
                 $shelly_api_device_response = $this->get_shelly_device_status($config_index);
                 $shelly_api_device_status = $shelly_api_device_response->data->device_status;
-                $switch0 = "switch:0";
-                //print_r($shelly_api_device_status->{"switch:0"}, false);
-                if($shelly_api_device_status->{"switch:0"}->output)
+            break;
+
+            case "turn_Shelly_Switch_ON":
+                // command the Shelly ACIN switch to ON
+                $shelly_api_device_response = $this->turn_on_off_shelly_switch($config_index, "on");
+                sleep(5);
+
+                // get a fresh status
+                $shelly_api_device_response = $this->get_shelly_device_status($config_index);
+                $shelly_api_device_status   = $shelly_api_device_response->data->device_status;
+            break;
+
+            case "turn_Shelly_Switch_OFF":
+                // command the Shelly ACIN switch to ON
+                $shelly_api_device_response = $this->turn_on_off_shelly_switch($config_index, "off");
+                sleep(5);
+
+                // get a fresh status
+                $shelly_api_device_response = $this->get_shelly_device_status($config_index);
+                $shelly_api_device_status   = $shelly_api_device_response->data->device_status;
+            break;
+        }
+        if($shelly_api_device_status->{"switch:0"}->output)
                 {
                     $switch_state = "Closed";
                 }
@@ -264,8 +286,24 @@ class class_transindus_eco
                 echo "<pre>" . "ACIN Shelly Switch Voltage: " .  $shelly_api_device_status->{"switch:0"}->voltage . "</pre>";
                 echo "<pre>" . "ACIN Shelly Switch Power: " .    $shelly_api_device_status->{"switch:0"}->apower . "</pre>";
                 echo "<pre>" . "ACIN Shelly Switch Current: " .  $shelly_api_device_status->{"switch:0"}->current . "</pre>";
-            break;
-        }
+    }
+
+    /**
+     * 
+     */
+    public function turn_on_off_shelly_switch($user_index, $desired_state)
+    {
+        $config = $this->config;
+        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id'];
+
+        $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+
+        // this is $curl_response
+        $shelly_device_data = $shelly_api->turn_on_off_shelly_switch($desired_state);
+
+        return $shelly_device_data;
     }
 
     public function get_shelly_device_status(int $user_index): ?object
@@ -278,14 +316,10 @@ class class_transindus_eco
 
         $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
 
-        // this is $curl_response->data
+        // this is $curl_response
         $shelly_device_data = $shelly_api->get_shelly_device_status();
 
-        $acin_shelly_switch_data = new stdClass;
-        $acin_shelly_switch_data->switch_status   = $shelly_device_data->device_status->switch[0]->output;
-        $acin_shelly_switch_data->switch_voltage  = $shelly_device_data->device_status->switch[0]->voltage;
-        $acin_shelly_switch_data->switch_power    = $shelly_device_data->device_status->switch[0]->apower;
-        $acin_shelly_switch_data->switch_current  = $shelly_device_data->device_status->switch[0]->current;
+        // full curl response just JSON decoded into stdClass Object
         return $shelly_device_data;
     }
 

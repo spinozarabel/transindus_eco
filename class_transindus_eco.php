@@ -275,17 +275,17 @@ class class_transindus_eco
             break;
         }
         if($shelly_api_device_status->{"switch:0"}->output)
-                {
-                    $switch_state = "Closed";
-                }
-                else
-                {
-                  $switch_state = "Open";
-                }
-                echo "<pre>" . "ACIN Shelly Switch State: " .    $switch_state . "</pre>";
-                echo "<pre>" . "ACIN Shelly Switch Voltage: " .  $shelly_api_device_status->{"switch:0"}->voltage . "</pre>";
-                echo "<pre>" . "ACIN Shelly Switch Power: " .    $shelly_api_device_status->{"switch:0"}->apower . "</pre>";
-                echo "<pre>" . "ACIN Shelly Switch Current: " .  $shelly_api_device_status->{"switch:0"}->current . "</pre>";
+        {
+            $switch_state = "Closed";
+        }
+        else
+        {
+          $switch_state = "Open";
+        }
+        echo "<pre>" . "ACIN Shelly Switch State: " .    $switch_state . "</pre>";
+        echo "<pre>" . "ACIN Shelly Switch Voltage: " .  $shelly_api_device_status->{"switch:0"}->voltage . "</pre>";
+        echo "<pre>" . "ACIN Shelly Switch Power: " .    $shelly_api_device_status->{"switch:0"}->apower . "</pre>";
+        echo "<pre>" . "ACIN Shelly Switch Current: " .  $shelly_api_device_status->{"switch:0"}->current . "</pre>";
     }
 
     /**

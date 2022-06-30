@@ -225,6 +225,10 @@ class class_transindus_eco
         $config_index = sanitize_text_field( $_POST['config_index'] );
         $button_text  = sanitize_text_field( $_POST['button'] );
 
+        echo "<pre>" . "config_index: " .    $config_index . "</pre>";
+        echo "<pre>" . "button: " .    $button_text . "</pre>";
+        
+
         switch ($button_text)
         {
             case 'Get_Studer_Readings':
@@ -246,10 +250,10 @@ class class_transindus_eco
                 // Get the Shelly device status whose id is listed in the config.
                 $acin_shelly_switch_data = $this->get_shelly_device_status($config_index);
 
-                echo "<pre>" . "ACIN Shelly Switch State: " .    $acin_shelly_switch_data->switch_status . "</pre>";
-                echo "<pre>" . "ACIN Shelly Switch Voltage: " .  $acin_shelly_switch_data->switch_voltage . "</pre>";
-                echo "<pre>" . "ACIN Shelly Switch Power: " .    $acin_shelly_switch_data->switch_power . "</pre>";
-                echo "<pre>" . "ACIN Shelly Switch Current: " .  $acin_shelly_switch_data->switch_current . "</pre>";
+                //echo "<pre>" . "ACIN Shelly Switch State: " .    $acin_shelly_switch_data->switch_status . "</pre>";
+                //echo "<pre>" . "ACIN Shelly Switch Voltage: " .  $acin_shelly_switch_data->switch_voltage . "</pre>";
+               // echo "<pre>" . "ACIN Shelly Switch Power: " .    $acin_shelly_switch_data->switch_power . "</pre>";
+                //echo "<pre>" . "ACIN Shelly Switch Current: " .  $acin_shelly_switch_data->switch_current . "</pre>";
                 echo "<pre>" . "ACIN Shelly device data: " .  print_r($acin_shelly_switch_data, false) . "</pre>";
             break;
         }

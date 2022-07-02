@@ -31,7 +31,7 @@ add_filter( 'cron_schedules',  'shelly_studer_add_new_cron_interval' );
 
 if (!wp_next_scheduled('shelly_studer_task_hook')) 
 {
-    wp_schedule_event( time(), 'sixty_seconds', 'shelly_studer_task_hook' );
+    wp_schedule_event( time(), 'sixty_seconds', 'shellystuder_task_hook' );
 }
 
 

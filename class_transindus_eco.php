@@ -213,10 +213,11 @@ class class_transindus_eco
                   
                   $this->turn_on_off_shelly_switch($user_index, "on");
 
-                  $this->verbose ? print("<pre>username: " . $wp_user_name . " Case 1 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF</pre>" ) : false;
+                  $this->verbose ? print("<pre>username: " . $wp_user_name . 
+                       " Case 1 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF</pre>" ) : false;
               break;
 
-              // <2> if switch is ON and the Vbatt > 49.5V and Battery is charging by at least 5A DC
+              // <2> if switch is ON and the Vbatt > 49.5V and Solar can supply the Load in full
               // then turn-off the ACIN switch
               case (  $studer_readings_obj->battery_voltage_vdc > 49.5      &&
                       $shelly_api_device_status === true                    &&
@@ -224,7 +225,8 @@ class class_transindus_eco
                   
                   $this->turn_on_off_shelly_switch($user_index, "off");
 
-                  $this->verbose ? print("<pre>username:" . $wp_user_name . " Case 2 - Shelly Switch turned OFF - Vbatt > 49.5, Switch was ON, Battery Charging</pre>" ) : false;
+                  $this->verbose ? print("<pre>username:" . $wp_user_name . 
+                       " Case 2 - Shelly Switch turned OFF - Vbatt > 49.5, Switch was ON, Psolar more than Pload</pre>" ) : false;
               break;
 
               default:

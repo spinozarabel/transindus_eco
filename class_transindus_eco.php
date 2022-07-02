@@ -220,7 +220,7 @@ class class_transindus_eco
               // then turn-off the ACIN switch
               case (  $studer_readings_obj->battery_voltage_vdc > 49.5      &&
                       $shelly_api_device_status === true                    &&
-                      $studer_readings_obj->battery_charge_adc > 5.0 ):
+                      ($studer_readings_obj->psolar_kw - $studer_readings_obj->pout_inverter_ac_kw) > 0.2 ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "off");
 

@@ -18,6 +18,11 @@ define('TRANSINDUS_ECO_VERSION', '1.0');
 
 require_once(__DIR__."/class_transindus_eco.php");         // contains the main class
 
+// instantiate the class for head start admission
+$transindus_eco           = new class_transindus_eco();
+  
+add_action ( 'shellystuder_task_hook', [$transindus_eco, 'shellystuder_cron_exec'] );
+
 // wait for all plugins to be loaded before initializing our code
 add_action('plugins_loaded', 'this_plugin_init');
 
@@ -52,10 +57,5 @@ function shelly_studer_add_new_cron_interval( $schedules )
 function this_plugin_init()
 {
   // add_action('init','custom_login');
-
-  // instantiate the class for head start admission
-  $transindus_eco           = new class_transindus_eco();
-  
-  add_action ( 'shellystuder_task_hook', [$transindus_eco, 'shellystuder_cron_exec'] );
 }
 

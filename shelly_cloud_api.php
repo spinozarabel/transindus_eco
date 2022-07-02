@@ -61,9 +61,9 @@ class shelly_cloud_api
 
     /**
     * read status of Shelly Device using Shelly CLoud API
-    *
+    * @return object:$curlResponse if not a valid response, a null object is returned
     */
-    public function get_shelly_device_status()
+    public function get_shelly_device_status(): ?object
     {
       // parameters for query string
       $params     = array
@@ -78,8 +78,6 @@ class shelly_cloud_api
 
       // already json decoded into object
       $curlResponse   = $this->getCurl($endpoint, $headers, $params);
-      error_log( "This is the response while querying for your Studer parameter" . print_r($curlResponse, true) );
-
 
       if ( $curlResponse->isok )
           {

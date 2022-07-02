@@ -46,28 +46,29 @@ class class_transindus_eco
 	 * the public-facing side of the site.
 	 */
 	public function __construct()
-    {
-		if ( defined( 'TRANSINDUS_ECO_VERSION' ) )
-        {
-			$this->version = TRANSINDUS_ECO_VERSION;
-		} else
-        {
-			$this->version = '1.0';
-		}
+  {
+      if ( defined( 'TRANSINDUS_ECO_VERSION' ) )
+      {
+          $this->version = TRANSINDUS_ECO_VERSION;
+      } 
+      else
+      {
+          $this->version = '1.0';
+      }
 
-		$this->plugin_name = 'transindus_eco';
+      $this->plugin_name = 'transindus_eco';
 
-        // load actions only if admin
-		if (is_admin()) $this->define_admin_hooks();
+          // load actions only if admin
+      if (is_admin()) $this->define_admin_hooks();
 
-        // load public facing actions
-		$this->define_public_hooks();
+          // load public facing actions
+      $this->define_public_hooks();
 
-        // read the config file and build the secrets array
-        $this->get_config();
+          // read the config file and build the secrets array
+      $this->get_config();
 
-        // set the logging
-        $this->verbose = true;
+          // set the logging
+      $this->verbose = true;
 	}
 
     /**
@@ -113,6 +114,108 @@ class class_transindus_eco
             'my-api-tools',	                    // menu slug
             [$this, 'my_api_tools_render']           
         );
+    }
+
+    /**
+     *  This function is called by the scheduler probably every minute or so.
+     *  Its job is to get the minimal set of studer readings and the state of the ACIN shelly switch
+     *  For every user in the config array who has the do_shelly variable set to TRUE.
+     *  The ACIN switch is turned ON or OFF based on a complex algorithm.
+     *  The algorithm trie sto ensure that the following: This assumes that Studer Relay is always ON
+     *  1. When battery voltage goes below the set value at any time, the ACIN is ON for ON-GRID operation
+     *  2. When 
+     */
+    public function shellystuder_cron_exec()
+    {
+        // Loop over all of the eligible users
+        foreach ($this->config['accounts'] as $user_index => $account) 
+        {
+          $wp_user_name = $this->config['accounts'][$user_index]['wp_user_name'];
+
+          // Get the wp user object given the above username
+          $wp_user_obj          = get_user_by('login', $wp_user_name);
+          $wp_user_ID           = $wp_user_obj->ID;
+          $do_shelly_user_meta  = get_user_meta($wp_user_ID, "do_shelly", true);
+
+          $this->verbose ? print("username:" . $wp_user_name . " has do_shelly set to: "  . $do_shelly_user_meta) : false;
+
+          // Check if this's control flag is even set to do this control
+          if( !$do_shelly_user_meta || empty($do_shelly_user_meta))
+          {
+              // this user not interested, go to next user in config
+              $this->verbose ? print("username:" . $wp_user_name . " do_shelly skipped because user meta is empty or false") : false;
+              continue;
+          }
+
+          // get the current ACIN Shelly Switch Status. This returns null if not a valid response
+          $shelly_api_device_response = $this->get_shelly_device_status($user_index);
+
+          if ( empty($shelly_api_device_response) )
+          {
+              // The switch status is unknown and so no point worrying about it, exit
+              $this->verbose ? print("username:" . $wp_user_name . " Shelly Switch Status Unknown, exiting") : false;
+              continue;
+          }
+
+          // Ascertain switch status: True if Switch is closed, false if Switch is open
+          $shelly_api_device_status   = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+          $this->verbose ? print("username:" . $wp_user_name . " Shelly Switch Status is:" . $shelly_api_device_status) : false;
+
+          // get the Studer status using the minimal set of readings
+          $studer_readings_obj        = $this->get_studer_min_readings($user_index);
+
+          // check for valid studer values. Return if not valid
+          if( empty(  $studer_readings_obj->battery_voltage_vdc )     || 
+                      $studer_readings_obj->battery_voltage_vdc < 40  ||
+              empty(  $studer_readings_obj->pout_inverter_ac_kw ) 
+            ) 
+          {
+            // cannot trust this Studer reading, skipping this user
+            continue;
+          }
+
+
+          switch(true)
+          {
+              // if Shelly switch is OPEN but Studer transfer relay is closed and Studer AC voltage is present
+              // it means that the ACIN is manually overridden at control panel
+              // so ignore attempting any control and skip this user
+              case (  empty($shelly_api_device_status) && $studer_readings_obj->grid_input_vac >= 180 ):
+                    // ignore this user
+                    $this->verbose ? print("username:" . $wp_user_name . " Shelly Switch Open but Studer 
+                                                                           already has AC, exiting") : false;
+              break;
+
+              // <1> If switch is OPEN and Battery voltage is lower than limit, go ON-GRID
+              case (  $studer_readings_obj->battery_voltage_vdc < 48.7      &&
+                      $shelly_api_device_status === false ):
+                  
+                  $this->turn_on_off_shelly_switch($user_index, "on");
+
+                  $this->verbose ? print("username:" . $wp_user_name . " Case 1 - Shelly Switch turned ON 
+                                          - Vbatt < 48.7 and Switch was OFF") : false;
+              break;
+
+              // <2> if switch is ON and the Vbatt > 49.5V and Battery is charging by at least 5A DC
+              // then turn-off the ACIN switch
+              case (  $studer_readings_obj->battery_voltage_vdc > 49.5      &&
+                      $shelly_api_device_status === true                    &&
+                      $studer_readings_obj->battery_charge_adc > 5.0 ):
+                  
+                  $this->turn_on_off_shelly_switch($user_index, "off");
+
+                  $this->verbose ? print("username:" . $wp_user_name . " Case 2 - Shelly Switch turned OFF 
+                                          - Vbatt > 49.5 and Switch was ON and Battery is Charging") : false;
+              break;
+
+              default:
+                  $this->verbose ? print("username:" . $wp_user_name . " No Switch action, didn't match any CASE") : false;
+
+              break;
+          }
+          
+        }
+
     }
 
     public function studer_readings_page_render()
@@ -219,6 +322,7 @@ class class_transindus_eco
                 <input type="submit" name="button" 	value="Get_Shelly_Device_Status"/>
                 <input type="submit" name="button" 	value="turn_Shelly_Switch_ON"/>
                 <input type="submit" name="button" 	value="turn_Shelly_Switch_OFF"/>
+                <input type="submit" name="button" 	value="run_cron_exec_once"/>
             </form>
 
 
@@ -273,6 +377,10 @@ class class_transindus_eco
                 $shelly_api_device_response = $this->get_shelly_device_status($config_index);
                 $shelly_api_device_status   = $shelly_api_device_response->data->device_status;
             break;
+
+            case "run_cron_exec_once":
+                $this->shellystuder_cron_exec();
+            break;
         }
         if($shelly_api_device_status->{"switch:0"}->output)
         {
@@ -316,10 +424,9 @@ class class_transindus_eco
 
         $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
 
-        // this is $curl_response
+        // this is $curl_response.
         $shelly_device_data = $shelly_api->get_shelly_device_status();
-
-        // full curl response just JSON decoded into stdClass Object
+  
         return $shelly_device_data;
     }
 
@@ -717,4 +824,196 @@ class class_transindus_eco
        
         return $studer_readings_obj;
        }
+
+       /**
+        * 
+        */
+        public function get_studer_min_readings(int $user_index): ?object
+        {
+            $config = $this->config;
+
+            $Ra = 0.0;       // value of resistance from DC junction to Inverter
+            $Rb = 0.025;     // value of resistance from DC junction to Battery terminals
+          
+            $base_url  = $config['studer_api_baseurl'];
+            $uhash     = $config['accounts'][$user_index]['uhash'];
+            $phash     = $config['accounts'][$user_index]['phash'];
+          
+            $studer_api = new studer_api($uhash, $phash, $base_url);
+          
+            $studer_readings_obj = new stdClass;
+          
+            $body = [];
+          
+            // get the input AC active power value
+            $body = array(array(
+                                  "userRef"       =>  3136,   // AC active power delivered by inverter
+                                  "infoAssembly"  => "Master"
+                              ),
+                          array(
+                                  "userRef"       =>  3137,   // Grid AC input Active power
+                                  "infoAssembly"  => "Master"
+                              ),
+                          array(
+                                  "userRef"       =>  3011,   // Grid AC in Voltage Vac
+                                  "infoAssembly"  => "Master"
+                                ),
+                          array(
+                                  "userRef"       =>  3000,   // Battery Voltage
+                                  "infoAssembly"  => "Master"
+                                ),
+                          array(
+                                  "userRef"       =>  3005,   // DC input current to Inverter
+                                  "infoAssembly"  => "Master"
+                                ),
+                                
+                          array(
+                                  "userRef"       =>  11001,   // DC current into Battery junstion from VT1
+                                  "infoAssembly"  => "1"
+                                ),
+                          array(
+                                  "userRef"       =>  11001,   // DC current into Battery junstion from VT2
+                                  "infoAssembly"  => "2"
+                                ),
+                          array(
+                                  "userRef"       =>  11004,   // Psolkw from VT1
+                                  "infoAssembly"  => "1"
+                                ),
+                          array(
+                                  "userRef"       =>  11004,   // Psolkw from VT2
+                                  "infoAssembly"  => "2"
+                                ),
+                          );
+
+            $studer_api->body   = $body;
+          
+            // POST curl request to Studer
+            $user_values  = $studer_api->get_user_values();
+          
+            $solar_pv_adc = 0;
+            $psolar_kw    = 0;
+          
+          
+            foreach ($user_values as $user_value)
+            {
+              switch (true)
+              {
+                case ( $user_value->reference == 3031 ) :
+                  $aux1_relay_state = $user_value->value;
+                break;
+          
+                case ( $user_value->reference == 3020 ) :
+                  $transfer_relay_state = $user_value->value;
+                break;
+          
+                case ( $user_value->reference == 3011 ) :
+                  $grid_input_vac = round($user_value->value, 0);
+                break;
+          
+                case ( $user_value->reference == 3012 ) :
+                  $grid_input_aac = round($user_value->value, 1);
+                break;
+          
+                case ( $user_value->reference == 3000 ) :
+                  $battery_voltage_vdc = round($user_value->value, 2);
+                break;
+          
+                case ( $user_value->reference == 3005 ) :
+                  $inverter_current_adc = round($user_value->value, 1);
+                break;
+          
+                case ( $user_value->reference == 3137 ) :
+                  $grid_pin_ac_kw = round($user_value->value, 2);
+          
+                break;
+          
+                case ( $user_value->reference == 3136 ) :
+                  $pout_inverter_ac_kw = round($user_value->value, 2);
+          
+                break;
+          
+                case ( $user_value->reference == 3076 ) :
+                  $energyout_battery_yesterday = round($user_value->value, 2);
+            
+                break;
+          
+                case ( $user_value->reference == 3080 ) :
+                  $energy_grid_yesterday = round($user_value->value, 2);
+            
+                break;
+          
+                case ( $user_value->reference == 3082 ) :
+                  $energy_consumed_yesterday = round($user_value->value, 2);
+            
+                break;
+          
+                case ( $user_value->reference == 11001 ) :
+                  // we have to accumulate values form 2 cases:VT1 and VT2 so we have used accumulation below
+                  $solar_pv_adc += $user_value->value;
+          
+                break;
+          
+                case ( $user_value->reference == 11002 ) :
+                  $solar_pv_vdc = round($user_value->value, 1);
+          
+                break;
+          
+                case ( $user_value->reference == 11004 ) :
+                  // we have to accumulate values form 2 cases so we have used accumulation below
+                  $psolar_kw += round($user_value->value, 2);
+          
+                break;
+          
+                case ( $user_value->reference == 3010 ) :
+                  $phase_battery_charge = $user_value->value;
+          
+                break;
+          
+                case ( $user_value->reference == 11011 ) :
+                  // we have to accumulate values form 2 cases so we have used accumulation below
+                  $psolar_kw_yesterday += round($user_value->value, 2);
+            
+                break;
+              }
+            }
+          
+            $solar_pv_adc = round($solar_pv_adc, 1);
+          
+            // calculate the current into/out of battery and battery instantaneous power
+            $battery_charge_adc  = round($solar_pv_adc + $inverter_current_adc, 1); // + is charge, - is discharge
+            $pbattery_kw         = round($battery_voltage_vdc * $battery_charge_adc * 0.001, 2); //$psolar_kw - $pout_inverter_ac_kw;
+          
+            // conditional class names for battery charge down or up arrow
+            if ($battery_charge_adc > 0.0)
+            {
+              // current is positive so battery is charging so arrow is down and to left. Also arrow shall be red to indicate charging
+              // also good time to compensate for IR drop.
+              // Actual voltage is smaller than indicated, when charging 
+              $battery_voltage_vdc = round($battery_voltage_vdc + abs($inverter_current_adc) * $Ra - abs($battery_charge_adc) * $Rb, 2);
+            }
+            else
+            {
+              // current is -ve so battery is discharging so arrow is up and icon color shall be red
+              // Actual battery voltage is larger than indicated when discharging
+              $battery_voltage_vdc = round($battery_voltage_vdc + abs($inverter_current_adc) * $Ra + abs($battery_charge_adc) * $Rb, 2);
+            }
+
+            // update the object with battery data read
+            $studer_readings_obj->battery_charge_adc          = $battery_charge_adc;
+            $studer_readings_obj->pbattery_kw                 = abs($pbattery_kw);
+            $studer_readings_obj->battery_voltage_vdc         = $battery_voltage_vdc;
+          
+            // update the object with SOlar data read
+            $studer_readings_obj->psolar_kw                   = $psolar_kw;
+            $studer_readings_obj->solar_pv_adc                = $solar_pv_adc;
+          
+            //update the object with Inverter Load details
+            $studer_readings_obj->pout_inverter_ac_kw         = $pout_inverter_ac_kw;
+          
+            // update the Grid input values
+            $studer_readings_obj->grid_pin_ac_kw              = $grid_pin_ac_kw;
+            $studer_readings_obj->grid_input_vac              = $grid_input_vac;
+          
+            return $studer_readings_obj;
+          }          
 }

@@ -68,7 +68,7 @@ class class_transindus_eco
       $this->get_config();
 
           // set the logging
-      $this->verbose = true;
+      $this->verbose = false;
 	}
 
     /**
@@ -398,7 +398,9 @@ class class_transindus_eco
             break;
 
             case "run_cron_exec_once":
+                $this->verbose = true;
                 $this->shellystuder_cron_exec();
+                $this->verbose = false;
             break;
         }
         if($shelly_api_device_status->{"switch:0"}->output)

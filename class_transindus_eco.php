@@ -144,8 +144,7 @@ class class_transindus_eco
           if( !$do_shelly_user_meta || empty($do_shelly_user_meta))
           {
               // this user not interested, go to next user in config
-              $this->verbose ? print("<pre>username: " . $wp_user_name . " do_shelly skipped 
-                                      because user meta is empty or false</pre>" ) : false;
+              $this->verbose ? print("<pre>username: " . $wp_user_name . " do_shelly skipped, user meta is empty or false</pre>" ) : false;
               continue;
           }
 
@@ -186,8 +185,7 @@ class class_transindus_eco
               // so ignore attempting any control and skip this user
               case (  empty($shelly_api_device_status ) && $studer_readings_obj->grid_input_vac >= 180 ):
                     // ignore this user
-                    $this->verbose ? print("<pre>username: " . $wp_user_name . " Shelly Switch Open but Studer 
-                                            already has AC, exiting</pre>" ) : false;
+                    $this->verbose ? print("<pre>username: " . $wp_user_name . " Shelly Switch Open but Studer already has AC, exiting</pre>" ) : false;
               break;
 
               // <1> If switch is OPEN and Battery voltage is lower than limit, go ON-GRID
@@ -196,8 +194,7 @@ class class_transindus_eco
                   
                   $this->turn_on_off_shelly_switch($user_index, "on");
 
-                  $this->verbose ? print("<pre>username: " . $wp_user_name . " Case 1 - Shelly Switch turned ON 
-                                          - Vbatt < 48.7 and Switch was OFF</pre>" ) : false;
+                  $this->verbose ? print("<pre>username: " . $wp_user_name . " Case 1 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF</pre>" ) : false;
               break;
 
               // <2> if switch is ON and the Vbatt > 49.5V and Battery is charging by at least 5A DC
@@ -208,13 +205,11 @@ class class_transindus_eco
                   
                   $this->turn_on_off_shelly_switch($user_index, "off");
 
-                  $this->verbose ? print("<pre>username:" . $wp_user_name . " Case 2 - Shelly Switch turned OFF 
-                                          - Vbatt > 49.5, Switch was ON, Battery Charging</pre>" ) : false;
+                  $this->verbose ? print("<pre>username:" . $wp_user_name . " Case 2 - Shelly Switch turned OFF - Vbatt > 49.5, Switch was ON, Battery Charging</pre>" ) : false;
               break;
 
               default:
-                  $this->verbose ? print("<pre>username: " . $wp_user_name . " No Switch action, 
-                                         didn't match any CASE</pre>" ) : false;
+                  $this->verbose ? print("<pre>username: " . $wp_user_name . " No Switch action - didn't Fire any CASE</pre>" ) : false;
 
               break;
           }

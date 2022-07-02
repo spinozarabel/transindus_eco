@@ -189,9 +189,10 @@ class class_transindus_eco
     
             print("<pre>user: " . $wp_user_name . "Shelly and Studer Values</pre>");
             print("<pre>Shelly Switch State: " . $shelly_switch_status . "</pre>");
-            print("<pre>Battery Voltage: " . $studer_readings_obj->battery_voltage_vdc . "V </pre>");
-            print("<pre>Battery Current: " . $studer_readings_obj->battery_charge_adc . "A </pre>");
+            print("<pre>Battery Voltage: " . $studer_readings_obj->battery_voltage_vdc . "Vdc </pre>");
+            print("<pre>Battery Current: " . $studer_readings_obj->battery_charge_adc . "Adc </pre>");
             print("<pre>Solar PowerGen: " . $studer_readings_obj->psolar_kw . "KW </pre>");
+            print("<pre>AC at Studer Input: " . $studer_readings_obj->grid_input_vac . "Vac</pre>");
             print("<pre>Inverter PowerOut: " . $studer_readings_obj->pout_inverter_ac_kw . "KW </pre>");
           }
 

@@ -189,25 +189,6 @@ class class_transindus_eco
             continue;
           }
 
-          if ($this->verbose)
-          {
-            if ($shelly_api_device_status)
-            {
-              $shelly_switch_status = "ON";
-            }
-            else {
-              $shelly_switch_status = "OFF";
-            }
-    
-            print("<pre>user: " . $wp_user_name . "Shelly and Studer Values</pre>");
-            print("<pre>Shelly Switch State: " . $shelly_switch_status . "</pre>");
-            print("<pre>Battery Voltage: " . $studer_readings_obj->battery_voltage_vdc . "Vdc </pre>");
-            print("<pre>Battery Current: " . $studer_readings_obj->battery_charge_adc . "Adc </pre>");
-            print("<pre>Solar PowerGen: " . $studer_readings_obj->psolar_kw . "KW </pre>");
-            print("<pre>AC at Studer Input: " . $studer_readings_obj->grid_input_vac . "Vac</pre>");
-            print("<pre>Inverter PowerOut: " . $studer_readings_obj->pout_inverter_ac_kw . "KW </pre>");
-          }
-
           // if we get this far it means that the readings are reliable. Drop the last reading.
           array_shift($this->bv_avg_arr);
 
@@ -215,6 +196,25 @@ class class_transindus_eco
           array_push($this->bv_avg_arr, $studer_readings_obj->battery_voltage_vdc);
 
           $battery_voltage_avg = $this->get_battery_voltage_avg();
+
+          if ($this->verbose)
+          {
+              if ($shelly_api_device_status)
+              {
+                  $shelly_switch_status = "ON";
+              }
+              else {
+                  $shelly_switch_status = "OFF";
+              }
+    
+              print("<pre>user: " . $wp_user_name . "Shelly and Studer Values</pre>");
+              print("<pre>Shelly Switch State: " . $shelly_switch_status . "</pre>");
+              print("<pre>Battery Avg Voltage: " . $battery_voltage_avg . "Vdc </pre>");
+              print("<pre>Battery Current: " . $studer_readings_obj->battery_charge_adc . "Adc </pre>");
+              print("<pre>Solar PowerGen: " . $studer_readings_obj->psolar_kw . "KW </pre>");
+              print("<pre>AC at Studer Input: " . $studer_readings_obj->grid_input_vac . "Vac</pre>");
+              print("<pre>Inverter PowerOut: " . $studer_readings_obj->pout_inverter_ac_kw . "KW </pre>");
+          }
 
           switch(true)
           {

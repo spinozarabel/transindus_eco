@@ -214,7 +214,7 @@ class class_transindus_eco
           // add the latest reaiding at the top
           array_push($this->bv_avg_arr, $studer_readings_obj->battery_voltage_vdc);
 
-          $bv_avg = $this->get_battery_voltage_avg();
+          $battery_voltage_avg = $this->get_battery_voltage_avg();
 
           switch(true)
           {
@@ -227,13 +227,13 @@ class class_transindus_eco
               break;
 
               // <1> If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
-              case (  $bv_avg < 48.7                         &&
+              case (  $battery_voltage_avg      < 48.7        &&
                       $shelly_api_device_status === false ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "on");
 
                   error_log($wp_user_name. " Case 1 fired- Shelly Switch turned ON - Vbatt: " 
-                            . $bv_avg . " < 48.7V and Switch was OFF");
+                            . $battery_voltage_avg . " < 48.7V and Switch was OFF");
 
                   $this->verbose ? print("<pre>username: " . $wp_user_name . 
                        " Case 1 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF</pre>" ) : false;

@@ -311,7 +311,7 @@ class class_transindus_eco
      *  @param string:$stop
      *  @return bool true if current time is within the time limits specified otherwise false
      */
-    public function nowIsWithinTimeLimits(string $start, string $stop_time): bool
+    public function nowIsWithinTimeLimits(string $start_time, string $stop_time): bool
     {
         $now =  new DateTime("now");
         $begin = new DateTime($start_time);
@@ -653,6 +653,7 @@ class class_transindus_eco
        
         $solar_pv_adc = 0;
         $psolar_kw    = 0;
+        $psolar_kw_yesterday = 0;
        
        
         foreach ($user_values as $user_value)
@@ -865,13 +866,13 @@ class class_transindus_eco
        
        $current_user           = wp_get_current_user();
        $current_user_ID        = $current_user->ID;
-       $battery_vdc_state_json = get_user_meta($current_user_ID, "json_battery_voltage_state", true);
-       $battery_vdc_state      = json_decode($battery_vdc_state_json, true);
+       // $battery_vdc_state_json = get_user_meta($current_user_ID, "json_battery_voltage_state", true);
+       // $battery_vdc_state      = json_decode($battery_vdc_state_json, true);
        
        // select battery icon based on charge level
         switch(true)
         {
-          case ($battery_voltage_vdc < $battery_vdc_state["25p"] ):
+          case ($battery_voltage_vdc < $config['battery_vdc_state']["25p"] ):
             $battery_icon_class = "fa fa-2xl fa-solid fa-battery-empty";
           break;
 
@@ -934,7 +935,7 @@ class class_transindus_eco
        
        
         // update the object with the fontawesome cdn from Studer API object
-        $studer_readings_obj->fontawesome_cdn             = $studer_api->fontawesome_cdn;
+        // $studer_readings_obj->fontawesome_cdn             = $studer_api->fontawesome_cdn;
        
         return $studer_readings_obj;
        }

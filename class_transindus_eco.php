@@ -77,12 +77,10 @@ class class_transindus_eco
       $this->verbose = false;
 
       // Initialize the aarrays to hold quantities for running averages
-      $this->bv_avg_arr       = [];
+      $this->bv_avg_arr       = [0, 0, 0, 0, 0];
       $this->psolar_avg_arr   = [];
       $this->pload_avg        = [];
 
-      $this->count_for_averaging = 5;
-      $this->counter = 0;
 	}
 
     /**
@@ -210,32 +208,32 @@ class class_transindus_eco
             print("<pre>Inverter PowerOut: " . $studer_readings_obj->pout_inverter_ac_kw . "KW </pre>");
           }
 
-          // if we get this far it means that the readings are reliable
-          $counter = $this->counter;
-          if ( $counter >= 5 )
-          {
-              // reset counter
-              $counter = 0;
-          }
+          // if we get this far it means that the readings are reliable. Drop the last reading.
+          array_shift($this->bv_avg_arr);
+
+          // add the latest reaiding at the top
+          array_push($this->bv_avg_arr, $studer_readings_obj->battery_voltage_vdc);
+
+          $bv_avg = $this->get_battery_voltage_avg();
 
           switch(true)
           {
               // if Shelly switch is OPEN but Studer transfer relay is closed and Studer AC voltage is present
               // it means that the ACIN is manually overridden at control panel
               // so ignore attempting any control and skip this user
-              case (  empty($shelly_api_device_status ) && $studer_readings_obj->grid_input_vac >= 180 ):
+              case (  empty($shelly_api_device_status ) && $studer_readings_obj->grid_input_vac >= 190 ):
                     // ignore this user
                     $this->verbose ? print("<pre>username: " . $wp_user_name . " Shelly Switch Open but Studer already has AC, exiting</pre>" ) : false;
               break;
 
-              // <1> If switch is OPEN and Battery voltage is lower than limit, go ON-GRID
-              case (  $studer_readings_obj->battery_voltage_vdc < 48.7      &&
+              // <1> If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
+              case (  $bv_avg < 48.7                         &&
                       $shelly_api_device_status === false ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "on");
 
                   error_log($wp_user_name. " Case 1 fired- Shelly Switch turned ON - Vbatt: " 
-                            . $studer_readings_obj->battery_voltage_vdc . " < 48.7V and Switch was OFF");
+                            . $bv_avg . " < 48.7V and Switch was OFF");
 
                   $this->verbose ? print("<pre>username: " . $wp_user_name . 
                        " Case 1 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF</pre>" ) : false;
@@ -286,6 +284,26 @@ class class_transindus_eco
           
         }
 
+    }
+
+    /**
+     *  Takes the average of the battery values stored from last 5 readings
+     */
+    public function get_battery_voltage_avg()
+    {
+        $count  = 0;
+        $sum    = 0;
+        foreach ($this->bv_avg_arr as $key => $bv_reading) 
+        {
+           if ($bv_reading > 46.0)
+           {
+              // average all values that are real
+              $sum    +=  $bv_reading;
+              $count  +=  1;
+           }
+        }
+
+        return ($sum / $count);
     }
 
     /**

@@ -32,11 +32,17 @@ class class_transindus_eco
 	// The unique identifier of this plugin.
 	protected $plugin_name;
 
-	 // The current version of the plugin.
+	// The current version of the plugin.
 	protected $version;
 
-    //
-    protected $config;
+  //
+  protected $config;
+
+  public $bv_avg_arr;
+  public $psolar_avg_arr;
+  public $pload_avg;
+  public $count_for_averaging;
+  public $counter;
 
     /**
 	 * Define the core functionality of the plugin.
@@ -69,6 +75,14 @@ class class_transindus_eco
 
           // set the logging
       $this->verbose = false;
+
+      // Initialize the aarrays to hold quantities for running averages
+      $this->bv_avg_arr       = [];
+      $this->psolar_avg_arr   = [];
+      $this->pload_avg        = [];
+
+      $this->count_for_averaging = 5;
+      $this->counter = 0;
 	}
 
     /**
@@ -196,6 +210,13 @@ class class_transindus_eco
             print("<pre>Inverter PowerOut: " . $studer_readings_obj->pout_inverter_ac_kw . "KW </pre>");
           }
 
+          // if we get this far it means that the readings are reliable
+          $counter = $this->counter;
+          if ( $counter >= 5 )
+          {
+              // reset counter
+              $counter = 0;
+          }
 
           switch(true)
           {
@@ -213,6 +234,9 @@ class class_transindus_eco
                   
                   $this->turn_on_off_shelly_switch($user_index, "on");
 
+                  error_log($wp_user_name. " Case 1 fired- Shelly Switch turned ON - Vbatt: " 
+                            . $studer_readings_obj->battery_voltage_vdc . " < 48.7V and Switch was OFF");
+
                   $this->verbose ? print("<pre>username: " . $wp_user_name . 
                        " Case 1 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF</pre>" ) : false;
               break;
@@ -223,10 +247,35 @@ class class_transindus_eco
                       $shelly_api_device_status === true                    &&
                       ($studer_readings_obj->psolar_kw - $studer_readings_obj->pout_inverter_ac_kw) > 0.2 ):
                   
-                  $this->turn_on_off_shelly_switch($user_index, "off");
+                  // $this->turn_on_off_shelly_switch($user_index, "off");
 
                   $this->verbose ? print("<pre>username:" . $wp_user_name . 
                        " Case 2 - Shelly Switch turned OFF - Vbatt > 49.5, Switch was ON, Psolar more than Pload</pre>" ) : false;
+
+                  error_log($wp_user_name . " Case 2 fired - Shelly turned OFF - Vbatt: " . 
+                       $studer_readings_obj->battery_voltage_vdc . 
+                       " > 49.5, Switch was ON, Psolar: " . $studer_readings_obj->psolar_kw . 
+                       " more than Pload: " .  $studer_readings_obj->pout_inverter_ac_kw);
+              break;
+
+              // <3> Daytime, with cloud cover, and Psol < Pload, Pload > 1.0KW: turn switch ON
+              case ( $shelly_api_device_status === false                    &&
+                     $this->nowIsWithinTimeLimits("09:30", "16:00")         &&
+                     $shelly_api_device_status === false                    &&
+                     $studer_readings_obj->pout_inverter_ac_kw > 1.0        &&
+                     ($studer_readings_obj->pout_inverter_ac_kw - $studer_readings_obj->psolar_kw) > 0.2 ):
+
+                  // $this->turn_on_off_shelly_switch($user_index, "on");
+
+                  $this->verbose ? print("<pre>username:" . $wp_user_name . 
+                       " Case 3 fired - Daytime, Pload >= Psolar+0.2, Load > 1KW</pre>" ) : false;
+
+                  error_log($wp_user_name . " Case 3 fired - Shelly turned ON -" . 
+                  $studer_readings_obj->battery_voltage_vdc . 
+                  " Switch was OFF, Psolar: " . $studer_readings_obj->psolar_kw . 
+                  " less than Pload: " .  $studer_readings_obj->pout_inverter_ac_kw . 
+                  " and current time is within specified limits");
+
               break;
 
               default:
@@ -239,6 +288,30 @@ class class_transindus_eco
 
     }
 
+    /**
+     *  @param string:$start
+     *  @param string:$stop
+     *  @return bool true if current time is within the time limits specified otherwise false
+     */
+    public function nowIsWithinTimeLimits(string $start, string $stop_time): bool
+    {
+        $now =  new DateTime("now");
+        $begin = new DateTime($start_time);
+        $end   = new DateTime($stop_time);
+
+        if ($now >= $begin && $now <= $end)
+        {
+          return true;
+        }
+        else 
+        {
+          return false;
+        }
+    }
+
+    /**
+     * 
+     */
     public function studer_readings_page_render()
     {
         // $script = '"' . $config['fontawesome_cdn'] . '"';

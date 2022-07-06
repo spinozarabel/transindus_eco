@@ -253,11 +253,12 @@ class class_transindus_eco
 
                   $this->verbose ? print("<pre>username:" . $wp_user_name . 
                        " Case 2 - Shelly Switch turned OFF - Vbatt > 49.5, Switch was ON, Psolar more than Pload</pre>" ) : false;
-
+                  /*
                   error_log($wp_user_name . " Case 2 fired - Shelly turned OFF - Vbatt: " . 
                             $battery_voltage_avg . 
                             " > 49.5, Switch was ON, Psolar: " . $studer_readings_obj->psolar_kw . 
                             " more than Pload: " .  $studer_readings_obj->pout_inverter_ac_kw);
+                  */
               break;
 
               // <3> Daytime, very cloudy, Switch  OFF->ON

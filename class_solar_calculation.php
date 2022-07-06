@@ -33,9 +33,17 @@ class solar_calculation
         $this->now                  =   $this->now();
         $this->d                    =   $this->days_into_year();
         $this->B_rad                =   $this->B_rad();
-        $this->long_time_zone_deg   =   15 * $utc_offset;
+
+        // 15 deg of longitude difference is 1 hour UTC offset
+        $this->long_time_zone_deg   =   15 * $utc_offset; 
+
+        // time correction due to orbit eccentricity and tilt precession
         $this->eot                  =   $this->eot();
+
+        // Hour angle. 0 at Solar noon -ve in AM, + in PM varies from -90 to 0 to +90 sunrise to sunset
         $this->hra_rad              =   $this->hra_rad();
+
+        // declination
         $this->delta_rad            =   $this->delta_rad();
 
     }
@@ -124,23 +132,23 @@ class solar_calculation
         // calculate elevation angle of the Sun from the Horizon
         $delta_rad  =       $this->delta_rad;
         $lat_rad    =       $this->lat_rad;
-        $delta_rad  =       $this->delta_rad;
         $hra_rad    =       $this->hra_rad;
+
+        // panel tilt to horizon
         $panel_beta_rad =   $this->panel_slope_deg      * pi()/180;
+
+        // panel facing direction whose Azimuth from North is
         $panel_tsi_rad  =   $this->panel_azimuth_deg    * pi()/180;
 
+        // Sun's elevation
         $alpha_rad = asin(sin($delta_rad) * sin($lat_rad) + cos($delta_rad) * cos($lat_rad) * cos($hra_rad));
 
         // calculate the Azimuth angle of the SUn from the North. Ideally it should be 90 +- 23.5 deg
         $theta_rad =    acos( ( sin($delta_rad) * cos($lat_rad) - 
                                 cos($delta_rad) * sin($lat_rad) * cos($hra_rad) ) / cos($alpha_rad) ) ;
 
-        $alpha_rad = asin(sin($delta_rad) * sin($lat_rad) + cos($delta_rad) * cos($lat_rad) * cos($hra_rad));
-        $theta_rad = acos( (  sin($delta_rad) * cos($lat_rad) - 
-                                    cos($delta_rad) * sin($lat_rad) * cos($hra_rad) ) / cos($alpha_rad) ) ;
-
-        $reductionfactor =    cos($alpha_rad) * sin($panel_beta_rad) * cos($panel_tsi_rad - $theta_rad) + 
-                                    sin($alpha_rad) * cos($panel_beta_rad);
+        $reductionfactor =  cos($alpha_rad) * sin($panel_beta_rad) * cos($panel_tsi_rad - $theta_rad) + 
+                            sin($alpha_rad) * cos($panel_beta_rad);
 
         return $reductionfactor;
     }

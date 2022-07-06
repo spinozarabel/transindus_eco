@@ -534,7 +534,7 @@ class class_transindus_eco
 
         foreach ($panel_sets as $key => $panel_set) 
         {
-          $solar_calc = new solar_calculation($panel_set, [12.3, 77.8], 5.5);
+          $solar_calc = new solar_calculation($panel_set, [12.5, 77.3], 5.5);
           $est_solar_kw[$key] =  round($solar_calc->est_power(), 1);
         }
 

@@ -437,6 +437,7 @@ class class_transindus_eco
                 <input type="submit" name="button" 	value="turn_Shelly_Switch_ON"/>
                 <input type="submit" name="button" 	value="turn_Shelly_Switch_OFF"/>
                 <input type="submit" name="button" 	value="run_cron_exec_once"/>
+                <input type="submit" name="button" 	value="estimated_solar_power"/>
             </form>
 
 
@@ -497,6 +498,11 @@ class class_transindus_eco
                 $this->shellystuder_cron_exec();
                 $this->verbose = false;
             break;
+
+            case "estimated_solar_power":
+              $est_solar_kw = $this->estimated_solar_power($config_index); 
+              echo "<pre>" . "Est Solar Power Clear Day (KW): " .    $est_solar_kw . "</pre>";
+            break;
         }
         if($shelly_api_device_status_ON->{"switch:0"}->output)
         {
@@ -511,6 +517,26 @@ class class_transindus_eco
         echo "<pre>" . "ACIN Shelly Switch Power: " .    $shelly_api_device_status_ON->{"switch:0"}->apower . "</pre>";
         echo "<pre>" . "ACIN Shelly Switch Current: " .  $shelly_api_device_status_ON->{"switch:0"}->current . "</pre>";
     }
+
+    /**
+     * 
+     */
+    public function estimated_solar_power($user_index)
+    {
+        $config = $this->config;
+        $panel_sets = $config['accounts'][$user_index]['panels'];
+
+        $est_solar_kw = 0;
+
+        foreach ($panel_sets as $key => $panel_set) 
+        {
+          $solar_calc = new class_solar_calculation($panel_set, [12.3, 77.8], 5.5);
+          $est_solar_kw +=  $solar_calc->est_power();
+        }
+
+        return $est_solar_kw;
+    }
+
 
     /**
      * 

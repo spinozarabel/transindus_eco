@@ -44,6 +44,8 @@ class solar_calculation
     {
         $est_solar_kw   = $this->panel_kw_peak * $this->reductionfactor();
 
+        if ($est_solar_kw < 0 ) return 0;
+
         return $est_solar_kw;
     }
 

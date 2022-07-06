@@ -502,7 +502,11 @@ class class_transindus_eco
 
             case "estimated_solar_power":
               $est_solar_kw = $this->estimated_solar_power($config_index); 
-              echo "<pre>" . "Est Solar Power Clear Day (KW): " .    $est_solar_kw . "</pre>";
+              foreach ($est_solar_kw as $key => $value) 
+              {
+                echo "<pre>" . "Est Solar Power, Clear Day (KW): " .    $value . "</pre>";
+              }
+              echo "<pre>" . "Total Est Solar Power Clear Day (KW): " .    array_sum($est_solar_kw) . "</pre>";
             break;
         }
         if($shelly_api_device_status_ON->{"switch:0"}->output)
@@ -532,7 +536,7 @@ class class_transindus_eco
         foreach ($panel_sets as $key => $panel_set) 
         {
           $solar_calc = new solar_calculation($panel_set, [12.3, 77.8], 5.5);
-          $est_solar_kw +=  $solar_calc->est_power();
+          $est_solar_kw[$key] +=  round($solar_calc->est_power(), 1);
         }
 
         return $est_solar_kw;

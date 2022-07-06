@@ -11,7 +11,7 @@ if (!defined( "ABSPATH" ) && !defined( "MOODLE_INTERNAL" ) )
     }
 
 // class definition begins
-class solar_calculate
+class solar_calculation
 {
     public function __construct(array $panel_array_info, 
                                 array $lat_long_array,

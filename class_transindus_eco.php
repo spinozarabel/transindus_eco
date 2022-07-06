@@ -531,12 +531,10 @@ class class_transindus_eco
         $config = $this->config;
         $panel_sets = $config['accounts'][$user_index]['panels'];
 
-        $est_solar_kw = 0;
-
         foreach ($panel_sets as $key => $panel_set) 
         {
           $solar_calc = new solar_calculation($panel_set, [12.3, 77.8], 5.5);
-          $est_solar_kw[$key] +=  round($solar_calc->est_power(), 1);
+          $est_solar_kw[$key] =  round($solar_calc->est_power(), 1);
         }
 
         return $est_solar_kw;

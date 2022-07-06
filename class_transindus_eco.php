@@ -172,12 +172,21 @@ class class_transindus_eco
           }
 
           // Ascertain switch status: True if Switch is closed, false if Switch is open
-          $shelly_api_device_status   = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+          $shelly_api_device_status_ON   = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+
+          if ($shelly_api_device_status_ON)
+          {
+              $shelly_switch_status = "ON";
+          }
+          else 
+          {
+              $shelly_switch_status = "OFF";
+          }
           $this->verbose ? print("<pre>username: " . $wp_user_name . " Shelly Switch Status is:" . 
-                                 $shelly_api_device_status . "</pre>") : false;
+                                 $shelly_switch_status . "</pre>") : false;
 
           // get the Studer status using the minimal set of readings
-          $studer_readings_obj        = $this->get_studer_min_readings($user_index);
+          $studer_readings_obj  = $this->get_studer_min_readings($user_index);
 
           // check for valid studer values. Return if not valid
           if( empty(  $studer_readings_obj->battery_voltage_vdc )     || 
@@ -189,7 +198,7 @@ class class_transindus_eco
             continue;
           }
 
-          // if we get this far it means that the readings are reliable. Drop the last reading.
+          // if we get this far it means that the readings are reliable. Drop the earliest reading.
           array_shift($this->bv_avg_arr);
 
           // add the latest reaiding at the top
@@ -199,14 +208,6 @@ class class_transindus_eco
 
           if ($this->verbose)
           {
-              if ($shelly_api_device_status)
-              {
-                  $shelly_switch_status = "ON";
-              }
-              else {
-                  $shelly_switch_status = "OFF";
-              }
-    
               print("<pre>user: "                 . $wp_user_name                             . "Shelly and Studer Values</pre>");
               print("<pre>Shelly Switch State: "  . $shelly_switch_status                     . "</pre>");
               print("<pre>Battery Avg Voltage: "  . $battery_voltage_avg                      . "Vdc </pre>");
@@ -221,14 +222,14 @@ class class_transindus_eco
               // if Shelly switch is OPEN but Studer transfer relay is closed and Studer AC voltage is present
               // it means that the ACIN is manually overridden at control panel
               // so ignore attempting any control and skip this user
-              case (  empty($shelly_api_device_status ) && $studer_readings_obj->grid_input_vac >= 190 ):
+              case (  empty($shelly_api_device_status_ON ) && $studer_readings_obj->grid_input_vac >= 190 ):
                     // ignore this user
                     $this->verbose ? print("<pre>username: " . $wp_user_name . " Shelly Switch Open but Studer already has AC, exiting</pre>" ) : false;
               break;
 
               // <1> If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
               case (  $battery_voltage_avg      < 48.7        &&
-                      $shelly_api_device_status === false ):
+                      $shelly_api_device_status_ON === false ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "on");
 
@@ -242,7 +243,7 @@ class class_transindus_eco
               // <2> if switch is ON and the Vbatt > 49.5V and Solar can supply the Load in full
               // then turn-off the ACIN switch
               case (  $studer_readings_obj->battery_voltage_vdc > 49.5      &&
-                      $shelly_api_device_status === true                    &&
+                      $shelly_api_device_status_ON === true                    &&
                       ($studer_readings_obj->psolar_kw - $studer_readings_obj->pout_inverter_ac_kw) > 0.2 ):
                   
                   // $this->turn_on_off_shelly_switch($user_index, "off");
@@ -257,9 +258,9 @@ class class_transindus_eco
               break;
 
               // <3> Daytime, with cloud cover, and Psol < Pload, Pload > 1.0KW: turn switch ON
-              case ( $shelly_api_device_status === false                    &&
+              case ( $shelly_api_device_status_ON === false                    &&
                      $this->nowIsWithinTimeLimits("09:30", "16:00")         &&
-                     $shelly_api_device_status === false                    &&
+                     $shelly_api_device_status_ON === false                    &&
                      $studer_readings_obj->pout_inverter_ac_kw > 1.0        &&
                      ($studer_readings_obj->pout_inverter_ac_kw - $studer_readings_obj->psolar_kw) > 0.2 ):
 
@@ -302,6 +303,7 @@ class class_transindus_eco
               $count  +=  1;
            }
         }
+        unset($bv_reading);
 
         return ($sum / $count);
     }
@@ -467,7 +469,7 @@ class class_transindus_eco
             case "Get_Shelly_Device_Status":
                 // Get the Shelly device status whose id is listed in the config.
                 $shelly_api_device_response = $this->get_shelly_device_status($config_index);
-                $shelly_api_device_status = $shelly_api_device_response->data->device_status;
+                $shelly_api_device_status_ON = $shelly_api_device_response->data->device_status;
             break;
 
             case "turn_Shelly_Switch_ON":
@@ -477,7 +479,7 @@ class class_transindus_eco
 
                 // get a fresh status
                 $shelly_api_device_response = $this->get_shelly_device_status($config_index);
-                $shelly_api_device_status   = $shelly_api_device_response->data->device_status;
+                $shelly_api_device_status_ON   = $shelly_api_device_response->data->device_status;
             break;
 
             case "turn_Shelly_Switch_OFF":
@@ -487,7 +489,7 @@ class class_transindus_eco
 
                 // get a fresh status
                 $shelly_api_device_response = $this->get_shelly_device_status($config_index);
-                $shelly_api_device_status   = $shelly_api_device_response->data->device_status;
+                $shelly_api_device_status_ON   = $shelly_api_device_response->data->device_status;
             break;
 
             case "run_cron_exec_once":
@@ -496,7 +498,7 @@ class class_transindus_eco
                 $this->verbose = false;
             break;
         }
-        if($shelly_api_device_status->{"switch:0"}->output)
+        if($shelly_api_device_status_ON->{"switch:0"}->output)
         {
             $switch_state = "Closed";
         }
@@ -505,9 +507,9 @@ class class_transindus_eco
           $switch_state = "Open";
         }
         echo "<pre>" . "ACIN Shelly Switch State: " .    $switch_state . "</pre>";
-        echo "<pre>" . "ACIN Shelly Switch Voltage: " .  $shelly_api_device_status->{"switch:0"}->voltage . "</pre>";
-        echo "<pre>" . "ACIN Shelly Switch Power: " .    $shelly_api_device_status->{"switch:0"}->apower . "</pre>";
-        echo "<pre>" . "ACIN Shelly Switch Current: " .  $shelly_api_device_status->{"switch:0"}->current . "</pre>";
+        echo "<pre>" . "ACIN Shelly Switch Voltage: " .  $shelly_api_device_status_ON->{"switch:0"}->voltage . "</pre>";
+        echo "<pre>" . "ACIN Shelly Switch Power: " .    $shelly_api_device_status_ON->{"switch:0"}->apower . "</pre>";
+        echo "<pre>" . "ACIN Shelly Switch Current: " .  $shelly_api_device_status_ON->{"switch:0"}->current . "</pre>";
     }
 
     /**

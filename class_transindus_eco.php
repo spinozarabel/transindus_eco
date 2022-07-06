@@ -21,8 +21,9 @@
  * @author     Madhu Avasarala
  */
 
-require_once(__DIR__."/studer_api.php");          // contains studer api class
-require_once(__DIR__."/shelly_cloud_api.php");    // contains Shelly Cloud API class
+require_once(__DIR__."/studer_api.php");              // contains studer api class
+require_once(__DIR__."/shelly_cloud_api.php");        // contains Shelly Cloud API class
+require_once(__DIR__."/class_solar_calculation.php"); // contains studer api class
 
 class class_transindus_eco
 {

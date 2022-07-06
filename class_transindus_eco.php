@@ -205,7 +205,8 @@ class class_transindus_eco
           // add the latest reaiding at the top
           array_push($this->bv_avg_arr, $studer_readings_obj->battery_voltage_vdc);
 
-          $battery_voltage_avg = $this->get_battery_voltage_avg();
+          $battery_voltage_avg  = $this->get_battery_voltage_avg();
+          $est_solar_kw         = $this->estimated_solar_power($user_index);
 
           if ($this->verbose)
           {
@@ -216,6 +217,7 @@ class class_transindus_eco
               print("<pre>Solar PowerGen: "       . $studer_readings_obj->psolar_kw           . "KW </pre>");
               print("<pre>AC at Studer Input: "   . $studer_readings_obj->grid_input_vac      . "Vac</pre>");
               print("<pre>Inverter PowerOut: "    . $studer_readings_obj->pout_inverter_ac_kw . "KW </pre>");
+              print("<pre>Calc Solar Pwr: "       . $est_solar_kw                             . "KW </pre>");
           }
 
           switch(true)
@@ -243,8 +245,8 @@ class class_transindus_eco
 
               // <2> if switch is ON and the Vbatt > 49.5V and Solar can supply the Load in full
               // then turn-off the ACIN switch
-              case (  $studer_readings_obj->battery_voltage_vdc > 49.5      &&
-                      $shelly_api_device_status_ON === true                    &&
+              case (  $battery_voltage_avg > 49.5             &&
+                      $shelly_api_device_status_ON === true   &&
                       ($studer_readings_obj->psolar_kw - $studer_readings_obj->pout_inverter_ac_kw) > 0.2 ):
                   
                   // $this->turn_on_off_shelly_switch($user_index, "off");
@@ -253,28 +255,26 @@ class class_transindus_eco
                        " Case 2 - Shelly Switch turned OFF - Vbatt > 49.5, Switch was ON, Psolar more than Pload</pre>" ) : false;
 
                   error_log($wp_user_name . " Case 2 fired - Shelly turned OFF - Vbatt: " . 
-                       $studer_readings_obj->battery_voltage_vdc . 
-                       " > 49.5, Switch was ON, Psolar: " . $studer_readings_obj->psolar_kw . 
-                       " more than Pload: " .  $studer_readings_obj->pout_inverter_ac_kw);
+                            $battery_voltage_avg . 
+                            " > 49.5, Switch was ON, Psolar: " . $studer_readings_obj->psolar_kw . 
+                            " more than Pload: " .  $studer_readings_obj->pout_inverter_ac_kw);
               break;
 
-              // <3> Daytime, with cloud cover, and Psol < Pload, Pload > 1.0KW: turn switch ON
-              case ( $shelly_api_device_status_ON === false                    &&
-                     $this->nowIsWithinTimeLimits("09:30", "16:00")         &&
-                     $shelly_api_device_status_ON === false                    &&
-                     $studer_readings_obj->pout_inverter_ac_kw > 1.0        &&
-                     ($studer_readings_obj->pout_inverter_ac_kw - $studer_readings_obj->psolar_kw) > 0.2 ):
+              // <3> Daytime, very cloudy, Switch  OFF->ON
+              case ( $shelly_api_device_status_ON === false                 &&
+                     $this->nowIsWithinTimeLimits("09:30", "17:00")         &&
+                     ($studer_readings_obj->psolar_kw < 0.5 * $est_solar_kw) ):
 
                   // $this->turn_on_off_shelly_switch($user_index, "on");
 
                   $this->verbose ? print("<pre>username:" . $wp_user_name . 
-                       " Case 3 fired - Daytime, Pload >= Psolar+0.2, Load > 1KW</pre>" ) : false;
+                       " Case 3 fired - Daytime and Cloudy</pre>" ) : false;
 
                   error_log($wp_user_name . " Case 3 fired - Shelly turned ON -" . 
-                  $studer_readings_obj->battery_voltage_vdc . 
-                  " Switch was OFF, Psolar: " . $studer_readings_obj->psolar_kw . 
-                  " less than Pload: " .  $studer_readings_obj->pout_inverter_ac_kw . 
-                  " and current time is within specified limits");
+                            $battery_voltage_avg . 
+                            " Switch was OFF, Psolar: " . $studer_readings_obj->psolar_kw . 
+                            " less than Normal: " .  $est_solar_kw . 
+                            " and current time is within daytime");
 
               break;
 

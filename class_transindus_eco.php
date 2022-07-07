@@ -534,7 +534,8 @@ class class_transindus_eco
 
         foreach ($panel_sets as $key => $panel_set) 
         {
-          $solar_calc = new solar_calculation($panel_set, [12.5, 77.3], 5.5);
+          // 5.5 is the UTC offset of 5h 30 mins in decimal.
+          $solar_calc = new solar_calculation($panel_set, [12.83463, 77.49814], 5.5);
           $est_solar_kw[$key] =  round($solar_calc->est_power(), 1);
         }
 

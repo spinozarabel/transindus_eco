@@ -24,6 +24,7 @@
 require_once(__DIR__."/studer_api.php");              // contains studer api class
 require_once(__DIR__."/shelly_cloud_api.php");        // contains Shelly Cloud API class
 require_once(__DIR__."/class_solar_calculation.php"); // contains studer api class
+require_once(__DIR__."/openweather_api.php");         // contains openweather class
 
 class class_transindus_eco
 {
@@ -81,6 +82,11 @@ class class_transindus_eco
       $this->bv_avg_arr       = [0, 0, 0, 0, 0];
       $this->psolar_avg_arr   = [];
       $this->pload_avg        = [];
+
+      // lat and lon at Trans Indus from Google Maps
+      $this->lat        = 12.83463;
+      $this->lon        = 77.49814;
+      $this->utc_offset = 5.5;
 
 	}
 
@@ -149,6 +155,7 @@ class class_transindus_eco
           $wp_user_obj          = get_user_by('login', $wp_user_name);
           $wp_user_ID           = $wp_user_obj->ID;
           $do_shelly_user_meta  = get_user_meta($wp_user_ID, "do_shelly", true);
+          $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always", true);
 
           $this->verbose ? print("<pre>username: " . $wp_user_name . " has do_shelly set to: "  . 
                                   $do_shelly_user_meta . "</pre>" ) : false;
@@ -241,6 +248,16 @@ class class_transindus_eco
 
                   $this->verbose ? print("<pre>username: " . $wp_user_name . 
                        " Case 1 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF</pre>" ) : false;
+
+              break;
+
+              // If switch is OPEN and the keep shelly closed always is TRUE then close the switch
+              case (  $shelly_api_device_status_ON      === false   &&
+                      $keep_shelly_switch_closed_always === true        ):
+
+                  $this->turn_on_off_shelly_switch($user_index, "on");
+
+                  
               break;
 
               // <2> if switch is ON and the Vbatt > 49.5V and Solar can supply the Load in full
@@ -288,6 +305,31 @@ class class_transindus_eco
         }
 
     }
+
+    /**
+     * 
+     */
+    public function get_current_cloud_cover_percentage()
+    {
+        $config = $this->config;
+        $lat    = $this->lat;
+        $lon    = $this->lon;
+        $appid  = $config['appid'];
+
+        $current_wether_api   = new openweathermap_api($lat, $lon, $appid);
+        $current_weather_obj  = $current_wether_api->get_current_weather();
+
+        if ($current_weather_obj)
+        {
+          $cloud_cover_percentage = $current_weather_obj->clouds->all;
+          return $cloud_cover_percentage;
+        }
+        else
+        {
+          return null;
+        }
+    }
+
 
     /**
      *  Takes the average of the battery values stored from last 5 readings
@@ -535,7 +577,8 @@ class class_transindus_eco
         foreach ($panel_sets as $key => $panel_set) 
         {
           // 5.5 is the UTC offset of 5h 30 mins in decimal.
-          $solar_calc = new solar_calculation($panel_set, [12.83463, 77.49814], 5.5);
+          $transindus_lat_long_array = [$this->lat, $this->lon];
+          $solar_calc = new solar_calculation($panel_set, $transindus_lat_long_array, $this->utc_offset);
           $est_solar_kw[$key] =  round($solar_calc->est_power(), 1);
         }
 

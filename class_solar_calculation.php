@@ -2,6 +2,7 @@
 
 /*  Created by Madhu Avasarala 06/24/2022
 *   all data returned as objects instead of arrays in json_decode
+*   https://www.pveducation.org/pvcdrom/properties-of-sunlight/solar-time
 */
 
 // if directly called die. Use standard WP and Moodle practices

@@ -234,14 +234,14 @@ class class_transindus_eco
               // if Shelly switch is OPEN but Studer transfer relay is closed and Studer AC voltage is present
               // it means that the ACIN is manually overridden at control panel
               // so ignore attempting any control and skip this user
-              case (  empty($shelly_api_device_status_ON ) && $studer_readings_obj->grid_input_vac >= 190 ):
+              case (  empty($shelly_api_device_status_ON) && $studer_readings_obj->grid_input_vac >= 190 ):
                     // ignore this user
                     $this->verbose ? print("<pre>username: " . $wp_user_name . " Shelly Switch Open but Studer already has AC, exiting</pre>" ) : false;
               break;
 
               // <1> If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
-              case (  $battery_voltage_avg      < 48.7        &&
-                      !$shelly_api_device_status_ON ):
+              case (  $battery_voltage_avg           < 48.7        &&
+                      $shelly_api_device_status_ON === false ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "on");
 
@@ -253,8 +253,8 @@ class class_transindus_eco
 
               break;
 
-              // If switch is OPEN and the keep shelly closed always is TRUE then close the switch
-              case (  !$shelly_api_device_status_ON         &&
+              // <2> If switch is OPEN and the keep shelly closed always is TRUE then close the switch
+              case (  $shelly_api_device_status_ON === false  &&
                       $keep_shelly_switch_closed_always ):
 
                   $this->turn_on_off_shelly_switch($user_index, "on");
@@ -262,35 +262,35 @@ class class_transindus_eco
 
               break;
 
-              // <2> if switch is ON and the Vbatt > 49.5V and Solar can supply the Load in full
+              // <3> if switch is ON and the Vbatt > 49.5V and Solar can supply the Load in full
               // then turn-off the ACIN switch
               case (  $battery_voltage_avg > 49.5             &&
-                      $shelly_api_device_status_ON   &&
+                      $shelly_api_device_status_ON === true   &&
                       ($studer_readings_obj->psolar_kw - $studer_readings_obj->pout_inverter_ac_kw) > 0.2 ):
                   
                   // $this->turn_on_off_shelly_switch($user_index, "off");
 
                   $this->verbose ? print("<pre>username:" . $wp_user_name . 
-                       " Case 2 - Shelly Switch turned OFF - Vbatt > 49.5, Switch was ON, Psolar more than Pload</pre>" ) : false;
+                       " Case 3 Fired- Shelly Switch turned OFF - Vbatt > 49.5, Switch was ON, Psolar more than Pload</pre>" ) : false;
                   /*
-                  error_log($wp_user_name . " Case 2 fired - Shelly turned OFF - Vbatt: " . 
+                  error_log($wp_user_name . " Case 3 fired - Shelly turned OFF - Vbatt: " . 
                             $battery_voltage_avg . 
                             " > 49.5, Switch was ON, Psolar: " . $studer_readings_obj->psolar_kw . 
                             " more than Pload: " .  $studer_readings_obj->pout_inverter_ac_kw);
                   */
               break;
 
-              // <3> Daytime, very cloudy, Switch  OFF->ON
-              case ( !$shelly_api_device_status_ON                  &&
+              // <4> Daytime, very cloudy, Switch  OFF->ON
+              case ( $shelly_api_device_status_ON === false         &&
                      $this->nowIsWithinTimeLimits("09:30", "17:00") &&
                      $studer_readings_obj->psolar_kw < 0.5 * array_sum($est_solar_kw) ):
 
                   // $this->turn_on_off_shelly_switch($user_index, "on");
 
                   $this->verbose ? print("<pre>username:" . $wp_user_name . 
-                       " Case 3 fired - Daytime and Cloudy</pre>" ) : false;
+                       " Case 4 fired - Daytime and Cloudy</pre>" ) : false;
 
-                  error_log($wp_user_name . " Case 3 fired - Shelly turned ON -" . 
+                  error_log($wp_user_name . " Case 4 fired - Shelly turned ON -" . 
                             $battery_voltage_avg . 
                             " Switch was OFF, Psolar: " . $studer_readings_obj->psolar_kw . 
                             " less than Normal: " .  $est_solar_kw . 

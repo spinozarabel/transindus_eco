@@ -159,7 +159,9 @@ class class_transindus_eco
 
           $this->verbose ? print("<pre>username: " . $wp_user_name . " has do_shelly set to: "  . 
                                   $do_shelly_user_meta . "</pre>" ) : false;
-
+          $this->verbose ? print("<pre>username: " . $wp_user_name . " has Emergency Keep always ON set to: "  . 
+                                  $keep_shelly_switch_closed_always . "</pre>" ) : false;
+          
           // Check if this's control flag is even set to do this control
           if( !$do_shelly_user_meta || empty($do_shelly_user_meta))
           {
@@ -257,7 +259,7 @@ class class_transindus_eco
 
                   $this->turn_on_off_shelly_switch($user_index, "on");
 
-                  
+
               break;
 
               // <2> if switch is ON and the Vbatt > 49.5V and Solar can supply the Load in full

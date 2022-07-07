@@ -241,7 +241,7 @@ class class_transindus_eco
 
               // <1> If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
               case (  $battery_voltage_avg      < 48.7        &&
-                      $shelly_api_device_status_ON === false ):
+                      !$shelly_api_device_status_ON ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "on");
 
@@ -254,8 +254,8 @@ class class_transindus_eco
               break;
 
               // If switch is OPEN and the keep shelly closed always is TRUE then close the switch
-              case (  $shelly_api_device_status_ON      === false   &&
-                      $keep_shelly_switch_closed_always === true        ):
+              case (  !$shelly_api_device_status_ON         &&
+                      $keep_shelly_switch_closed_always ):
 
                   $this->turn_on_off_shelly_switch($user_index, "on");
 
@@ -265,7 +265,7 @@ class class_transindus_eco
               // <2> if switch is ON and the Vbatt > 49.5V and Solar can supply the Load in full
               // then turn-off the ACIN switch
               case (  $battery_voltage_avg > 49.5             &&
-                      $shelly_api_device_status_ON === true   &&
+                      $shelly_api_device_status_ON   &&
                       ($studer_readings_obj->psolar_kw - $studer_readings_obj->pout_inverter_ac_kw) > 0.2 ):
                   
                   // $this->turn_on_off_shelly_switch($user_index, "off");
@@ -281,7 +281,7 @@ class class_transindus_eco
               break;
 
               // <3> Daytime, very cloudy, Switch  OFF->ON
-              case ( $shelly_api_device_status_ON === false                 &&
+              case ( !$shelly_api_device_status_ON                 &&
                      $this->nowIsWithinTimeLimits("09:30", "17:00")         &&
                      ($studer_readings_obj->psolar_kw < 0.5 * $est_solar_kw) ):
 

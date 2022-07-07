@@ -50,7 +50,9 @@ class solar_calculation
 
     public function est_power()
     {
-        $est_solar_kw   = $this->panel_kw_peak * $this->reductionfactor();
+        $efficiency = 0.85;
+
+        $est_solar_kw   = $efficiency * $this->panel_kw_peak * $this->reductionfactor();
 
         if ($est_solar_kw < 0 ) return 0;
 

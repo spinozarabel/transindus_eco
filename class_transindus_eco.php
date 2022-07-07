@@ -281,9 +281,9 @@ class class_transindus_eco
               break;
 
               // <3> Daytime, very cloudy, Switch  OFF->ON
-              case ( !$shelly_api_device_status_ON                 &&
-                     $this->nowIsWithinTimeLimits("09:30", "17:00")         &&
-                     ($studer_readings_obj->psolar_kw < 0.5 * $est_solar_kw) ):
+              case ( !$shelly_api_device_status_ON                  &&
+                     $this->nowIsWithinTimeLimits("09:30", "17:00") &&
+                     $studer_readings_obj->psolar_kw < 0.5 * array_sum($est_solar_kw) ):
 
                   // $this->turn_on_off_shelly_switch($user_index, "on");
 

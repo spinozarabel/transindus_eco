@@ -94,36 +94,6 @@ class shelly_cloud_api
     }
 
 
-    /**
-    * read multiple user values in one sibgle POST request
-    *
-    */
-    public function get_user_values()
-    {
-      $uhash            = $this->uhash;
-      $phash            = $this->phash;
-      $baseurl          = $this->baseurl;
-      $installation_id  = $this->installation_id;
-
-      // the ones below are not set inside of this class but the function calling this as a public function outside the class
-      $params             = $this->body;
-
-      $headers =
-      [
-       "UHASH: $uhash",
-       "PHASH: $phash"
-      ];
-
-
-      $endpoint = $baseurl . "/api/v1/installation/multi-info/" . $installation_id;
-
-      $curlResponse   = $this->postCurl($endpoint, $headers, $params);
-
-      // the curlResponse is already JSON decoded as object
-      return $curlResponse;
-    }
-
-
     protected function postCurl ($endpoint, $headers = [], $params = []) 
     {
       $postFields = json_encode($params);

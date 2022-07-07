@@ -226,7 +226,7 @@ class class_transindus_eco
               print("<pre>Solar PowerGen: "       . $studer_readings_obj->psolar_kw           . "KW </pre>");
               print("<pre>AC at Studer Input: "   . $studer_readings_obj->grid_input_vac      . "Vac</pre>");
               print("<pre>Inverter PowerOut: "    . $studer_readings_obj->pout_inverter_ac_kw . "KW </pre>");
-              print("<pre>Calc Solar Pwr: "       . $est_solar_kw                             . "KW </pre>");
+              print("<pre>Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW </pre>");
           }
 
           switch(true)

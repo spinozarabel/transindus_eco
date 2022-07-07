@@ -262,16 +262,18 @@ class class_transindus_eco
 
               break;
 
-              // <3> if switch is ON and the Vbatt > 49.5V and Solar can supply the Load in full
+              // <3> Switch OFF if: Psolar> Pload AND Vbatt > 49.5 
               // then turn-off the ACIN switch
               case (  $battery_voltage_avg > 49.5             &&
                       $shelly_api_device_status_ON === true   &&
-                      ($studer_readings_obj->psolar_kw - $studer_readings_obj->pout_inverter_ac_kw) > 0.2 ):
+                      ($studer_readings_obj->psolar_kw - $studer_readings_obj->pout_inverter_ac_kw) > 0.2  &&
+                      $keep_shelly_switch_closed_always === false &&
+                      $studer_readings_obj->psolar_kw > 1.3):
                   
                   // $this->turn_on_off_shelly_switch($user_index, "off");
 
                   $this->verbose ? print("<pre>username:" . $wp_user_name . 
-                       " Case 3 Fired- Shelly Switch turned OFF - Vbatt > 49.5, Switch was ON, Psolar more than Pload</pre>" ) : false;
+                       " Case 3 Fired- Shelly Switch Released - Vbatt > 49.5, Psolar more than Pload</pre>" ) : false;
                   /*
                   error_log($wp_user_name . " Case 3 fired - Shelly turned OFF - Vbatt: " . 
                             $battery_voltage_avg . 

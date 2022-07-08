@@ -239,7 +239,7 @@ class class_transindus_eco
                     $this->verbose ? print("<pre>username: " . $wp_user_name . " Shelly Switch Open but Studer already has AC, exiting</pre>" ) : false;
               break;
 
-              // <1> If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
+              // <12 If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
               case (  $battery_voltage_avg           < 48.7        &&
                       $shelly_api_device_status_ON === false ):
                   
@@ -249,59 +249,80 @@ class class_transindus_eco
                             . $battery_voltage_avg . " < 48.7V and Switch was OFF");
 
                   $this->verbose ? print("<pre>username: " . $wp_user_name . 
-                       " Case 1 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF</pre>" ) : false;
+                       " Case 2 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF</pre>" ) : false;
 
               break;
 
-              // <2> If switch is OPEN and the keep shelly closed always is TRUE then close the switch
-              case (  $shelly_api_device_status_ON === false  &&
-                      $keep_shelly_switch_closed_always ):
+              // <3> If switch is OPEN and the keep shelly closed always is TRUE then close the switch
+              case (  $shelly_api_device_status_ON      === false  &&
+                      $keep_shelly_switch_closed_always === true      ):
 
                   $this->turn_on_off_shelly_switch($user_index, "on");
 
+                  $this->verbose ? print("<pre>username: " . $wp_user_name . 
+                       " Case 3 fired - Keep Switch ON always - Shelly turned ON</pre>" ) : false;
 
               break;
 
-              // <3> Switch OFF if: Psolar> Pload AND Vbatt > 49.5 
-              // then turn-off the ACIN switch
-              case (  $battery_voltage_avg > 49.5             &&
-                      $shelly_api_device_status_ON === true   &&
-                      ($studer_readings_obj->psolar_kw - $studer_readings_obj->pout_inverter_ac_kw) > 0.2  &&
-                      $keep_shelly_switch_closed_always === false &&
-                      $studer_readings_obj->psolar_kw > 1.3):
-                  
-                  // $this->turn_on_off_shelly_switch($user_index, "off");
+              // <4> Daytime, reduce battery cycling, Switch  OFF->ON
+              case ( $shelly_api_device_status_ON === false         &&  // Switch is Currently OFF
+                     $this->nowIsWithinTimeLimits("07:00", "17:30") &&  // Daytime
+                     $studer_readings_obj->psolar_kw > 0.4          &&  // Psolar is at least 0.4KW
+                     ($studer_readings_obj->psolar_kw - 
+                      $studer_readings_obj->pout_inverter_ac_kw) > 0.3  // Psolar is greater than Pload by 0.3KW
+                    ):
+
+                  $this->turn_on_off_shelly_switch($user_index, "on");
 
                   $this->verbose ? print("<pre>username:" . $wp_user_name . 
-                       " Case 3 Fired- Shelly Switch Released - Vbatt > 49.5, Psolar more than Pload</pre>" ) : false;
-                  /*
-                  error_log($wp_user_name . " Case 3 fired - Shelly turned OFF - Vbatt: " . 
-                            $battery_voltage_avg . 
-                            " > 49.5, Switch was ON, Psolar: " . $studer_readings_obj->psolar_kw . 
-                            " more than Pload: " .  $studer_readings_obj->pout_inverter_ac_kw);
-                  */
-              break;
+                       " Case 4 fired - Daytime reduce battery cycling</pre>" ) : false;
 
-              // <4> Daytime, very cloudy, Switch  OFF->ON
-              case ( $shelly_api_device_status_ON === false         &&
-                     $this->nowIsWithinTimeLimits("09:30", "17:00") &&
-                     $studer_readings_obj->psolar_kw < 0.5 * array_sum($est_solar_kw) ):
-
-                  // $this->turn_on_off_shelly_switch($user_index, "on");
-
-                  $this->verbose ? print("<pre>username:" . $wp_user_name . 
-                       " Case 4 fired - Daytime and Cloudy</pre>" ) : false;
-
-                  error_log($wp_user_name . " Case 4 fired - Shelly turned ON -" . 
+                  $this->verbose ? error_log($wp_user_name . " Case 4 fired - Reduce Battery Cycling - Shelly turned ON -" . 
                             $battery_voltage_avg . 
                             " Switch was OFF, Psolar: " . $studer_readings_obj->psolar_kw . 
                             " less than Normal: " .  $est_solar_kw . 
-                            " and current time is within daytime");
+                            " and current time is within daytime") : false;
+
+              break;
+
+              // <5> Switch OFF if: Psolar> Pload AND Vbatt > 49.5 
+              // then turn-off the ACIN switch
+              case (  $battery_voltage_avg > 49.5                         &&  // Battery SOC is adequate for release
+                      $shelly_api_device_status_ON === true               &&  // Switch is ON now
+                      ($studer_readings_obj->psolar_kw - 
+                       $studer_readings_obj->pout_inverter_ac_kw) > 0.3   &&  // Solar is greater than Load
+                      $keep_shelly_switch_closed_always === false         &&  // Emergency flag is False
+                      $studer_readings_obj->psolar_kw > 1.0                   // Solar is at least 1.3KW
+                    ):
+                  
+                  $this->turn_on_off_shelly_switch($user_index, "off");
+
+                  $this->verbose ? print("<pre>username:" . $wp_user_name . 
+                       " Case 5 Fired- Shelly Switch Released - Vbatt > 49.5, Psolar more than Pload</pre>" ) : false;
+                  
+                  $this->verbose ? error_log($wp_user_name . " Case 5 fired - Shelly turned OFF - Vbatt: " . 
+                            $battery_voltage_avg . 
+                            " > 49.5, Switch was ON, Psolar: " . $studer_readings_obj->psolar_kw . 
+                            " more than Pload: " .  $studer_readings_obj->pout_inverter_ac_kw) : false;
+                  
+              break;
+
+              // <6> Turn switch OFF at 5:30 PM if emergency flag is False so that battery can supply load for the night
+              case (  $keep_shelly_switch_closed_always === false         &&  // Emergency flag is False
+                      $this->nowIsWithinTimeLimits("17:31", "17:33")          // Daytime
+                    ):
+
+                  $this->turn_on_off_shelly_switch($user_index, "off");  
+
+                  $this->verbose ? print("<pre>username:" . $wp_user_name . 
+                        " Case 6 Fired- Shelly Switch Released - Time is about 5:32 PM</pre>" ) : false;
+                  $this->verbose ? error_log("username:" . $wp_user_name . 
+                        " Case 6 Fired- Shelly Switch Released - Time is about 5:32 PM" ) : false;
 
               break;
 
               default:
-                  $this->verbose ? print("<pre>username: " . $wp_user_name . " No Switch action - didn't Fire any CASE</pre>" ) : false;
+                  // $this->verbose ? print("<pre>username: " . $wp_user_name . " No Switch action - didn't Fire any CASE</pre>" ) : false;
 
               break;
           }

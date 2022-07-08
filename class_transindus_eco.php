@@ -244,7 +244,7 @@ class class_transindus_eco
 
               // <1> If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
               case (  $battery_voltage_avg           < 50.5        &&
-                      $shelly_api_device_status_ON === false ):
+                      $shelly_api_device_status_ON == false ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "on");
 

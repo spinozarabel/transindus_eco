@@ -293,11 +293,11 @@ class class_transindus_eco
               // <5> Release - Switch OFF if conditions met
               // then turn-off the ACIN switch
               case (  $battery_voltage_avg > 49.5                         &&  // Battery SOC is adequate for release
-                      $shelly_api_device_status_ON == true               &&  // Switch is ON now
+                      $shelly_api_device_status_ON == true                &&  // Switch is ON now
                       ($studer_readings_obj->psolar_kw - 
                        $studer_readings_obj->pout_inverter_ac_kw) > 0.3   &&  // Solar is greater than Load
-                      $keep_shelly_switch_closed_always === false         &&  // Emergency flag is False
-                      $studer_readings_obj->psolar_kw > 1.0                   // Solar is at least 1.3KW
+                      $keep_shelly_switch_closed_always === false             // Emergency flag is False
+                      //$studer_readings_obj->psolar_kw > 1.0                   // Solar is at least 1.3KW
                     ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "off");

@@ -243,7 +243,7 @@ class class_transindus_eco
               break;
 
               // <1> If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
-              case (  $battery_voltage_avg           < 50.5        &&
+              case (  $battery_voltage_avg           < 48.7        &&
                       $shelly_api_device_status_ON == false ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "on");
@@ -257,7 +257,7 @@ class class_transindus_eco
               break;
 
               // <3> If switch is OPEN and the keep shelly closed always is TRUE then close the switch
-              case (  $shelly_api_device_status_ON      === false  &&
+              case (  $shelly_api_device_status_ON      == false  &&
                       $keep_shelly_switch_closed_always === true      ):
 
                   $this->turn_on_off_shelly_switch($user_index, "on");
@@ -270,7 +270,7 @@ class class_transindus_eco
               break;
 
               // <4> Daytime, reduce battery cycling, Switch  OFF->ON
-              case ( $shelly_api_device_status_ON === false         &&  // Switch is Currently OFF
+              case ( $shelly_api_device_status_ON == false         &&  // Switch is Currently OFF
                      // $this->nowIsWithinTimeLimits("07:00", "17:30") &&  // Daytime
                      $studer_readings_obj->psolar_kw > 0.4          &&  // Psolar is at least 0.4KW
                      ($studer_readings_obj->psolar_kw - 
@@ -293,7 +293,7 @@ class class_transindus_eco
               // <5> Release - Switch OFF if conditions met
               // then turn-off the ACIN switch
               case (  $battery_voltage_avg > 49.5                         &&  // Battery SOC is adequate for release
-                      $shelly_api_device_status_ON === true               &&  // Switch is ON now
+                      $shelly_api_device_status_ON == true               &&  // Switch is ON now
                       ($studer_readings_obj->psolar_kw - 
                        $studer_readings_obj->pout_inverter_ac_kw) > 0.3   &&  // Solar is greater than Load
                       $keep_shelly_switch_closed_always === false         &&  // Emergency flag is False
@@ -313,7 +313,7 @@ class class_transindus_eco
               break;
 
               // <6> Turn switch OFF at 5:30 PM if emergency flag is False so that battery can supply load for the night
-              case (  $keep_shelly_switch_closed_always === false         &&  // Emergency flag is False
+              case (  $keep_shelly_switch_closed_always == false         &&  // Emergency flag is False
                       $this->nowIsWithinTimeLimits("17:10", "17:13")          // before sunset
                     ):
 

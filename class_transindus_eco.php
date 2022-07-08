@@ -297,7 +297,7 @@ class class_transindus_eco
                       ($studer_readings_obj->psolar_kw - 
                        $studer_readings_obj->pout_inverter_ac_kw) > 0.3   &&  // Solar is greater than Load
                       $keep_shelly_switch_closed_always === false             // Emergency flag is False
-                      //$studer_readings_obj->psolar_kw > 1.0                   // Solar is at least 1.3KW
+                      //$studer_readings_obj->psolar_kw > 1.0                   // 
                     ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "off");
@@ -591,6 +591,14 @@ class class_transindus_eco
         else
         {
           $switch_state = "Open";
+        }
+        if($shelly_api_device_status_ON->{"switch:0"}->output === true)
+        {
+            $switch_state = "Closed  and true";
+        }
+        else
+        {
+          $switch_state = "Open  and false";
         }
         echo "<pre>" . "ACIN Shelly Switch State: " .    $switch_state . "</pre>";
         echo "<pre>" . "ACIN Shelly Switch Voltage: " .  $shelly_api_device_status_ON->{"switch:0"}->voltage . "</pre>";

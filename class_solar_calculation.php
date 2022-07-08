@@ -100,7 +100,7 @@ class solar_calculation
     public function hra_rad()
     {
         // correct time for longitude and eot in minutes
-        $time_correction_factor = round(4 * ($this->long_deg - $this->long_time_zone_deg) + $eot ,  0);
+        $time_correction_factor = round(4 * ($this->long_deg - $this->long_time_zone_deg) + $this->eot ,  0);
         
         $tcf = $time_correction_factor . " minutes";
 

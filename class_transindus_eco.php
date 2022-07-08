@@ -269,7 +269,7 @@ class class_transindus_eco
 
               // <4> Daytime, reduce battery cycling, Switch  OFF->ON
               case ( $shelly_api_device_status_ON === false         &&  // Switch is Currently OFF
-                     $this->nowIsWithinTimeLimits("07:00", "17:30") &&  // Daytime
+                     // $this->nowIsWithinTimeLimits("07:00", "17:30") &&  // Daytime
                      $studer_readings_obj->psolar_kw > 0.4          &&  // Psolar is at least 0.4KW
                      ($studer_readings_obj->psolar_kw - 
                       $studer_readings_obj->pout_inverter_ac_kw) > 0.3  // Psolar is greater than Pload by 0.3KW

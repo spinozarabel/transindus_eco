@@ -288,7 +288,7 @@ class class_transindus_eco
 
               break;
 
-              // <5> Switch OFF if: Psolar> Pload AND Vbatt > 49.5 
+              // <5> Release - Switch OFF if conditions met
               // then turn-off the ACIN switch
               case (  $battery_voltage_avg > 49.5                         &&  // Battery SOC is adequate for release
                       $shelly_api_device_status_ON === true               &&  // Switch is ON now
@@ -312,7 +312,7 @@ class class_transindus_eco
 
               // <6> Turn switch OFF at 5:30 PM if emergency flag is False so that battery can supply load for the night
               case (  $keep_shelly_switch_closed_always === false         &&  // Emergency flag is False
-                      $this->nowIsWithinTimeLimits("17:31", "17:33")          // Daytime
+                      $this->nowIsWithinTimeLimits("17:10", "17:13")          // Daytime
                     ):
 
                   $this->turn_on_off_shelly_switch($user_index, "off");  

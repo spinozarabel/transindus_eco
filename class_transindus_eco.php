@@ -243,7 +243,7 @@ class class_transindus_eco
               break;
 
               // <1> If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
-              case (  $battery_voltage_avg           < 48.7        &&
+              case (  $battery_voltage_avg         <  48.7        &&
                       $shelly_api_device_status_ON == false ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "on");
@@ -592,13 +592,13 @@ class class_transindus_eco
         {
           $switch_state = "Open";
         }
-        if($shelly_api_device_status_ON->{"switch:0"}->output === true)
+        if($shelly_api_device_status_ON->{"switch:0"}->output !== true)
         {
-            $switch_state = "Closed  and true";
+            $switch_state = "Open  and False";
         }
         else
         {
-          $switch_state = "Open  and false";
+          $switch_state = "Closed  and True";
         }
         echo "<pre>" . "ACIN Shelly Switch State: " .    $switch_state . "</pre>";
         echo "<pre>" . "ACIN Shelly Switch Voltage: " .  $shelly_api_device_status_ON->{"switch:0"}->voltage . "</pre>";

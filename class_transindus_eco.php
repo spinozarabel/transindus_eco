@@ -88,6 +88,8 @@ class class_transindus_eco
       $this->lon        = 77.49814;
       $this->utc_offset = 5.5;
 
+      $this->timezone   = "Asia/Kolkata";
+
 	}
 
     /**
@@ -387,7 +389,9 @@ class class_transindus_eco
      */
     public function nowIsWithinTimeLimits(string $start_time, string $stop_time): bool
     {
-        $now =  new DateTime("now");
+        date_default_timezone_set($this->timezone);
+
+        $now =  new DateTime();
         $begin = new DateTime($start_time);
         $end   = new DateTime($stop_time);
 

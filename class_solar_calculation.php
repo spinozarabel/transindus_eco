@@ -71,6 +71,8 @@ class solar_calculation
 
     public function days_into_year()
     {
+        date_default_timezone_set($this->timezone);
+        
         $year_begin = DateTime::createFromFormat('Y-m-d', '2022-01-01');
 
         $datediff = date_diff($this->now, $year_begin);

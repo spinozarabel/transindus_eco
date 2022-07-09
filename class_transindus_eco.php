@@ -386,7 +386,7 @@ class class_transindus_eco
         $config = $this->config;
         $lat    = $this->lat;
         $lon    = $this->lon;
-        $appid  = $config['appid'];
+        $appid  = $config['openweather_appid'];
         $cnt    = 3;
 
         $current_wether_api   = new openweathermap_api($lat, $lon, $appid, $cnt);

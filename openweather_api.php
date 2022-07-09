@@ -14,15 +14,84 @@ class openweathermap_api
 {
     const VERBOSE     = false;
 
-    public function __construct( string $lat, string $lon, string $appid)
+    public function __construct( string $lat, string $lon, string $appid, int $cnt = null)
     {
       $this->verbose  = self::VERBOSE;
 
-      $this->appid    = $appid;    // Auth key to access account
-		  $this->lat      = $lat;  // The server uri can be obtained 
-      $this->lon      = $lon;
+      $this->appid       = $appid;  // Auth key to access account
+		  $this->lat        = $lat;     // The server uri can be obtained 
+      $this->lon        = $lon;
       $this->server_uri = 'https://api.openweathermap.org/data/2.5';
+      $this->cnt        =  $cnt ??  3;
     }       // end construct function
+
+    /**
+     * 
+     */
+    public function forecast_is_cloudy()
+    {
+      $cloudiness_forecast = new stdClass;
+
+      $forecast = $this->get_weather_forecast();
+
+      $clouds_all = 0;
+
+      foreach ($forecast->list as $key => $weather) 
+      {
+         $clouds_all += $weather->clouds->all;
+      }
+
+      $cloudiness_average_percentage = $clouds_all /  $forecast->cnt;
+
+      if ( $cloudiness_average_percentage > 50 )
+      {
+        $it_is_a_cloudy_day = true;
+      }
+      else 
+      {
+        $it_is_a_cloudy_day = false;
+      }
+      $cloudiness_forecast->it_is_a_cloudy_day            = $it_is_a_cloudy_day;
+      $cloudiness_forecast->cloudiness_average_percentage  = $cloudiness_average_percentage;
+
+      return $cloudiness_forecast;
+    }
+
+
+    /**
+     * @return object:$curlResponse if not a valid response, a null object is returned
+     */
+    public function get_weather_forecast(): ?object
+    {
+      // parameters for query string
+      $params     = array
+                          (
+                              'lat'   => $this->lat,
+                              'lon'   => $this->lon,
+                              "appid" => $this->appid  ,
+                              "cnt"   => $this->cnt,
+                          );
+
+      $headers  = [];
+
+      $endpoint = $this->server_uri . "/forecast";
+
+      // already json decoded into object
+      $curlResponse   = $this->getCurl($endpoint, $headers, $params);
+      
+      if ( $curlResponse->cod = '200' )
+      {
+          return $curlResponse;
+      }
+      else
+      {
+          if ($this->verbose)
+          {
+              error_log( "This is the response while querying for openweathermap weather" . print_r($curlResponse, true) );
+          }
+          return null;
+      }
+    }
 
 
     /**

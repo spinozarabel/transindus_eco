@@ -148,6 +148,13 @@ class class_transindus_eco
      */
     public function shellystuder_cron_exec()
     {
+        //
+        $cloudiness_forecast= $this->check_if_forecast_is_cloudy();
+
+        $it_is_a_cloudy_day = $cloudiness_forecast->it_is_a_cloudy_day;
+
+        $cloud_cover_percentage = $cloudiness_forecast->cloudiness_average_percentage;
+
         // Loop over all of the eligible users
         foreach ($this->config['accounts'] as $user_index => $account) 
         {
@@ -229,6 +236,7 @@ class class_transindus_eco
               print("<pre>AC at Studer Input: "   . $studer_readings_obj->grid_input_vac      . "Vac</pre>");
               print("<pre>Inverter PowerOut: "    . $studer_readings_obj->pout_inverter_ac_kw . "KW </pre>");
               print("<pre>Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW </pre>");
+              print("<pre>Weather Forecast: "     . $cloudy_day                               . "</pre>");
           }
 
           switch(true)
@@ -291,13 +299,11 @@ class class_transindus_eco
               break;
 
               // <5> Release - Switch OFF if conditions met
-              // then turn-off the ACIN switch
               case (  $battery_voltage_avg > 49.5                         &&  // Battery SOC is adequate for release
                       $shelly_api_device_status_ON == true                &&  // Switch is ON now
                       ($studer_readings_obj->psolar_kw - 
                        $studer_readings_obj->pout_inverter_ac_kw) > 0.3   &&  // Solar is greater than Load
                       $keep_shelly_switch_closed_always === false             // Emergency flag is False
-                      //$studer_readings_obj->psolar_kw > 1.0                   // 
                     ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "off");
@@ -323,6 +329,17 @@ class class_transindus_eco
                         " Case 6 Fired- Shelly Switch Released - Time is about 5:32 PM</pre>" ) : false;
                   $this->verbose ? error_log("username:" . $wp_user_name . 
                         " Case 6 Fired- Shelly Switch Released - Time is about 5:32 PM" ) : false;
+
+              break;
+
+              // <7> Keep switch ON between 0900 to 1700 on CLoudy day for Solar Priority mode
+              case (  $shelly_api_device_status_ON      == false           &&  // Switch is Currently OFF
+                      $keep_shelly_switch_closed_always == false      &&  // Emergency flag is False
+                      $this->nowIsWithinTimeLimits("08:00", "17:00")  &&  // before sunset 
+                      $it_is_a_cloudy_day
+                    ):
+
+                  //$this->turn_on_off_shelly_switch($user_index, "on");
 
               break;
 
@@ -352,13 +369,31 @@ class class_transindus_eco
         if ($current_weather_obj)
         {
           $cloud_cover_percentage = $current_weather_obj->clouds->all;
-          return $cloud_cover_percentage;
+          return $current_cloud_cover_percentage;
         }
         else
         {
           return null;
         }
     }
+
+    /**
+     * 
+     */
+    public function check_if_forecast_is_cloudy()
+    {
+        $config = $this->config;
+        $lat    = $this->lat;
+        $lon    = $this->lon;
+        $appid  = $config['appid'];
+        $cnt    = 3;
+
+        $current_wether_api   = new openweathermap_api($lat, $lon, $appid, $cnt);
+        $cloudiness_forecast   = $current_wether_api->forecast_is_cloudy();
+
+        return $cloudiness_forecast;
+    }
+
 
 
     /**
@@ -514,6 +549,7 @@ class class_transindus_eco
                 <input type="submit" name="button" 	value="turn_Shelly_Switch_OFF"/>
                 <input type="submit" name="button" 	value="run_cron_exec_once"/>
                 <input type="submit" name="button" 	value="estimated_solar_power"/>
+                <input type="submit" name="button" 	value="check_if_cloudy_day"/>
             </form>
 
 
@@ -583,6 +619,18 @@ class class_transindus_eco
               }
               echo "<pre>" . "Total Est Solar Power Clear Day (KW): " .    array_sum($est_solar_kw) . "</pre>";
             break;
+
+            case "check_if_cloudy_day":
+              $cloudiness_forecast= $this->check_if_forecast_is_cloudy();
+
+              $it_is_a_cloudy_day = $cloudiness_forecast->it_is_a_cloudy_day;
+
+              $cloud_cover_percentage = $cloudiness_forecast->cloudiness_average_percentage;
+
+              echo "<pre>" . "Is it a cloudy day?: " .    $it_is_a_cloudy_day . "</pre>";
+              echo "<pre>" . "Average CLoudiness percentage?: " .    $cloud_cover_percentage . "%</pre>";
+            break;
+
         }
         if($shelly_api_device_status_ON->{"switch:0"}->output)
         {

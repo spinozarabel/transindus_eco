@@ -278,11 +278,11 @@ class class_transindus_eco
               break;
 
               // <4> Daytime, reduce battery cycling, Switch  OFF->ON
-              case ( $shelly_api_device_status_ON == false         &&  // Switch is Currently OFF
-                     // $this->nowIsWithinTimeLimits("07:00", "17:30") &&  // Daytime
-                     $studer_readings_obj->psolar_kw > 0.4          &&  // Psolar is at least 0.4KW
-                     ($studer_readings_obj->psolar_kw - 
-                      $studer_readings_obj->pout_inverter_ac_kw) > 0.3  // Psolar is greater than Pload by 0.3KW
+              case ( $shelly_api_device_status_ON == false          &&  // Switch is Currently OFF
+                     $this->nowIsWithinTimeLimits("07:00", "17:30") &&  // Daytime
+                     $studer_readings_obj->psolar_kw > 0.6          &&  // Psolar is at least 0.46W
+                     ($studer_readings_obj->pout_inverter_ac_kw - 
+                      $studer_readings_obj->psolar_kw) > 0.4            // Pload is greater than Psolar by 0.4KW
                     ):
 
                   $this->turn_on_off_shelly_switch($user_index, "on");
@@ -299,12 +299,12 @@ class class_transindus_eco
               break;
 
               // <5> Release - Switch OFF if conditions met
-              case (  $battery_voltage_avg > 49.5                         &&  // Battery SOC is adequate for release
+              case (  $battery_voltage_avg > 49.0                         &&  // Battery SOC is adequate for release
                       $shelly_api_device_status_ON == true                &&  // Switch is ON now
                       ($studer_readings_obj->psolar_kw - 
                        $studer_readings_obj->pout_inverter_ac_kw) > 0.3   &&  // Solar is greater than Load
                       $keep_shelly_switch_closed_always === false         &&  // Emergency flag is False
-                      $it_is_a_cloudy_day == false
+                      $it_is_a_cloudy_day == false                            // It is NOT a cloudy day
                     ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "off");
@@ -387,7 +387,7 @@ class class_transindus_eco
         $lat    = $this->lat;
         $lon    = $this->lon;
         $appid  = $config['openweather_appid'];
-        $cnt    = 3;
+        $cnt    = 4;
 
         $current_wether_api   = new openweathermap_api($lat, $lon, $appid, $cnt);
         $cloudiness_forecast   = $current_wether_api->forecast_is_cloudy();

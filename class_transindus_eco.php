@@ -248,17 +248,18 @@ class class_transindus_eco
               // if Shelly switch is OPEN but Studer transfer relay is closed and Studer AC voltage is present
               // it means that the ACIN is manually overridden at control panel
               // so ignore attempting any control and skip this user
-              case (  empty($shelly_api_device_status_ON) && $studer_readings_obj->grid_input_vac >= 190 ):
+              case (  $shelly_switch_status === "OFF" && $studer_readings_obj->grid_input_vac >= 190 ):
                     // ignore this user
-                    $this->verbose ? print("<pre>username: " . $wp_user_name . " Shelly Switch Open but Studer already has AC, exiting</pre>" ) : false;
+                    $this->verbose ? print("<pre>username: " . $wp_user_name . " Shelly Switch OFF but Studer already has AC, exiting</pre>" ) : false;
                     // no error log since this may fire every minute and fill up log uselessly
               break;
 
               // <1> If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
-              case (  $battery_voltage_avg         <  48.7       &&
-                      $shelly_api_device_status_ON == false ):
+              case (  $battery_voltage_avg    <  48.7       &&
+                      $shelly_switch_status === "OFF" ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "on");
+                  sleep(1);
 
                   $this->verbose ? error_log("username: " . $wp_user_name . 
                        " Case 2 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF" ) : false;
@@ -269,8 +270,8 @@ class class_transindus_eco
               break;
 
               // <3> If switch is OPEN and the keep shelly closed always is TRUE then close the switch
-              case (  $shelly_api_device_status_ON      == false  &&
-                      $keep_shelly_switch_closed_always === true      ):
+              case ( $shelly_switch_status === "OFF"                &&
+                    $keep_shelly_switch_closed_always === true ):
 
                   $this->turn_on_off_shelly_switch($user_index, "on");
                   sleep (1);
@@ -283,7 +284,7 @@ class class_transindus_eco
               break;
 
               // <4> Daytime, reduce battery cycling, turn SWITCH ON
-              case ( $shelly_api_device_status_ON == false          &&  // Switch is Currently OFF
+              case ( $shelly_switch_status === "OFF"                &&  // Switch is Currently OFF
                      $this->nowIsWithinTimeLimits("07:00", "17:30") &&  // Daytime
                      $studer_readings_obj->psolar_kw > 0.6          &&  // Psolar is at least 0.46W
                      ($studer_readings_obj->pout_inverter_ac_kw - 
@@ -306,7 +307,7 @@ class class_transindus_eco
 
               // <5> Release - Switch OFF for normal Studer operation
               case (  $battery_voltage_avg > 49.0                         &&  // Battery SOC is adequate for release
-                      $shelly_api_device_status_ON == true                &&  // Switch is ON now
+                      $shelly_switch_status === "ON"                      &&  // Switch is ON now
                       ($studer_readings_obj->psolar_kw - 
                        $studer_readings_obj->pout_inverter_ac_kw) > 0.3   &&  // Solar is greater than Load
                       $keep_shelly_switch_closed_always === false ):
@@ -339,13 +340,13 @@ class class_transindus_eco
               break;
 
               // <7> Keep switch ON between 0900 to 1700 on CLoudy day for Solar Priority mode
-              case (  $shelly_api_device_status_ON      == false           &&  // Switch is Currently OFF
+              case (  $shelly_switch_status === "OFF"                 &&  // Switch is Currently OFF
                       $keep_shelly_switch_closed_always == false      &&  // Emergency flag is False
                       $this->nowIsWithinTimeLimits("08:00", "17:00")  &&  // before sunset 
                       $it_is_a_cloudy_day               == true
                     ):
 
-                  $this->turn_on_off_shelly_switch($user_index, "on");
+                  // $this->turn_on_off_shelly_switch($user_index, "on");
 
               break;
 

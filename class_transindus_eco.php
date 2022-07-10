@@ -252,9 +252,9 @@ class class_transindus_eco
           error_log("Shelly Switch State: "  . $shelly_switch_status                     . "");
           error_log("Battery Avg Voltage: "  . $battery_voltage_avg                      . "Vdc ");
           error_log("Battery Current: "      . $studer_readings_obj->battery_charge_adc  . "Adc ");
-          error_log("Solar PowerGen: "       . $psolar                                   . "KW ");
+          //error_log("Solar PowerGen: "       . $psolar                                   . "KW ");
           error_log("AC at Studer Input: "   . $studer_readings_obj->grid_input_vac      . "Vac ");
-          error_log("Inverter PowerOut: "    . $pout_inverter                            . "KW ");
+          //error_log("Inverter PowerOut: "    . $pout_inverter                            . "KW ");
           error_log("Surplus PowerOut: "    . $surplus                            . "KW ");
           error_log("Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW ");
           error_log("Cloudy Day?: "           . $it_is_a_cloudy_day                       . "");
@@ -358,7 +358,7 @@ class class_transindus_eco
                   error_log("Exited via Case 6");
               break;
 
-              // <7> Keep switch ON between 0900 to 1700 on CLoudy day for Solar Priority mode
+              /* <7> Keep switch ON between 0900 to 1700 on CLoudy day for Solar Priority mode
               case (  $shelly_switch_status === "OFF"                 &&  // Switch is Currently OFF
                       $keep_shelly_switch_closed_always == false      &&  // Emergency flag is False
                       $this->nowIsWithinTimeLimits("08:00", "17:00")  &&  // before sunset 
@@ -368,6 +368,7 @@ class class_transindus_eco
                   // $this->turn_on_off_shelly_switch($user_index, "on");
                   error_log("Exited via Case 7");
               break;
+              */
 
               default:
                   // $this->verbose ? print("<pre>username: " . $wp_user_name . " No Switch action - didn't Fire any CASE</pre>" ) : false;

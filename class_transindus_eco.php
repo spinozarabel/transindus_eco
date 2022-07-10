@@ -165,8 +165,8 @@ class class_transindus_eco
           // Get the wp user object given the above username
           $wp_user_obj          = get_user_by('login', $wp_user_name);
           $wp_user_ID           = $wp_user_obj->ID;
-          $do_shelly_user_meta  = get_user_meta($wp_user_ID, "do_shelly", true);
-          $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always", true);
+          $do_shelly_user_meta              = get_user_meta($wp_user_ID, "do_shelly",                         true);
+          $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true);
 
           $this->verbose ? print("<pre>username: " . $wp_user_name . " has do_shelly set to: "  . 
                                   $do_shelly_user_meta . "</pre>" ) : false;
@@ -203,6 +203,7 @@ class class_transindus_eco
           {
               $shelly_switch_status = "OFF";
           }
+
           $this->verbose ? print("<pre>username: " . $wp_user_name . " Shelly Switch Status is:" . 
                                  $shelly_switch_status . "</pre>") : false;
 
@@ -239,7 +240,7 @@ class class_transindus_eco
           {
               print("<pre>user: "                 . $wp_user_name                             . "Shelly and Studer Values</pre>");
               print("<pre>Shelly Switch State: "  . $shelly_switch_status                     . "</pre>");
-              print("<pre>Battery Avg Voltage: "  . $battery_voltage_avg                      . "Vdc </pre>");
+              print("<pre>Battery Voltage Avg: "  . $battery_voltage_avg                      . "Vdc </pre>");
               print("<pre>Battery Current: "      . $studer_readings_obj->battery_charge_adc  . "Adc </pre>");
               print("<pre>Solar PowerGen: "       . $psolar                                   . "KW </pre>");
               print("<pre>AC at Studer Input: "   . $studer_readings_obj->grid_input_vac      . "Vac</pre>");
@@ -249,18 +250,23 @@ class class_transindus_eco
               print("<pre>Within 8AM to 5PM?: "   . $within_time_limits                       . "</pre>");
           }
 
-          error_log("user: "                 . $wp_user_name                             . "Shelly and Studer Values");
-          error_log("Shelly Switch State: "  . $shelly_switch_status                     . "");
-          error_log("Battery Avg Voltage: "  . $battery_voltage_avg                      . "Vdc ");
-          error_log("Battery Current: "      . $studer_readings_obj->battery_charge_adc  . "Adc ");
-          //error_log("Solar PowerGen: "       . $psolar                                   . "KW ");
-          error_log("AC at Studer Input: "   . $studer_readings_obj->grid_input_vac      . "Vac ");
-          //error_log("Inverter PowerOut: "    . $pout_inverter                            . "KW ");
-          error_log("Surplus PowerOut: "     . $surplus                            . "KW ");
-          error_log("Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW ");
-          error_log("Cloudy Day?: "          . $it_is_a_cloudy_day                       . "");
-          error_log("Within 8AM to 5PM?: "   . $within_time_limits                       . "");
-          error_log("AUX1 Relay State: "     . $aux1_relay_state                         . "");
+          if (true)
+          {
+              error_log("user: "                 . $wp_user_name                             . "Shelly and Studer Values");
+              error_log("Shelly Switch State: "  . $shelly_switch_status                     . "");
+              error_log("Battery Avg Voltage: "  . $battery_voltage_avg                      . "Vdc ");
+              error_log("Battery Current: "      . $studer_readings_obj->battery_charge_adc  . "Adc ");
+              //error_log("Solar PowerGen: "       . $psolar                                   . "KW ");
+              error_log("AC at Studer Input: "   . $studer_readings_obj->grid_input_vac      . "Vac ");
+              //error_log("Inverter PowerOut: "    . $pout_inverter                            . "KW ");
+              error_log("Surplus PowerOut: "     . $surplus                            . "KW ");
+              error_log("Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW ");
+              error_log("Cloudy Day?: "          . $it_is_a_cloudy_day                       . "");
+              error_log("Within 8AM to 5PM?: "   . $within_time_limits                       . "");
+              error_log("AUX1 Relay State: "     . $aux1_relay_state                         . "");
+          }
+
+          // define all the conditions for the SWITCH - CASE tree
 
           $switch_override =  ($shelly_switch_status === "OFF")               && 
                               ($studer_readings_obj->grid_input_vac >= 190);

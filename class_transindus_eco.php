@@ -248,6 +248,17 @@ class class_transindus_eco
               print("<pre>Within 8AM to 5PM?: "   . $within_time_limits                       . "</pre>");
           }
 
+          error_log("user: "                 . $wp_user_name                             . "Shelly and Studer Values");
+          error_log("Shelly Switch State: "  . $shelly_switch_status                     . "");
+          error_log("Battery Avg Voltage: "  . $battery_voltage_avg                      . "Vdc ");
+          error_log("Battery Current: "      . $studer_readings_obj->battery_charge_adc  . "Adc ");
+          error_log("Solar PowerGen: "       . $psolar                                   . "KW ");
+          error_log("AC at Studer Input: "   . $studer_readings_obj->grid_input_vac      . "Vac ");
+          error_log("Inverter PowerOut: "    . $pout_inverter                            . "KW ");
+          error_log("Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW ");
+          error_log("Weather Forecast: "     . $cloudy_day                               . "");
+          error_log("Within 8AM to 5PM?: "   . $within_time_limits                       . "");
+
           switch(true)
           {
               // if Shelly switch is OPEN but Studer transfer relay is closed and Studer AC voltage is present
@@ -1140,7 +1151,7 @@ class class_transindus_eco
         // update the object with SOlar data read
         $studer_readings_obj->psolar_kw                   = $psolar_kw;
         $studer_readings_obj->solar_pv_adc                = $solar_pv_adc;
-        $studer_readings_obj->solar_pv_vdc                = $solar_pv_vdc;
+        // $studer_readings_obj->solar_pv_vdc                = $solar_pv_vdc;
         $studer_readings_obj->solar_arrow_class           = $solar_arrow_class;
         $studer_readings_obj->solar_arrow_animation_class = $solar_arrow_animation_class;
         $studer_readings_obj->psolar_kw_yesterday         = $psolar_kw_yesterday;

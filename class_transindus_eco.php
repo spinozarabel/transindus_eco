@@ -307,9 +307,7 @@ class class_transindus_eco
                       $shelly_api_device_status_ON == true                &&  // Switch is ON now
                       ($studer_readings_obj->psolar_kw - 
                        $studer_readings_obj->pout_inverter_ac_kw) > 0.3   &&  // Solar is greater than Load
-                      $keep_shelly_switch_closed_always === false           // Emergency flag is False
-                      //$it_is_a_cloudy_day == false                            // It is NOT a cloudy day
-                    ):
+                      $keep_shelly_switch_closed_always === false ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "off");
 

@@ -288,7 +288,8 @@ class class_transindus_eco
                              ( $keep_shelly_switch_closed_always === false ); //
 
           $sunset_switch_release  = ( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
-                                    ( $this->nowIsWithinTimeLimits("17:30", "17:40") );          // before sunset
+                                    ( $shelly_switch_status === "ON" )              &&  // Switch is ON now
+                                    ( $this->nowIsWithinTimeLimits("17:30", "17:40") ); // before sunset
 
           switch(true)
           {

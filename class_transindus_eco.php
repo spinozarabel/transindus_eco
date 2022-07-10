@@ -122,6 +122,8 @@ class class_transindus_eco
     {
         // register shortcode for pages. This is for showing the page with studer readings
         add_shortcode( 'transindus-studer-readings',  [$this, 'studer_readings_page_render'] );
+
+        add_shortcode( 'transindus-studer-settings',  [$this, 'studer_settings_page_render'] );
     }
 
     public function add_my_menu()
@@ -214,6 +216,8 @@ class class_transindus_eco
             ) 
           {
             // cannot trust this Studer reading, skipping this user
+            $this->verbose ? print("<pre>username: " . $wp_user_name . 
+                                   " Could not get Studer Reading:" . "</pre>") : false;
             continue;
           }
 
@@ -277,7 +281,7 @@ class class_transindus_eco
 
               break;
 
-              // <4> Daytime, reduce battery cycling, Switch  OFF->ON
+              // <4> Daytime, reduce battery cycling, turn SWITCH ON
               case ( $shelly_api_device_status_ON == false          &&  // Switch is Currently OFF
                      $this->nowIsWithinTimeLimits("07:00", "17:30") &&  // Daytime
                      $studer_readings_obj->psolar_kw > 0.6          &&  // Psolar is at least 0.46W
@@ -298,13 +302,13 @@ class class_transindus_eco
 
               break;
 
-              // <5> Release - Switch OFF if conditions met
+              // <5> Release - Switch OFF for normal Studer operation
               case (  $battery_voltage_avg > 49.0                         &&  // Battery SOC is adequate for release
                       $shelly_api_device_status_ON == true                &&  // Switch is ON now
                       ($studer_readings_obj->psolar_kw - 
                        $studer_readings_obj->pout_inverter_ac_kw) > 0.3   &&  // Solar is greater than Load
-                      $keep_shelly_switch_closed_always === false         &&  // Emergency flag is False
-                      $it_is_a_cloudy_day == false                            // It is NOT a cloudy day
+                      $keep_shelly_switch_closed_always === false           // Emergency flag is False
+                      //$it_is_a_cloudy_day == false                            // It is NOT a cloudy day
                     ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "off");
@@ -439,6 +443,54 @@ class class_transindus_eco
         {
           return false;
         }
+    }
+
+    /**
+     * 
+     */
+    public function studer_sttings_page_render()
+    {
+        $output = '';
+
+        $output .= '
+        <style>
+            table {
+                border-collapse: collapse;
+                }
+                th, td {
+                border: 1px solid orange;
+                padding: 10px;
+                text-align: left;
+                }
+                .rediconcolor {color:red;}
+                .greeniconcolor {color:green;}
+                .img-pow-genset { max-width: 59px; }
+        </style>';
+        $output .= '
+        <table>
+        <tr>
+            <th>
+              Parameter
+            </th>';
+
+            
+        foreach ($$config['accounts'] as $user_index => $account) 
+        {
+          $home = $account['home'];
+          $output .= 
+            '<th>' . $home . 
+            '</th>';
+        }
+        unset($account);
+        $output .= 
+        '</tr>';
+        // Now we need to get all of the parameters of interest for each of the users and display them
+        foreach ($$config['accounts'] as $user_index => $account) 
+        {
+          $wp_user_name = $account['wp_user_name'];
+
+        }
+
     }
 
     /**

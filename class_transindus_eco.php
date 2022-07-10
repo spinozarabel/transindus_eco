@@ -229,6 +229,9 @@ class class_transindus_eco
 
           $battery_voltage_avg  = $this->get_battery_voltage_avg();
           $est_solar_kw         = $this->estimated_solar_power($user_index);
+          $psolar               = $studer_readings_obj->psolar_kw;
+          $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;
+          $surplus              = $psolar - $pout_inverter;
 
           if ($this->verbose)
           {
@@ -236,9 +239,9 @@ class class_transindus_eco
               print("<pre>Shelly Switch State: "  . $shelly_switch_status                     . "</pre>");
               print("<pre>Battery Avg Voltage: "  . $battery_voltage_avg                      . "Vdc </pre>");
               print("<pre>Battery Current: "      . $studer_readings_obj->battery_charge_adc  . "Adc </pre>");
-              print("<pre>Solar PowerGen: "       . $studer_readings_obj->psolar_kw           . "KW </pre>");
+              print("<pre>Solar PowerGen: "       . $psolar                                   . "KW </pre>");
               print("<pre>AC at Studer Input: "   . $studer_readings_obj->grid_input_vac      . "Vac</pre>");
-              print("<pre>Inverter PowerOut: "    . $studer_readings_obj->pout_inverter_ac_kw . "KW </pre>");
+              print("<pre>Inverter PowerOut: "    . $pout_inverter                            . "KW </pre>");
               print("<pre>Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW </pre>");
               print("<pre>Weather Forecast: "     . $cloudy_day                               . "</pre>");
           }
@@ -286,9 +289,8 @@ class class_transindus_eco
               // <4> Daytime, reduce battery cycling, turn SWITCH ON
               case ( $shelly_switch_status === "OFF"                &&  // Switch is Currently OFF
                      $this->nowIsWithinTimeLimits("07:00", "17:30") &&  // Daytime
-                     $studer_readings_obj->psolar_kw > 0.6          &&  // Psolar is at least 0.46W
-                     ($studer_readings_obj->pout_inverter_ac_kw - 
-                      $studer_readings_obj->psolar_kw) > 0.4            // Pload is greater than Psolar by 0.4KW
+                     $psolar > 0.6                                  &&  // Psolar is at least 0.6 KW
+                     $surplus < -0.4                                    // Pload is greater than Psolar by 0.4KW
                     ):
 
                   $this->turn_on_off_shelly_switch($user_index, "on");
@@ -308,8 +310,7 @@ class class_transindus_eco
               // <5> Release - Switch OFF for normal Studer operation
               case (  $battery_voltage_avg > 49.0                         &&  // Battery SOC is adequate for release
                       $shelly_switch_status === "ON"                      &&  // Switch is ON now
-                      ($studer_readings_obj->psolar_kw - 
-                       $studer_readings_obj->pout_inverter_ac_kw) > 0.3   &&  // Solar is greater than Load
+                      $surplus > 0.3                                      &&  // Solar is greater than Load
                       $keep_shelly_switch_closed_always === false ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "off");

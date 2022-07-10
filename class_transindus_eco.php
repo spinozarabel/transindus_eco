@@ -271,7 +271,7 @@ class class_transindus_eco
           $switch_override =  ($shelly_switch_status === "OFF")               && 
                               ($studer_readings_obj->grid_input_vac >= 190);
 
-          $LVDS =             ( $battery_voltage_avg    <  48.7 || $aux1_relay_state == false)  &&
+          $LVDS =             ( $battery_voltage_avg    <  48.7 )  &&
                               ( $shelly_switch_status === "OFF" );
 
           $keep_switch_closed_always =  ( $shelly_switch_status === "OFF" )             &&

@@ -255,8 +255,9 @@ class class_transindus_eco
           error_log("Solar PowerGen: "       . $psolar                                   . "KW ");
           error_log("AC at Studer Input: "   . $studer_readings_obj->grid_input_vac      . "Vac ");
           error_log("Inverter PowerOut: "    . $pout_inverter                            . "KW ");
+          error_log("Surplus PowerOut: "    . $surplus                            . "KW ");
           error_log("Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW ");
-          error_log("Weather Forecast: "     . $cloudy_day                               . "");
+          error_log("Cloudy Day?: "           . $it_is_a_cloudy_day                       . "");
           error_log("Within 8AM to 5PM?: "   . $within_time_limits                       . "");
 
           switch(true)

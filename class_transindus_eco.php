@@ -273,6 +273,7 @@ class class_transindus_eco
                       $keep_shelly_switch_closed_always === true      ):
 
                   $this->turn_on_off_shelly_switch($user_index, "on");
+                  sleep (1);
 
                   $this->verbose ? print("<pre>username: " . $wp_user_name . 
                        " Case 3 fired - Keep Switch ON always - Shelly turned ON</pre>" ) : false;
@@ -290,6 +291,7 @@ class class_transindus_eco
                     ):
 
                   $this->turn_on_off_shelly_switch($user_index, "on");
+                  sleep (1);
 
                   $this->verbose ? print("<pre>username:" . $wp_user_name . 
                        " Case 4 fired - Daytime reduce battery cycling</pre>" ) : false;
@@ -310,6 +312,7 @@ class class_transindus_eco
                       $keep_shelly_switch_closed_always === false ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "off");
+                  sleep (1);
 
                   $this->verbose ? print("<pre>username:" . $wp_user_name . 
                        " Case 5 Fired- Shelly Switch Released - Vbatt > 49.5, Psolar more than Pload</pre>" ) : false;

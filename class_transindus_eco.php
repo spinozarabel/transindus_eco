@@ -231,6 +231,7 @@ class class_transindus_eco
           $est_solar_kw         = $this->estimated_solar_power($user_index);
           $psolar               = $studer_readings_obj->psolar_kw;
           $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;
+          $aux1_relay_state     = $studer_readings_obj->aux1_relay_state;
           $surplus              = $psolar - $pout_inverter;
           $within_time_limits   = $this->nowIsWithinTimeLimits("08:00", "17:00");
 
@@ -255,15 +256,16 @@ class class_transindus_eco
           //error_log("Solar PowerGen: "       . $psolar                                   . "KW ");
           error_log("AC at Studer Input: "   . $studer_readings_obj->grid_input_vac      . "Vac ");
           //error_log("Inverter PowerOut: "    . $pout_inverter                            . "KW ");
-          error_log("Surplus PowerOut: "    . $surplus                            . "KW ");
+          error_log("Surplus PowerOut: "     . $surplus                            . "KW ");
           error_log("Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW ");
-          error_log("Cloudy Day?: "           . $it_is_a_cloudy_day                       . "");
+          error_log("Cloudy Day?: "          . $it_is_a_cloudy_day                       . "");
           error_log("Within 8AM to 5PM?: "   . $within_time_limits                       . "");
+          error_log("AUX1 Relay State: "     . $aux1_relay_state                         . "");
 
           $switch_override =  ($shelly_switch_status === "OFF")               && 
                               ($studer_readings_obj->grid_input_vac >= 190);
 
-          $LVDS =             ( $battery_voltage_avg    <  48.7 )  &&
+          $LVDS =             ( $battery_voltage_avg    <  48.7 || $aux1_relay_state)  &&
                               ($shelly_switch_status === "OFF" );
 
           $keep_switch_closed_always =  ( $shelly_switch_status === "OFF" )             &&
@@ -278,6 +280,7 @@ class class_transindus_eco
                              ( $shelly_switch_status === "ON" ) &&  // Switch is ON now
                              ( $surplus > 0.3 )                 &&  // Solar is greater than Load
                              ( $keep_shelly_switch_closed_always === false ); //
+
           $sunset_switch_release  = ( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
                                     ( $this->nowIsWithinTimeLimits("17:30", "17:40") );          // before sunset
 
@@ -342,7 +345,6 @@ class class_transindus_eco
               case ( $switch_release ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "off");
-                  sleep (1);
 
                   $this->verbose ? print("<pre>username:" . $wp_user_name . 
                        " Case 5 Fired- Shelly Switch Released - Vbatt > 49.5, Psolar more than Pload</pre>" ) : false;
@@ -1228,6 +1230,10 @@ class class_transindus_eco
                                   "userRef"       =>  3005,   // DC input current to Inverter
                                   "infoAssembly"  => "Master"
                                 ),
+                          array(
+                                  "userRef"       =>  3031,   // State of AUX1 relay
+                                  "infoAssembly"  => "Master"
+                                ),
                                 
                           array(
                                   "userRef"       =>  11001,   // DC current into Battery junstion from VT1
@@ -1375,6 +1381,8 @@ class class_transindus_eco
             // update the Grid input values
             $studer_readings_obj->grid_pin_ac_kw              = $grid_pin_ac_kw;
             $studer_readings_obj->grid_input_vac              = $grid_input_vac;
+
+            $studer_readings_obj->aux1_relay_state              = $aux1_relay_state;
           
             return $studer_readings_obj;
           }          

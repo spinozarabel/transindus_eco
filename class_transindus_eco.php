@@ -260,23 +260,43 @@ class class_transindus_eco
           error_log("Cloudy Day?: "           . $it_is_a_cloudy_day                       . "");
           error_log("Within 8AM to 5PM?: "   . $within_time_limits                       . "");
 
+          $switch_override =  ($shelly_switch_status === "OFF")               && 
+                              ($studer_readings_obj->grid_input_vac >= 190);
+
+          $LVDS =             ( $battery_voltage_avg    <  48.7 )  &&
+                              ($shelly_switch_status === "OFF" );
+
+          $keep_switch_closed_always =  ( $shelly_switch_status === "OFF" )             &&
+                                        ( $keep_shelly_switch_closed_always === true );
+
+          $reduce_daytime_battery_cycling = ( $shelly_switch_status === "OFF" )              &&  // Switch is OFF
+                                            ( $this->nowIsWithinTimeLimits("07:00", "17:30"))&&  // Daytime
+                                            ( $psolar > 0.6 )                                 && // 
+                                            ( $surplus < -0.4 ); 
+
+          $switch_release =  ( $battery_voltage_avg > 49.0 )    &&  // Battery SOC is adequate for release
+                             ( $shelly_switch_status === "ON" ) &&  // Switch is ON now
+                             ( $surplus > 0.3 )                 &&  // Solar is greater than Load
+                             ( $keep_shelly_switch_closed_always === false ); //
+          $sunset_switch_release  = ( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
+                                    ( $this->nowIsWithinTimeLimits("17:30", "17:40") );          // before sunset
+
           switch(true)
           {
               // if Shelly switch is OPEN but Studer transfer relay is closed and Studer AC voltage is present
               // it means that the ACIN is manually overridden at control panel
               // so ignore attempting any control and skip this user
-              case (  $shelly_switch_status === "OFF" && $studer_readings_obj->grid_input_vac >= 190 ):
+              case (  $switch_override ):
                     // ignore this user
                     $this->verbose ? print("<pre>username: " . $wp_user_name . " Shelly Switch OFF but Studer already has AC, exiting</pre>" ) : false;
                     // no error log since this may fire every minute and fill up log uselessly
+                    error_log("condition Manual Switch Override)");
               break;
 
               // <1> If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
-              case (  $battery_voltage_avg    <  48.7       &&
-                      $shelly_switch_status === "OFF" ):
+              case ( $LVDS ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "on");
-                  sleep(1);
 
                   $this->verbose ? error_log("username: " . $wp_user_name . 
                        " Case 2 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF" ) : false;
@@ -284,34 +304,27 @@ class class_transindus_eco
                   $this->verbose ? print("<pre>username: " . $wp_user_name . 
                        " Case 2 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF</pre>" ) : false;
 
-                  error_log("Exited via Case 1");
+                  error_log("Exited via Case 1: LVDS");
               break;
 
               // <3> If switch is OPEN and the keep shelly closed always is TRUE then close the switch
-              case ( $shelly_switch_status === "OFF"                &&
-                    $keep_shelly_switch_closed_always === true ):
+              case ( $keep_switch_closed_always ):
 
                   $this->turn_on_off_shelly_switch($user_index, "on");
-                  sleep (1);
 
                   $this->verbose ? print("<pre>username: " . $wp_user_name . 
                        " Case 3 fired - Keep Switch ON always - Shelly turned ON</pre>" ) : false;
                   $this->verbose ? error_log("username: " . $wp_user_name . 
                        " Case 3 fired - Keep Switch ON always - Shelly turned ON" ) : false;
 
-                  error_log("Exited via Case 3");
+                  error_log("Exited via Case 3 - keep switch closed always");
 
               break;
 
               // <4> Daytime, reduce battery cycling, turn SWITCH ON
-              case ( $shelly_switch_status === "OFF"                &&  // Switch is Currently OFF
-                     $this->nowIsWithinTimeLimits("07:00", "17:30") &&  // Daytime
-                     $psolar > 0.6                                  &&  // Psolar is at least 0.6 KW
-                     $surplus < -0.4                                    // Pload is greater than Psolar by 0.4KW
-                    ):
+              case ( $reduce_daytime_battery_cycling ):
 
                   $this->turn_on_off_shelly_switch($user_index, "on");
-                  sleep (1);
 
                   $this->verbose ? print("<pre>username:" . $wp_user_name . 
                        " Case 4 fired - Daytime reduce battery cycling</pre>" ) : false;
@@ -322,14 +335,11 @@ class class_transindus_eco
                             " less than Normal: " .  $est_solar_kw . 
                             " and current time is within daytime") : false;
 
-                  error_log("Exited via Case 4");
+                  error_log("Exited via Case 4 - reduce daytime battery cycling");
               break;
 
               // <5> Release - Switch OFF for normal Studer operation
-              case (  ($battery_voltage_avg > 49.0)                       &&  // Battery SOC is adequate for release
-                      $shelly_switch_status === "ON"                      &&  // Switch is ON now
-                      $surplus > 0.3                                      &&  // Solar is greater than Load
-                      $keep_shelly_switch_closed_always === false ):
+              case ( $switch_release ):
                   
                   $this->turn_on_off_shelly_switch($user_index, "off");
                   sleep (1);
@@ -341,13 +351,11 @@ class class_transindus_eco
                             $battery_voltage_avg . 
                             " > 49.5, Switch was ON, Psolar: " . $studer_readings_obj->psolar_kw . 
                             " more than Pload: " .  $studer_readings_obj->pout_inverter_ac_kw) : false;
-                  error_log("Exited via Case 5");
+                  error_log("Exited via Case 5 - Switch Release");
               break;
 
               // <6> Turn switch OFF at 5:30 PM if emergency flag is False so that battery can supply load for the night
-              case (  $keep_shelly_switch_closed_always == false         &&  // Emergency flag is False
-                      $this->nowIsWithinTimeLimits("17:10", "17:13")          // before sunset
-                    ):
+              case ( $sunset_switch_release ):
 
                   $this->turn_on_off_shelly_switch($user_index, "off");  
 
@@ -355,7 +363,7 @@ class class_transindus_eco
                         " Case 6 Fired- Shelly Switch Released - Time is about 5:32 PM</pre>" ) : false;
                   $this->verbose ? error_log("username:" . $wp_user_name . 
                         " Case 6 Fired- Shelly Switch Released - Time is about 5:32 PM" ) : false;
-                  error_log("Exited via Case 6");
+                  error_log("Exited via Case 6 - sunset switch release");
               break;
 
               /* <7> Keep switch ON between 0900 to 1700 on CLoudy day for Solar Priority mode

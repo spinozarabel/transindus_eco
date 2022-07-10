@@ -232,6 +232,7 @@ class class_transindus_eco
           $psolar               = $studer_readings_obj->psolar_kw;
           $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;
           $surplus              = $psolar - $pout_inverter;
+          $within_time_limits   = $this->nowIsWithinTimeLimits("08:00", "17:00");
 
           if ($this->verbose)
           {
@@ -244,6 +245,7 @@ class class_transindus_eco
               print("<pre>Inverter PowerOut: "    . $pout_inverter                            . "KW </pre>");
               print("<pre>Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW </pre>");
               print("<pre>Weather Forecast: "     . $cloudy_day                               . "</pre>");
+              print("<pre>Within 8AM to 5PM?: "   . $within_time_limits                       . "</pre>");
           }
 
           switch(true)
@@ -270,6 +272,7 @@ class class_transindus_eco
                   $this->verbose ? print("<pre>username: " . $wp_user_name . 
                        " Case 2 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF</pre>" ) : false;
 
+                  error_log("Exited via Case 1");
               break;
 
               // <3> If switch is OPEN and the keep shelly closed always is TRUE then close the switch
@@ -283,6 +286,8 @@ class class_transindus_eco
                        " Case 3 fired - Keep Switch ON always - Shelly turned ON</pre>" ) : false;
                   $this->verbose ? error_log("username: " . $wp_user_name . 
                        " Case 3 fired - Keep Switch ON always - Shelly turned ON" ) : false;
+
+                  error_log("Exited via Case 3");
 
               break;
 
@@ -305,6 +310,7 @@ class class_transindus_eco
                             " less than Normal: " .  $est_solar_kw . 
                             " and current time is within daytime") : false;
 
+                  error_log("Exited via Case 4");
               break;
 
               // <5> Release - Switch OFF for normal Studer operation
@@ -323,7 +329,7 @@ class class_transindus_eco
                             $battery_voltage_avg . 
                             " > 49.5, Switch was ON, Psolar: " . $studer_readings_obj->psolar_kw . 
                             " more than Pload: " .  $studer_readings_obj->pout_inverter_ac_kw) : false;
-                  
+                  error_log("Exited via Case 5");
               break;
 
               // <6> Turn switch OFF at 5:30 PM if emergency flag is False so that battery can supply load for the night
@@ -337,7 +343,7 @@ class class_transindus_eco
                         " Case 6 Fired- Shelly Switch Released - Time is about 5:32 PM</pre>" ) : false;
                   $this->verbose ? error_log("username:" . $wp_user_name . 
                         " Case 6 Fired- Shelly Switch Released - Time is about 5:32 PM" ) : false;
-
+                  error_log("Exited via Case 6");
               break;
 
               // <7> Keep switch ON between 0900 to 1700 on CLoudy day for Solar Priority mode
@@ -348,12 +354,12 @@ class class_transindus_eco
                     ):
 
                   // $this->turn_on_off_shelly_switch($user_index, "on");
-
+                  error_log("Exited via Case 7");
               break;
 
               default:
                   // $this->verbose ? print("<pre>username: " . $wp_user_name . " No Switch action - didn't Fire any CASE</pre>" ) : false;
-
+                  error_log("Exited via Case Default");
               break;
           }
           

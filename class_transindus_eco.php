@@ -264,6 +264,7 @@ class class_transindus_eco
               error_log("Cloudy Day?: "          . $it_is_a_cloudy_day                       . "");
               error_log("Within 8AM to 5PM?: "   . $within_time_limits                       . "");
               error_log("AUX1 Relay State: "     . $aux1_relay_state                         . "");
+              error_log("battery avg voltage > 49:"     . $battery_voltage_avg > 49.0       . "");
           }
 
           // define all the conditions for the SWITCH - CASE tree

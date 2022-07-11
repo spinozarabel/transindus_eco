@@ -235,7 +235,8 @@ class class_transindus_eco
           $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;
           $aux1_relay_state     = $studer_readings_obj->aux1_relay_state;
           $surplus              = $psolar - $pout_inverter;
-          $within_time_limits   = $this->nowIsWithinTimeLimits("08:00", "17:00");
+          $now_is_daytime       = $this->nowIsWithinTimeLimits("07:00", "17:30");
+          $now_is_sunset        = $this->nowIsWithinTimeLimits("17:31", "17:41");
 
           if ($this->verbose)
           {
@@ -248,7 +249,7 @@ class class_transindus_eco
               print("<pre>Inverter PowerOut: "    . $pout_inverter                            . "KW </pre>");
               print("<pre>Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW </pre>");
               print("<pre>Weather Forecast: "     . $cloudy_day                               . "</pre>");
-              print("<pre>Within 8AM to 5PM?: "   . $within_time_limits                       . "</pre>");
+              print("<pre>Within 8AM to 5PM?: "   . $now_is_daytime                           . "</pre>");
           }
 
           if (true)
@@ -263,7 +264,7 @@ class class_transindus_eco
               error_log("Surplus PowerOut: "     . $surplus                            . "KW ");
               error_log("Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW ");
               error_log("Cloudy Day?: "          . $it_is_a_cloudy_day                       . "");
-              error_log("Within 8AM to 5PM?: "   . $within_time_limits                       . "");
+              error_log("Within 0700 - 1730?: "  . $now_is_daytime                           . "");
               error_log("AUX1 Relay State: "     . $aux1_relay_state                         . "");
               
           }
@@ -280,18 +281,18 @@ class class_transindus_eco
                                         ( $keep_shelly_switch_closed_always == true );
 
           $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
-                                            ( $this->nowIsWithinTimeLimits("07:00", "17:30"))&&  // Daytime
-                                            ( $psolar > 0.3 )                                 && // 
-                                            ( $surplus < -0.3 ); 
+                                            ( $now_is_daytime )                             &&  // Daytime
+                                            ( $psolar > 0.3 )                               &&  // 
+                                            ( $surplus < -0.3 ); // This is minus 0.3
 
           $switch_release =  ( $battery_voltage_avg > 49.0 )    &&  // Battery SOC is adequate for release
-                             ( $shelly_switch_status == "ON" ) &&  // Switch is ON now
+                             ( $shelly_switch_status == "ON" )  &&  // Switch is ON now
                              ( $surplus > 0.3 )                 &&  // Solar is greater than Load
                              ( $keep_shelly_switch_closed_always == false ); //
 
           $sunset_switch_release  = ( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
-                                    ( $shelly_switch_status == "ON" )              &&  // Switch is ON now
-                                    ( $this->nowIsWithinTimeLimits("17:30", "17:40") ); // before sunset
+                                    ( $shelly_switch_status == "ON" )               &&  // Switch is ON now
+                                    ( $now_is_sunset );                                 // around sunset
 
           switch(true)
           {

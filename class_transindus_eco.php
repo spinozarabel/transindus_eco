@@ -211,7 +211,8 @@ class class_transindus_eco
           $studer_readings_obj  = $this->get_studer_min_readings($user_index);
 
           // check for valid studer values. Return if not valid
-          if( empty(  $studer_readings_obj->battery_voltage_vdc )     || 
+          if( empty(  $studer_readings_obj )                          ||
+              empty(  $studer_readings_obj->battery_voltage_vdc )     || 
                       $studer_readings_obj->battery_voltage_vdc < 40  ||
               empty(  $studer_readings_obj->pout_inverter_ac_kw ) 
             ) 
@@ -1269,7 +1270,10 @@ class class_transindus_eco
             $solar_pv_adc = 0;
             $psolar_kw    = 0;
           
-          
+            if (empty($user_values))
+            {
+              return null;
+            }
             foreach ($user_values as $user_value)
             {
               switch (true)

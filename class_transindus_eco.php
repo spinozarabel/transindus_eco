@@ -269,30 +269,28 @@ class class_transindus_eco
 
           // define all the conditions for the SWITCH - CASE tree
 
-          $switch_override =  ($shelly_switch_status === "OFF")               && 
+          $switch_override =  ($shelly_switch_status == "OFF")               && 
                               ($studer_readings_obj->grid_input_vac >= 190);
 
           $LVDS =             ( $battery_voltage_avg    <  48.7 )  &&
-                              ( $shelly_switch_status === "OFF" );
+                              ( $shelly_switch_status == "OFF" );
 
-          $keep_switch_closed_always =  ( $shelly_switch_status === "OFF" )             &&
-                                        ( $keep_shelly_switch_closed_always === true );
+          $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
+                                        ( $keep_shelly_switch_closed_always == true );
 
-          $reduce_daytime_battery_cycling = ( $shelly_switch_status === "OFF" )              &&  // Switch is OFF
+          $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
                                             ( $this->nowIsWithinTimeLimits("07:00", "17:30"))&&  // Daytime
                                             ( $psolar > 0.6 )                                 && // 
                                             ( $surplus < -0.4 ); 
 
           $switch_release =  ( $battery_voltage_avg > 49.0 )    &&  // Battery SOC is adequate for release
-                             ( $shelly_switch_status === "ON" ) &&  // Switch is ON now
+                             ( $shelly_switch_status == "ON" ) &&  // Switch is ON now
                              ( $surplus > 0.3 )                 &&  // Solar is greater than Load
                              ( $keep_shelly_switch_closed_always == false ); //
 
           $sunset_switch_release  = ( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
-                                    ( $shelly_switch_status === "ON" )              &&  // Switch is ON now
+                                    ( $shelly_switch_status == "ON" )              &&  // Switch is ON now
                                     ( $this->nowIsWithinTimeLimits("17:30", "17:40") ); // before sunset
-
-          error_log("surplus condition: "     . ( $surplus > 0.3 )       . "");
 
           switch(true)
           {

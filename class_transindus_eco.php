@@ -292,7 +292,7 @@ class class_transindus_eco
                                     ( $shelly_switch_status === "ON" )              &&  // Switch is ON now
                                     ( $this->nowIsWithinTimeLimits("17:30", "17:40") ); // before sunset
 
-          error_log("switch release: "     . $switch_release       . "");
+          error_log("switch status: "     . $shelly_switch_status === "ON"       . "");
 
           switch(true)
           {

@@ -280,8 +280,8 @@ class class_transindus_eco
 
           $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
                                             ( $this->nowIsWithinTimeLimits("07:00", "17:30"))&&  // Daytime
-                                            ( $psolar > 0.6 )                                 && // 
-                                            ( $surplus < -0.4 ); 
+                                            ( $psolar > 0.3 )                                 && // 
+                                            ( $surplus < -0.3 ); 
 
           $switch_release =  ( $battery_voltage_avg > 49.0 )    &&  // Battery SOC is adequate for release
                              ( $shelly_switch_status == "ON" ) &&  // Switch is ON now

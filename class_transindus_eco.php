@@ -286,7 +286,7 @@ class class_transindus_eco
           $switch_release =  ( $battery_voltage_avg > 49.0 )    &&  // Battery SOC is adequate for release
                              ( $shelly_switch_status === "ON" ) &&  // Switch is ON now
                              ( $surplus > 0.3 )                 &&  // Solar is greater than Load
-                             ( $keep_shelly_switch_closed_always === false ); //
+                             ( $keep_shelly_switch_closed_always == false ); //
 
           $sunset_switch_release  = ( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
                                     ( $shelly_switch_status === "ON" )              &&  // Switch is ON now

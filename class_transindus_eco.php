@@ -252,11 +252,11 @@ class class_transindus_eco
 
           if (true)
           {
-              error_log("user: "                 . $wp_user_name                             . "Shelly and Studer Values");
+              error_log("user: "                 . $wp_user_name                             . ": Shelly and Studer Values");
               error_log("Shelly Switch State: "  . $shelly_switch_status                     . "");
               error_log("Battery Avg Voltage: "  . $battery_voltage_avg                      . "Vdc ");
-              error_log("Battery Current: "      . $studer_readings_obj->battery_charge_adc  . "Adc ");
-              //error_log("Solar PowerGen: "       . $psolar                                   . "KW ");
+              //error_log("Battery Current: "      . $studer_readings_obj->battery_charge_adc  . "Adc ");
+              error_log("Solar PowerGen: "       . $psolar                                   . "KW ");
               error_log("AC at Studer Input: "   . $studer_readings_obj->grid_input_vac      . "Vac ");
               //error_log("Inverter PowerOut: "    . $pout_inverter                            . "KW ");
               error_log("Surplus PowerOut: "     . $surplus                            . "KW ");

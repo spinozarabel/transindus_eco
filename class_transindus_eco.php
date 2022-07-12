@@ -602,7 +602,7 @@ class class_transindus_eco
             $solar                  =   $studer_readings_obj->psolar_kw;
             $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
             $battery_span_fontawesome = $studer_readings_obj->battery_span_fontawesome;
-            $battery_voltage_vdc    =   $studer_readings_obj->battery_voltage_vdc;
+            $battery_voltage_vdc    =   round( $studer_readings_obj->battery_voltage_vdc, 1);
 
             $output .= $this->print_row_table(  $home, $solar_capacity, $battery_capacity, $battery_voltage_vdc,
                                                 $solar_yesterday, $grid_yesterday, $consumed_yesterday,

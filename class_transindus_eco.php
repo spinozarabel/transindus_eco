@@ -652,6 +652,8 @@ class class_transindus_eco
             </tr>
                 
         </table>';
+        
+        return $output;
     }
 
 

@@ -554,12 +554,12 @@ class class_transindus_eco
       
 
         // Now to find the index in the config array using the above
-        $user_index = array_search($wp_user_name, array_column($config['accounts'], 'wp_user_name'));
+        $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
 
         if ($user_index === false) return "Could NOT match logged in user within config array";
        
         // get the Studer status using the minimal set of readings
-        $studer_readings_obj  = $this->get_studer_min_readings($user_index);
+        $studer_readings_obj  = $this->get_studer_readings($user_index);
 
         // check for valid studer values. Return if not valid
         if( empty(  $studer_readings_obj ) ) 

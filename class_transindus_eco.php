@@ -602,8 +602,9 @@ class class_transindus_eco
             $solar                  =   $studer_readings_obj->psolar_kw;
             $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
             $battery_span_fontawesome = $studer_readings_obj->battery_span_fontawesome;
+            $battery_voltage_vdc    =   $studer_readings_obj->battery_voltage_vdc;
 
-            $output .= $this->print_row_table(  $home, $solar_capacity, $battery_capacity, 
+            $output .= $this->print_row_table(  $home, $solar_capacity, $battery_capacity, $battery_voltage_vdc,
                                                 $solar_yesterday, $grid_yesterday, $consumed_yesterday,
                                                 $battery_span_fontawesome, $solar, $grid_staus_icon, $pout_inverter_ac_kw   );
         }
@@ -612,7 +613,7 @@ class class_transindus_eco
         return $output;
     }
 
-    public function print_row_table(    $home, $solar_capacity, $battery_capacity, 
+    public function print_row_table(    $home, $solar_capacity, $battery_capacity, $battery_voltage_vdc,
                                         $solar_yesterday, $grid_yesterday, $consumed_yesterday,
                                         $battery_span_fontawesome, $solar, $grid_staus_icon, $pout_inverter_ac_kw   )
     {
@@ -621,7 +622,7 @@ class class_transindus_eco
             '<td>' . $home .                                            '</td>' .
             '<td>' . '<font color="green">' . $solar_yesterday .        '</td>' .
             '<td>' . '<font color="red">' .   $grid_yesterday .         '</td>' .
-            '<td>' . $battery_span_fontawesome .      '</td>' .
+            '<td>' . $battery_span_fontawesome . $battery_voltage_vdc . '</td>' .
             '<td>' . '<font color="green">' . $solar .                  '</td>' .
             '<td>' . $grid_staus_icon .       $pout_inverter_ac_kw  .   '</td>' .
         '</tr>';

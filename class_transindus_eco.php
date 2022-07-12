@@ -607,8 +607,8 @@ class class_transindus_eco
         // PV arrow icon determination
         if ($psolar_kw > 0.1)
         {
-            $pv_arrow_icon = '<i class="fa-solid fa-2xl fa-arrow-down fa-rotate-by 45 rediconcolor" 
-                                style="--fa-animation-duration: 0.5s;">
+            $pv_arrow_icon = '<i class="fa-solid fa-2xl fa-arrow-down fa-rotate-by" 
+                                style="--fa-animation-duration: 0.5s;--fa-rotate-angle: -45deg;">
                               </i>';
         }
         else 

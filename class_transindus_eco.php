@@ -294,6 +294,10 @@ class class_transindus_eco
                                     ( $shelly_switch_status == "ON" )               &&  // Switch is ON now
                                     ( $now_is_sunset );                                 // around sunset
 
+          $cloudy_day_so_be_conservative =  ( $shelly_switch_status == "OFF" )          &&  // Switch is Currently OFF
+                                              $now_is_daytime                           &&  // Daytime
+                                              $it_is_a_cloudy_day;
+
           switch(true)
           {
               // if Shelly switch is OPEN but Studer transfer relay is closed and Studer AC voltage is present
@@ -378,17 +382,13 @@ class class_transindus_eco
                   error_log("Exited via Case 6 - sunset switch released (OFF)");
               break;
 
-              /* <7> Keep switch ON between 0900 to 1700 on CLoudy day for Solar Priority mode
-              case (  $shelly_switch_status === "OFF"                 &&  // Switch is Currently OFF
-                      $keep_shelly_switch_closed_always == false      &&  // Emergency flag is False
-                      $this->nowIsWithinTimeLimits("08:00", "17:00")  &&  // before sunset 
-                      $it_is_a_cloudy_day               == true
-                    ):
+               // <7> Keep switch ON between 0900 to 1700 on CLoudy day for Solar Priority mode
+              case (  $cloudy_day_so_be_conservative):
 
-                  // $this->turn_on_off_shelly_switch($user_index, "on");
-                  error_log("Exited via Case 7");
+                  $this->turn_on_off_shelly_switch($user_index, "on");
+                  error_log("Exited via Case 7 - cloudy Day so be conservative and Switch ON");
               break;
-              */
+              
 
               default:
                   // $this->verbose ? print("<pre>username: " . $wp_user_name . " No Switch action - didn't Fire any CASE</pre>" ) : false;

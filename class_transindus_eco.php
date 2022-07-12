@@ -590,11 +590,11 @@ class class_transindus_eco
 
             if ($studer_readings_obj->grid_pin_ac_kw < 0.1)
             {
-                $grid_staus_icon = '<i class="fa-solid fa-2xl fa-plug-circle-xmark"></i>';
+                $grid_staus_icon = '<i class="fa-solid fa-2xl fa-plug-circle-xmark greeniconcolor"></i>';
             }
             else
             {
-                $grid_staus_icon = '<i class="fa-solid fa-2xl fa-plug-circle-check"></i>';
+                $grid_staus_icon = '<i class="fa-solid fa-2xl fa-plug-circle-check rediconcolor"></i>';
             }
             $solar_capacity         =   $account['solar_pk_install'];
             $battery_capacity       =   $account['battery_capacity'];

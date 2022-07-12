@@ -613,7 +613,7 @@ class class_transindus_eco
         }
         else 
         {
-            $pv_arrow_icon = '<i class="fa-solid fa-2xl fa-circle-xmark fa-rotate-by 45 rediconcolor"></i>';
+            $pv_arrow_icon = '<i class="fa-solid fa-2xl fa-circle-xmark fa-rotate-by" style="--fa-rotate-angle: 45deg;"></i>';
         }
 
         
@@ -652,7 +652,7 @@ class class_transindus_eco
             </tr>
                 
         </table>';
-        
+
         return $output;
     }
 

@@ -125,7 +125,7 @@ class class_transindus_eco
 
         add_shortcode( 'transindus-studer-settings',  [$this, 'studer_settings_page_render'] );
 
-        add_shortcode( 'my-studer-readings',          [$this, 'studer_settings_page_render'] );        
+        add_shortcode( 'my-studer-readings',          [$this, 'my_studer_readings_page_render'] );        
     }
 
     public function add_my_menu()
@@ -537,6 +537,123 @@ class class_transindus_eco
         }
 
     }
+
+    /**
+     * 
+     */
+    public function my_studer_readings_page_render()
+    {
+        // initialize page HTML to be returned to be rendered by WordPress
+        $output = '';
+
+        // get my user index knowing my login name
+        $current_user = wp_get_current_user();
+        $wp_user_name = $current_user->user_login;
+
+        $config           = $this->config;
+      
+
+        // Now to find the index in the config array using the above
+        $user_index = array_search($wp_user_name, array_column($config['accounts'], 'wp_user_name'));
+
+        if ($user_index === false) return "Could NOT match logged in user within config array";
+       
+        // get the Studer status using the minimal set of readings
+        $studer_readings_obj  = $this->get_studer_min_readings($user_index);
+
+        // check for valid studer values. Return if not valid
+        if( empty(  $studer_readings_obj ) ) 
+            {
+                $output .= "Could not get a valid Studer Reading using API";
+                return $output;
+            }
+
+        $battery_icon_class     =   $studer_readings_obj->battery_icon_class;
+        $psolar_kw              =   $studer_readings_obj->psolar_kw;
+        $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
+        $battery_span_fontawesome = $studer_readings_obj->battery_span_fontawesome;
+        $battery_voltage_vdc    =   round( $studer_readings_obj->battery_voltage_vdc, 1);
+
+        if ( !empty( $config['accounts'][$user_index]['shelly_device_id'] ) )
+        {
+            // get the current ACIN Shelly Switch Status. This returns null if not a valid response
+            $shelly_api_device_response = $this->get_shelly_device_status($user_index);
+
+            // Ascertain switch status: True if Switch is closed, false if Switch is open
+            $shelly_switch_status_ON   = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+        }
+        else
+        {
+            // User does not have a Shelly Switch at ACIN, null the status
+            $shelly_switch_status_ON = null;
+        }
+        
+        // If power is flowing OR switch has ON status then show CHeck and Green
+        if ($studer_readings_obj->grid_pin_ac_kw > 0.01 || $shelly_switch_status_ON)
+        {
+            $grid_staus_icon = '<i class="fa-solid fa-2xl fa-power-off greeniconcolor"></i>';
+
+            $grid_arrow_icon = '<i class="fa-solid fa-2xl fa-arrow-right fa-rotate-by 45 rediconcolor" 
+                                   style="--fa-animation-duration: 0.5s;">
+                                </i>';
+        }
+        else
+        {
+            $grid_staus_icon = '<i class="fa-solid fa-2xl fa-power-off rediconcolor"></i>';
+
+            $grid_arrow_icon = '<i class="fa-solid fa-2xl fa-circle-xmark fa-rotate-by -45 rediconcolor"></i>';
+        }
+
+        // PV arrow icon determination
+        if ($psolar_kw > 0.1)
+        {
+            $pv_arrow_icon = '<i class="fa-solid fa-2xl fa-arrow-down fa-rotate-by 45 rediconcolor" 
+                                style="--fa-animation-duration: 0.5s;">
+                              </i>';
+        }
+        else 
+        {
+            $pv_arrow_icon = '<i class="fa-solid fa-2xl fa-circle-xmark fa-rotate-by 45 rediconcolor"></i>';
+        }
+
+        
+
+        
+
+        $output .= '
+        <style>
+            table {
+                .rediconcolor {color:red;}
+                .greeniconcolor {color:green;}
+                .img-pow-genset { max-width: 59px; }
+        </style>';
+
+        // define all the icon styles and colors based on STuder and Switch values
+
+
+        $output .= '
+        <table>
+            <tr>
+                <th>' . $grid_staus_icon . '</th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th>
+                    <i class="fa-solid fa-2xl fa-solar-panel greeniconcolor"></i>
+                </th>
+            </tr>
+                <th>' . $pout_inverter_ac_kw . '</th>
+                <th>' . $grid_arrow_icon . '</th>
+                <th></th>
+                <th>' . $pv_arrow_icon . '</th>
+                <th>' . $psolar_kw . '</th>
+            <tr>
+
+            </tr>
+                
+        </table>';
+    }
+
 
     /**
      * 

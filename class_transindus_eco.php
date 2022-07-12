@@ -124,6 +124,8 @@ class class_transindus_eco
         add_shortcode( 'transindus-studer-readings',  [$this, 'studer_readings_page_render'] );
 
         add_shortcode( 'transindus-studer-settings',  [$this, 'studer_settings_page_render'] );
+
+        add_shortcode( 'my-studer-readings',          [$this, 'studer_settings_page_render'] );        
     }
 
     public function add_my_menu()
@@ -288,7 +290,8 @@ class class_transindus_eco
           $switch_release =  ( $battery_voltage_avg > 49.0 )    &&  // Battery SOC is adequate for release
                              ( $shelly_switch_status == "ON" )  &&  // Switch is ON now
                              ( $surplus > 0.3 )                 &&  // Solar is greater than Load
-                             ( $keep_shelly_switch_closed_always == false ); //
+                             ( $keep_shelly_switch_closed_always == false ) &&
+                            ! $it_is_a_cloudy_day;
 
           $sunset_switch_release  = ( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
                                     ( $shelly_switch_status == "ON" )               &&  // Switch is ON now

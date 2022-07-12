@@ -546,6 +546,14 @@ class class_transindus_eco
         // initialize page HTML to be returned to be rendered by WordPress
         $output = '';
 
+        $output .= '
+        <style>
+            table {
+                .rediconcolor {color:red;}
+                .greeniconcolor {color:green;}
+                .img-pow-genset { max-width: 59px; }
+        </style>';
+
         // get my user index knowing my login name
         $current_user = wp_get_current_user();
         $wp_user_name = $current_user->user_login;
@@ -601,14 +609,14 @@ class class_transindus_eco
         {
             $grid_staus_icon = '<i class="fa-solid fa-2xl fa-power-off rediconcolor"></i>';
 
-            $grid_arrow_icon = '<i class="fa-solid fa-2xl fa-circle-xmark fa-rotate-by -45 rediconcolor"></i>';
+            $grid_arrow_icon = '<i class="fa-solid fa-2xl fa-circle-xmark fa-rotate-by"></i>';
         }
 
         // PV arrow icon determination
         if ($psolar_kw > 0.1)
         {
             $pv_arrow_icon = '<i class="fa-solid fa-2xl fa-arrow-down fa-rotate-by" 
-                                style="--fa-animation-duration: 0.5s;--fa-rotate-angle: -45deg;">
+                                style="--fa-animation-duration: 0.5s;--fa-rotate-angle: 45deg;">
                               </i>';
         }
         else 
@@ -620,13 +628,7 @@ class class_transindus_eco
 
         
 
-        $output .= '
-        <style>
-            table {
-                .rediconcolor {color:red;}
-                .greeniconcolor {color:green;}
-                .img-pow-genset { max-width: 59px; }
-        </style>';
+        
 
         // define all the icon styles and colors based on STuder and Switch values
 

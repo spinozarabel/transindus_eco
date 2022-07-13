@@ -557,7 +557,7 @@ class class_transindus_eco
                   border-collapse: collapse;
                   overflow-x: auto;
                   border-spacing: 0;
-                  font-size: 22px;
+                  font-size: 2rem;
               }
             table {
                 .rediconcolor {color:red;}
@@ -720,7 +720,7 @@ class class_transindus_eco
                 <td></td>
                 <td></td>
                 <td id="load_icon">
-                    <span style="color: Green;">
+                    <span style="color: Black;">
                         <i class="fa-solid fa-3x fa-house"></i>
                     </span>
                 </td>

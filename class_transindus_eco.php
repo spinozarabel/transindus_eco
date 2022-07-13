@@ -649,7 +649,7 @@ class class_transindus_eco
                 <td>' . $pv_arrow_icon . $psolar_kw . 'KW</td>
             <tr>
                 <td></td>
-                <td><i class="fa-solid fa-2xl fa-s"></i></td>
+                <td><i class="fa-solid fa-2xl fa-hard-drive"></i></td>
                 <td></td>
             </tr>
                 

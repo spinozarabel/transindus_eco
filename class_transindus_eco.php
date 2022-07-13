@@ -605,7 +605,7 @@ class class_transindus_eco
         {
             $grid_staus_icon = '<i class="fa-solid fa-2xl fa-power-off greeniconcolor"></i>';
 
-            $grid_arrow_icon = '<i class="fa-solid fa-2xl fa-arrow-right fa-rotate-by" 
+            $grid_arrow_icon = '<i class="fa-solid fa-2xl fa-long-arrow-right fa-rotate-by" 
                                    style="--fa-animation-duration: 0.5s;--fa-rotate-angle: 45deg;">
                                 </i>';
         }
@@ -619,7 +619,7 @@ class class_transindus_eco
         // PV arrow icon determination
         if ($psolar_kw > 0.1)
         {
-            $pv_arrow_icon = '<i class="fa-solid fa-2xl fa-arrow-down fa-rotate-by" 
+            $pv_arrow_icon = '<i class="fa-solid fa-2xl fa-long-arrow-down fa-rotate-by" 
                                 style="--fa-animation-duration: 0.5s;--fa-rotate-angle: 45deg;">
                               </i>';
         }

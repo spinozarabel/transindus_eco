@@ -647,7 +647,9 @@ class class_transindus_eco
                 <td></td>
                 <td></td>
                 <td id="pv_panel_icon">
-                    <i class="fa-solid fa-2xl fa-solar-panel greeniconcolor"></i>
+                    <span style="color: Green;">
+                        <i class="fa-solid fa-2xl fa-solar-panel"></i>
+                    </span>
                 </td>
             </tr>
                 <td id="grid_pin_ac_kw">' . $grid_pin_ac_kw . 'KW<br>' . $grid_input_vac . 'V</td>

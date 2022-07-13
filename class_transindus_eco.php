@@ -578,12 +578,18 @@ class class_transindus_eco
             }
 
         $battery_icon_class     =   $studer_readings_obj->battery_icon_class;
+
         $psolar_kw              =   $studer_readings_obj->psolar_kw;
+        $solar_pv_adc           =   $studer_readings_obj->solar_pv_adc;
+
         $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
+
         $battery_span_fontawesome = $studer_readings_obj->battery_span_fontawesome;
         $battery_voltage_vdc    =   round( $studer_readings_obj->battery_voltage_vdc, 1);
+
         $grid_pin_ac_kw         =   $studer_readings_obj->grid_pin_ac_kw;
         $grid_input_vac         =   $studer_readings_obj->grid_input_vac;
+
 
 
         if ( !empty( $config['accounts'][$user_index]['shelly_device_id'] ) )
@@ -628,15 +634,7 @@ class class_transindus_eco
             $pv_arrow_icon = '<i class="fa-solid fa-2xl fa-circle-xmark fa-rotate-by" style="--fa-rotate-angle: 45deg;"></i>';
         }
 
-        
-
-        
-
-        
-
         // define all the icon styles and colors based on STuder and Switch values
-
-
         $output .= '
         <table>
             <tr>
@@ -652,7 +650,7 @@ class class_transindus_eco
                 <td id="grid_arrow_icon">' . $grid_arrow_icon  . '</td>
                 <td></td>
                 <td id="pv_arrow_icon">' . $pv_arrow_icon    . '</td>
-                <td id="psolar_kw">' . $psolar_kw . 'KW</td>
+                <td id="psolar_kw">' . $psolar_kw . 'KW<br>' . $solar_pv_adc . 'A</td>
 
             <tr>
                 <td></td>

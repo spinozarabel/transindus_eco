@@ -706,7 +706,7 @@ class class_transindus_eco
                 <td id="grid_arrow_icon">'  . $grid_arrow_icon  . '</td>
                 <td></td>
                 <td id="pv_arrow_icon">'    . $pv_arrow_icon    . '</td>
-                <td id="psolar_kw">'        . $psolar_kw        . ' KW<br>' . $solar_pv_adc   . ' A</td>
+                <td id="psolar_kw" style="font-size: 18px;">'        . $psolar_kw        . ' KW<br>' . $solar_pv_adc   . ' A</td>
 
             <tr>
                 <td></td>
@@ -720,7 +720,7 @@ class class_transindus_eco
                 <td id="battery_arrow_icon">' . $battery_arrow_icon .  '</td>
                 <td></td>
                 <td id="load_arrow_icon">'  . $load_arrow_icon    . '</td>
-                <td id="load_info">'        . $pout_inverter_ac_kw. ' KW</td>
+                <td id="load_info" style="font-size: 18px;">'        . $pout_inverter_ac_kw. ' KW</td>
             </tr>
             <tr>
                 <td id="battery_status_icon">' . $battery_span_fontawesome . '</td>

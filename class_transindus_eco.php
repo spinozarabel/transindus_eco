@@ -577,15 +577,16 @@ class class_transindus_eco
                 return $output;
             }
 
-        $battery_icon_class     =   $studer_readings_obj->battery_icon_class;
-
         $psolar_kw              =   $studer_readings_obj->psolar_kw;
         $solar_pv_adc           =   $studer_readings_obj->solar_pv_adc;
 
         $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
 
         $battery_span_fontawesome = $studer_readings_obj->battery_span_fontawesome;
+        $battery_icon_class     =   $studer_readings_obj->battery_icon_class;
         $battery_voltage_vdc    =   round( $studer_readings_obj->battery_voltage_vdc, 1);
+        // Positive is charging and negative is discharging
+        $battery_charge_adc     =   $studer_readings_obj->battery_charge_adc;
 
         $grid_pin_ac_kw         =   $studer_readings_obj->grid_pin_ac_kw;
         $grid_input_vac         =   $studer_readings_obj->grid_input_vac;
@@ -648,6 +649,27 @@ class class_transindus_eco
             $pv_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark fa-rotate-by" style="--fa-rotate-angle: 45deg;"></i>';
         }
 
+        // battery arrow
+        if ($battery_charge_adc > 0)
+        {
+            // current is charging the battery, arrow is down into battery
+            $battery_arrow_icon = '<i class="fa-solid fa-3x fa-long-arrow-down fa-rotate-by" 
+                                                                               style="--fa-rotate-angle: 45deg;">
+                                   </i>';
+        }
+        else 
+        {
+            // current is discharge, aarrow is away from battery and red
+            $battery_arrow_icon = '<i class="fa-solid fa-3x fa-long-arrow-up fa-rotate-by" 
+                                                                               style="--fa-rotate-angle: 45deg;">
+                                   </i>';
+        }
+
+        // load arrow icon
+        $load_arrow_icon = '<i class="fa-solid fa-3x fa-long-arrow-right fa-rotate-by" 
+                                                                          style="--fa-rotate-angle: 45deg;">
+                            </i>';
+
         // define all the icon styles and colors based on STuder and Switch values
         $output .= '
         <table>
@@ -662,11 +684,11 @@ class class_transindus_eco
                     </span>
                 </td>
             </tr>
-                <td id="grid_pin_ac_kw">' . $grid_pin_ac_kw . ' KW<br>' . $grid_input_vac . ' V</td>
-                <td id="grid_arrow_icon">' . $grid_arrow_icon  . '</td>
+                <td id="grid_info">'        . $grid_pin_ac_kw   . ' KW<br>' . $grid_input_vac . ' V</td>
+                <td id="grid_arrow_icon">'  . $grid_arrow_icon  . '</td>
                 <td></td>
-                <td id="pv_arrow_icon">' . $pv_arrow_icon    . '</td>
-                <td id="psolar_kw">' . $psolar_kw . ' KW<br>' . $solar_pv_adc . ' A</td>
+                <td id="pv_arrow_icon">'    . $pv_arrow_icon    . '</td>
+                <td id="psolar_kw">'        . $psolar_kw        . ' KW<br>' . $solar_pv_adc   . ' A</td>
 
             <tr>
                 <td></td>
@@ -675,6 +697,15 @@ class class_transindus_eco
                 <td></td>
                 <td></td>
             </tr>
+            <tr>
+                <td id="battery_info">'     . $battery_voltage_vdc  . ' V<br>' . abs($battery_charge_adc)   . ' A</td>
+                <td id="battery_arrow_icon">' . $battery_arrow_icon .  '</td>
+                <td></td>
+                <td id="load_arrow_icon">'  . $load_arrow_icon    . '</td>
+                <td id="load_info">'        . $pout_inverter_ac_kw. ' KW</td>
+
+            </tr>
+
                 
         </table>';
 

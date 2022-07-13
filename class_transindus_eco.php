@@ -678,7 +678,7 @@ class class_transindus_eco
 
         // define all the icon styles and colors based on STuder and Switch values
         $output .= '
-        <table class="synoptic-table">
+        <table id="my-studer-readings-table">
             <tr>
                 <td id="grid_status_icon">' . $grid_staus_icon . '</td>
                 <td></td>

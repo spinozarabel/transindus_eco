@@ -703,6 +703,17 @@ class class_transindus_eco
                 <td></td>
                 <td id="load_arrow_icon">'  . $load_arrow_icon    . '</td>
                 <td id="load_info">'        . $pout_inverter_ac_kw. ' KW</td>
+            </tr>
+            <tr>
+                <td id="battery_status_icon">' . $battery_span_fontawesome . '</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td id="load_icon">
+                    <span style="color: Green;">
+                        <i class="fa-solid fa-3x fa-house"></i>
+                    </span>
+                </td>
 
             </tr>
 

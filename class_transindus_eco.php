@@ -595,18 +595,25 @@ class class_transindus_eco
         if ( !empty( $config['accounts'][$user_index]['shelly_device_id'] ) )
         {
             // get the current ACIN Shelly Switch Status. This returns null if not a valid response
+            $has_shelly = true;
             $shelly_api_device_response = $this->get_shelly_device_status($user_index);
+            if(empty($shelly_api_device_response))
+            {
+                // Shelly device is OFFLINE
+                $shelly_switch_status_ON = null;
+                $grid_staus_icon = '<span style="color: Yellow;">
+                                        <i class="fa-solid fa-3x fa-power-off"></i>
+                                    </span>';
+            }
 
             // Ascertain switch status: True if Switch is closed, false if Switch is open
             $shelly_switch_status_ON   = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
         }
         else
         {
-            // User does not have a Shelly Switch at ACIN, null the status
-            $shelly_switch_status_ON = null;
-            $grid_staus_icon = '<span style="color: Yellow;">
-                                    <i class="fa-solid fa-3x fa-power-off"></i>
-                                </span>';
+            // User does not have a Shelly Switch
+            $has_shelly = false;
+            
         }
         
         // If power is flowing OR switch has ON status then show CHeck and Green

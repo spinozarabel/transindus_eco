@@ -678,8 +678,8 @@ class class_transindus_eco
         else 
         {
             // current is discharge, aarrow is away from battery and red
-            $battery_arrow_icon = '<i class="fa-solid fa-3x fa-long-arrow-right fa-rotate-by" 
-                                                                               style="--fa-rotate-angle: -45deg;">
+            $battery_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-up-long fa-rotate-by" 
+                                                                               style="--fa-rotate-angle: 45deg;">
                                    </i>';
         }
 

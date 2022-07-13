@@ -79,7 +79,7 @@ class shelly_cloud_api
       // already json decoded into object
       $curlResponse   = $this->getCurl($endpoint, $headers, $params);
 
-      if ( $curlResponse->isok )
+      if ( $curlResponse->isok && $curlResponse->data->online)
           {
               return $curlResponse;
           }
@@ -87,7 +87,7 @@ class shelly_cloud_api
           {
               if ($this->verbose)
               {
-                  error_log( "This is the response while querying for your Shelly device" . print_r($curlResponse, true) );
+                  error_log( "Shelly device Cloud not responding or device offline" . print_r($curlResponse, true) );
               }
               return null;
           }

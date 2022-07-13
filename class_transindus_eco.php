@@ -79,7 +79,7 @@ class class_transindus_eco
       $this->verbose = false;
 
       // Initialize the aarrays to hold quantities for running averages
-      $this->bv_avg_arr       = [0, 0, 0, 0, 0];
+      $this->bv_avg_arr       = [0, 0, 0, 0, 0, 0]; // 6 minutes of averaging
       $this->psolar_avg_arr   = [];
       $this->pload_avg        = [];
 

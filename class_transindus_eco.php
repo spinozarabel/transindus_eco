@@ -557,7 +557,7 @@ class class_transindus_eco
                   border-collapse: collapse;
                   overflow-x: auto;
                   border-spacing: 0;
-                  font-size: 2rem;
+                  font-size: 3rem;
               }
             table {
                 .rediconcolor {color:red;}

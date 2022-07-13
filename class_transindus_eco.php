@@ -604,12 +604,15 @@ class class_transindus_eco
         {
             // User does not have a Shelly Switch at ACIN, null the status
             $shelly_switch_status_ON = null;
+            $grid_staus_icon = '<span style="color: Yellow;">
+                                    <i class="fa-solid fa-2xl fa-power-off"></i>
+                                </span>';
         }
         
         // If power is flowing OR switch has ON status then show CHeck and Green
-        if ($grid_pin_ac_kw > 0.01 || $shelly_switch_status_ON)
+        if ($grid_pin_ac_kw > 0.01 )
         {
-            $grid_staus_icon = '<span style="color: Mediumslateblue;">
+            $grid_staus_icon = '<span style="color: Green;">
                                     <i class="fa-solid fa-2xl fa-power-off"></i>
                                 </span>';
 
@@ -617,7 +620,7 @@ class class_transindus_eco
                                                                               style="--fa-rotate-angle: 45deg;">
                                 </i>';
         }
-        else
+        elseif( is_null($shelly_switch_status_ON) )
         {
             $grid_staus_icon = '<span style="color: Red;">
                                     <i class="fa-solid fa-2xl fa-power-off"></i>

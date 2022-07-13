@@ -644,13 +644,13 @@ class class_transindus_eco
                     <i class="fa-solid fa-2xl fa-solar-panel greeniconcolor"></i>
                 </td>
             </tr>
-                <td>' . $grid_pin_ac_kw . 'KW' . $grid_arrow_icon . '</td>
+                <td>' . $grid_arrow_icon  . '</td>
                 <td></td>
-                <td>' . $pv_arrow_icon . $psolar_kw . 'KW</td>
+                <td>' . $pv_arrow_icon    . '</td>
             <tr>
-                <td></td>
+                <td>' . $grid_pin_ac_kw . 'KW</td>
                 <td><i class="fa-solid fa-2xl fa-hard-drive"></i></td>
-                <td></td>
+                <td>' . $psolar_kw . 'KW</td>
             </tr>
                 
         </table>';

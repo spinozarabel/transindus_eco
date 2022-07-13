@@ -630,7 +630,7 @@ class class_transindus_eco
                                     <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';
 
-            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-long-arrow-right fa-rotate-by" 
+            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-right-long fa-rotate-by" 
                                                                               style="--fa-rotate-angle: 45deg;">
                                 </i>';
         }
@@ -658,7 +658,7 @@ class class_transindus_eco
         // PV arrow icon determination
         if ($psolar_kw > 0.1)
         {
-            $pv_arrow_icon = '<i class="fa-solid fa-3x fa-long-arrow-down fa-rotate-by" 
+            $pv_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-down-long fa-rotate-by" 
                                                                            style="--fa-rotate-angle: 45deg;">
                               </i>';
         }
@@ -671,7 +671,7 @@ class class_transindus_eco
         if ($battery_charge_adc > 0)
         {
             // current is charging the battery, arrow is down into battery
-            $battery_arrow_icon = '<i class="fa-solid fa-3x fa-long-arrow-down fa-rotate-by" 
+            $battery_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-down-long fa-rotate-by" 
                                                                                style="--fa-rotate-angle: 45deg;">
                                    </i>';
         }
@@ -684,7 +684,7 @@ class class_transindus_eco
         }
 
         // load arrow icon
-        $load_arrow_icon = '<i class="fa-solid fa-3x fa-long-arrow-right fa-rotate-by" 
+        $load_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-right-long fa-rotate-by" 
                                                                           style="--fa-rotate-angle: 45deg;">
                             </i>';
 

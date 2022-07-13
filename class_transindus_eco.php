@@ -690,7 +690,7 @@ class class_transindus_eco
                     </span>
                 </td>
             </tr>
-                <td id="grid_info" style="font-size: 22px;">'        . $grid_pin_ac_kw   . ' KW<br>' . $grid_input_vac . ' V</td>
+                <td id="grid_info" style="font-size: 18px;">'        . $grid_pin_ac_kw   . ' KW<br>' . $grid_input_vac . ' V</td>
                 <td id="grid_arrow_icon">'  . $grid_arrow_icon  . '</td>
                 <td></td>
                 <td id="pv_arrow_icon">'    . $pv_arrow_icon    . '</td>
@@ -704,7 +704,7 @@ class class_transindus_eco
                 <td></td>
             </tr>
             <tr>
-                <td id="battery_info" style="font-size: 22px;">'     . $battery_voltage_vdc  . ' V<br>' . abs($battery_charge_adc)   . ' A</td>
+                <td id="battery_info" style="font-size: 18px;">'     . $battery_voltage_vdc  . ' V<br>' . abs($battery_charge_adc)   . ' A</td>
                 <td id="battery_arrow_icon">' . $battery_arrow_icon .  '</td>
                 <td></td>
                 <td id="load_arrow_icon">'  . $load_arrow_icon    . '</td>

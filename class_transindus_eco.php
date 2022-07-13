@@ -609,15 +609,19 @@ class class_transindus_eco
         // If power is flowing OR switch has ON status then show CHeck and Green
         if ($grid_pin_ac_kw > 0.01 || $shelly_switch_status_ON)
         {
-            $grid_staus_icon = '<i class="fa-solid fa-2xl fa-power-off greeniconcolor"></i>';
+            $grid_staus_icon = '<span style="color: Mediumslateblue;">
+                                    <i class="fa-solid fa-2xl fa-power-off"></i>
+                                </span>';
 
             $grid_arrow_icon = '<i class="fa-solid fa-2xl fa-long-arrow-right fa-rotate-by" 
-                                   style="--fa-animation-duration: 0.5s;--fa-rotate-angle: 45deg;">
+                                                                              style="--fa-rotate-angle: 45deg;">
                                 </i>';
         }
         else
         {
-            $grid_staus_icon = '<i class="fa-solid fa-2xl fa-power-off rediconcolor"></i>';
+            $grid_staus_icon = '<span style="color: Red;">
+                                    <i class="fa-solid fa-2xl fa-power-off"></i>
+                                </span>';
 
             $grid_arrow_icon = '<i class="fa-solid fa-2xl fa-circle-xmark fa-rotate-by"></i>';
         }
@@ -626,7 +630,7 @@ class class_transindus_eco
         if ($psolar_kw > 0.1)
         {
             $pv_arrow_icon = '<i class="fa-solid fa-2xl fa-long-arrow-down fa-rotate-by" 
-                                style="--fa-animation-duration: 0.5s;--fa-rotate-angle: 45deg;">
+                                                                           style="--fa-rotate-angle: 45deg;">
                               </i>';
         }
         else 

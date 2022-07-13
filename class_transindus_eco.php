@@ -642,17 +642,24 @@ class class_transindus_eco
             <tr>
                 <td id="grid_status_icon">' . $grid_staus_icon . '</td>
                 <td></td>
+                <td></td>
+                <td></td>
                 <td id="pv_panel_icon">
                     <i class="fa-solid fa-2xl fa-solar-panel greeniconcolor"></i>
                 </td>
             </tr>
+                <td id="grid_pin_ac_kw">' . $grid_pin_ac_kw . 'KW<br>' . $grid_input_vac . 'V</td>
                 <td id="grid_arrow_icon">' . $grid_arrow_icon  . '</td>
                 <td></td>
                 <td id="pv_arrow_icon">' . $pv_arrow_icon    . '</td>
-            <tr>
-                <td id="grid_pin_ac_kw">' . $grid_pin_ac_kw . 'KW<br>' . $grid_input_vac . 'V</td>
-                <td id="studer_icon"><i class="fa-solid fa-2xl fa-hard-drive"></i></td>
                 <td id="psolar_kw">' . $psolar_kw . 'KW</td>
+
+            <tr>
+                <td></td>
+                <td></td>
+                <td id="studer_icon"><i class="fa-solid fa-2xl fa-hard-drive"></i></td>
+                <td></td>
+                <td></td>
             </tr>
                 
         </table>';

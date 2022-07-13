@@ -582,6 +582,7 @@ class class_transindus_eco
         $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
         $battery_span_fontawesome = $studer_readings_obj->battery_span_fontawesome;
         $battery_voltage_vdc    =   round( $studer_readings_obj->battery_voltage_vdc, 1);
+        $grid_pin_ac_kw         =   $studer_readings_obj->grid_pin_ac_kw;
 
         if ( !empty( $config['accounts'][$user_index]['shelly_device_id'] ) )
         {
@@ -598,7 +599,7 @@ class class_transindus_eco
         }
         
         // If power is flowing OR switch has ON status then show CHeck and Green
-        if ($studer_readings_obj->grid_pin_ac_kw > 0.01 || $shelly_switch_status_ON)
+        if ($grid_pin_ac_kw > 0.01 || $shelly_switch_status_ON)
         {
             $grid_staus_icon = '<i class="fa-solid fa-2xl fa-power-off greeniconcolor"></i>';
 
@@ -639,19 +640,17 @@ class class_transindus_eco
             <tr>
                 <th>' . $grid_staus_icon . '</th>
                 <th></th>
-                <th></th>
-                <th></th>
                 <th>
                     <i class="fa-solid fa-2xl fa-solar-panel greeniconcolor"></i>
                 </th>
             </tr>
-                <th>' . $pout_inverter_ac_kw . '</th>
-                <th>' . $grid_arrow_icon . '</th>
+                <th>' . $grid_pin_ac_kw . $grid_arrow_icon . '</th>
                 <th></th>
-                <th>' . $pv_arrow_icon . '</th>
-                <th>' . $psolar_kw . '</th>
+                <th>' . $pv_arrow_icon . $psolar_kw . '</th>
             <tr>
-
+                <th></th>
+                <th><i class="fa-solid fa-2xl fa-s"></i></th>
+                <th></th>
             </tr>
                 
         </table>';

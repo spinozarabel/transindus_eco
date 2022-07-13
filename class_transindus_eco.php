@@ -549,6 +549,16 @@ class class_transindus_eco
 
         $output .= '
         <style>
+            @media (min-width: 768px) {
+              .synoptic-table {
+                  margin: auto;
+                  width: 95% !important;
+                  height: 100%;
+                  border-collapse: collapse;
+                  overflow-x: auto;
+                  border-spacing: 0;
+                  font-size: 22px;
+              }
             table {
                 .rediconcolor {color:red;}
                 .greeniconcolor {color:green;}

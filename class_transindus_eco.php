@@ -704,7 +704,7 @@ class class_transindus_eco
                 <td></td>
             </tr>
             <tr>
-                <td id="battery_info">'     . $battery_voltage_vdc  . ' V<br>' . abs($battery_charge_adc)   . ' A</td>
+                <td id="battery_info" style="font-size: 22px;">'     . $battery_voltage_vdc  . ' V<br>' . abs($battery_charge_adc)   . ' A</td>
                 <td id="battery_arrow_icon">' . $battery_arrow_icon .  '</td>
                 <td></td>
                 <td id="load_arrow_icon">'  . $load_arrow_icon    . '</td>

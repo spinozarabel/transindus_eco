@@ -191,6 +191,7 @@ class class_transindus_eco
               // The switch status is unknown and so no point worrying about it, exit
               $this->verbose ? print("<pre>username: " . $wp_user_name . 
                                      " Shelly Switch Status Unknown, exiting</pre>" ) : false;
+              error_log("Shelly cloud not reposning and or device offline");
               continue;
           }
 

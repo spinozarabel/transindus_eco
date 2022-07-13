@@ -557,12 +557,8 @@ class class_transindus_eco
                   border-collapse: collapse;
                   overflow-x: auto;
                   border-spacing: 0;
-                  font-size: 30px;
+                  font-size: 60px;
               }
-            table {
-                .rediconcolor {color:red;}
-                .greeniconcolor {color:green;}
-                .img-pow-genset { max-width: 59px; }
         </style>';
 
         // get my user index knowing my login name

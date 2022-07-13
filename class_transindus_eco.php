@@ -690,7 +690,7 @@ class class_transindus_eco
                     </span>
                 </td>
             </tr>
-                <td id="grid_info" style="font-size: 32px;">'        . $grid_pin_ac_kw   . ' KW<br>' . $grid_input_vac . ' V</td>
+                <td id="grid_info" style="font-size: 22px;">'        . $grid_pin_ac_kw   . ' KW<br>' . $grid_input_vac . ' V</td>
                 <td id="grid_arrow_icon">'  . $grid_arrow_icon  . '</td>
                 <td></td>
                 <td id="pv_arrow_icon">'    . $pv_arrow_icon    . '</td>

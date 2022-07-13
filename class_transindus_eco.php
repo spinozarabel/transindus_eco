@@ -605,7 +605,7 @@ class class_transindus_eco
             // User does not have a Shelly Switch at ACIN, null the status
             $shelly_switch_status_ON = null;
             $grid_staus_icon = '<span style="color: Yellow;">
-                                    <i class="fa-solid fa-2xl fa-power-off"></i>
+                                    <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';
         }
         
@@ -613,32 +613,32 @@ class class_transindus_eco
         if ($grid_pin_ac_kw > 0.01 )
         {
             $grid_staus_icon = '<span style="color: Green;">
-                                    <i class="fa-solid fa-2xl fa-power-off"></i>
+                                    <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';
 
-            $grid_arrow_icon = '<i class="fa-solid fa-2xl fa-long-arrow-right fa-rotate-by" 
+            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-long-arrow-right fa-rotate-by" 
                                                                               style="--fa-rotate-angle: 45deg;">
                                 </i>';
         }
         elseif( is_null($shelly_switch_status_ON) )
         {
             $grid_staus_icon = '<span style="color: Red;">
-                                    <i class="fa-solid fa-2xl fa-power-off"></i>
+                                    <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';
 
-            $grid_arrow_icon = '<i class="fa-solid fa-2xl fa-circle-xmark fa-rotate-by"></i>';
+            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark fa-rotate-by"></i>';
         }
 
         // PV arrow icon determination
         if ($psolar_kw > 0.1)
         {
-            $pv_arrow_icon = '<i class="fa-solid fa-2xl fa-long-arrow-down fa-rotate-by" 
+            $pv_arrow_icon = '<i class="fa-solid fa-3x fa-long-arrow-down fa-rotate-by" 
                                                                            style="--fa-rotate-angle: 45deg;">
                               </i>';
         }
         else 
         {
-            $pv_arrow_icon = '<i class="fa-solid fa-2xl fa-circle-xmark fa-rotate-by" style="--fa-rotate-angle: 45deg;"></i>';
+            $pv_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark fa-rotate-by" style="--fa-rotate-angle: 45deg;"></i>';
         }
 
         // define all the icon styles and colors based on STuder and Switch values
@@ -651,7 +651,7 @@ class class_transindus_eco
                 <td></td>
                 <td id="pv_panel_icon">
                     <span style="color: Green;">
-                        <i class="fa-solid fa-2xl fa-solar-panel"></i>
+                        <i class="fa-solid fa-3x fa-solar-panel"></i>
                     </span>
                 </td>
             </tr>
@@ -664,7 +664,7 @@ class class_transindus_eco
             <tr>
                 <td></td>
                 <td></td>
-                <td id="studer_icon"><i class="fa-solid fa-2xl fa-hard-drive"></i></td>
+                <td id="studer_icon"><i class="fa-solid fa-3x fa-hard-drive"></i></td>
                 <td></td>
                 <td></td>
             </tr>

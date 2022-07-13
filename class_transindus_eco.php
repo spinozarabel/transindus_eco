@@ -636,11 +636,23 @@ class class_transindus_eco
         }
         elseif( is_null($shelly_switch_status_ON) )
         {
+            $grid_staus_icon = '<span style="color: Yellow;">
+                                    <i class="fa-solid fa-3x fa-power-off"></i>
+                                </span>';
+
+            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark fa-rotate-by"
+                                                                        style="--fa-rotate-angle: 45deg;">
+                                </i>';
+        }
+        else
+        {
             $grid_staus_icon = '<span style="color: Red;">
                                     <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';
 
-            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark fa-rotate-by"></i>';
+            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark fa-rotate-by"
+                                                                        style="--fa-rotate-angle: 45deg;">
+                                </i>';
         }
 
         // PV arrow icon determination

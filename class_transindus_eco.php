@@ -583,6 +583,8 @@ class class_transindus_eco
         $battery_span_fontawesome = $studer_readings_obj->battery_span_fontawesome;
         $battery_voltage_vdc    =   round( $studer_readings_obj->battery_voltage_vdc, 1);
         $grid_pin_ac_kw         =   $studer_readings_obj->grid_pin_ac_kw;
+        $grid_input_vac         =   $studer_readings_obj->grid_input_vac;
+
 
         if ( !empty( $config['accounts'][$user_index]['shelly_device_id'] ) )
         {
@@ -638,19 +640,19 @@ class class_transindus_eco
         $output .= '
         <table>
             <tr>
-                <td>' . $grid_staus_icon . '</td>
+                <td id="grid_status_icon">' . $grid_staus_icon . '</td>
                 <td></td>
-                <td>
+                <td id="pv_panel_icon">
                     <i class="fa-solid fa-2xl fa-solar-panel greeniconcolor"></i>
                 </td>
             </tr>
-                <td>' . $grid_arrow_icon  . '</td>
+                <td id="grid_arrow_icon">' . $grid_arrow_icon  . '</td>
                 <td></td>
-                <td>' . $pv_arrow_icon    . '</td>
+                <td id="pv_arrow_icon">' . $pv_arrow_icon    . '</td>
             <tr>
-                <td>' . $grid_pin_ac_kw . 'KW</td>
-                <td><i class="fa-solid fa-2xl fa-hard-drive"></i></td>
-                <td>' . $psolar_kw . 'KW</td>
+                <td id="grid_pin_ac_kw">' . $grid_pin_ac_kw . 'KW<br>' . $grid_input_vac . 'V</td>
+                <td id="studer_icon"><i class="fa-solid fa-2xl fa-hard-drive"></i></td>
+                <td id="psolar_kw">' . $psolar_kw . 'KW</td>
             </tr>
                 
         </table>';

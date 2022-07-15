@@ -282,6 +282,7 @@ class class_transindus_eco
 
           $LVDS =             ( $battery_voltage_avg    <  48.7 )  						&&  // SOC is low but still with some margin if no grid
 															( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
+															( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
                               ( $shelly_switch_status == "OFF" );									// The switch is OFF
 
           $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
@@ -290,6 +291,7 @@ class class_transindus_eco
           $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
 																						( $battery_voltage_avg	<	51.5 )								&&	// not in float
 																						( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
+																						( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
                                             ( $now_is_daytime )                             &&  // Daytime
                                             ( $psolar > 0.3 )                               &&  // at least some solar generation
                                             ( $surplus < -0.3 ); 																// Load is greater than Solar Gen
@@ -422,7 +424,7 @@ class class_transindus_eco
                         " Case 8 Fired- Shelly Switch Released - Battery in Float" ) : false;
                   error_log("Exited via Case 8 - Float State, switch released (OFF)");
               break;
-							
+
 
               default:
                   // $this->verbose ? print("<pre>username: " . $wp_user_name . " No Switch action - didn't Fire any CASE</pre>" ) : false;

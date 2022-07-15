@@ -288,6 +288,7 @@ class class_transindus_eco
                                         ( $keep_shelly_switch_closed_always == true );
 
           $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
+																						( $battery_voltage_avg	<	51.5 )								&&	// not in float
 																						( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
                                             ( $now_is_daytime )                             &&  // Daytime
                                             ( $psolar > 0.3 )                               &&  // at least some solar generation
@@ -312,12 +313,11 @@ class class_transindus_eco
                                               $it_is_a_cloudy_day;
 					*/
 
-					/*
-					$switch_release_float_state	= ( $shelly_switch_status == "ON" )  						&&  		// Switch is ON now
-																					( $battery_voltage_avg    >  51.8 )					&&
-																					( $surplus > 0.0 )                					&&  		// Solar is greater than Load
+
+					$switch_release_float_state	= 	( $shelly_switch_status == "ON" )  					&&  		// Switch is ON now
+																					( $battery_voltage_avg    >  51.8 )				  &&
 						                              ( $keep_shelly_switch_closed_always == false );
-					*/
+
 
           switch(true)
           {
@@ -411,7 +411,7 @@ class class_transindus_eco
                   error_log("Exited via Case 7 - cloudy Day so be conservative and Switch ON");
               break;
               */
-							/*
+
 							case ( $switch_release_float_state ):
 
                   $this->turn_on_off_shelly_switch($user_index, "off");
@@ -422,7 +422,7 @@ class class_transindus_eco
                         " Case 8 Fired- Shelly Switch Released - Battery in Float" ) : false;
                   error_log("Exited via Case 8 - Float State, switch released (OFF)");
               break;
-							*/
+							
 
               default:
                   // $this->verbose ? print("<pre>username: " . $wp_user_name . " No Switch action - didn't Fire any CASE</pre>" ) : false;

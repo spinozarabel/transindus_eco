@@ -400,6 +400,7 @@ class class_transindus_eco
                   error_log("Exited via Case 7 - cloudy Day so be conservative and Switch ON");
               break;
               */
+							/*
 							case ( $switch_release_float_state ):
 
                   $this->turn_on_off_shelly_switch($user_index, "off");
@@ -410,6 +411,7 @@ class class_transindus_eco
                         " Case 8 Fired- Shelly Switch Released - Battery in Float" ) : false;
                   error_log("Exited via Case 8 - Float State, switch released (OFF)");
               break;
+							*/
 
               default:
                   // $this->verbose ? print("<pre>username: " . $wp_user_name . " No Switch action - didn't Fire any CASE</pre>" ) : false;

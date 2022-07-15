@@ -304,9 +304,13 @@ class class_transindus_eco
                              ( $surplus > 0.3 )                															&&  		// Solar is greater than Load
                              ( $keep_shelly_switch_closed_always == false );												// Emergency flag is False
 
-          $sunset_switch_release  = ( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
-                                    ( $shelly_switch_status == "ON" )               &&  // Switch is ON now
-                                    ( $now_is_sunset );                                 // around sunset
+			    $sunset_switch_release			=	( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
+			                                  ( $shelly_switch_status == "ON" )               &&  // Switch is ON now
+			                                  ( $now_is_sunset );                                 // around sunset
+
+					$switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  		// Switch is ON now
+																				( $battery_voltage_avg    >  51.8 )				  		&&
+						                            ( $keep_shelly_switch_closed_always == false );
 
 					/*
           $cloudy_day_so_be_conservative =  ( $shelly_switch_status == "OFF" )          &&  // Switch is Currently OFF
@@ -314,12 +318,6 @@ class class_transindus_eco
                                               $now_is_daytime                           &&  // Daytime
                                               $it_is_a_cloudy_day;
 					*/
-
-
-					$switch_release_float_state	= 	( $shelly_switch_status == "ON" )  					&&  		// Switch is ON now
-																					( $battery_voltage_avg    >  51.8 )				  &&
-						                              ( $keep_shelly_switch_closed_always == false );
-
 
           switch(true)
           {

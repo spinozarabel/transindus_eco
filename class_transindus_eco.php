@@ -196,7 +196,9 @@ class class_transindus_eco
           }
 
           // Ascertain switch status: True if Switch is closed, false if Switch is open
-          $shelly_api_device_status_ON   = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+          $shelly_api_device_status_ON   		= $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+
+					$shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
 
           if ($shelly_api_device_status_ON)
           {
@@ -249,7 +251,7 @@ class class_transindus_eco
               print("<pre>Battery Voltage Avg: "  . $battery_voltage_avg                      . "Vdc </pre>");
               print("<pre>Battery Current: "      . $studer_readings_obj->battery_charge_adc  . "Adc </pre>");
               print("<pre>Solar PowerGen: "       . $psolar                                   . "KW </pre>");
-              print("<pre>AC at Studer Input: "   . $studer_readings_obj->grid_input_vac      . "Vac</pre>");
+              print("<pre>AC at Studer Input: "   . $shelly_api_device_status_voltage      		. "Vac</pre>");
               print("<pre>Inverter PowerOut: "    . $pout_inverter                            . "KW </pre>");
               print("<pre>Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW </pre>");
               print("<pre>Weather Forecast: "     . $cloudy_day                               . "</pre>");
@@ -263,7 +265,7 @@ class class_transindus_eco
               error_log("Battery Avg Voltage: "  . $battery_voltage_avg                      . "Vdc ");
               //error_log("Battery Current: "      . $studer_readings_obj->battery_charge_adc  . "Adc ");
               error_log("Solar PowerGen: "       . $psolar                                   . "KW ");
-              error_log("AC at Studer Input: "   . $studer_readings_obj->grid_input_vac      . "Vac ");
+              error_log("AC at Studer Input: "   . $shelly_api_device_status_voltage      	 . "Vac ");
               //error_log("Inverter PowerOut: "    . $pout_inverter                            . "KW ");
               error_log("Surplus PowerOut: "     . $surplus                            . "KW ");
               error_log("Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW ");
@@ -278,18 +280,18 @@ class class_transindus_eco
           $switch_override =  ($shelly_switch_status == "OFF")               &&
                               ($studer_readings_obj->grid_input_vac >= 190);
 
-          $LVDS =             ( $battery_voltage_avg    <  48.7 )  &&
-                              ( $shelly_switch_status == "OFF" );
+          $LVDS =             ( $battery_voltage_avg    <  48.7 )  						&&  // SOC is low but still with some margin if no grid
+															( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
+                              ( $shelly_switch_status == "OFF" );									// The switch is OFF
 
           $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
                                         ( $keep_shelly_switch_closed_always == true );
 
           $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
-														//								( $battery_voltage_avg    <  51.7 )							&&  // Not in Float state
-																						( $grid_input_vac > 205.0	)											&&	// ensure AC is not too low
+																						( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
                                             ( $now_is_daytime )                             &&  // Daytime
-                                            ( $psolar > 0.3 )                               &&  //
-                                            ( $surplus < -0.3 ); 																// This is
+                                            ( $psolar > 0.3 )                               &&  // at least some solar generation
+                                            ( $surplus < -0.3 ); 																// Load is greater than Solar Gen
 
           $switch_release =  (	( $battery_voltage_avg > 49.0 && ! $it_is_a_cloudy_day )						// SOC enpough for not a cloudy day
 																												||

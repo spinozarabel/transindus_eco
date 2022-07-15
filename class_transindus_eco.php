@@ -236,6 +236,7 @@ class class_transindus_eco
           $est_solar_kw         = $this->estimated_solar_power($user_index);
           $psolar               = $studer_readings_obj->psolar_kw;
           $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;
+					$grid_input_vac       = $studer_readings_obj->grid_input_vac;
           $aux1_relay_state     = $studer_readings_obj->aux1_relay_state;
           $surplus              = $psolar - $pout_inverter;
           $now_is_daytime       = $this->nowIsWithinTimeLimits("07:00", "17:30");
@@ -284,9 +285,11 @@ class class_transindus_eco
                                         ( $keep_shelly_switch_closed_always == true );
 
           $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
+														//								( $battery_voltage_avg    <  51.7 )							&&  // Not in Float state
+																						( $grid_input_vac > 205.0	)											&&	// ensure AC is not too low
                                             ( $now_is_daytime )                             &&  // Daytime
                                             ( $psolar > 0.3 )                               &&  //
-                                            ( $surplus < -0.3 ); // This is minus 0.3
+                                            ( $surplus < -0.3 ); 																// This is
 
           $switch_release =  (	( $battery_voltage_avg > 49.0 && ! $it_is_a_cloudy_day )						// SOC enpough for not a cloudy day
 																												||
@@ -300,13 +303,19 @@ class class_transindus_eco
                                     ( $shelly_switch_status == "ON" )               &&  // Switch is ON now
                                     ( $now_is_sunset );                                 // around sunset
 
+					/*
           $cloudy_day_so_be_conservative =  ( $shelly_switch_status == "OFF" )          &&  // Switch is Currently OFF
+																						( $grid_input_vac > 205.0	)									&&	// ensure AC is not too low
                                               $now_is_daytime                           &&  // Daytime
                                               $it_is_a_cloudy_day;
+					*/
+
+					/*
 					$switch_release_float_state	= ( $shelly_switch_status == "ON" )  						&&  		// Switch is ON now
 																					( $battery_voltage_avg    >  51.8 )					&&
 																					( $surplus > 0.0 )                					&&  		// Solar is greater than Load
 						                              ( $keep_shelly_switch_closed_always == false );
+					*/
 
           switch(true)
           {

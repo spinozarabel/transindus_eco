@@ -679,9 +679,7 @@ class class_transindus_eco
                                     <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';
 
-            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark fa-rotate-by"
-                                                                        style="--fa-rotate-angle: 45deg;">
-                                </i>';
+            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
         }
         else
         {
@@ -689,9 +687,7 @@ class class_transindus_eco
                                     <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';
 
-            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark fa-rotate-by"
-                                                                        style="--fa-rotate-angle: 45deg;">
-                                </i>';
+            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
         }
 
         // PV arrow icon determination
@@ -703,7 +699,7 @@ class class_transindus_eco
         }
         else
         {
-            $pv_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark fa-rotate-by" style="--fa-rotate-angle: 45deg;"></i>';
+            $pv_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
         }
 
         // battery arrow

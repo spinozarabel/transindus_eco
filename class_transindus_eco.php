@@ -237,10 +237,16 @@ class class_transindus_eco
           $battery_voltage_avg  = $this->get_battery_voltage_avg();
           $est_solar_kw         = $this->estimated_solar_power($user_index);
           $psolar               = $studer_readings_obj->psolar_kw;
+          $solar_pv_adc         = $studer_readings_obj->solar_pv_adc;
+
           $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;
 					$grid_input_vac       = $studer_readings_obj->grid_input_vac;
-          $aux1_relay_state     = $studer_readings_obj->aux1_relay_state;
+          $inverter_current_adc = $studer_readings_obj->inverter_current_adc;
+
           $surplus              = $psolar - $pout_inverter;
+
+          $aux1_relay_state     = $studer_readings_obj->aux1_relay_state;
+
           $now_is_daytime       = $this->nowIsWithinTimeLimits("07:00", "17:30");
           $now_is_sunset        = $this->nowIsWithinTimeLimits("17:31", "17:41");
 
@@ -262,12 +268,15 @@ class class_transindus_eco
           {
               error_log("user: "                 . $wp_user_name                             . ": Shelly and Studer Values");
               error_log("Shelly Switch State: "  . $shelly_switch_status                     . "");
-              error_log("Battery Avg Voltage: "  . $battery_voltage_avg                      . "Vdc ");
-              //error_log("Battery Current: "      . $studer_readings_obj->battery_charge_adc  . "Adc ");
+              error_log("Battery Avg Voltage: "  . $battery_voltage_avg                         . "Vdc ");
+              error_log("Battery Current: "      . $studer_readings_obj->battery_charge_adc     . "Adc ");
+              error_log("Inverter Current: "      . $studer_readings_obj->inverter_current_adc  . "Adc ");
+              error_log("Solar Panel Current: "   . $studer_readings_obj->solar_pv_adc          . "Adc ");
+
               error_log("Solar PowerGen: "       . $psolar                                   . "KW ");
               error_log("AC at Studer Input: "   . $shelly_api_device_status_voltage      	 . "Vac ");
               //error_log("Inverter PowerOut: "    . $pout_inverter                            . "KW ");
-              error_log("Surplus PowerOut: "     . $surplus                            . "KW ");
+              error_log("Surplus PowerOut: "     . $surplus                                  . "KW ");
               error_log("Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW ");
               error_log("Cloudy Day?: "          . $it_is_a_cloudy_day                       . "");
               error_log("Within 0700 - 1730?: "  . $now_is_daytime                           . "");
@@ -1628,6 +1637,7 @@ class class_transindus_eco
 
             //update the object with Inverter Load details
             $studer_readings_obj->pout_inverter_ac_kw         = $pout_inverter_ac_kw;
+            $studer_readings_obj->inverter_current_adc        = $inverter_current_adc;
 
             // update the Grid input values
             $studer_readings_obj->grid_pin_ac_kw              = $grid_pin_ac_kw;

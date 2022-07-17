@@ -1409,7 +1409,7 @@ class class_transindus_eco
 
 
         // update the object with battery data read
-        $studer_readings_obj->battery_charge_adc          = abs($battery_charge_adc);
+        $studer_readings_obj->battery_charge_adc          = $battery_charge_adc;
         $studer_readings_obj->pbattery_kw                 = abs($pbattery_kw);
         $studer_readings_obj->battery_voltage_vdc         = $battery_voltage_vdc;
         $studer_readings_obj->battery_charge_arrow_class  = $battery_charge_arrow_class;

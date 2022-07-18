@@ -653,7 +653,8 @@ class class_transindus_eco
             }
 
             // Ascertain switch status: True if Switch is closed, false if Switch is open
-            $shelly_switch_status_ON   = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+            $shelly_switch_status_ON          = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+            $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
         }
         else
         {
@@ -737,7 +738,7 @@ class class_transindus_eco
                     </span>
                 </td>
             </tr>
-                <td id="grid_info" style="font-size: 18px;">'        . $grid_pin_ac_kw   . ' KW<br>' . $grid_input_vac . ' V</td>
+                <td id="grid_info" style="font-size: 18px;">'        . $grid_pin_ac_kw   . ' KW<br>' . $shelly_api_device_status_voltage . ' V</td>
                 <td id="grid_arrow_icon">'  . $grid_arrow_icon  . '</td>
                 <td></td>
                 <td id="pv_arrow_icon">'    . $pv_arrow_icon    . '</td>

@@ -250,6 +250,12 @@ class class_transindus_eco
           $now_is_daytime       = $this->nowIsWithinTimeLimits("07:00", "17:30");
           $now_is_sunset        = $this->nowIsWithinTimeLimits("17:31", "17:41");
 
+          $studer_readings_obj->battery_voltage_avg = $battery_voltage_avg;
+          $studer_readings_obj->now_is_daytime = $now_is_daytime;
+          $studer_readings_obj->now_is_sunset  = $now_is_sunset;
+          $studer_readings_obj->shelly_api_device_status_ON = $shelly_api_device_status_ON;
+          $studer_readings_obj->shelly_api_device_status_voltage = $shelly_api_device_status_voltage;
+
           if ($this->verbose)
           {
               print("<pre>user: "                 . $wp_user_name                             . "Shelly and Studer Values</pre>");
@@ -327,7 +333,14 @@ class class_transindus_eco
                                               $now_is_daytime                           &&  // Daytime
                                               $it_is_a_cloudy_day;
 					*/
+          $studer_readings_obj->LVDS = $LVDS;
+          $studer_readings_obj->reduce_daytime_battery_cycling = $reduce_daytime_battery_cycling;
+          $studer_readings_obj->switch_release = $switch_release;
+          $studer_readings_obj->sunset_switch_release = $sunset_switch_release;
+          $studer_readings_obj->switch_release_float_state = $switch_release_float_state;
 
+          $this->studer_readings_obj = $studer_readings_obj;
+          
           switch(true)
           {
               // if Shelly switch is OPEN but Studer transfer relay is closed and Studer AC voltage is present
@@ -1648,4 +1661,47 @@ class class_transindus_eco
 
             return $studer_readings_obj;
           }
+
+    public function ajax_my_solar_update_handler()     
+    {
+        // Ensures nonce is correct for security
+        check_ajax_referer('my_solar_app_script');
+
+        $toggleGridSwitch = $_POST['toggleGridSwitch'];
+
+        // sanitize the POST data
+        $toggleGridSwitch = sanitize_text_field($toggleGridSwitch);
+        error_log("toggleGridSwitch Value: " . $toggleGridSwitch);
+
+        // get the Shelly Grid Switch areadings
+        // get my user index knowing my login name
+        $current_user = wp_get_current_user();
+        $wp_user_name = $current_user->user_login;
+
+        $config       = $this->config;
+
+
+        // Now to find the index in the config array using the above
+        $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
+
+        if ($user_index === false)
+          {
+            return "You DO NOT have a Studer Install";
+          }
+
+        // get the Studer status using the minimal set of readings
+        $studer_readings_obj  = $this->get_studer_min_readings($user_index);
+
+        // check for valid studer values. Return if not valid
+        if( empty(  $studer_readings_obj ) )
+            {
+                error_log("Could not get a valid Studer Reading using API");
+                return;
+            }
+        // send the array of school data as server response to AJAX call
+	      wp_send_json($this->studer_readings_obj);
+	      // finished now die
+        wp_die(); // all ajax handlers should die when finished
+
+    }       
 }

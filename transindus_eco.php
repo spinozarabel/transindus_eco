@@ -26,6 +26,14 @@ add_action ( 'shellystuder_task_hook', [$transindus_eco, 'shellystuder_cron_exec
 // wait for all plugins to be loaded before initializing our code
 add_action('plugins_loaded', 'this_plugin_init');
 
+// add action to load the javascripts on non-admin page
+add_action( 'wp_enqueue_scripts', 'add_my_scripts' );
+
+// add action for the ajax handler on server side.
+// the 1st argument is in update.js, action: "get_studer_readings"
+// the 2nd argument is the local callback function as the ajax handler
+add_action('wp_ajax_my_solar_update', [$transindus_eco, 'ajax_my_solar_update_handler'] );
+
 
 add_filter( 'cron_schedules',  'shelly_studer_add_new_cron_interval' );
 
@@ -57,5 +65,32 @@ function shelly_studer_add_new_cron_interval( $schedules )
 function this_plugin_init()
 {
   // add_action('init','custom_login');
+}
+
+
+/**
+*   register and enque jquery scripts with nonce for ajax calls. Load only for desired page
+*   called by add_action( 'wp_enqueue_scripts', 'add_my_scripts' );
+*/
+function add_my_scripts($hook)
+// register and enque jquery scripts wit nonce for ajax calls
+{
+    // if not the intended page then return and do nothing.
+    if ( ! is_page( 'mysolar' ) ) return;
+
+    // https://developer.wordpress.org/plugins/javascript/enqueuing/
+    //wp_register_script($handle            , $src                                 , $deps         , $ver, $in_footer)
+    wp_register_script('my_solar_app_script', plugins_url('update.js', __FILE__), array('jquery'),'1.0', true);
+
+    wp_enqueue_script('my_solar_app_script');
+
+    $my_solar_app_nonce = wp_create_nonce('my_solar_app_script');
+    // note the key here is the global my_ajax_obj that will be referenced by our Jquery in update.js
+    //  wp_localize_script( string $handle,       string $object_name, associative array )
+    wp_localize_script('my_solar_app_script', 'my_ajax_obj', array(
+                                                                   'ajax_url' => admin_url( 'admin-ajax.php' ),
+                                                                   'nonce'    => $my_solar_app_nonce,
+                                                                   )
+                      );
 }
 

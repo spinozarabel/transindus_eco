@@ -708,14 +708,16 @@ class class_transindus_eco
         {
             // current is charging the battery, arrow is down into battery
             $battery_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-down-long fa-rotate-by"
-                                                                               style="--fa-rotate-angle: 45deg;">
+                                                                               style="--fa-rotate-angle: 45deg;
+                                                                                                  color: Green;">
                                    </i>';
         }
         else
         {
             // current is discharge, aarrow is away from battery and red
             $battery_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-up-long fa-rotate-by"
-                                                                               style="--fa-rotate-angle: 45deg;">
+                                                                               style="--fa-rotate-angle: 45deg;
+                                                                                                  color: Red;">
                                    </i>';
         }
 

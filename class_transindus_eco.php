@@ -1701,7 +1701,7 @@ class class_transindus_eco
                 return;
             }
         // send the array of school data as server response to AJAX call
-	      wp_send_json($this->studer_readings_obj);
+	      wp_send_json($studer_readings_obj);
 	      // finished now die
         wp_die(); // all ajax handlers should die when finished
 

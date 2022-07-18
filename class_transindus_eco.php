@@ -46,6 +46,8 @@ class class_transindus_eco
   public $count_for_averaging;
   public $counter;
 
+  public $studer_readings_obj;
+
     /**
 	 * Define the core functionality of the plugin.
 	 *
@@ -340,7 +342,7 @@ class class_transindus_eco
           $studer_readings_obj->switch_release_float_state = $switch_release_float_state;
 
           $this->studer_readings_obj = $studer_readings_obj;
-          
+
           switch(true)
           {
               // if Shelly switch is OPEN but Studer transfer relay is closed and Studer AC voltage is present

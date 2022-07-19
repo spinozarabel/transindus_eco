@@ -24,7 +24,7 @@ jQuery(document).ready(function($) {
                             },
                               function(data) {	// data is JSON data sent back by server in response, wp_send_json($somevariable)
                                                 // update the page with new readings. Lets just log the value sto see if we are getting good data
-                                                console.log('data: ', data);
+                                                // console.log('data: ', data);
                                                 // console.log('battery html', $('#power-battery').html());
                                             });
 

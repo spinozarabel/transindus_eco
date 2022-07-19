@@ -1704,6 +1704,9 @@ class class_transindus_eco
         */ 
         // send the array of school data as server response to AJAX call
         $data = $this->user_readings_array[$user_index];
+
+        error_log(print_r($data, true));
+        
 	      wp_send_json($data);
 	      // finished now die
         wp_die(); // all ajax handlers should die when finished

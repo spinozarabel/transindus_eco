@@ -2,7 +2,7 @@ var count = 0; // <== make the variable global
 jQuery(document).ready(function($) {
 
   // set an intervel. The callback gets executed every interval
-  var setInterval1_ID = setInterval(triggerAjax, 60000); // 60 sec updates
+  var setInterval1_ID = setInterval(window.location.reload(), 60000); // 60 sec updates
 
   var toggleGridSwitch = 0;
 
@@ -10,6 +10,7 @@ jQuery(document).ready(function($) {
 
   $(document).on("click","#grid_status_icon",function() {
                                                           toggleGridSwitch = 1;
+                                                          triggerAjax();
                                                     }
                 );
 

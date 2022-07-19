@@ -638,6 +638,9 @@ class class_transindus_eco
               }
               .rediconcolor {color:red;}
               .greeniconcolor {color:green;}
+              #clickableAwesomeFont {
+                cursor: pointer
+           }
         </style>';
 
         // get my user index knowing my login name
@@ -706,7 +709,7 @@ class class_transindus_eco
         // If power is flowing OR switch has ON status then show CHeck and Green
         if ($grid_pin_ac_kw > 0.01 )
         {
-            $grid_staus_icon = '<span style="color: Green;">
+            $grid_staus_icon = '<span id="clickableGridSwitch" style="color: Green;">
                                     <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';
 

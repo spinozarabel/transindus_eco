@@ -118,6 +118,24 @@ class class_transindus_eco
     }
 
     /**
+     * 
+     */
+    public function get_user_index_of_logged_in_user()
+    {
+        // get my user index knowing my login name
+        $current_user = wp_get_current_user();
+        $wp_user_name = $current_user->user_login;
+
+        $config       = $this->config;
+
+        // Now to find the index in the config array using the above
+        $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
+
+        return $user_index;
+    }
+
+
+    /**
      * Define all of the public facing hooks and filters required for this plugin
      * @return null
      */
@@ -1676,6 +1694,8 @@ class class_transindus_eco
 
     public function ajax_my_solar_update_handler()     
     {
+        $response = "No Change in Switch Status due to user request";
+
         // Ensures nonce is correct for security
         check_ajax_referer('my_solar_app_script');
 
@@ -1685,21 +1705,38 @@ class class_transindus_eco
         $toggleGridSwitch = sanitize_text_field($toggleGridSwitch);
         error_log("toggleGridSwitch Value: " . $toggleGridSwitch);
 
-        // get the Shelly Grid Switch areadings
-        // get my user index knowing my login name
-        $current_user = wp_get_current_user();
-        $wp_user_name = $current_user->user_login;
-
-        $config       = $this->config;
-
-
-        // Now to find the index in the config array using the above
-        $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
+        $user_index = $this->get_user_index_of_logged_in_user();
 
         if ($user_index === false)
           {
             return "You DO NOT have a Studer Install";
           }
+
+        if ($toggleGridSwitch)
+        {
+            // user has touched the power icon to toggle it.
+            // Get status of switch
+            $shelly_api_device_response   = $this->get_shelly_device_status($user_index);
+
+            $shelly_api_device_status_ON  = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+
+            if ($shelly_api_device_status_ON)
+            {
+                $shelly_switch_status = "ON";
+
+                // we need to turn it off because user has toggled switch
+                $response = $this->turn_on_off_shelly_switch($user_index, "off");
+
+            }
+            else
+            {
+                $shelly_switch_status = "OFF";
+
+                // we need to turn switch ON since user has toggled switch
+                $response = $this->turn_on_off_shelly_switch($user_index, "on");
+            }
+
+        }
 
         // get the Studer status using the minimal set of readings
         //$studer_readings_obj  = $this->get_studer_min_readings($user_index);
@@ -1712,11 +1749,12 @@ class class_transindus_eco
             }
         */ 
         // send the array of school data as server response to AJAX call
-        $data = $this->user_readings_array;
+        
 
-        error_log(print_r($data, true));
+        error_log(print_r($response, true));
 
-	      // wp_send_json($data);
+	      wp_send_json($response);
+        
 	      // finished now die
         wp_die(); // all ajax handlers should die when finished
 

@@ -112,7 +112,7 @@ function ajax_my_solar_update_handler($transindus_eco)
     $current_user = wp_get_current_user();
     $wp_user_name = $current_user->user_login;
 
-    $config       = $this->config;
+    $config       = $transindus_eco->config;
 
 
     // Now to find the index in the config array using the above

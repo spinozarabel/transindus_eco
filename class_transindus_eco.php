@@ -38,7 +38,7 @@ class class_transindus_eco
 	protected $version;
 
   //
-  protected $config;
+  public $config;
 
   public $bv_avg_arr;
   public $psolar_avg_arr;
@@ -459,7 +459,7 @@ class class_transindus_eco
         }
 
         $this->user_readings_array = $user_readings_array;
-        
+
         return $user_readings_array;
     }
 

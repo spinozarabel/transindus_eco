@@ -46,7 +46,7 @@ class class_transindus_eco
   public $count_for_averaging;
   public $counter;
 
-  public $studer_readings_obj;
+  public $user_readings_array;
 
     /**
 	 * Define the core functionality of the plugin.
@@ -91,6 +91,7 @@ class class_transindus_eco
       $this->utc_offset = 5.5;
 
       $this->timezone   = "Asia/Kolkata";
+      $this->user_readings_array = [];
 
 	}
 
@@ -341,7 +342,7 @@ class class_transindus_eco
           $studer_readings_obj->sunset_switch_release = $sunset_switch_release;
           $studer_readings_obj->switch_release_float_state = $switch_release_float_state;
 
-          $this->studer_readings_obj = $studer_readings_obj;
+          $this->user_readings_array[$user_index] = $studer_readings_obj;
 
           switch(true)
           {
@@ -1692,16 +1693,18 @@ class class_transindus_eco
           }
 
         // get the Studer status using the minimal set of readings
-        $studer_readings_obj  = $this->get_studer_min_readings($user_index);
+        //$studer_readings_obj  = $this->get_studer_min_readings($user_index);
 
-        // check for valid studer values. Return if not valid
+        /* check for valid studer values. Return if not valid
         if( empty(  $studer_readings_obj ) )
             {
                 error_log("Could not get a valid Studer Reading using API");
                 return;
             }
+        */ 
         // send the array of school data as server response to AJAX call
-	      wp_send_json($studer_readings_obj);
+        $data = $this->user_readings_array[$user_index];
+	      wp_send_json($data);
 	      // finished now die
         wp_die(); // all ajax handlers should die when finished
 

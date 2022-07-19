@@ -76,7 +76,7 @@ function add_my_scripts($hook)
 // register and enque jquery scripts wit nonce for ajax calls
 {
     // if not the intended page then return and do nothing.
-   //  if ( ! is_page( 'mysolar' ) ) return;
+    if ( ! is_page( 'mysolar' ) ) return;
 
     // https://developer.wordpress.org/plugins/javascript/enqueuing/
     //wp_register_script($handle            , $src                                 , $deps         , $ver, $in_footer)

@@ -1703,7 +1703,7 @@ class class_transindus_eco
             }
         */ 
         // send the array of school data as server response to AJAX call
-        $data = $this->config;
+        $data = $this->user_readings_array;
 
         error_log(print_r($data, true));
 

@@ -20,11 +20,14 @@ require_once(__DIR__."/class_transindus_eco.php");         // contains the main 
 
 // instantiate the class for head start admission
 $transindus_eco           = new class_transindus_eco();
+
+$user_readings_array = [];
   
 // add_action ( 'shellystuder_task_hook', [$transindus_eco, 'shellystuder_cron_exec'] );
-add_action ( 'shellystuder_task_hook', function() use(&$transindus_eco)  {
-                                                                          $transindus_eco->shellystuder_cron_exec();
-                                                                        });
+add_action ( 'shellystuder_task_hook', function() use($transindus_eco, &$user_readings_array)
+                                                      {
+                                                         $user_readings_array = $transindus_eco->shellystuder_cron_exec();
+                                                      });
 // wait for all plugins to be loaded before initializing our code
 add_action('plugins_loaded', 'this_plugin_init');
 
@@ -35,8 +38,8 @@ add_action( 'wp_enqueue_scripts', 'add_my_scripts' );
 // the 1st argument is in update.js, action: "get_studer_readings"
 // the 2nd argument is the local callback function as the ajax handler
 // add_action('wp_ajax_my_solar_update', [$transindus_eco, 'ajax_my_solar_update_handler'] );
-add_action('wp_ajax_my_solar_update', function() use($transindus_eco)  {
-                                                                            ajax_my_solar_update_handler($transindus_eco);  
+add_action('wp_ajax_my_solar_update', function() use($transindus_eco, $user_readings_array)  {
+                                            ajax_my_solar_update_handler($transindus_eco, $user_readings_array);  
                                                                         });
 
 add_filter( 'cron_schedules',  'shelly_studer_add_new_cron_interval' );
@@ -98,7 +101,7 @@ function add_my_scripts($hook)
                       );
 }
 
-function ajax_my_solar_update_handler($transindus_eco)
+function ajax_my_solar_update_handler($transindus_eco, $user_readings_array)
 {
     // Ensures nonce is correct for security
     check_ajax_referer('my_solar_app_script');
@@ -125,7 +128,7 @@ function ajax_my_solar_update_handler($transindus_eco)
         return "You DO NOT have a Studer Install";
       }
 
-    $data = $transindus_eco->user_readings_array[$user_index];
+    $data = $user_readings_array[$user_index];
 
     error_log(print_r($data, true));
 

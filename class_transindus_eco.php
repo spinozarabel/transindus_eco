@@ -155,7 +155,8 @@ class class_transindus_eco
      */
     public function shellystuder_cron_exec()
     {
-        //
+        $user_readings_array = [];
+
         $cloudiness_forecast= $this->check_if_forecast_is_cloudy();
 
         $it_is_a_cloudy_day = $cloudiness_forecast->it_is_a_cloudy_day;
@@ -342,7 +343,7 @@ class class_transindus_eco
           $studer_readings_obj->sunset_switch_release = $sunset_switch_release;
           $studer_readings_obj->switch_release_float_state = $switch_release_float_state;
 
-          $this->user_readings_array[$user_index] = $studer_readings_obj;
+          $user_readings_array[$user_index] = $studer_readings_obj;
 
           switch(true)
           {
@@ -457,6 +458,9 @@ class class_transindus_eco
 
         }
 
+        $this->user_readings_array = $user_readings_array;
+        
+        return $user_readings_array;
     }
 
     /**

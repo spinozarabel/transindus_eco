@@ -32,8 +32,10 @@ add_action( 'wp_enqueue_scripts', 'add_my_scripts' );
 // add action for the ajax handler on server side.
 // the 1st argument is in update.js, action: "get_studer_readings"
 // the 2nd argument is the local callback function as the ajax handler
-add_action('wp_ajax_my_solar_update', [$transindus_eco, 'ajax_my_solar_update_handler'] );
-
+// add_action('wp_ajax_my_solar_update', [$transindus_eco, 'ajax_my_solar_update_handler'] );
+add_action('wp_ajax_my_solar_update', function() use($transindus_eco)  {
+                                                                            ajax_my_solar_update_handler($transindus_eco);  
+                                                                        });
 
 add_filter( 'cron_schedules',  'shelly_studer_add_new_cron_interval' );
 
@@ -92,5 +94,42 @@ function add_my_scripts($hook)
                                                                    'nonce'    => $my_solar_app_nonce,
                                                                    )
                       );
+}
+
+function ajax_my_solar_update_handler($transindus_eco)
+{
+    // Ensures nonce is correct for security
+    check_ajax_referer('my_solar_app_script');
+
+    $toggleGridSwitch = $_POST['toggleGridSwitch'];
+
+    // sanitize the POST data
+    $toggleGridSwitch = sanitize_text_field($toggleGridSwitch);
+    error_log("toggleGridSwitch Value: " . $toggleGridSwitch);
+
+    // get the Shelly Grid Switch areadings
+    // get my user index knowing my login name
+    $current_user = wp_get_current_user();
+    $wp_user_name = $current_user->user_login;
+
+    $config       = $this->config;
+
+
+    // Now to find the index in the config array using the above
+    $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
+
+    if ($user_index === false)
+      {
+        return "You DO NOT have a Studer Install";
+      }
+
+    $data = $transindus_eco->user_readings_array[$user_index];
+
+    error_log(print_r($data, true));
+
+	wp_send_json($data);
+
+	// finished now die
+    wp_die(); // all ajax handlers should die when finished
 }
 

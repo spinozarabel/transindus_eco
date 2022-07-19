@@ -1178,6 +1178,11 @@ class class_transindus_eco
         // POST curl request to Studer
         $user_values  = $studer_api->get_user_values();
 
+        if (empty($user_values))
+            {
+              return null;
+            }
+
         $solar_pv_adc = 0;
         $psolar_kw    = 0;
         $psolar_kw_yesterday = 0;

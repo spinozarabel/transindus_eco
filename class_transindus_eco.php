@@ -638,7 +638,7 @@ class class_transindus_eco
               }
               .rediconcolor {color:red;}
               .greeniconcolor {color:green;}
-              #clickableAwesomeFont {
+              #clickableGridSwitch {
                 cursor: pointer
            }
         </style>';

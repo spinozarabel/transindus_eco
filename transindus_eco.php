@@ -23,11 +23,8 @@ $transindus_eco           = new class_transindus_eco();
 
 $user_readings_array = [];
   
-// add_action ( 'shellystuder_task_hook', [$transindus_eco, 'shellystuder_cron_exec'] );
-add_action ( 'shellystuder_task_hook', function() use($transindus_eco, &$user_readings_array)
-                                                      {
-                                                         $user_readings_array = $transindus_eco->shellystuder_cron_exec();
-                                                      });
+add_action ( 'shellystuder_task_hook', [$transindus_eco, 'shellystuder_cron_exec'] );
+
 // wait for all plugins to be loaded before initializing our code
 add_action('plugins_loaded', 'this_plugin_init');
 
@@ -37,10 +34,8 @@ add_action( 'wp_enqueue_scripts', 'add_my_scripts' );
 // add action for the ajax handler on server side.
 // the 1st argument is in update.js, action: "get_studer_readings"
 // the 2nd argument is the local callback function as the ajax handler
-// add_action('wp_ajax_my_solar_update', [$transindus_eco, 'ajax_my_solar_update_handler'] );
-add_action('wp_ajax_my_solar_update', function() use($transindus_eco, $user_readings_array)  {
-                                            ajax_my_solar_update_handler($transindus_eco, $user_readings_array);  
-                                                                        });
+add_action('wp_ajax_my_solar_update', [$transindus_eco, 'ajax_my_solar_update_handler'] );
+
 
 add_filter( 'cron_schedules',  'shelly_studer_add_new_cron_interval' );
 

@@ -40,7 +40,12 @@ jQuery(document).ready(function($) {
                                                 updateScreenWithNewData(data);
 
                                                 // trigger an AJAX call to keep the process going.
-                                                triggerAjax();
+                                                setTimeout(function (){
+  
+                                                  triggerAjax();
+                                                            
+                                                }, 60000); // How long you want the delay to be, measured in milliseconds.
+                                                
                                             });
 
                             

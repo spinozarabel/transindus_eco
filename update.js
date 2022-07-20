@@ -49,7 +49,12 @@ jQuery(document).ready(function($) {
                             
                         };
     function updateScreenWithNewData(data) {
-      // update the screen with new data returned by Server in response to an Ajax call
+      // update the Grid  Switch Icon
+      $('#grid_status_icon').html( data.grid_staus_icon);
+
+      // Updatehe Grid Power Flow Arrow
+      $('#grid_arrow_icon').html( data.grid_arrow_icon);
+
     }
 
     function round(value, exp) {

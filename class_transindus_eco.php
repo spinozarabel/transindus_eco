@@ -214,13 +214,17 @@ class class_transindus_eco
               $this->verbose ? print("<pre>username: " . $wp_user_name .
                                      " Shelly Switch Status Unknown, exiting</pre>" ) : false;
               error_log("Shelly cloud not reposning and or device offline");
-              continue;
+
+              $shelly_api_device_status_ON = null;
+              
           }
+          else
+          {
+              // Ascertain switch status: True if Switch is closed, false if Switch is open
+              $shelly_api_device_status_ON   		= $shelly_api_device_response->data->device_status->{"switch:0"}->output;
 
-          // Ascertain switch status: True if Switch is closed, false if Switch is open
-          $shelly_api_device_status_ON   		= $shelly_api_device_response->data->device_status->{"switch:0"}->output;
-
-					$shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
+              $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
+          }
 
           if ($shelly_api_device_status_ON)
           {
@@ -272,11 +276,11 @@ class class_transindus_eco
           $now_is_daytime       = $this->nowIsWithinTimeLimits("07:00", "17:30");
           $now_is_sunset        = $this->nowIsWithinTimeLimits("17:31", "17:41");
 
-          $studer_readings_obj->battery_voltage_avg = $battery_voltage_avg;
-          $studer_readings_obj->now_is_daytime = $now_is_daytime;
-          $studer_readings_obj->now_is_sunset  = $now_is_sunset;
-          $studer_readings_obj->shelly_api_device_status_ON = $shelly_api_device_status_ON;
-          $studer_readings_obj->shelly_api_device_status_voltage = $shelly_api_device_status_voltage;
+          $studer_readings_obj->battery_voltage_avg               = $battery_voltage_avg;
+          $studer_readings_obj->now_is_daytime                    = $now_is_daytime;
+          $studer_readings_obj->now_is_sunset                     = $now_is_sunset;
+          $studer_readings_obj->shelly_api_device_status_ON       = $shelly_api_device_status_ON;
+          $studer_readings_obj->shelly_api_device_status_voltage  = $shelly_api_device_status_voltage;
 
           if ($this->verbose)
           {
@@ -330,7 +334,7 @@ class class_transindus_eco
 																						( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
 																						( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
                                             ( $now_is_daytime )                             &&  // Daytime
-                                            ( $psolar > 0.3 )                               &&  // at least some solar generation
+                                            ( $psolar > 0.5 )                               &&  // at least some solar generation
                                             ( $surplus < -0.4 ); 																// Load is greater than Solar Gen
 
           $switch_release =  (	( $battery_voltage_avg > 49.0 && ! $it_is_a_cloudy_day )						// SOC enpough for not a cloudy day
@@ -1772,29 +1776,27 @@ class class_transindus_eco
         {
             // new readings are available in user meta but not yet read by Ajax
             $readings_object_json = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
-            // $readings_object_json = esc_attr($readings_object_json);
-
-            // error_log('readings_object_json: ' . $readings_object_json);
-
+            
             // change flag back to 0 to indicate ready for update
             update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', 0 );
-
-
 
             // decode JSON string into an object , optional flag is false below
             $studer_readings_obj  = json_decode($readings_object_json);
 
-            $studer_readings_obj->update = true;
+            // add in updated icons based on new readings for JS update by Ajax return
+            $format_object = $this->fill_in_icon_details($studer_readings_obj);
 
-            error_log( print_r($studer_readings_obj, true) );
+            $format_object->update = true;
 
-            wp_send_json($studer_readings_obj);
+            error_log( print_r($format_object, true) );
+
+            wp_send_json($format_object);
 
         }
         else 
         {
             // did not have updated data
-            $studer_readings_obj->update = false;
+            $format_object->update = false;
 
             // wp_send_json($studer_readings_obj);
         }
@@ -1802,5 +1804,62 @@ class class_transindus_eco
 	      // finished now die
         wp_die(); // all ajax handlers should die when finished
 
-    }       
+    }    
+    
+    /**
+     * 
+     */
+    public function fill_in_icon_details( $studer_readings_obj )
+    {
+        $format_object = new stdClass();
+
+        $psolar_kw              =   $studer_readings_obj->psolar_kw;
+        $solar_pv_adc           =   $studer_readings_obj->solar_pv_adc;
+
+        $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
+
+        $battery_span_fontawesome = $studer_readings_obj->battery_span_fontawesome;
+        $battery_icon_class     =   $studer_readings_obj->battery_icon_class;
+        $battery_voltage_vdc    =   round( $studer_readings_obj->battery_voltage_vdc, 1);
+        // Positive is charging and negative is discharging
+        $battery_charge_adc     =   $studer_readings_obj->battery_charge_adc;
+
+        $grid_pin_ac_kw         =   $studer_readings_obj->grid_pin_ac_kw;
+        $grid_input_vac         =   $studer_readings_obj->grid_input_vac;
+
+        $shelly_switch_status_ON = $studer_readings_obj->shelly_switch_status_ON;
+
+        // If power is flowing OR switch has ON status then show CHeck and Green
+        if ($grid_pin_ac_kw > 0.01 )
+        {
+            $grid_staus_icon = '<span id="clickableGridSwitch" style="color: Green;">
+                                    <i class="fa-solid fa-3x fa-power-off"></i>
+                                </span>';
+
+            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-right-long fa-rotate-by"
+                                                                              style="--fa-rotate-angle: 45deg;">
+                                </i>';
+        }
+        elseif( is_null($shelly_switch_status_ON) )
+        {
+            $grid_staus_icon = '<span style="color: Yellow;">
+                                    <i class="fa-solid fa-3x fa-power-off"></i>
+                                </span>';
+
+            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
+        }
+        else
+        {
+            $grid_staus_icon = '<span style="color: Red;">
+                                    <i class="fa-solid fa-3x fa-power-off"></i>
+                                </span>';
+
+            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
+        }
+
+        $format_object->grid_staus_icon = $grid_staus_icon;
+        $format_object->grid_arrow_icon = $grid_arrow_icon;
+
+        return $format_object;
+    }
 }

@@ -39,11 +39,11 @@ jQuery(document).ready(function($) {
                                                 if (toggleGridSwitch) toggleGridSwitch = 0;
 
                                                 // console.log('data: ', data);
-                                                console.log('grid_status_icon: ', $('#grid_status_icon'));
-                                                console.log('grid_arrow_icon: ', $('#grid_status_icon'));
-                                                console.log('grid_info: ', $('#grid_info'));
+                                                //console.log('grid_status_icon: ', $('#grid_status_icon'));
+                                                //console.log('grid_arrow_icon: ', $('#grid_status_icon'));
+                                                //console.log('grid_info: ', $('#grid_info'));
 
-                                                // updateScreenWithNewData(data);
+                                                updateScreenWithNewData(data);
 
                                                 if (data.update) setTimeout( triggerAjax,  60000); // measured in milliseconds.
                                                 

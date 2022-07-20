@@ -55,6 +55,9 @@ jQuery(document).ready(function($) {
       // Updatehe Grid Power Flow Arrow
       $('#grid_arrow_icon').html( data.grid_arrow_icon);
 
+      // Updatehe Grid Info
+      $('#grid_info').html( data.grid_info);
+
     }
 
     function round(value, exp) {

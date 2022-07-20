@@ -1783,7 +1783,7 @@ class class_transindus_eco
             wp_send_json($studer_readings_obj);
         }
 
-        error_log(print_r($respstuder_readings_objonse, true));
+        error_log(print_r($studer_readings_obj, true));
         
 	      // finished now die
         wp_die(); // all ajax handlers should die when finished

@@ -1781,6 +1781,8 @@ class class_transindus_eco
             $studer_readings_obj->update = true;
 
             wp_send_json($studer_readings_obj);
+
+            error_log( print_r($studer_readings_obj, true) );
         }
         else 
         {
@@ -1789,8 +1791,6 @@ class class_transindus_eco
 
             wp_send_json($studer_readings_obj);
         }
-
-        errror_log( print_r($studer_readings_obj, true) );
          
 	      // finished now die
         wp_die(); // all ajax handlers should die when finished

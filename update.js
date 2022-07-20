@@ -6,6 +6,8 @@ jQuery(document).ready(function($) {
 
   var toggleGridSwitch = 0;
 
+  triggerAjax();
+
   function window_reload() {
     clearInterval(setInterval1_ID);
     window.location.reload();
@@ -32,11 +34,21 @@ jQuery(document).ready(function($) {
                                                 // update the page with new readings. Lets just log the value sto see if we are getting good data
                                                 // console.log('data: ', data);
                                                 // console.log('battery html', $('#power-battery').html());
+                                                // reset the toggle function to 0 if it was at 1 to prevent switch action
+                                                if (toggleGridSwitch) toggleGridSwitch = 0;
+
+                                                updateScreenWithNewData(data);
+
+                                                // trigger an AJAX call to keep the process going.
+                                                triggerAjax();
                                             });
 
-                            // reset the toggle function to 0 to prevent further actions
-                            toggleGridSwitch = 0;
+                            
                         };
+    function updateScreenWithNewData(data) {
+      // update the screen with new data returned by Server in response to an Ajax call
+    }
+
     function round(value, exp) {
     if (typeof exp === 'undefined' || +exp === 0)
       return Math.round(value);

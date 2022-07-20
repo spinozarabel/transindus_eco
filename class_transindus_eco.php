@@ -361,7 +361,11 @@ class class_transindus_eco
           $studer_readings_obj->sunset_switch_release = $sunset_switch_release;
           $studer_readings_obj->switch_release_float_state = $switch_release_float_state;
 
-          $user_readings_array[$user_index] = $studer_readings_obj;
+          // Update the user meta with new readings
+          update_user_meta( $wp_user_ID, 'studer_readings_object', json_encode($studer_readings_obj) );
+          
+          // New readings Object was updated but not yet read by Ajax
+          update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', 1 );
 
           switch(true)
           {
@@ -1697,7 +1701,7 @@ class class_transindus_eco
 
     public function ajax_my_solar_update_handler()     
     {
-        $response = "No Change in Switch Status due to user request";
+        $studer_readings_obj = new stdClass();
 
         // Ensures nonce is correct for security
         check_ajax_referer('my_solar_app_script');
@@ -1708,11 +1712,19 @@ class class_transindus_eco
         $toggleGridSwitch = sanitize_text_field($toggleGridSwitch);
         error_log("toggleGridSwitch Value: " . $toggleGridSwitch);
 
-        $user_index = $this->get_user_index_of_logged_in_user();
+        // get my user index knowing my login name
+        $current_user = wp_get_current_user();
+        $wp_user_name = $current_user->user_login;
+        $wp_user_ID   = $current_user->ID;
+
+        $config       = $this->config;
+
+        // Now to find the index in the config array using the above
+        $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
 
         if ($user_index === false)
           {
-            return "You DO NOT have a Studer Install";
+            return;
           }
 
         if ($toggleGridSwitch)
@@ -1730,6 +1742,8 @@ class class_transindus_eco
                 // we need to turn it off because user has toggled switch
                 $response = $this->turn_on_off_shelly_switch($user_index, "off");
 
+                error_log('Changed Switch from ON->OFF due to Ajax Request');
+
             }
             else
             {
@@ -1737,26 +1751,39 @@ class class_transindus_eco
 
                 // we need to turn switch ON since user has toggled switch
                 $response = $this->turn_on_off_shelly_switch($user_index, "on");
+
+                error_log('Changed Switch from OFF->ON due to Ajax Request');
             }
 
         }
 
-        // get the Studer status using the minimal set of readings
-        //$studer_readings_obj  = $this->get_studer_min_readings($user_index);
+        // get the Studer readings object flag first
+        $new_readings_read_by_ajax  = get_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
 
-        /* check for valid studer values. Return if not valid
-        if( empty(  $studer_readings_obj ) )
-            {
-                error_log("Could not get a valid Studer Reading using API");
-                return;
-            }
-        */ 
-        // send the array of school data as server response to AJAX call
-        
+        if ($new_readings_read_by_ajax)
+        {
+            // new readings are available in user meta but not yet read by Ajax
+            $readings_object_json = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
 
-        error_log(print_r($response, true));
+            // change flag back to 0 to indicate ready for update
+            update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', 0 );
 
-	      wp_send_json($response);
+            // decode JSON string into an object , optional flag is false below
+            $studer_readings_obj  = json_decode($readings_object_json);
+
+            $studer_readings_obj->update = true;
+
+            wp_send_json($studer_readings_obj);
+        }
+        else 
+        {
+            // did not have updated data
+            $studer_readings_obj->update = false;
+
+            wp_send_json($studer_readings_obj);
+        }
+
+        error_log(print_r($respstuder_readings_objonse, true));
         
 	      // finished now die
         wp_die(); // all ajax handlers should die when finished

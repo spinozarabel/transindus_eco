@@ -1719,14 +1719,14 @@ class class_transindus_eco
 
         $config       = $this->config;
 
-        // Now to find the index in the config array using the above
+        /* Now to find the index in the config array using the above
         $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
 
         if ($user_index === false)
           {
             return;
           }
-
+        */
         if ($toggleGridSwitch)
         {
             // user has touched the power icon to toggle it.

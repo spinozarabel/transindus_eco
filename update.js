@@ -40,7 +40,7 @@ jQuery(document).ready(function($) {
 
                                                 updateScreenWithNewData(data);
 
-                                                if (data.update) setTimeout( triggerAjax,  600000); // measured in milliseconds.
+                                                if (data.update) setTimeout( triggerAjax,  6000000); // measured in milliseconds.
                                                 
                                             });
 

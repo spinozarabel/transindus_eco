@@ -34,7 +34,7 @@ add_action( 'wp_enqueue_scripts', 'add_my_scripts' );
 // add action for the ajax handler on server side.
 // the 1st argument is in update.js, action: "get_studer_readings"
 // the 2nd argument is the local callback function as the ajax handler
-add_action('wp_ajax_nopriv_my_solar_update', [$transindus_eco, 'ajax_my_solar_update_handler'] );
+add_action('wp_ajax_my_solar_update', [$transindus_eco, 'ajax_my_solar_update_handler'] );
 
 
 add_filter( 'cron_schedules',  'shelly_studer_add_new_cron_interval' );
@@ -92,6 +92,7 @@ function add_my_scripts($hook)
     wp_localize_script('my_solar_app_script', 'my_ajax_obj', array(
                                                                    'ajax_url' => admin_url( 'admin-ajax.php' ),
                                                                    'nonce'    => $my_solar_app_nonce,
+                                                                   'wp_user_ID' => wp_get_current_user()->ID,
                                                                    )
                       );
 }

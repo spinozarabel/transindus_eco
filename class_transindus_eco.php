@@ -1713,9 +1713,9 @@ class class_transindus_eco
         error_log("toggleGridSwitch Value: " . $toggleGridSwitch);
 
         // get my user index knowing my login name
-        $current_user = wp_get_current_user();
+        $wp_user_ID   = $_POST['wp_user_ID'];
+        $current_user = get_user_by('id', $wp_user_ID);
         $wp_user_name = $current_user->user_login;
-        $wp_user_ID   = $current_user->ID;
 
         $config       = $this->config;
 

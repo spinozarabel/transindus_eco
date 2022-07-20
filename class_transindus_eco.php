@@ -1762,6 +1762,12 @@ class class_transindus_eco
         // get the Studer readings object flag first
         $new_readings_read_by_ajax  = get_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
 
+        while ( ! $new_readings_read_by_ajax) 
+        {
+            sleep(10);
+            $new_readings_read_by_ajax  = get_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
+        }
+
         if ($new_readings_read_by_ajax)
         {
             // new readings are available in user meta but not yet read by Ajax

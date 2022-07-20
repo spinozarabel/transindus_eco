@@ -2,7 +2,7 @@ var count = 0; // <== make the variable global
 jQuery(document).ready(function($) {
 
   // set an intervel. The callback gets executed every interval
-  var setInterval1_ID = setInterval(window_reload(), 120000); // 60 sec updates
+  // var setInterval1_ID = setInterval(window_reload(), 120000); // 60 sec updates
 
   var toggleGridSwitch = 0;
 
@@ -40,7 +40,7 @@ jQuery(document).ready(function($) {
 
                                                 updateScreenWithNewData(data);
 
-                                                if (data.update) setTimeout( triggerAjax,  6000000); // measured in milliseconds.
+                                                if (data.update) setTimeout( triggerAjax,  60000); // measured in milliseconds.
                                                 
                                             });
 

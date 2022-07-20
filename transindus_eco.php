@@ -28,9 +28,6 @@ add_action ( 'shellystuder_task_hook', [$transindus_eco, 'shellystuder_cron_exec
 // wait for all plugins to be loaded before initializing our code
 add_action('plugins_loaded', 'this_plugin_init');
 
-// add action to load the javascripts on non-admin page
-add_action( 'wp_enqueue_scripts', 'add_my_scripts' );
-
 // add action for the ajax handler on server side.
 // the 1st argument is in update.js, action: "get_studer_readings"
 // the 2nd argument is the local callback function as the ajax handler
@@ -66,7 +63,9 @@ function shelly_studer_add_new_cron_interval( $schedules )
  */
 function this_plugin_init()
 {
-  // add_action('init','custom_login');
+    // add_action('init','custom_login');
+    // add action to load the javascripts on non-admin page
+    add_action( 'wp_enqueue_scripts', 'add_my_scripts' );
 }
 
 

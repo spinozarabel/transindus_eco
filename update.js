@@ -23,13 +23,13 @@ jQuery(document).ready(function($) {
 
   function triggerAjax() {
 
-
+                            var data =  {toggleGridSwitch : toggleGridSwitch,
+                                         wp_user_ID       : my_ajax_obj.wp_user_ID};
                             $.post(my_ajax_obj.ajax_url,
                             {                                 //POST request
                               _ajax_nonce: my_ajax_obj.nonce, //nonce extracted and sent
                               action: "my_solar_update",  // hook added for action wp_ajax_my_solar_update in php file
-                              toggleGridSwitch: toggleGridSwitch,
-                              wp_user_ID:my_ajax_obj.wp_user_ID
+                              data: data
                             },
                               function(data) {	// data is JSON data sent back by server in response, wp_send_json($somevariable)
                                                 // update the page with new readings. Lets just log the value sto see if we are getting good data

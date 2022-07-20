@@ -1706,14 +1706,16 @@ class class_transindus_eco
         // Ensures nonce is correct for security
         check_ajax_referer('my_solar_app_script');
 
-        $toggleGridSwitch = $_POST['toggleGridSwitch'];
+        $data = $_POST['data'];
+
+        $toggleGridSwitch = $data['toggleGridSwitch'];
 
         // sanitize the POST data
         $toggleGridSwitch = sanitize_text_field($toggleGridSwitch);
         error_log("toggleGridSwitch Value: " . $toggleGridSwitch);
 
         // get my user index knowing my login name
-        $wp_user_ID   = $_POST['wp_user_ID'];
+        $wp_user_ID   = $data['wp_user_ID'];
         $current_user = get_user_by('id', $wp_user_ID);
         $wp_user_name = $current_user->user_login;
 

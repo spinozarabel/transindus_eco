@@ -1861,7 +1861,7 @@ class class_transindus_eco
         $format_object->grid_staus_icon = $grid_staus_icon;
         $format_object->grid_arrow_icon = $grid_arrow_icon;
 
-        $grid_info = ' style="font-size: 18px;">'        . $grid_pin_ac_kw   . ' KW<br>' . $shelly_api_device_status_voltage . ' V';
+        $grid_info = ' style="font-size: 18px;">' . $grid_pin_ac_kw  . ' KW<br>' . $shelly_api_device_status_voltage . ' V';
         $format_object->grid_info       = $grid_info;
 
         return $format_object;

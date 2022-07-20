@@ -1773,14 +1773,14 @@ class class_transindus_eco
             // decode JSON string into an object , optional flag is false below
             $studer_readings_obj  = json_decode($readings_object_json);
 
-            $studer_readings_obj->update = true;
+            //$studer_readings_obj->update = true;
 
             wp_send_json($studer_readings_obj);
         }
         else 
         {
             // did not have updated data
-            $studer_readings_obj->update = false;
+            //$studer_readings_obj->update = false;
 
             wp_send_json($studer_readings_obj);
         }

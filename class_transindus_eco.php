@@ -365,7 +365,7 @@ class class_transindus_eco
           update_user_meta( $wp_user_ID, 'studer_readings_object', json_encode($studer_readings_obj) );
           
           // New readings Object was updated but not yet read by Ajax
-          update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', 1 );
+          update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
 
           switch(true)
           {

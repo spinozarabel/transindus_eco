@@ -44,7 +44,7 @@ jQuery(document).ready(function($) {
   
                                                   triggerAjax();
                                                             
-                                                }, 60000); // How long you want the delay to be, measured in milliseconds.
+                                                }, 600000); // How long you want the delay to be, measured in milliseconds.
                                                 
                                             });
 

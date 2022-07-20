@@ -1780,9 +1780,10 @@ class class_transindus_eco
 
             $studer_readings_obj->update = true;
 
+            error_log( print_r($studer_readings_obj, true) );
+
             wp_send_json($studer_readings_obj);
 
-            error_log( print_r($studer_readings_obj, true) );
         }
         else 
         {

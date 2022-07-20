@@ -1790,7 +1790,7 @@ class class_transindus_eco
             // did not have updated data
             $studer_readings_obj->update = false;
 
-            wp_send_json($studer_readings_obj);
+            // wp_send_json($studer_readings_obj);
         }
          
 	      // finished now die

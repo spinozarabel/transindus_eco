@@ -1719,6 +1719,8 @@ class class_transindus_eco
         $current_user = get_user_by('id', $wp_user_ID);
         $wp_user_name = $current_user->user_login;
 
+        error_log('user info: ' . $wp_user_name . " : " . $wp_user_ID);
+
         $config       = $this->config;
 
         /* Now to find the index in the config array using the above
@@ -1784,8 +1786,6 @@ class class_transindus_eco
 
             wp_send_json($studer_readings_obj);
         }
-
-        error_log('user info: ' . $wp_user_name . " " . $wp_user_ID . " ". $readings_object_json);
          
 	      // finished now die
         wp_die(); // all ajax handlers should die when finished

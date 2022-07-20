@@ -1719,8 +1719,6 @@ class class_transindus_eco
         $current_user = get_user_by('id', $wp_user_ID);
         $wp_user_name = $current_user->user_login;
 
-        error_log('user info: ' . $wp_user_name . " : " . $wp_user_ID);
-
         $config       = $this->config;
 
         /* Now to find the index in the config array using the above
@@ -1764,13 +1762,13 @@ class class_transindus_eco
         // get the Studer readings object flag first
         $new_readings_read_by_ajax  = get_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
 
-        if (true)
+        if ($new_readings_read_by_ajax)
         {
             // new readings are available in user meta but not yet read by Ajax
             $readings_object_json = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
             // $readings_object_json = esc_attr($readings_object_json);
 
-            error_log('readings_object_json: ' . $readings_object_json);
+            // error_log('readings_object_json: ' . $readings_object_json);
 
             // change flag back to 0 to indicate ready for update
             update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', 0 );
@@ -1780,17 +1778,19 @@ class class_transindus_eco
             // decode JSON string into an object , optional flag is false below
             $studer_readings_obj  = json_decode($readings_object_json);
 
-            //$studer_readings_obj->update = true;
+            $studer_readings_obj->update = true;
 
             wp_send_json($studer_readings_obj);
         }
         else 
         {
             // did not have updated data
-            //$studer_readings_obj->update = false;
+            $studer_readings_obj->update = false;
 
             wp_send_json($studer_readings_obj);
         }
+
+        errror_log( print_r($studer_readings_obj, true) );
          
 	      // finished now die
         wp_die(); // all ajax handlers should die when finished

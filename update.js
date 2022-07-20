@@ -38,6 +38,8 @@ jQuery(document).ready(function($) {
                                                 // reset the toggle function to 0 if it was at 1 to prevent switch action
                                                 if (toggleGridSwitch) toggleGridSwitch = 0;
 
+                                                console.log('data: ', data);
+
                                                 updateScreenWithNewData(data);
 
                                                 if (data.update) setTimeout( triggerAjax,  60000); // measured in milliseconds.

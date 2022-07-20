@@ -1768,7 +1768,7 @@ class class_transindus_eco
         {
             // new readings are available in user meta but not yet read by Ajax
             $readings_object_json = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
-            $readings_object_json = esc_attr($readings_object_json);
+            // $readings_object_json = esc_attr($readings_object_json);
 
             error_log('readings_object_json: ' . $readings_object_json);
 

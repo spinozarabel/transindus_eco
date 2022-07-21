@@ -250,6 +250,7 @@ class class_transindus_eco
             // cannot trust this Studer reading, skipping this user
             $this->verbose ? print("<pre>username: " . $wp_user_name .
                                    " Could not get Studer Reading:" . "</pre>") : false;
+            error_log($wp_user_name . ": " . "Could not get Studer Reading");
             continue;
           }
 

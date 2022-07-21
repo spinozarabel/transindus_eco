@@ -1846,7 +1846,7 @@ class class_transindus_eco
       $studer_readings_obj->battery_charge_arrow_class  = $battery_charge_arrow_class;
       $studer_readings_obj->battery_icon_class          = $battery_icon_class;
       $studer_readings_obj->battery_charge_animation_class = $battery_charge_animation_class;
-      $studer_readings_obj->energyout_battery_yesterday    = $energyout_battery_yesterday;
+      // $studer_readings_obj->energyout_battery_yesterday    = $energyout_battery_yesterday;
 
       // update the object with SOlar data read
       $studer_readings_obj->psolar_kw                   = $psolar_kw;
@@ -1867,8 +1867,8 @@ class class_transindus_eco
       $studer_readings_obj->grid_input_vac              = $grid_input_vac;
       $studer_readings_obj->grid_input_arrow_class      = $grid_input_arrow_class;
       $studer_readings_obj->aux1_relay_state            = $aux1_relay_state;
-      $studer_readings_obj->energy_grid_yesterday       = $energy_grid_yesterday;
-      $studer_readings_obj->energy_consumed_yesterday   = $energy_consumed_yesterday;
+      // $studer_readings_obj->energy_grid_yesterday       = $energy_grid_yesterday;
+      // $studer_readings_obj->energy_consumed_yesterday   = $energy_consumed_yesterday;
       $studer_readings_obj->battery_span_fontawesome    = $battery_span_fontawesome;
 
 

@@ -1955,12 +1955,13 @@ class class_transindus_eco
 
         // get the Studer readings object flag first
         $new_readings_read_by_ajax  = get_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
-
+/*
         while ( ! $new_readings_read_by_ajax) {
             // no reading updates so wait 10s
             sleep(10);
             $new_readings_read_by_ajax  = get_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
         }
+*/
 
         if ($new_readings_read_by_ajax) {
             // new readings are available in user meta but not yet read by Ajax
@@ -1986,7 +1987,7 @@ class class_transindus_eco
             // did not have updated data
             $format_object->update = false;
 
-            // wp_send_json($studer_readings_obj);
+            wp_send_json($studer_readings_obj);
         }
          
 	      // finished now die

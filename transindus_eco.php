@@ -38,7 +38,7 @@ add_filter( 'cron_schedules',  'shelly_studer_add_new_cron_interval' );
 
 if (!wp_next_scheduled('shellystuder_task_hook')) 
 {
-    wp_schedule_event( time(), 'sixty_seconds', 'shellystuder_task_hook' );
+    wp_schedule_event( time(), 'thirty_seconds', 'shellystuder_task_hook' );
 }
 
 
@@ -47,9 +47,9 @@ if (!wp_next_scheduled('shellystuder_task_hook'))
  */
 function shelly_studer_add_new_cron_interval( $schedules ) 
 { 
-    $schedules['sixty_seconds'] = array(
-                                    'interval' => 1*60,
-                                    'display'  => esc_html__( 'Every 60 seconds' ),
+    $schedules['thirty_seconds'] = array(
+                                    'interval' => 1*30,
+                                    'display'  => esc_html__( 'Every 30 seconds' ),
                                     );
     return $schedules;
 }
@@ -96,40 +96,4 @@ function add_my_scripts($hook)
                       );
 }
 
-function ajax_my_solar_update_handler($transindus_eco, $user_readings_array)
-{
-    // Ensures nonce is correct for security
-    check_ajax_referer('my_solar_app_script');
-
-    $toggleGridSwitch = $_POST['toggleGridSwitch'];
-
-    // sanitize the POST data
-    $toggleGridSwitch = sanitize_text_field($toggleGridSwitch);
-    error_log("toggleGridSwitch Value: " . $toggleGridSwitch);
-
-    // get the Shelly Grid Switch areadings
-    // get my user index knowing my login name
-    $current_user = wp_get_current_user();
-    $wp_user_name = $current_user->user_login;
-
-    $config       = $transindus_eco->config;
-
-
-    // Now to find the index in the config array using the above
-    $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
-
-    if ($user_index === false)
-      {
-        return "You DO NOT have a Studer Install";
-      }
-
-    $data = $user_readings_array[$user_index];
-
-    error_log(print_r($data, true));
-
-	wp_send_json($data);
-
-	// finished now die
-    wp_die(); // all ajax handlers should die when finished
-}
 

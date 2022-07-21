@@ -61,6 +61,18 @@ jQuery(document).ready(function($) {
       // Updatehe Grid Info
       $('#grid_info').html( data.grid_info);
 
+      // Updatehe PV solar Panel Grid Arrow
+      $('#pv_arrow_icon').html( data.pv_arrow_icon);
+
+      // update psolar_info
+      $('#psolar_info').html( data.psolar_info);
+
+      // update battery icon
+      $('#battery_status_icon').html( data.battery_status_icon);
+
+      // update battery info
+      $('#battery_info').html( data.battery_info);
+
     }
 
     function round(value, exp) {

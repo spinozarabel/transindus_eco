@@ -46,7 +46,6 @@ class class_transindus_eco
   public $count_for_averaging;
   public $counter;
 
-  public $user_readings_array;
 
     /**
 	 * Define the core functionality of the plugin.
@@ -91,7 +90,6 @@ class class_transindus_eco
       $this->utc_offset = 5.5;
 
       $this->timezone   = "Asia/Kolkata";
-      $this->user_readings_array = [];
 
 	}
 
@@ -205,35 +203,36 @@ class class_transindus_eco
               continue;
           }
 
-          // get the current ACIN Shelly Switch Status. This returns null if not a valid response
+          // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
           $shelly_api_device_response = $this->get_shelly_device_status($user_index);
 
-          if ( empty($shelly_api_device_response) )
-          {
-              // The switch status is unknown and so no point worrying about it, exit
+          if ( is_null($shelly_api_device_response) ) {
+              // switch status is unknown
               $this->verbose ? print("<pre>username: " . $wp_user_name .
                                      " Shelly Switch Status Unknown, exiting</pre>" ) : false;
               error_log("Shelly cloud not reposning and or device offline");
 
               $shelly_api_device_status_ON = null;
+
+              $shelly_switch_status = "OFFLINE";
               
           }
-          else
-          {
+          else {
               // Ascertain switch status: True if Switch is closed, false if Switch is open
-              $shelly_api_device_status_ON   		= $shelly_api_device_response->data->device_status->{"switch:0"}->output;
-
+              $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
               $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
+
+              if ($shelly_api_device_status_ON)
+                  {
+                      $shelly_switch_status = "ON";
+                  }
+              else
+                  {
+                      $shelly_switch_status = "OFF";
+                  }
           }
 
-          if ($shelly_api_device_status_ON)
-          {
-              $shelly_switch_status = "ON";
-          }
-          else
-          {
-              $shelly_switch_status = "OFF";
-          }
+          
 
           $this->verbose ? print("<pre>username: " . $wp_user_name . " Shelly Switch Status is:" .
                                  $shelly_switch_status . "</pre>") : false;
@@ -245,8 +244,7 @@ class class_transindus_eco
           if( empty(  $studer_readings_obj )                          ||
               empty(  $studer_readings_obj->battery_voltage_vdc )     ||
                       $studer_readings_obj->battery_voltage_vdc < 40  ||
-              empty(  $studer_readings_obj->pout_inverter_ac_kw )
-            )
+              empty(  $studer_readings_obj->pout_inverter_ac_kw ) ) 
           {
             // cannot trust this Studer reading, skipping this user
             $this->verbose ? print("<pre>username: " . $wp_user_name .
@@ -483,10 +481,6 @@ class class_transindus_eco
           }
 
         }
-
-        $this->user_readings_array = $user_readings_array;
-
-        return $user_readings_array;
     }
 
     /**
@@ -795,7 +789,7 @@ class class_transindus_eco
                 <td id="grid_arrow_icon">'  . $grid_arrow_icon  . '</td>
                 <td></td>
                 <td id="pv_arrow_icon">'    . $pv_arrow_icon    . '</td>
-                <td id="psolar_kw" style="font-size: 18px;">'        . $psolar_kw        . ' KW<br>' . $solar_pv_adc   . ' A</td>
+                <td id="psolar_info" style="font-size: 18px;">'        . $psolar_kw        . ' KW<br>' . $solar_pv_adc   . ' A</td>
 
             <tr>
                 <td></td>
@@ -1431,278 +1425,461 @@ class class_transindus_eco
        // $battery_vdc_state      = json_decode($battery_vdc_state_json, true);
 
        // select battery icon based on charge level
-        switch(true)
-        {
-          case ($battery_voltage_vdc < $config['battery_vdc_state']["25p"] ):
-            $battery_icon_class = "fa fa-3x fa-solid fa-battery-empty";
-          break;
+      switch(true)
+      {
+        case ($battery_voltage_vdc < $config['battery_vdc_state']["25p"] ):
+          $battery_icon_class = "fa fa-3x fa-solid fa-battery-empty";
+        break;
 
-          case ($battery_voltage_vdc >= $config['battery_vdc_state']["25p"] &&
-                $battery_voltage_vdc <  $config['battery_vdc_state']["50p"] ):
-            $battery_icon_class = "fa fa-3x fa-solid fa-battery-quarter";
-          break;
+        case ($battery_voltage_vdc >= $config['battery_vdc_state']["25p"] &&
+              $battery_voltage_vdc <  $config['battery_vdc_state']["50p"] ):
+          $battery_icon_class = "fa fa-3x fa-solid fa-battery-quarter";
+        break;
 
-          case ($battery_voltage_vdc >= $config['battery_vdc_state']["50p"] &&
-                $battery_voltage_vdc <  $config['battery_vdc_state']["75p"] ):
-            $battery_icon_class = "fa fa-3x fa-solid fa-battery-half";
-          break;
+        case ($battery_voltage_vdc >= $config['battery_vdc_state']["50p"] &&
+              $battery_voltage_vdc <  $config['battery_vdc_state']["75p"] ):
+          $battery_icon_class = "fa fa-3x fa-solid fa-battery-half";
+        break;
 
-          case ($battery_voltage_vdc >= $config['battery_vdc_state']["75p"] &&
-                $battery_voltage_vdc <  $config['battery_vdc_state']["100p"] ):
-            $battery_icon_class = "fa fa-3x fa-solid fa-battery-three-quarters";
-          break;
+        case ($battery_voltage_vdc >= $config['battery_vdc_state']["75p"] &&
+              $battery_voltage_vdc <  $config['battery_vdc_state']["100p"] ):
+          $battery_icon_class = "fa fa-3x fa-solid fa-battery-three-quarters";
+        break;
 
-          case ($battery_voltage_vdc >= $config['battery_vdc_state']["100p"] ):
-            $battery_icon_class = "fa fa-3x fa-solid fa-battery-full";
-          break;
-        }
+        case ($battery_voltage_vdc >= $config['battery_vdc_state']["100p"] ):
+          $battery_icon_class = "fa fa-3x fa-solid fa-battery-full";
+        break;
+      }
 
-        $battery_span_fontawesome = '
-                                      <i class="' . $battery_icon_class . ' ' . $battery_color_style . '"></i>';
+      $battery_span_fontawesome = '
+                                    <i class="' . $battery_icon_class . ' ' . $battery_color_style . '"></i>';
 
-        // select battery icon color: Green if charging, Red if discharging
-
-
-        // update the object with battery data read
-        $studer_readings_obj->battery_charge_adc          = $battery_charge_adc;
-        $studer_readings_obj->pbattery_kw                 = abs($pbattery_kw);
-        $studer_readings_obj->battery_voltage_vdc         = $battery_voltage_vdc;
-        $studer_readings_obj->battery_charge_arrow_class  = $battery_charge_arrow_class;
-        $studer_readings_obj->battery_icon_class          = $battery_icon_class;
-        $studer_readings_obj->battery_charge_animation_class = $battery_charge_animation_class;
-        $studer_readings_obj->energyout_battery_yesterday    = $energyout_battery_yesterday;
-
-        // update the object with SOlar data read
-        $studer_readings_obj->psolar_kw                   = $psolar_kw;
-        $studer_readings_obj->solar_pv_adc                = $solar_pv_adc;
-        // $studer_readings_obj->solar_pv_vdc                = $solar_pv_vdc;
-        $studer_readings_obj->solar_arrow_class           = $solar_arrow_class;
-        $studer_readings_obj->solar_arrow_animation_class = $solar_arrow_animation_class;
-        $studer_readings_obj->psolar_kw_yesterday         = $psolar_kw_yesterday;
-
-        //update the object with Inverter Load details
-        $studer_readings_obj->pout_inverter_ac_kw         = $pout_inverter_ac_kw;
-        $studer_readings_obj->inverter_pout_arrow_class   = $inverter_pout_arrow_class;
-
-        // update the Grid input values
-        $studer_readings_obj->transfer_relay_state        = $transfer_relay_state;
-        $studer_readings_obj->grid_pin_ac_kw              = $grid_pin_ac_kw;
-        $studer_readings_obj->grid_input_vac              = $grid_input_vac;
-        $studer_readings_obj->grid_input_arrow_class      = $grid_input_arrow_class;
-        $studer_readings_obj->aux1_relay_state            = $aux1_relay_state;
-        $studer_readings_obj->energy_grid_yesterday       = $energy_grid_yesterday;
-        $studer_readings_obj->energy_consumed_yesterday   = $energy_consumed_yesterday;
-        $studer_readings_obj->battery_span_fontawesome    = $battery_span_fontawesome;
+      // select battery icon color: Green if charging, Red if discharging
 
 
-        // update the object with the fontawesome cdn from Studer API object
-        // $studer_readings_obj->fontawesome_cdn             = $studer_api->fontawesome_cdn;
+      // update the object with battery data read
+      $studer_readings_obj->battery_charge_adc          = $battery_charge_adc;
+      $studer_readings_obj->pbattery_kw                 = abs($pbattery_kw);
+      $studer_readings_obj->battery_voltage_vdc         = $battery_voltage_vdc;
+      $studer_readings_obj->battery_charge_arrow_class  = $battery_charge_arrow_class;
+      $studer_readings_obj->battery_icon_class          = $battery_icon_class;
+      $studer_readings_obj->battery_charge_animation_class = $battery_charge_animation_class;
+      $studer_readings_obj->energyout_battery_yesterday    = $energyout_battery_yesterday;
 
-        return $studer_readings_obj;
-       }
+      // update the object with SOlar data read
+      $studer_readings_obj->psolar_kw                   = $psolar_kw;
+      $studer_readings_obj->solar_pv_adc                = $solar_pv_adc;
+      // $studer_readings_obj->solar_pv_vdc                = $solar_pv_vdc;
+      $studer_readings_obj->solar_arrow_class           = $solar_arrow_class;
+      $studer_readings_obj->solar_arrow_animation_class = $solar_arrow_animation_class;
+      $studer_readings_obj->psolar_kw_yesterday         = $psolar_kw_yesterday;
 
-       /**
-        *
-        */
-        public function get_studer_min_readings(int $user_index): ?object
-        {
-            $config = $this->config;
+      //update the object with Inverter Load details
+      $studer_readings_obj->pout_inverter_ac_kw         = $pout_inverter_ac_kw;
+      $studer_readings_obj->inverter_pout_arrow_class   = $inverter_pout_arrow_class;
 
-            $Ra = 0.0;       // value of resistance from DC junction to Inverter
-            $Rb = 0.025;     // value of resistance from DC junction to Battery terminals
+      // update the Grid input values
+      $studer_readings_obj->transfer_relay_state        = $transfer_relay_state;
+      $studer_readings_obj->grid_pin_ac_kw              = $grid_pin_ac_kw;
+      $studer_readings_obj->grid_input_vac              = $grid_input_vac;
+      $studer_readings_obj->grid_input_arrow_class      = $grid_input_arrow_class;
+      $studer_readings_obj->aux1_relay_state            = $aux1_relay_state;
+      $studer_readings_obj->energy_grid_yesterday       = $energy_grid_yesterday;
+      $studer_readings_obj->energy_consumed_yesterday   = $energy_consumed_yesterday;
+      $studer_readings_obj->battery_span_fontawesome    = $battery_span_fontawesome;
 
-            $base_url  = $config['studer_api_baseurl'];
-            $uhash     = $config['accounts'][$user_index]['uhash'];
-            $phash     = $config['accounts'][$user_index]['phash'];
 
-            $studer_api = new studer_api($uhash, $phash, $base_url);
+      // update the object with the fontawesome cdn from Studer API object
+      // $studer_readings_obj->fontawesome_cdn             = $studer_api->fontawesome_cdn;
 
-            $studer_readings_obj = new stdClass;
+      return $studer_readings_obj;
+    }
 
-            $body = [];
+    /**
+    ** This function returns an object that comprises data read form user's installtion
+    *  @param int:$user_index  is the numeric index to denote a particular installtion
+    *  @return object:$studer_readings_obj
+    */
+    public function get_studer_min_readings(int $user_index): ?object
+    {
+        $config = $this->config;
 
-            // get the input AC active power value
-            $body = array(array(
-                                  "userRef"       =>  3136,   // AC active power delivered by inverter
-                                  "infoAssembly"  => "Master"
-                              ),
-                          array(
-                                  "userRef"       =>  3137,   // Grid AC input Active power
-                                  "infoAssembly"  => "Master"
-                              ),
-                          array(
-                                  "userRef"       =>  3011,   // Grid AC in Voltage Vac
-                                  "infoAssembly"  => "Master"
-                                ),
-                          array(
-                                  "userRef"       =>  3000,   // Battery Voltage
-                                  "infoAssembly"  => "Master"
-                                ),
-                          array(
-                                  "userRef"       =>  3005,   // DC input current to Inverter
-                                  "infoAssembly"  => "Master"
-                                ),
-                          array(
-                                  "userRef"       =>  3031,   // State of AUX1 relay
-                                  "infoAssembly"  => "Master"
-                                ),
+        $Ra = 0.0;       // value of resistance from DC junction to Inverter
+        $Rb = 0.025;       // value of resistance from DC junction to Battery terminals
 
-                          array(
-                                  "userRef"       =>  11001,   // DC current into Battery junstion from VT1
-                                  "infoAssembly"  => "1"
-                                ),
-                          array(
-                                  "userRef"       =>  11001,   // DC current into Battery junstion from VT2
-                                  "infoAssembly"  => "2"
-                                ),
-                          array(
-                                  "userRef"       =>  11004,   // Psolkw from VT1
-                                  "infoAssembly"  => "1"
-                                ),
-                          array(
-                                  "userRef"       =>  11004,   // Psolkw from VT2
-                                  "infoAssembly"  => "2"
-                                ),
-                          );
+        $base_url  = $config['studer_api_baseurl'];
+        $uhash     = $config['accounts'][$user_index]['uhash'];
+        $phash     = $config['accounts'][$user_index]['phash'];
 
-            $studer_api->body   = $body;
+        $studer_api = new studer_api($uhash, $phash, $base_url);
 
-            // POST curl request to Studer
-            $user_values  = $studer_api->get_user_values();
+        $studer_readings_obj = new stdClass;
 
-            $solar_pv_adc = 0;
-            $psolar_kw    = 0;
+        $body = [];
 
-            if (empty($user_values))
+        // get the input AC active power value
+        $body = array(array(
+                              "userRef"       =>  3136,   // AC active power delivered by inverter
+                              "infoAssembly"  => "Master"
+                           ),
+                      array(
+                               "userRef"       =>  3137,   // Grid AC input Active power
+                               "infoAssembly"  => "Master"
+                           ),
+                      array(
+                               "userRef"       =>  3020,   // State of Transfer Relay
+                               "infoAssembly"  => "Master"
+                            ),
+                      array(
+                               "userRef"       =>  3031,   // State of AUX1 relay
+                               "infoAssembly"  => "Master"
+                            ),
+                      array(
+                              "userRef"       =>  3000,   // Battery Voltage
+                              "infoAssembly"  => "Master"
+                            ),
+                      array(
+                              "userRef"       =>  3011,   // Grid AC in Voltage Vac
+                              "infoAssembly"  => "Master"
+                            ),
+                      array(
+                              "userRef"       =>  3012,   // Grid AC in Current Aac
+                              "infoAssembly"  => "Master"
+                            ),
+                      array(
+                              "userRef"       =>  3005,   // DC input current to Inverter
+                              "infoAssembly"  => "Master"
+                            ),
+
+                      array(
+                              "userRef"       =>  11001,   // DC current into Battery junstion from VT1
+                              "infoAssembly"  => "1"
+                            ),
+                      array(
+                              "userRef"       =>  11001,   // DC current into Battery junstion from VT2
+                              "infoAssembly"  => "2"
+                            ),
+                      array(
+                              "userRef"       =>  11002,   // solar pv Voltage to variotrac
+                              "infoAssembly"  => "Master"
+                            ),
+                      array(
+                              "userRef"       =>  11004,   // Psolkw from VT1
+                              "infoAssembly"  => "1"
+                            ),
+                      array(
+                              "userRef"       =>  11004,   // Psolkw from VT2
+                              "infoAssembly"  => "2"
+                            ),
+
+                      array(
+                              "userRef"       =>  3010,   // Phase of battery charge
+                              "infoAssembly"  => "Master"
+                            ),
+                      );
+        $studer_api->body   = $body;
+
+        // POST curl request to Studer
+        $user_values  = $studer_api->get_user_values();
+
+        if (empty($user_values))
             {
               return null;
             }
-            foreach ($user_values as $user_value)
-            {
-              switch (true)
-              {
-                case ( $user_value->reference == 3031 ) :
-                  $aux1_relay_state = $user_value->value;
-                break;
 
-                case ( $user_value->reference == 3020 ) :
-                  $transfer_relay_state = $user_value->value;
-                break;
+        $solar_pv_adc = 0;
+        $psolar_kw    = 0;
+        $psolar_kw_yesterday = 0;
 
-                case ( $user_value->reference == 3011 ) :
-                  $grid_input_vac = round($user_value->value, 0);
-                break;
 
-                case ( $user_value->reference == 3012 ) :
-                  $grid_input_aac = round($user_value->value, 1);
-                break;
+        foreach ($user_values as $user_value)
+        {
+          switch (true)
+          {
+            case ( $user_value->reference == 3031 ) :
+              $aux1_relay_state = $user_value->value;
+            break;
 
-                case ( $user_value->reference == 3000 ) :
-                  $battery_voltage_vdc = round($user_value->value, 2);
-                break;
+            case ( $user_value->reference == 3020 ) :
+              $transfer_relay_state = $user_value->value;
+            break;
 
-                case ( $user_value->reference == 3005 ) :
-                  $inverter_current_adc = round($user_value->value, 1);
-                break;
+            case ( $user_value->reference == 3011 ) :
+              $grid_input_vac = round($user_value->value, 0);
+            break;
 
-                case ( $user_value->reference == 3137 ) :
-                  $grid_pin_ac_kw = round($user_value->value, 2);
+            case ( $user_value->reference == 3012 ) :
+              $grid_input_aac = round($user_value->value, 1);
+            break;
 
-                break;
+            case ( $user_value->reference == 3000 ) :
+              $battery_voltage_vdc = round($user_value->value, 2);
+            break;
 
-                case ( $user_value->reference == 3136 ) :
-                  $pout_inverter_ac_kw = round($user_value->value, 2);
+            case ( $user_value->reference == 3005 ) :
+              $inverter_current_adc = round($user_value->value, 1);
+            break;
 
-                break;
+            case ( $user_value->reference == 3137 ) :
+              $grid_pin_ac_kw = round($user_value->value, 2);
 
-                case ( $user_value->reference == 3076 ) :
-                  $energyout_battery_yesterday = round($user_value->value, 2);
+            break;
 
-                break;
+            case ( $user_value->reference == 3136 ) :
+              $pout_inverter_ac_kw = round($user_value->value, 2);
 
-                case ( $user_value->reference == 3080 ) :
-                  $energy_grid_yesterday = round($user_value->value, 2);
+            break;
 
-                break;
+            case ( $user_value->reference == 3076 ) :
+               $energyout_battery_yesterday = round($user_value->value, 2);
 
-                case ( $user_value->reference == 3082 ) :
-                  $energy_consumed_yesterday = round($user_value->value, 2);
+             break;
 
-                break;
+             case ( $user_value->reference == 3080 ) :
+               $energy_grid_yesterday = round($user_value->value, 2);
 
-                case ( $user_value->reference == 11001 ) :
-                  // we have to accumulate values form 2 cases:VT1 and VT2 so we have used accumulation below
-                  $solar_pv_adc += $user_value->value;
+             break;
 
-                break;
+             case ( $user_value->reference == 3082 ) :
+               $energy_consumed_yesterday = round($user_value->value, 2);
 
-                case ( $user_value->reference == 11002 ) :
-                  $solar_pv_vdc = round($user_value->value, 1);
+             break;
 
-                break;
+            case ( $user_value->reference == 11001 ) :
+              // we have to accumulate values form 2 cases:VT1 and VT2 so we have used accumulation below
+              $solar_pv_adc += $user_value->value;
 
-                case ( $user_value->reference == 11004 ) :
-                  // we have to accumulate values form 2 cases so we have used accumulation below
-                  $psolar_kw += round($user_value->value, 2);
+            break;
 
-                break;
+            case ( $user_value->reference == 11002 ) :
+              $solar_pv_vdc = round($user_value->value, 1);
 
-                case ( $user_value->reference == 3010 ) :
-                  $phase_battery_charge = $user_value->value;
+            break;
 
-                break;
+            case ( $user_value->reference == 11004 ) :
+              // we have to accumulate values form 2 cases so we have used accumulation below
+              $psolar_kw += round($user_value->value, 2);
 
-                case ( $user_value->reference == 11011 ) :
-                  // we have to accumulate values form 2 cases so we have used accumulation below
-                  $psolar_kw_yesterday += round($user_value->value, 2);
+            break;
 
-                break;
-              }
-            }
+            case ( $user_value->reference == 3010 ) :
+              $phase_battery_charge = $user_value->value;
 
-            $solar_pv_adc = round($solar_pv_adc, 1);
+            break;
 
-            // calculate the current into/out of battery and battery instantaneous power
-            $battery_charge_adc  = round($solar_pv_adc + $inverter_current_adc, 1); // + is charge, - is discharge
-            $pbattery_kw         = round($battery_voltage_vdc * $battery_charge_adc * 0.001, 2); //$psolar_kw - $pout_inverter_ac_kw;
+            case ( $user_value->reference == 11011 ) :
+               // we have to accumulate values form 2 cases so we have used accumulation below
+               $psolar_kw_yesterday += round($user_value->value, 2);
 
-            // conditional class names for battery charge down or up arrow
-            if ($battery_charge_adc > 0.0)
-            {
-              // current is positive so battery is charging so arrow is down and to left. Also arrow shall be red to indicate charging
-              // also good time to compensate for IR drop.
-              // Actual voltage is smaller than indicated, when charging
-              $battery_voltage_vdc = round($battery_voltage_vdc + abs($inverter_current_adc) * $Ra - abs($battery_charge_adc) * $Rb, 2);
-            }
-            else
-            {
-              // current is -ve so battery is discharging so arrow is up and icon color shall be red
-              // Actual battery voltage is larger than indicated when discharging
-              $battery_voltage_vdc = round($battery_voltage_vdc + abs($inverter_current_adc) * $Ra + abs($battery_charge_adc) * $Rb, 2);
-            }
-
-            // update the object with battery data read
-            $studer_readings_obj->battery_charge_adc          = $battery_charge_adc;
-            $studer_readings_obj->pbattery_kw                 = abs($pbattery_kw);
-            $studer_readings_obj->battery_voltage_vdc         = $battery_voltage_vdc;
-
-            // update the object with SOlar data read
-            $studer_readings_obj->psolar_kw                   = $psolar_kw;
-            $studer_readings_obj->solar_pv_adc                = $solar_pv_adc;
-
-            //update the object with Inverter Load details
-            $studer_readings_obj->pout_inverter_ac_kw         = $pout_inverter_ac_kw;
-            $studer_readings_obj->inverter_current_adc        = $inverter_current_adc;
-
-            // update the Grid input values
-            $studer_readings_obj->grid_pin_ac_kw              = $grid_pin_ac_kw;
-            $studer_readings_obj->grid_input_vac              = $grid_input_vac;
-
-            $studer_readings_obj->aux1_relay_state              = $aux1_relay_state;
-
-            return $studer_readings_obj;
+             break;
           }
+        }
 
+        $solar_pv_adc = round($solar_pv_adc, 1);
+
+        // calculate the current into/out of battery and battery instantaneous power
+        $battery_charge_adc  = round($solar_pv_adc + $inverter_current_adc, 1); // + is charge, - is discharge
+        $pbattery_kw         = round($battery_voltage_vdc * $battery_charge_adc * 0.001, 2); //$psolar_kw - $pout_inverter_ac_kw;
+
+
+        // inverter's output always goes to load never the other way around :-)
+        $inverter_pout_arrow_class = "fa fa-long-arrow-right fa-rotate-45 rediconcolor";
+
+        // conditional class names for battery charge down or up arrow
+        if ($battery_charge_adc > 0.0)
+        {
+          // current is positive so battery is charging so arrow is down and to left. Also arrow shall be red to indicate charging
+          $battery_charge_arrow_class = "fa fa-long-arrow-down fa-rotate-45 rediconcolor";
+          // battery animation class is from ne-sw
+          $battery_charge_animation_class = "arrowSliding_ne_sw";
+
+          $battery_color_style = 'greeniconcolor';
+
+          // also good time to compensate for IR drop.
+          // Actual voltage is smaller than indicated, when charging
+          $battery_voltage_vdc = round($battery_voltage_vdc + abs($inverter_current_adc) * $Ra - abs($battery_charge_adc) * $Rb, 2);
+        }
+        else
+        {
+          // current is -ve so battery is discharging so arrow is up and icon color shall be red
+          $battery_charge_arrow_class = "fa fa-long-arrow-up fa-rotate-45 greeniconcolor";
+          $battery_charge_animation_class = "arrowSliding_sw_ne";
+          $battery_color_style = 'rediconcolor';
+
+          // Actual battery voltage is larger than indicated when discharging
+          $battery_voltage_vdc = round($battery_voltage_vdc + abs($inverter_current_adc) * $Ra + abs($battery_charge_adc) * $Rb, 2);
+        }
+
+        switch(true)
+        {
+          case (abs($battery_charge_adc) < 27 ) :
+            $battery_charge_arrow_class .= " fa-1x";
+          break;
+
+          case (abs($battery_charge_adc) < 54 ) :
+            $battery_charge_arrow_class .= " fa-2x";
+          break;
+
+          case (abs($battery_charge_adc) >=54 ) :
+            $battery_charge_arrow_class .= " fa-3x";
+          break;
+        }
+
+        // conditional for solar pv arrow
+        if ($psolar_kw > 0.1)
+        {
+          // power is greater than 0.2kW so indicate down arrow
+          $solar_arrow_class = "fa fa-long-arrow-down fa-rotate-45 greeniconcolor";
+          $solar_arrow_animation_class = "arrowSliding_ne_sw";
+        }
+        else
+        {
+          // power is too small indicate a blank line vertically down from Solar panel to Inverter in diagram
+          $solar_arrow_class = "fa fa-minus fa-rotate-90";
+          $solar_arrow_animation_class = "";
+        }
+
+        switch(true)
+        {
+          case (abs($psolar_kw) < 0.5 ) :
+            $solar_arrow_class .= " fa-1x";
+          break;
+
+          case (abs($psolar_kw) < 2.0 ) :
+            $solar_arrow_class .= " fa-2x";
+          break;
+
+          case (abs($psolar_kw) >= 2.0 ) :
+            $solar_arrow_class .= " fa-3x";
+          break;
+        }
+
+        switch(true)
+        {
+          case (abs($pout_inverter_ac_kw) < 1.0 ) :
+            $inverter_pout_arrow_class .= " fa-1x";
+          break;
+
+          case (abs($pout_inverter_ac_kw) < 2.0 ) :
+            $inverter_pout_arrow_class .= " fa-2x";
+          break;
+
+          case (abs($pout_inverter_ac_kw) >=2.0 ) :
+            $inverter_pout_arrow_class .= " fa-3x";
+          break;
+        }
+
+        // conditional for Grid input arrow
+        if ($transfer_relay_state)
+        {
+          // Transfer Relay is closed so grid input is possible
+          $grid_input_arrow_class = "fa fa-long-arrow-right fa-rotate-45";
+        }
+        else
+        {
+          // Transfer relay is open and grid input is not possible
+          $grid_input_arrow_class = "fa fa-times-circle fa-2x";
+        }
+
+        switch(true)
+        {
+          case (abs($grid_pin_ac_kw) < 1.0 ) :
+            $grid_input_arrow_class .= " fa-1x";
+          break;
+
+          case (abs($grid_pin_ac_kw) < 2.0 ) :
+            $grid_input_arrow_class .= " fa-2x";
+          break;
+
+          case (abs($grid_pin_ac_kw) < 3.5 ) :
+            $grid_input_arrow_class .= " fa-3x";
+          break;
+
+          case (abs($grid_pin_ac_kw) < 4 ) :
+            $grid_input_arrow_class .= " fa-4x";
+          break;
+        }
+
+       $current_user           = wp_get_current_user();
+       $current_user_ID        = $current_user->ID;
+       // $battery_vdc_state_json = get_user_meta($current_user_ID, "json_battery_voltage_state", true);
+       // $battery_vdc_state      = json_decode($battery_vdc_state_json, true);
+
+       // select battery icon based on charge level
+      switch(true)
+      {
+        case ($battery_voltage_vdc < $config['battery_vdc_state']["25p"] ):
+          $battery_icon_class = "fa fa-3x fa-solid fa-battery-empty";
+        break;
+
+        case ($battery_voltage_vdc >= $config['battery_vdc_state']["25p"] &&
+              $battery_voltage_vdc <  $config['battery_vdc_state']["50p"] ):
+          $battery_icon_class = "fa fa-3x fa-solid fa-battery-quarter";
+        break;
+
+        case ($battery_voltage_vdc >= $config['battery_vdc_state']["50p"] &&
+              $battery_voltage_vdc <  $config['battery_vdc_state']["75p"] ):
+          $battery_icon_class = "fa fa-3x fa-solid fa-battery-half";
+        break;
+
+        case ($battery_voltage_vdc >= $config['battery_vdc_state']["75p"] &&
+              $battery_voltage_vdc <  $config['battery_vdc_state']["100p"] ):
+          $battery_icon_class = "fa fa-3x fa-solid fa-battery-three-quarters";
+        break;
+
+        case ($battery_voltage_vdc >= $config['battery_vdc_state']["100p"] ):
+          $battery_icon_class = "fa fa-3x fa-solid fa-battery-full";
+        break;
+      }
+
+      $battery_span_fontawesome = '
+                                    <i class="' . $battery_icon_class . ' ' . $battery_color_style . '"></i>';
+
+      // select battery icon color: Green if charging, Red if discharging
+
+
+      // update the object with battery data read
+      $studer_readings_obj->battery_charge_adc          = $battery_charge_adc;
+      $studer_readings_obj->pbattery_kw                 = abs($pbattery_kw);
+      $studer_readings_obj->battery_voltage_vdc         = $battery_voltage_vdc;
+      $studer_readings_obj->battery_charge_arrow_class  = $battery_charge_arrow_class;
+      $studer_readings_obj->battery_icon_class          = $battery_icon_class;
+      $studer_readings_obj->battery_charge_animation_class = $battery_charge_animation_class;
+      $studer_readings_obj->energyout_battery_yesterday    = $energyout_battery_yesterday;
+
+      // update the object with SOlar data read
+      $studer_readings_obj->psolar_kw                   = $psolar_kw;
+      $studer_readings_obj->solar_pv_adc                = $solar_pv_adc;
+      // $studer_readings_obj->solar_pv_vdc                = $solar_pv_vdc;
+      $studer_readings_obj->solar_arrow_class           = $solar_arrow_class;
+      $studer_readings_obj->solar_arrow_animation_class = $solar_arrow_animation_class;
+      $studer_readings_obj->psolar_kw_yesterday         = $psolar_kw_yesterday;
+
+      //update the object with Inverter Load details
+      $studer_readings_obj->pout_inverter_ac_kw         = $pout_inverter_ac_kw;
+      $studer_readings_obj->inverter_pout_arrow_class   = $inverter_pout_arrow_class;
+
+      // update the Grid input values
+      $studer_readings_obj->transfer_relay_state        = $transfer_relay_state;
+      $studer_readings_obj->grid_pin_ac_kw              = $grid_pin_ac_kw;
+      $studer_readings_obj->grid_input_vac              = $grid_input_vac;
+      $studer_readings_obj->grid_input_arrow_class      = $grid_input_arrow_class;
+      $studer_readings_obj->aux1_relay_state            = $aux1_relay_state;
+      $studer_readings_obj->energy_grid_yesterday       = $energy_grid_yesterday;
+      $studer_readings_obj->energy_consumed_yesterday   = $energy_consumed_yesterday;
+      $studer_readings_obj->battery_span_fontawesome    = $battery_span_fontawesome;
+
+
+      // update the object with the fontawesome cdn from Studer API object
+      // $studer_readings_obj->fontawesome_cdn             = $studer_api->fontawesome_cdn;
+
+      return $studer_readings_obj;
+    }
+    
+
+    /**
+     * 
+     */
     public function ajax_my_solar_update_handler()     
     {
         $studer_readings_obj = new stdClass();
@@ -1716,14 +1893,19 @@ class class_transindus_eco
 
         // sanitize the POST data
         $toggleGridSwitch = sanitize_text_field($toggleGridSwitch);
-        error_log("toggleGridSwitch Value: " . $toggleGridSwitch);
 
         // get my user index knowing my login name
         $wp_user_ID   = $data['wp_user_ID'];
+
+        // sanitize the POST data
+        $wp_user_ID   = sanitize_text_field($wp_user_ID);
+
+        error_log("toggleGridSwitch Value: " . $toggleGridSwitch . ' wp_user_ID:' . $wp_user_ID);
+
         $current_user = get_user_by('id', $wp_user_ID);
         $wp_user_name = $current_user->user_login;
 
-        $config       = $this->config;
+        // $config       = $this->config;
 
         /* Now to find the index in the config array using the above
         $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
@@ -1733,52 +1915,56 @@ class class_transindus_eco
             return;
           }
         */
-        if ($toggleGridSwitch)
-        {
-            // user has touched the power icon to toggle it.
-            // Get status of switch
-            $shelly_api_device_response   = $this->get_shelly_device_status($user_index);
+        if ($toggleGridSwitch) {
+                // user has touched the power icon to toggle it. Get status and toggle status
+                // Get status of switch
+                $shelly_api_device_response   = $this->get_shelly_device_status($user_index);
 
-            $shelly_api_device_status_ON  = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+                // what do we do we do if device is OFFLINE?
+                if ( empty($shelly_api_device_response) ) {
+                        // do nothing
+                }
+                else {
+                        // valid switch response so we can determine status and toggle switch
+                        $shelly_api_device_status_ON  = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
 
-            if ($shelly_api_device_status_ON)
-            {
-                $shelly_switch_status = "ON";
+                        if ($shelly_api_device_status_ON)
+                        {
+                            $shelly_switch_status = "ON";
 
-                // we need to turn it off because user has toggled switch
-                $response = $this->turn_on_off_shelly_switch($user_index, "off");
+                            // we need to turn it off because user has toggled switch
+                            $response = $this->turn_on_off_shelly_switch($user_index, "off");
 
-                error_log('Changed Switch from ON->OFF due to Ajax Request');
+                            error_log('Changed Switch from ON->OFF due to Ajax Request');
 
-            }
-            else
-            {
-                $shelly_switch_status = "OFF";
+                        }
+                        else
+                        {
+                            $shelly_switch_status = "OFF";
 
-                // we need to turn switch ON since user has toggled switch
-                $response = $this->turn_on_off_shelly_switch($user_index, "on");
+                            // we need to turn switch ON since user has toggled switch
+                            $response = $this->turn_on_off_shelly_switch($user_index, "on");
 
-                error_log('Changed Switch from OFF->ON due to Ajax Request');
-            }
-
+                            error_log('Changed Switch from OFF->ON due to Ajax Request');
+                        }
+                 }
         }
 
         // get the Studer readings object flag first
         $new_readings_read_by_ajax  = get_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
 
-        while ( ! $new_readings_read_by_ajax) 
-        {
+        while ( ! $new_readings_read_by_ajax) {
+            // no reading updates so wait 10s
             sleep(10);
             $new_readings_read_by_ajax  = get_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
         }
 
-        if ($new_readings_read_by_ajax)
-        {
+        if ($new_readings_read_by_ajax) {
             // new readings are available in user meta but not yet read by Ajax
             $readings_object_json = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
             
             // change flag back to 0 to indicate ready for update
-            update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', 0 );
+            update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', false );
 
             // decode JSON string into an object , optional flag is false below
             $studer_readings_obj  = json_decode($readings_object_json);
@@ -1793,8 +1979,7 @@ class class_transindus_eco
             wp_send_json($format_object);
 
         }
-        else 
-        {
+        else {
             // did not have updated data
             $format_object->update = false;
 
@@ -1807,7 +1992,9 @@ class class_transindus_eco
     }    
     
     /**
-     * 
+     * @param object:studer_readings_obj contains details of all the readings
+     * @return object:format_object contains html for all the icons to be updatd by JS on Ajax call return
+     * determine the icons based on updated data
      */
     public function fill_in_icon_details( $studer_readings_obj )
     {
@@ -1831,8 +2018,7 @@ class class_transindus_eco
         $shelly_api_device_status_voltage = $studer_readings_obj->shelly_api_device_status_voltage;
 
         // If power is flowing OR switch has ON status then show CHeck and Green
-        if ($grid_pin_ac_kw > 0.01 )
-        {
+        if ($grid_pin_ac_kw > 0.01 ) {
             $grid_staus_icon = '<span id="clickableGridSwitch" style="color: Green;">
                                     <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';
@@ -1841,16 +2027,14 @@ class class_transindus_eco
                                                                               style="--fa-rotate-angle: 45deg;">
                                 </i>';
         }
-        elseif( is_null($shelly_switch_status_ON) )
-        {
+        elseif( is_null($shelly_switch_status_ON) ) {
             $grid_staus_icon = '<span style="color: Yellow;">
                                     <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';
 
             $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
         }
-        else
-        {
+        else {
             $grid_staus_icon = '<span style="color: Red;">
                                     <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';
@@ -1863,6 +2047,29 @@ class class_transindus_eco
 
         $grid_info = $grid_pin_ac_kw  . ' KW<br>' . $shelly_api_device_status_voltage . ' V';
         $format_object->grid_info       = $grid_info;
+
+        // PV arrow icon determination
+        if ($psolar_kw > 0.1) {
+            $pv_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-down-long fa-rotate-by"
+                                                                           style="--fa-rotate-angle: 45deg;">
+                              </i>';
+        }
+        else {
+            $pv_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
+        }
+
+        $format_object->pv_arrow_icon = $pv_arrow_icon;
+
+        // solar Power and Current Info
+        $psolar_info = $psolar_kw  . ' KW<br>' . $solar_pv_adc . ' A';
+        $format_object->psolar_info = $psolar_info;
+
+        // battery status icon
+        $format_object->battery_status_icon = $battery_span_fontawesome;
+
+        // battery info
+        $battery_info = $battery_voltage_vdc  . ' V<br>' . abs($battery_charge_adc) . ' A';
+        $format_object->battery_info = $battery_info;
 
         return $format_object;
     }

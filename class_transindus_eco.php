@@ -2016,7 +2016,7 @@ class class_transindus_eco
         $grid_pin_ac_kw         =   $studer_readings_obj->grid_pin_ac_kw;
         $grid_input_vac         =   $studer_readings_obj->grid_input_vac;
 
-        $shelly_switch_status_ON = $studer_readings_obj->shelly_switch_status_ON;
+        $shelly_api_device_status_ON = $studer_readings_obj->shelly_api_device_status_ON;
         $shelly_api_device_status_voltage = $studer_readings_obj->shelly_api_device_status_voltage;
 
         // If power is flowing OR switch has ON status then show CHeck and Green
@@ -2029,7 +2029,7 @@ class class_transindus_eco
                                                                               style="--fa-rotate-angle: 45deg;">
                                 </i>';
         }
-        elseif( is_null($shelly_switch_status_ON) ) {
+        elseif( is_null($shelly_api_device_status_ON) ) {
             $grid_staus_icon = '<span style="color: Yellow;">
                                     <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';

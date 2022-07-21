@@ -42,10 +42,11 @@ jQuery(document).ready(function($) {
                                                 //console.log('grid_status_icon: ', $('#grid_status_icon'));
                                                 //console.log('grid_arrow_icon: ', $('#grid_status_icon'));
                                                 //console.log('grid_info: ', $('#grid_info'));
-
+                                                if (data.update) triggerAjax();
+                                                
                                                 updateScreenWithNewData(data);
 
-                                                if (data.update) triggerAjax(); 
+                                                 
                                                 
                                             });
 

@@ -38,7 +38,7 @@ add_filter( 'cron_schedules',  'shelly_studer_add_new_cron_interval' );
 
 if (!wp_next_scheduled('shellystuder_task_hook')) 
 {
-    wp_schedule_event( time(), 'thirty_seconds', 'shellystuder_task_hook' );
+    wp_schedule_event( time(), 'sixty_seconds', 'shellystuder_task_hook' );
 }
 
 
@@ -47,9 +47,9 @@ if (!wp_next_scheduled('shellystuder_task_hook'))
  */
 function shelly_studer_add_new_cron_interval( $schedules ) 
 { 
-    $schedules['thirty_seconds'] = array(
-                                    'interval' => 1*30,
-                                    'display'  => esc_html__( 'Every 30 seconds' ),
+    $schedules['sixty_seconds'] = array(
+                                    'interval' => 1*60,
+                                    'display'  => esc_html__( 'Every 60 seconds' ),
                                     );
     return $schedules;
 }

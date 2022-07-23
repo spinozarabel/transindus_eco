@@ -1900,8 +1900,8 @@ class class_transindus_eco
         $format_object->grid_arrow_icon = $grid_arrow_icon;
 
         // grid power and voltage info
-        $grid_info = '<span style="font-size: 18px;color: Red;">' . $grid_pin_ac_kw . 
-                     ' KW<br>' . $shelly_api_device_status_voltage . ' V</span>';
+        $grid_info = '<span style="font-size: 18px;color: Red;"><strong>' . $grid_pin_ac_kw . 
+                     ' KW</strong><br>' . $shelly_api_device_status_voltage . ' V</span>';
         $format_object->grid_info       = $grid_info;
 
         // PV arrow icon psolar_info
@@ -1992,7 +1992,7 @@ class class_transindus_eco
           $battery_color_style = 'rediconcolor';
 
           // battery info shall be red in color
-          $battery_info =  '<span style="font-size: 18px;color: Red;">' . $pbattery_kw . ' KW<br>' 
+          $battery_info =  '<span style="font-size: 18px;color: Red;"><strong>' . $pbattery_kw . ' KW</strong><br>' 
                                                                         . abs($battery_charge_adc)  . 'A<br>'
                                                                         . $battery_voltage_vdc      . ' V<br></span>';
         }

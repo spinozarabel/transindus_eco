@@ -1964,7 +1964,7 @@ class class_transindus_eco
         if ($battery_charge_adc > 0.0)
         {
             // current is positive so battery is charging so arrow is down and to left. Also arrow shall be red to indicate charging
-            $battery_arrow_icon = '<i class="fa fa-long-arrow-down fa-rotate-45 rediconcolor"></i>';
+            $battery_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-down-long fa-rotate-45 greeniconcolor"></i>';
 
             // battery animation class is from ne-sw
             $battery_charge_animation_class = "arrowSliding_ne_sw";
@@ -1980,7 +1980,7 @@ class class_transindus_eco
         else
         {
           // current is -ve so battery is discharging so arrow is up and icon color shall be red
-          $battery_arrow_icon = '<i class="fa fa-long-arrow-up fa-rotate-45 greeniconcolor"></i>';
+          $battery_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-up-long fa-rotate-45 rediconcolor"></i>';
 
           $battery_charge_animation_class = "arrowSliding_sw_ne";
 

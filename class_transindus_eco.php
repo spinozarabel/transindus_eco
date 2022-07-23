@@ -250,6 +250,10 @@ class class_transindus_eco
 
             $control_shelly = false;
         }
+        else 
+        {
+          $control_shelly = true;
+        }
 
         // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
         $shelly_api_device_response = $this->get_shelly_device_status( $user_index );

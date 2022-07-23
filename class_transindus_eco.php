@@ -1742,7 +1742,7 @@ class class_transindus_eco
 
       //update the object with Inverter Load details
       $studer_readings_obj->pout_inverter_ac_kw         = $pout_inverter_ac_kw;
-      $studer_readings_obj->inverter_pout_arrow_class   = $inverter_pout_arrow_class;
+      // $studer_readings_obj->inverter_pout_arrow_class   = $inverter_pout_arrow_class;
       $studer_readings_obj->inverter_current_adc        = $inverter_current_adc;
 
       // update the Grid input values

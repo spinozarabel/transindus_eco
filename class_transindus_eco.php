@@ -91,6 +91,8 @@ class class_transindus_eco
 
       $this->timezone   = "Asia/Kolkata";
 
+      $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
+
 	}
 
     /**
@@ -117,23 +119,6 @@ class class_transindus_eco
 
     /**
      * 
-     */
-    public function get_user_index_of_logged_in_user()
-    {
-        // get my user index knowing my login name
-        $current_user = wp_get_current_user();
-        $wp_user_name = $current_user->user_login;
-
-        $config       = $this->config;
-
-        // Now to find the index in the config array using the above
-        $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
-
-        return $user_index;
-    }
-
-
-    /**
      * Define all of the public facing hooks and filters required for this plugin
      * @return null
      */
@@ -147,6 +132,59 @@ class class_transindus_eco
         add_shortcode( 'my-studer-readings',          [$this, 'my_studer_readings_page_render'] );
     }
 
+
+    /**
+     * 
+     */
+    public function get_user_index_of_logged_in_user()
+    {  // get my user index knowing my login name
+
+        $current_user = wp_get_current_user();
+        $wp_user_name = $current_user->user_login;
+
+        $config       = $this->config;
+
+        // Now to find the index in the config array using the above
+        $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
+
+        return $user_index;
+    }
+
+    /**
+     * 
+     */
+    public function get_index_from_wp_user_ID($wp_user_ID)
+    {
+        $wp_user_object = get_user_by( 'id', $wp_user_ID);
+
+        $wp_user_name   = $wp_user_object->user_login;
+
+        $config         = $this->config;
+
+        // Now to find the index in the config array using the above
+        $user_index     = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
+
+        return $user_index;
+    }
+
+
+    /**
+     * @param int:user_index
+     * @return object:wp_user_obj
+     */
+    public function get_wp_user_from_user_index($user_index)
+    {
+        $wp_user_name = $this->config['accounts'][$user_index]['wp_user_name'];
+
+        // Get the wp user object given the above username
+        $wp_user_obj  = get_user_by('login', $wp_user_name);
+
+        return $wp_user_obj;
+    }
+
+    /**
+     * 
+     */
     public function add_my_menu()
     {
         // add submenu page for testing various application API needed
@@ -160,330 +198,284 @@ class class_transindus_eco
         );
     }
 
+
     /**
      *  This function is called by the scheduler probably every minute or so.
      *  Its job is to get the minimal set of studer readings and the state of the ACIN shelly switch
      *  For every user in the config array who has the do_shelly variable set to TRUE.
-     *  The ACIN switch is turned ON or OFF based on a complex algorithm.
-     *  The algorithm trie sto ensure that the following: This assumes that Studer Relay is always ON
-     *  1. When battery voltage goes below the set value at any time, the ACIN is ON for ON-GRID operation
-     *  2. When
+     *  The ACIN switch is turned ON or OFF based on a complex algorithm. and user meta settings
      */
     public function shellystuder_cron_exec()
-    {
-        $user_readings_array = [];
-
-        $cloudiness_forecast= $this->check_if_forecast_is_cloudy();
-
-        $it_is_a_cloudy_day = $cloudiness_forecast->it_is_a_cloudy_day;
-
-        $cloud_cover_percentage = $cloudiness_forecast->cloudiness_average_percentage;
-
-        // Loop over all of the eligible users
+    {                        // Loop over all of the eligible users
         foreach ($this->config['accounts'] as $user_index => $account)
         {
-          $wp_user_name = $this->config['accounts'][$user_index]['wp_user_name'];
+            $wp_user_name = $this->config['accounts'][$user_index]['wp_user_name'];
 
-          // Get the wp user object given the above username
-          $wp_user_obj          = get_user_by('login', $wp_user_name);
-          $wp_user_ID           = $wp_user_obj->ID;
-          $do_shelly_user_meta              = get_user_meta($wp_user_ID, "do_shelly",                         true);
-          $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true);
+                            // Get the wp user object given the above username
+            $wp_user_obj          = get_user_by('login', $wp_user_name);
+            $wp_user_ID           = $wp_user_obj->ID;
 
-          $this->verbose ? print("<pre>username: " . $wp_user_name . " has do_shelly set to: "  .
-                                  $do_shelly_user_meta . "</pre>" ) : false;
-          $this->verbose ? print("<pre>username: " . $wp_user_name . " has Emergency Keep always ON set to: "  .
-                                  $keep_shelly_switch_closed_always . "</pre>" ) : false;
+                            // extract the control flag as set in user meta
+            $do_shelly_user_meta  = get_user_meta($wp_user_ID, "do_shelly", true) ?? false;
 
-          // Check if this's control flag is even set to do this control
-          if( !$do_shelly_user_meta || empty($do_shelly_user_meta))
-          {
-              // this user not interested, go to next user in config
-              $this->verbose ? print("<pre>username: " . $wp_user_name . " do_shelly skipped, user meta is empty or false</pre>" ) : false;
-              continue;
-          }
+            // Check if this's control flag is even set to do this control. set control flag to flase
+            if( $do_shelly_user_meta ) {
 
-          // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
-          $shelly_api_device_response = $this->get_shelly_device_status($user_index);
-
-          if ( is_null($shelly_api_device_response) ) {
-              // switch status is unknown
-              $this->verbose ? print("<pre>username: " . $wp_user_name .
-                                     " Shelly Switch Status Unknown, exiting</pre>" ) : false;
-              error_log("Shelly cloud not reposning and or device offline");
-
-              $shelly_api_device_status_ON = null;
-
-              $shelly_switch_status = "OFFLINE";
-              $shelly_api_device_status_voltage = "NA";
-              
-          }
-          else {
-              // Ascertain switch status: True if Switch is closed, false if Switch is open
-              $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
-              $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
-
-              if ($shelly_api_device_status_ON)
-                  {
-                      $shelly_switch_status = "ON";
-                  }
-              else
-                  {
-                      $shelly_switch_status = "OFF";
-                  }
-          }
-
-          
-
-          $this->verbose ? print("<pre>username: " . $wp_user_name . " Shelly Switch Status is:" .
-                                 $shelly_switch_status . "</pre>") : false;
-
-          // get the Studer status using the minimal set of readings
-          $studer_readings_obj  = $this->get_studer_min_readings($user_index);
-
-          // check for valid studer values. Return if not valid
-          if( empty(  $studer_readings_obj )                          ||
-              empty(  $studer_readings_obj->battery_voltage_vdc )     ||
-                      $studer_readings_obj->battery_voltage_vdc < 40  ||
-              empty(  $studer_readings_obj->pout_inverter_ac_kw ) ) 
-          {
-            // cannot trust this Studer reading, skipping this user
-            $this->verbose ? print("<pre>username: " . $wp_user_name .
-                                   " Could not get Studer Reading:" . "</pre>") : false;
-            error_log($wp_user_name . ": " . "Could not get Studer Reading");
-            continue;
-          }
-
-          // if we get this far it means that the readings are reliable. Drop the earliest reading.
-          array_shift($this->bv_avg_arr);
-
-          // add the latest reaiding at the top
-          array_push($this->bv_avg_arr, $studer_readings_obj->battery_voltage_vdc);
-
-          $battery_voltage_avg  = $this->get_battery_voltage_avg();
-          $est_solar_kw         = $this->estimated_solar_power($user_index);
-          $psolar               = $studer_readings_obj->psolar_kw;
-          $solar_pv_adc         = $studer_readings_obj->solar_pv_adc;
-
-          $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;
-					$grid_input_vac       = $studer_readings_obj->grid_input_vac;
-          $inverter_current_adc = $studer_readings_obj->inverter_current_adc;
-
-          $surplus              = $psolar - $pout_inverter;
-
-          $aux1_relay_state     = $studer_readings_obj->aux1_relay_state;
-
-          $now_is_daytime       = $this->nowIsWithinTimeLimits("07:00", "17:30");
-          $now_is_sunset        = $this->nowIsWithinTimeLimits("17:31", "17:41");
-
-          $studer_readings_obj->battery_voltage_avg               = $battery_voltage_avg;
-          $studer_readings_obj->now_is_daytime                    = $now_is_daytime;
-          $studer_readings_obj->now_is_sunset                     = $now_is_sunset;
-          $studer_readings_obj->shelly_api_device_status_ON       = $shelly_api_device_status_ON;
-          $studer_readings_obj->shelly_api_device_status_voltage  = $shelly_api_device_status_voltage;
-
-          if ($this->verbose)
-          {
-              print("<pre>user: "                 . $wp_user_name                             . "Shelly and Studer Values</pre>");
-              print("<pre>Shelly Switch State: "  . $shelly_switch_status                     . "</pre>");
-              print("<pre>Battery Voltage Avg: "  . $battery_voltage_avg                      . "Vdc </pre>");
-              print("<pre>Battery Current: "      . $studer_readings_obj->battery_charge_adc  . "Adc </pre>");
-              print("<pre>Solar PowerGen: "       . $psolar                                   . "KW </pre>");
-              print("<pre>AC at Studer Input: "   . $shelly_api_device_status_voltage      		. "Vac</pre>");
-              print("<pre>Inverter PowerOut: "    . $pout_inverter                            . "KW </pre>");
-              print("<pre>Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW </pre>");
-              print("<pre>Weather Forecast: "     . $cloudy_day                               . "</pre>");
-              print("<pre>Within 8AM to 5PM?: "   . $now_is_daytime                           . "</pre>");
-          }
-
-          if (true)
-          {
-              error_log("user: "                 . $wp_user_name                             . ": Shelly and Studer Values");
-              error_log("Shelly Switch State: "  . $shelly_switch_status                     . "");
-              error_log("Battery Avg Voltage: "  . $battery_voltage_avg                         . "Vdc ");
-              error_log("Battery Current: "      . $studer_readings_obj->battery_charge_adc     . "Adc ");
-              error_log("Inverter Current: "      . $studer_readings_obj->inverter_current_adc  . "Adc ");
-              error_log("Solar Panel Current: "   . $studer_readings_obj->solar_pv_adc          . "Adc ");
-
-              error_log("Solar PowerGen: "       . $psolar                                   . "KW ");
-              error_log("AC at Studer Input: "   . $shelly_api_device_status_voltage      	 . "Vac ");
-              //error_log("Inverter PowerOut: "    . $pout_inverter                            . "KW ");
-              error_log("Surplus PowerOut: "     . $surplus                                  . "KW ");
-              error_log("Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW ");
-              error_log("Cloudy Day?: "          . $it_is_a_cloudy_day                       . "");
-              error_log("Within 0700 - 1730?: "  . $now_is_daytime                           . "");
-              error_log("AUX1 Relay State: "     . $aux1_relay_state                         . "");
-
-          }
-
-          // define all the conditions for the SWITCH - CASE tree
-
-          $switch_override =  ($shelly_switch_status == "OFF")               &&
-                              ($studer_readings_obj->grid_input_vac >= 190);
-
-          $LVDS =             ( $battery_voltage_avg    <  48.7 )  						&&  // SOC is low but still with some margin if no grid
-															( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
-															( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
-                              ( $shelly_switch_status == "OFF" );									// The switch is OFF
-
-          $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
-                                        ( $keep_shelly_switch_closed_always == true );
-
-          $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
-																						( $battery_voltage_avg	<	51.3 )								&&	// not in float
-																						( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
-																						( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
-                                            ( $now_is_daytime )                             &&  // Daytime
-                                            ( $psolar > 0.5 )                               &&  // at least some solar generation
-                                            ( $surplus < -0.4 ); 																// Load is greater than Solar Gen
-
-          $switch_release =  (	( $battery_voltage_avg > 49.0 && ! $it_is_a_cloudy_day )						// SOC enpough for not a cloudy day
-																												||
-														 		( $battery_voltage_avg > 49.5 &&   $it_is_a_cloudy_day )						// SOC is adequate for a cloudy day
-												     )																															&&
-                             ( $shelly_switch_status == "ON" )  														&&  		// Switch is ON now
-                             ( $surplus > 0.3 )                															&&  		// Solar is greater than Load
-                             ( $keep_shelly_switch_closed_always == false );												// Emergency flag is False
-
-			    $sunset_switch_release			=	( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
-			                                  ( $shelly_switch_status == "ON" )               &&  // Switch is ON now
-			                                  ( $now_is_sunset );                                 // around sunset
-
-					$switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  		// Switch is ON now
-																				( $battery_voltage_avg    >  51.8 )				  		&&
-						                            ( $keep_shelly_switch_closed_always == false );
-
-					/*
-          $cloudy_day_so_be_conservative =  ( $shelly_switch_status == "OFF" )          &&  // Switch is Currently OFF
-																						( $grid_input_vac > 205.0	)									&&	// ensure AC is not too low
-                                              $now_is_daytime                           &&  // Daytime
-                                              $it_is_a_cloudy_day;
-					*/
-          $studer_readings_obj->LVDS = $LVDS;
-          $studer_readings_obj->reduce_daytime_battery_cycling = $reduce_daytime_battery_cycling;
-          $studer_readings_obj->switch_release = $switch_release;
-          $studer_readings_obj->sunset_switch_release = $sunset_switch_release;
-          $studer_readings_obj->switch_release_float_state = $switch_release_float_state;
-
-          // Update the user meta with new readings
-          update_user_meta( $wp_user_ID, 'studer_readings_object', json_encode($studer_readings_obj) );
-          
-          // New readings Object was updated but not yet read by Ajax
-          update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
-
-          switch(true)
-          {
-              // if Shelly switch is OPEN but Studer transfer relay is closed and Studer AC voltage is present
-              // it means that the ACIN is manually overridden at control panel
-              // so ignore attempting any control and skip this user
-              case (  $switch_override ):
-                    // ignore this user
-                    $this->verbose ? print("<pre>username: " . $wp_user_name . " Shelly Switch OFF but Studer already has AC, exiting</pre>" ) : false;
-                    // no error log since this may fire every minute and fill up log uselessly
-                    error_log("condition Manual Switch Override - NO ACTION)");
-              break;
-
-              // <1> If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
-              case ( $LVDS ):
-
-                  $this->turn_on_off_shelly_switch($user_index, "on");
-
-                  $this->verbose ? error_log("username: " . $wp_user_name .
-                       " Case 2 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF" ) : false;
-
-                  $this->verbose ? print("<pre>username: " . $wp_user_name .
-                       " Case 2 - Shelly Switch turned ON - Vbatt < 48.7 and Switch was OFF</pre>" ) : false;
-
-                  error_log("Exited via Case 1: LVDS - Switched ON");
-              break;
-
-              // <3> If switch is OPEN and the keep shelly closed always is TRUE then close the switch
-              case ( $keep_switch_closed_always ):
-
-                  $this->turn_on_off_shelly_switch($user_index, "on");
-
-                  $this->verbose ? print("<pre>username: " . $wp_user_name .
-                       " Case 3 fired - Keep Switch ON always - Shelly turned ON</pre>" ) : false;
-                  $this->verbose ? error_log("username: " . $wp_user_name .
-                       " Case 3 fired - Keep Switch ON always - Shelly turned ON" ) : false;
-
-                  error_log("Exited via Case 3 - keep switch closed always - Switched ON");
-
-              break;
-
-              // <4> Daytime, reduce battery cycling, turn SWITCH ON
-              case ( $reduce_daytime_battery_cycling ):
-
-                  $this->turn_on_off_shelly_switch($user_index, "on");
-
-                  $this->verbose ? print("<pre>username:" . $wp_user_name .
-                       " Case 4 fired - Daytime reduce battery cycling</pre>" ) : false;
-
-                  $this->verbose ? error_log($wp_user_name . " Case 4 fired - Reduce Battery Cycling - Shelly turned ON -" .
-                            $battery_voltage_avg .
-                            " Switch was OFF, Psolar: " . $studer_readings_obj->psolar_kw .
-                            " less than Normal: " .  $est_solar_kw .
-                            " and current time is within daytime") : false;
-
-                  error_log("Exited via Case 4 - reduce daytime battery cycling - Switched ON");
-              break;
-
-              // <5> Release - Switch OFF for normal Studer operation
-              case ( $switch_release ):
-
-                  $this->turn_on_off_shelly_switch($user_index, "off");
-
-                  $this->verbose ? print("<pre>username:" . $wp_user_name .
-                       " Case 5 Fired- Shelly Switch Released - Vbatt > 49.5, Psolar more than Pload</pre>" ) : false;
-
-                  $this->verbose ? error_log($wp_user_name . " Case 5 fired - Shelly turned OFF - Vbatt: " .
-                            $battery_voltage_avg .
-                            " > 49.5, Switch was ON, Psolar: " . $studer_readings_obj->psolar_kw .
-                            " more than Pload: " .  $studer_readings_obj->pout_inverter_ac_kw) : false;
-                  error_log("Exited via Case 5 - adequate SOC, Switch Released (OFF)");
-              break;
-
-              // <6> Turn switch OFF at 5:30 PM if emergency flag is False so that battery can supply load for the night
-              case ( $sunset_switch_release ):
-
-                  $this->turn_on_off_shelly_switch($user_index, "off");
-
-                  $this->verbose ? print("<pre>username:" . $wp_user_name .
-                        " Case 6 Fired- Shelly Switch Released - Time is about 5:32 PM</pre>" ) : false;
-                  $this->verbose ? error_log("username:" . $wp_user_name .
-                        " Case 6 Fired- Shelly Switch Released - Time is about 5:32 PM" ) : false;
-                  error_log("Exited via Case 6 - sunset, switch released (OFF)");
-              break;
-
-							/*
-               // <7> Keep switch ON between 0900 to 1700 on CLoudy day for Solar Priority mode
-              case (  $cloudy_day_so_be_conservative):
-
-                  $this->turn_on_off_shelly_switch($user_index, "on");
-                  error_log("Exited via Case 7 - cloudy Day so be conservative and Switch ON");
-              break;
-              */
-
-							case ( $switch_release_float_state ):
-
-                  $this->turn_on_off_shelly_switch($user_index, "off");
-
-                  $this->verbose ? print("<pre>username:" . $wp_user_name .
-                        " Case 8 Fired- Shelly Switch Released - Battery in Float</pre>" ) : false;
-                  $this->verbose ? error_log("username:" . $wp_user_name .
-                        " Case 8 Fired- Shelly Switch Released - Battery in Float" ) : false;
-                  error_log("Exited via Case 8 - Float State, switch released (OFF)");
-              break;
-
-
-              default:
-                  // $this->verbose ? print("<pre>username: " . $wp_user_name . " No Switch action - didn't Fire any CASE</pre>" ) : false;
-                  error_log("Exited via Case Default, NO ACTION TAKEN");
-              break;
-          }
-
+                            // get all the readings for this user. This will write the data to the user meta
+                $this->get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly_user_meta);
+            }
+            // loop for all users
         }
+
+        return true;
     }
+
+
+
+    /**
+     * Gets all readings from Shelly and Studer and servo's AC IN shelly switch based on conditions
+     * @param int:user_index
+     * @param int:wp_user_ID
+     * @param string:wp_user_name
+     * @param bool:do_shelly_user_meta
+     * @return object:studer_readings_obj
+     */
+    public function get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly_user_meta)
+    {
+        // get operation flags from user meta. Set it to false if not set
+        $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true) ?? false;
+
+        // Check if this's control flag is even set to do this control. set control flag to flase
+        if( empty( $do_shelly_user_meta ) || ! $do_shelly_user_meta ) {
+
+            $control_shelly = false;
+        }
+
+        // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
+        $shelly_api_device_response = $this->get_shelly_device_status( $user_index );
+
+        if ( is_null($shelly_api_device_response) ) {
+
+            // switch status is unknown
+            error_log("Shelly cloud not responding and or device is offline");
+
+            $shelly_api_device_status_ON = null;
+
+            $shelly_switch_status             = "OFFLINE";
+            $shelly_api_device_status_voltage = "NA";
+        }
+        else {
+            // Ascertain switch status: True if Switch is closed, false if Switch is open
+            $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+            $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
+
+            if ($shelly_api_device_status_ON)
+                {
+                    $shelly_switch_status = "ON";
+                }
+            else
+                {
+                    $shelly_switch_status = "OFF";
+                }
+        }
+
+        // get the smaller set of Studer readings
+        $studer_readings_obj  = $this->get_studer_min_readings($user_index);
+
+        // check for valid studer values. Return if not valid
+        if( empty(  $studer_readings_obj )                          ||
+            empty(  $studer_readings_obj->battery_voltage_vdc )     ||
+                    $studer_readings_obj->battery_voltage_vdc < 40  ||
+            empty(  $studer_readings_obj->pout_inverter_ac_kw ) ) 
+        {
+          // cannot trust this Studer reading, do not update
+          error_log($wp_user_name . ": " . "Could not get Studer Reading");
+
+          return null;
+        }
+
+        // if we get this far it means that all readings are reliable. Drop the earliest battery voltage
+        array_shift($this->bv_avg_arr);
+
+        // add the latest reaiding at the top
+        array_push($this->bv_avg_arr, $studer_readings_obj->battery_voltage_vdc);
+
+        // average the battery voltage over last 6 readings of about 6 minutes.
+        $battery_voltage_avg  = $this->get_battery_voltage_avg();
+
+        // get the estimated solar power from calculations for a clear day
+        $est_solar_kw         = $this->estimated_solar_power($user_index);
+
+        $psolar               = $studer_readings_obj->psolar_kw;
+        $solar_pv_adc         = $studer_readings_obj->solar_pv_adc;
+
+        $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;
+        $grid_input_vac       = $studer_readings_obj->grid_input_vac;
+        $inverter_current_adc = $studer_readings_obj->inverter_current_adc;
+
+        $surplus              = $psolar - $pout_inverter;
+
+        $aux1_relay_state     = $studer_readings_obj->aux1_relay_state;
+
+        $now_is_daytime       = $this->nowIsWithinTimeLimits("07:00", "17:30");
+        $now_is_sunset        = $this->nowIsWithinTimeLimits("17:31", "17:41");
+
+        $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day;
+
+        if (true)
+        {
+            error_log("user: "                 . $wp_user_name                             . ": Shelly and Studer Values");
+            error_log("Shelly Switch State: "  . $shelly_switch_status                     . "");
+            error_log("Shelly Switch Servo: "  . $control_shelly                     . "");
+            error_log("Battery Avg Voltage: "  . $battery_voltage_avg                         . "Vdc ");
+            error_log("Battery Current: "      . $studer_readings_obj->battery_charge_adc     . "Adc ");
+
+            error_log("Solar PowerGen: "       . $psolar                                   . "KW ");
+            error_log("AC at Studer Input: "   . $shelly_api_device_status_voltage      	 . "Vac ");
+            error_log("Surplus PowerOut: "     . $surplus                                  . "KW ");
+            error_log("Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW ");
+            error_log("Cloudy Day?: "          . $it_is_a_cloudy_day                       . "");
+            error_log("Within 0700 - 1730?: "  . $now_is_daytime                           . "");
+            error_log("AUX1 Relay State: "     . $aux1_relay_state                         . "");
+        }
+
+        // define all the conditions for the SWITCH - CASE tree
+
+        $switch_override =  ($shelly_switch_status == "OFF")               &&
+                            ($studer_readings_obj->grid_input_vac >= 190);
+
+        // This is the only condition independent of user meta control settings                    
+        $LVDS =             ( $battery_voltage_avg    <  48.7 )  						&&  // SOC is low but still with some margin if no grid
+                            ( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
+                            ( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
+                            ( $shelly_switch_status == "OFF" );									// The switch is OFF
+
+        $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
+                                      ( $keep_shelly_switch_closed_always == true )  &&
+                                      ( $control_shelly == true );
+
+
+        $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
+                                          ( $battery_voltage_avg	<	51.3 )								&&	// not in float
+                                          ( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
+                                          ( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
+                                          ( $now_is_daytime )                             &&  // Daytime
+                                          ( $psolar > 0.5 )                               &&  // at least some solar generation
+                                          ( $surplus < -0.4 ) 														&&  // Load is greater than Solar Gen
+                                          ( $control_shelly == true );
+
+        $switch_release =  (	( $battery_voltage_avg > 49.0 && ! $it_is_a_cloudy_day )						// SOC enpough for not a cloudy day
+                                                      ||
+                               ( $battery_voltage_avg > 49.5 &&   $it_is_a_cloudy_day )						// SOC is adequate for a cloudy day
+                           )																															&&
+                           ( $shelly_switch_status == "ON" )  														&&  		// Switch is ON now
+                           ( $surplus > 0.3 )                															&&  		// Solar is greater than Load
+                           ( $keep_shelly_switch_closed_always == false )                 &&			// Emergency flag is False
+                           ( $control_shelly == true );
+
+        $sunset_switch_release			=	( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
+                                      ( $shelly_switch_status == "ON" )               &&  // Switch is ON now
+                                      ( $now_is_sunset )                              &&  // around sunset
+                                      ( $control_shelly == true );
+
+        $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
+                                      ( $battery_voltage_avg    >  51.8 )				  		&& 
+                                      ( $keep_shelly_switch_closed_always == false )  &&
+                                      ( $control_shelly == true );
+
+        // write back new values to the readings object
+        $studer_readings_obj->battery_voltage_avg               = $battery_voltage_avg;
+        $studer_readings_obj->now_is_daytime                    = $now_is_daytime;
+        $studer_readings_obj->now_is_sunset                     = $now_is_sunset;
+        $studer_readings_obj->shelly_api_device_status_ON       = $shelly_api_device_status_ON;
+        $studer_readings_obj->shelly_api_device_status_voltage  = $shelly_api_device_status_voltage;
+
+        $studer_readings_obj->LVDS                              = $LVDS;
+        $studer_readings_obj->reduce_daytime_battery_cycling    = $reduce_daytime_battery_cycling;
+        $studer_readings_obj->switch_release                    = $switch_release;
+        $studer_readings_obj->sunset_switch_release             = $sunset_switch_release;
+        $studer_readings_obj->switch_release_float_state        = $switch_release_float_state;
+
+        // Update the user meta with new readings
+        // update_user_meta( $wp_user_ID, 'studer_readings_object', json_encode($studer_readings_obj) );
+        
+        // New readings Object was updated but not yet read by Ajax
+        // update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
+
+        switch(true)
+        {
+            // if Shelly switch is OPEN but Studer transfer relay is closed and Studer AC voltage is present
+            // it means that the ACIN is manually overridden at control panel
+            // so ignore attempting any control and skip this user
+            case (  $switch_override ):
+                  // ignore this user
+                  error_log("condition MCB Switch Override - NO ACTION)");
+            break;
+
+
+            // <1> If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
+            case ( $LVDS ):
+
+                $this->turn_on_off_shelly_switch($user_index, "on");
+
+                error_log("Exited via Case 1: LVDS - Grid Switched ON");
+            break;
+
+
+            // <3> If switch is OPEN and the keep shelly closed always is TRUE then close the switch
+            case ( $keep_switch_closed_always ):
+
+                $this->turn_on_off_shelly_switch($user_index, "on");
+
+                error_log("Exited via Case 3 - keep switch closed always - Grid Switched ON");
+            break;
+
+
+            // <4> Daytime, reduce battery cycling, turn SWITCH ON
+            case ( $reduce_daytime_battery_cycling ):
+
+                $this->turn_on_off_shelly_switch($user_index, "on");
+
+                error_log("Exited via Case 4 - reduce daytime battery cycling - Grid Switched ON");
+            break;
+
+
+            // <5> Release - Switch OFF for normal Studer operation
+            case ( $switch_release ):
+
+                $this->turn_on_off_shelly_switch($user_index, "off");
+
+                error_log("Exited via Case 5 - adequate Battery SOC, Grid Switched OFF");
+            break;
+
+
+            // <6> Turn switch OFF at 5:30 PM if emergency flag is False so that battery can supply load for the night
+            case ( $sunset_switch_release ):
+
+                $this->turn_on_off_shelly_switch($user_index, "off");
+
+                error_log("Exited via Case 6 - sunset, Grid switched OFF");
+            break;
+
+
+            case ( $switch_release_float_state ):
+
+                $this->turn_on_off_shelly_switch($user_index, "off");
+
+                error_log("Exited via Case 8 - Battery Float State, Grid switched OFF");
+            break;
+
+
+            default:
+                
+                error_log("Exited via Case Default, NO ACTION TAKEN");
+            break;
+        }
+
+        return $studer_readings_obj;
+    }
+
+
 
     /**
      *
@@ -518,7 +510,7 @@ class class_transindus_eco
         $lat    = $this->lat;
         $lon    = $this->lon;
         $appid  = $config['openweather_appid'];
-        $cnt    = 4;
+        $cnt    = 3;
 
         $current_wether_api   = new openweathermap_api($lat, $lon, $appid, $cnt);
         $cloudiness_forecast   = $current_wether_api->forecast_is_cloudy();
@@ -651,176 +643,62 @@ class class_transindus_eco
         $current_user = wp_get_current_user();
         $wp_user_name = $current_user->user_login;
 
-        $config           = $this->config;
-
+        $config       = $this->config;
 
         // Now to find the index in the config array using the above
         $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
 
-        if ($user_index === false) return "You DO NOT have a Studer Install";
+        if ($user_index === false) return "User Index invalid, You DO NOT have a Studer Install";
 
         // get the Studer status using the minimal set of readings
-        $studer_readings_obj  = $this->get_studer_readings($user_index);
+        $studer_readings_obj  = $this->get_studer_min_readings($user_index);
 
         // check for valid studer values. Return if not valid
-        if( empty(  $studer_readings_obj ) )
-            {
+        if( empty(  $studer_readings_obj ) ) {
                 $output .= "Could not get a valid Studer Reading using API";
                 return $output;
-            }
-
-        $psolar_kw              =   $studer_readings_obj->psolar_kw;
-        $solar_pv_adc           =   $studer_readings_obj->solar_pv_adc;
-
-        $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
-
-        $battery_span_fontawesome = $studer_readings_obj->battery_span_fontawesome;
-        $battery_icon_class     =   $studer_readings_obj->battery_icon_class;
-        $battery_voltage_vdc    =   round( $studer_readings_obj->battery_voltage_vdc, 1);
-        // Positive is charging and negative is discharging
-        $battery_charge_adc     =   $studer_readings_obj->battery_charge_adc;
-
-        $grid_pin_ac_kw         =   $studer_readings_obj->grid_pin_ac_kw;
-        $grid_input_vac         =   $studer_readings_obj->grid_input_vac;
-
-
-
-        if ( !empty( $config['accounts'][$user_index]['shelly_device_id'] ) )
-        {
-            // get the current ACIN Shelly Switch Status. This returns null if not a valid response
-            $has_shelly = true;
-            $shelly_api_device_response = $this->get_shelly_device_status($user_index);
-            if(empty($shelly_api_device_response))
-            {
-                // Shelly device is OFFLINE
-                $shelly_switch_status_ON = null;
-                $grid_staus_icon = '<span style="color: Yellow;">
-                                        <i class="fa-solid fa-3x fa-power-off"></i>
-                                    </span>';
-            }
-
-            // Ascertain switch status: True if Switch is closed, false if Switch is open
-            $shelly_switch_status_ON          = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
-            $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
-        }
-        else
-        {
-            // User does not have a Shelly Switch
-            $has_shelly = false;
-
         }
 
-        // If power is flowing OR switch has ON status then show CHeck and Green
-        if ($grid_pin_ac_kw > 0.01 )
-        {
-            $grid_staus_icon = '<span id="clickableGridSwitch" style="color: Green;">
-                                    <i class="fa-solid fa-3x fa-power-off"></i>
-                                </span>';
-
-            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-right-long fa-rotate-by"
-                                                                              style="--fa-rotate-angle: 45deg;">
-                                </i>';
-        }
-        elseif( is_null($shelly_switch_status_ON) )
-        {
-            $grid_staus_icon = '<span style="color: Yellow;">
-                                    <i class="fa-solid fa-3x fa-power-off"></i>
-                                </span>';
-
-            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
-        }
-        else
-        {
-            $grid_staus_icon = '<span style="color: Red;">
-                                    <i class="fa-solid fa-3x fa-power-off"></i>
-                                </span>';
-
-            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
-        }
-
-        // PV arrow icon determination
-        if ($psolar_kw > 0.1)
-        {
-            $pv_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-down-long fa-rotate-by"
-                                                                           style="--fa-rotate-angle: 45deg;">
-                              </i>';
-        }
-        else
-        {
-            $pv_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
-        }
-
-        // battery arrow
-        if ($battery_charge_adc > 0)
-        {
-            // current is charging the battery, arrow is down into battery
-            $battery_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-down-long fa-rotate-by"
-                                                                               style="--fa-rotate-angle: 45deg;
-                                                                                                  color: Green;">
-                                   </i>';
-        }
-        else
-        {
-            // current is discharge, aarrow is away from battery and red
-            $battery_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-up-long fa-rotate-by"
-                                                                               style="--fa-rotate-angle: 45deg;
-                                                                                                  color: Red;">
-                                   </i>';
-        }
-
-        // load arrow icon
-        $load_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-right-long fa-rotate-by"
-                                                                          style="--fa-rotate-angle: 45deg;">
-                            </i>';
+        // get the format of all the information for the table in the page
+        $format_object = $this->fill_in_icon_details( $studer_readings_obj );
 
         // define all the icon styles and colors based on STuder and Switch values
         $output .= '
         <table id="my-studer-readings-table">
             <tr>
-                <td id="grid_status_icon">' . $grid_staus_icon . '</td>
+                <td id="grid_status_icon">'   . $format_object->grid_staus_icon  . '</td>
                 <td></td>
                 <td></td>
                 <td></td>
-                <td id="pv_panel_icon">
-                    <span style="color: Green;">
-                        <i class="fa-solid fa-3x fa-solar-panel"></i>
-                    </span>
-                </td>
+                <td id="pv_panel_icon">'      . $format_object->pv_panel_icon      . '</td>
             </tr>
-                <td id="grid_info" style="font-size: 18px;">'        . $grid_pin_ac_kw   . ' KW<br>' . $shelly_api_device_status_voltage . ' V</td>
-                <td id="grid_arrow_icon">'  . $grid_arrow_icon  . '</td>
+                <td id="grid_info">'          . $format_object->grid_info          . '</td>
+                <td id="grid_arrow_icon">'    . $format_object->grid_arrow_icon    . '</td>
                 <td></td>
-                <td id="pv_arrow_icon">'    . $pv_arrow_icon    . '</td>
-                <td id="psolar_info" style="font-size: 18px;">'        . $psolar_kw        . ' KW<br>' . $solar_pv_adc   . ' A</td>
+                <td id="pv_arrow_icon">'      . $format_object->pv_arrow_icon      . '</td>
+                <td id="psolar_info">'        . $format_object->psolar_info        . '</td>
 
             <tr>
                 <td></td>
                 <td></td>
-                <td id="studer_icon"><i class="fa-solid fa-3x fa-hard-drive"></i></td>
+                <td id="studer_icon">'        . $format_object->studer_icon        . '</td>
                 <td></td>
                 <td></td>
             </tr>
             <tr>
-                <td id="battery_info" style="font-size: 18px;">'     . $battery_voltage_vdc  . ' V<br>' . abs($battery_charge_adc)   . ' A</td>
-                <td id="battery_arrow_icon">' . $battery_arrow_icon .  '</td>
+                <td id="battery_info">'       . $format_object->battery_info       . '</td>
+                <td id="battery_arrow_icon">' . $format_object->battery_arrow_icon . '</td>
                 <td></td>
-                <td id="load_arrow_icon">'  . $load_arrow_icon    . '</td>
-                <td id="load_info" style="font-size: 18px;">'        . $pout_inverter_ac_kw. ' KW</td>
+                <td id="load_arrow_icon">'    . $format_object->load_arrow_icon    . '</td>
+                <td id="load_info">'          . $format_object->load_info          . '</td>
             </tr>
             <tr>
-                <td id="battery_status_icon">' . $battery_span_fontawesome . '</td>
+                <td id="battery_status_icon">'. $format_object->battery_status_icon . '</td>
                 <td></td>
                 <td></td>
                 <td></td>
-                <td id="load_icon">
-                    <span style="color: Black;">
-                        <i class="fa-solid fa-3x fa-house"></i>
-                    </span>
-                </td>
-
+                <td id="load_icon">'          . $format_object->load_icon           . '</td>
             </tr>
-
-
         </table>';
 
         return $output;
@@ -1684,9 +1562,6 @@ class class_transindus_eco
         $pbattery_kw         = round($battery_voltage_vdc * $battery_charge_adc * 0.001, 2); //$psolar_kw - $pout_inverter_ac_kw;
 
 
-        // inverter's output always goes to load never the other way around :-)
-        $inverter_pout_arrow_class = "fa fa-long-arrow-right fa-rotate-45 rediconcolor";
-
         // conditional class names for battery charge down or up arrow
         if ($battery_charge_adc > 0.0)
         {
@@ -1872,10 +1747,6 @@ class class_transindus_eco
       // $studer_readings_obj->energy_consumed_yesterday   = $energy_consumed_yesterday;
       $studer_readings_obj->battery_span_fontawesome    = $battery_span_fontawesome;
 
-
-      // update the object with the fontawesome cdn from Studer API object
-      // $studer_readings_obj->fontawesome_cdn             = $studer_api->fontawesome_cdn;
-
       return $studer_readings_obj;
     }
     
@@ -1884,12 +1755,12 @@ class class_transindus_eco
      * 
      */
     public function ajax_my_solar_update_handler()     
-    {
-        $studer_readings_obj = new stdClass();
+    {   // service AJax Call
 
         // Ensures nonce is correct for security
         check_ajax_referer('my_solar_app_script');
 
+        // extract data from POST sent by the Ajax Call from Client Web Browser
         $data = $_POST['data'];
 
         $toggleGridSwitch = $data['toggleGridSwitch'];
@@ -1903,22 +1774,20 @@ class class_transindus_eco
         // sanitize the POST data
         $wp_user_ID   = sanitize_text_field($wp_user_ID);
 
-        error_log("toggleGridSwitch Value: " . $toggleGridSwitch . ' wp_user_ID:' . $wp_user_ID);
+        error_log("from Ajax Call: toggleGridSwitch Value: " . $toggleGridSwitch . ' wp_user_ID:' . $wp_user_ID);
 
         $current_user = get_user_by('id', $wp_user_ID);
         $wp_user_name = $current_user->user_login;
 
-        // $config       = $this->config;
+        // Now to find the index in the config array using the above
+        $user_index = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ;
 
-        /* Now to find the index in the config array using the above
-        $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
+        // extract the control flag as set in user meta
+        $do_shelly_user_meta  = get_user_meta($wp_user_ID, "do_shelly", true) ?? false;
 
-        if ($user_index === false)
-          {
-            return;
-          }
-        */
-        if ($toggleGridSwitch) {
+        
+        if ($toggleGridSwitch) 
+        {
                 // user has touched the power icon to toggle it. Get status and toggle status
                 // Get status of switch
                 $shelly_api_device_response   = $this->get_shelly_device_status($user_index);
@@ -1953,46 +1822,20 @@ class class_transindus_eco
                  }
         }
 
-        // get the Studer readings object flag first
-        $new_readings_read_by_ajax  = get_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
-/*
-        while ( ! $new_readings_read_by_ajax) {
-            // no reading updates so wait 10s
-            sleep(10);
-            $new_readings_read_by_ajax  = get_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
-        }
-*/
+        // get a new set of readings
+        $studer_readings_obj = $this->get_readings_and_servo_grid_switch  ($user_index, 
+                                                                          $wp_user_ID, 
+                                                                          $wp_user_name, 
+                                                                          $do_shelly_user_meta);
 
-        if ($new_readings_read_by_ajax) {
-            // new readings are available in user meta but not yet read by Ajax
-            $readings_object_json = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
-            
-            // change flag back to 0 to indicate ready for update
-            update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', false );
+        $format_object = $this->fill_in_icon_details( $studer_readings_obj );
 
-            // decode JSON string into an object , optional flag is false below
-            $studer_readings_obj  = json_decode($readings_object_json);
+        error_log( print_r($format_object, true) );
 
-            // add in updated icons based on new readings for JS update by Ajax return
-            $format_object = $this->fill_in_icon_details($studer_readings_obj);
-
-            $format_object->update = true;
-
-            error_log( print_r($format_object, true) );
-
-            wp_send_json($format_object);
-
-        }
-        else {
-            // did not have updated data
-            $format_object->update = false;
-
-            wp_send_json($studer_readings_obj);
-        }
-         
+        wp_send_json($format_object);
+ 
 	      // finished now die
         wp_die(); // all ajax handlers should die when finished
-
     }    
     
     /**
@@ -2002,28 +1845,33 @@ class class_transindus_eco
      */
     public function fill_in_icon_details( $studer_readings_obj )
     {
-        $format_object = new stdClass();
+        $config         = $this->config;
+
+        // Initialize object to be returned
+        $format_object  = new stdClass();
 
         $psolar_kw              =   $studer_readings_obj->psolar_kw;
         $solar_pv_adc           =   $studer_readings_obj->solar_pv_adc;
 
         $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
 
-        $battery_span_fontawesome = $studer_readings_obj->battery_span_fontawesome;
-        $battery_icon_class     =   $studer_readings_obj->battery_icon_class;
+    
         $battery_voltage_vdc    =   round( $studer_readings_obj->battery_voltage_vdc, 1);
+
         // Positive is charging and negative is discharging
         $battery_charge_adc     =   $studer_readings_obj->battery_charge_adc;
+
+        $pbattery_kw            = $studer_readings_obj->pbattery_kw;
 
         $grid_pin_ac_kw         =   $studer_readings_obj->grid_pin_ac_kw;
         $grid_input_vac         =   $studer_readings_obj->grid_input_vac;
 
-        $shelly_api_device_status_ON = $studer_readings_obj->shelly_api_device_status_ON;
+        $shelly_api_device_status_ON      = $studer_readings_obj->shelly_api_device_status_ON;
         $shelly_api_device_status_voltage = $studer_readings_obj->shelly_api_device_status_voltage;
 
         // If power is flowing OR switch has ON status then show CHeck and Green
         if ($grid_pin_ac_kw > 0.01 ) {
-            $grid_staus_icon = '<span id="clickableGridSwitch" style="color: Green;">
+            $grid_status_icon = '<span id="clickableGridSwitch" style="color: Green;">
                                     <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';
 
@@ -2032,48 +1880,133 @@ class class_transindus_eco
                                 </i>';
         }
         elseif( is_null($shelly_api_device_status_ON) ) {
-            $grid_staus_icon = '<span style="color: Yellow;">
+            $grid_status_icon = '<span style="color: Yellow;">
                                     <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';
 
             $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
         }
         else {
-            $grid_staus_icon = '<span style="color: Red;">
+            $grid_status_icon = '<span style="color: Red;">
                                     <i class="fa-solid fa-3x fa-power-off"></i>
                                 </span>';
 
             $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
         }
 
-        $format_object->grid_staus_icon = $grid_staus_icon;
+        $format_object->grid_status_icon = $grid_status_icon;
         $format_object->grid_arrow_icon = $grid_arrow_icon;
 
-        $grid_info = $grid_pin_ac_kw  . ' KW<br>' . $shelly_api_device_status_voltage . ' V';
+        // grid power and voltage info
+        $grid_info = '<span style="font-size: 18px;color: Red;">' . $grid_pin_ac_kw . 
+                     ' KW<br>' . $shelly_api_device_status_voltage . ' V</span>';
         $format_object->grid_info       = $grid_info;
 
-        // PV arrow icon determination
+        // PV arrow icon psolar_info
         if ($psolar_kw > 0.1) {
             $pv_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-down-long fa-rotate-by"
-                                                                           style="--fa-rotate-angle: 45deg;">
-                              </i>';
+                                                                           style="--fa-rotate-angle: 45deg;
+                                                                                              color: Green;"></i>';
+            $psolar_info =  '<span style="font-size: 18px;color: Green;">' . $psolar_kw . 
+                            ' KW<br>' . $solar_pv_adc . ' A</span>';
         }
         else {
             $pv_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
+            $psolar_info =  '<span style="font-size: 18px;">' . $psolar_kw . 
+                            ' KW<br>' . $solar_pv_adc . ' A</span>';
         }
 
+        $pv_panel_icon =  '<span style="color: Green;">
+                              <i class="fa-solid fa-3x fa-solar-panel"></i>
+                          </span>';
+
+        $format_object->pv_panel_icon = $pv_panel_icon;
         $format_object->pv_arrow_icon = $pv_arrow_icon;
+        $format_object->psolar_info   = $psolar_info;
 
-        // solar Power and Current Info
-        $psolar_info = $psolar_kw  . ' KW<br>' . $solar_pv_adc . ' A';
-        $format_object->psolar_info = $psolar_info;
+        // Studer Inverter icon
+        $studer_icon = '<i class="fa-solid fa-3x fa-hard-drive"></i>';
+        $format_object->studer_icon = $studer_icon;
 
-        // battery status icon
-        $format_object->battery_status_icon = $battery_span_fontawesome;
+        // battery status icon: select battery icon based on charge level
+        switch(true)
+        {
+            case ($battery_voltage_vdc < $config['battery_vdc_state']["25p"] ):
+              $battery_icon_class = "fa fa-3x fa-solid fa-battery-empty";
+            break;
 
-        // battery info
-        $battery_info = $battery_voltage_vdc  . ' V<br>' . abs($battery_charge_adc) . ' A';
-        $format_object->battery_info = $battery_info;
+            case ($battery_voltage_vdc >= $config['battery_vdc_state']["25p"] &&
+                  $battery_voltage_vdc <  $config['battery_vdc_state']["50p"] ):
+              $battery_icon_class = "fa fa-3x fa-solid fa-battery-quarter";
+            break;
+
+            case ($battery_voltage_vdc >= $config['battery_vdc_state']["50p"] &&
+                  $battery_voltage_vdc <  $config['battery_vdc_state']["75p"] ):
+              $battery_icon_class = "fa fa-3x fa-solid fa-battery-half";
+            break;
+
+            case ($battery_voltage_vdc >= $config['battery_vdc_state']["75p"] &&
+                  $battery_voltage_vdc <  $config['battery_vdc_state']["100p"] ):
+              $battery_icon_class = "fa fa-3x fa-solid fa-battery-three-quarters";
+            break;
+
+            case ($battery_voltage_vdc >= $config['battery_vdc_state']["100p"] ):
+              $battery_icon_class = "fa fa-3x fa-solid fa-battery-full";
+            break;
+        }
+
+        // now determione battery arrow direction and battery color based on charge or discharge
+        // conditional class names for battery charge down or up arrow
+        if ($battery_charge_adc > 0.0)
+        {
+            // current is positive so battery is charging so arrow is down and to left. Also arrow shall be red to indicate charging
+            $battery_arrow_icon = "fa fa-long-arrow-down fa-rotate-45 rediconcolor";
+
+            // battery animation class is from ne-sw
+            $battery_charge_animation_class = "arrowSliding_ne_sw";
+
+            // battery icon shall be green in color
+            $battery_color_style = 'greeniconcolor';
+
+            // battery info shall be green in color
+            $battery_info =  '<span style="font-size: 18px;color: Green;">' . $pbattery_kw  . ' KW<br>' 
+                                                                            . abs($battery_charge_adc)  . 'A<br>'
+                                                                            . $battery_voltage_vdc      . ' V<br></span>';
+        }
+        else
+        {
+          // current is -ve so battery is discharging so arrow is up and icon color shall be red
+          $battery_arrow_icon = "fa fa-long-arrow-up fa-rotate-45 greeniconcolor";
+
+          $battery_charge_animation_class = "arrowSliding_sw_ne";
+
+          // battery status in discharge is red in color
+          $battery_color_style = 'rediconcolor';
+
+          // battery info shall be red in color
+          $battery_info =  '<span style="font-size: 18px;color: Red;">' . $battery_kw . ' KW<br>' 
+                                                                        . abs($battery_charge_adc)  . 'A<br>'
+                                                                        . $battery_voltage_vdc      . ' V<br></span>';
+        }
+
+        $battery_status_icon = '<i class="' . $battery_icon_class . ' ' . $battery_color_style . '"></i>';
+
+        $format_object->battery_status_icon = $battery_status_icon;
+        $format_object->battery_arrow_icon  = $battery_arrow_icon;
+        $format_object->battery_info        = $battery_info;
+
+        $load_info = '<span style="font-size: 18px;color: Black;">' . $pout_inverter_ac_kw . ' KW</span>';
+        $load_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-right-long fa-rotate-by"
+                                                                          style="--fa-rotate-angle: 45deg;">
+                            </i>';
+
+        $load_icon = '<span style="color: Black;">
+                          <i class="fa-solid fa-3x fa-house"></i>
+                      </span>';
+
+        $format_object->load_info        = $load_info;
+        $format_object->load_arrow_icon  = $load_arrow_icon;
+        $format_object->load_icon        = $load_icon;
 
         return $format_object;
     }

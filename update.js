@@ -9,8 +9,8 @@ jQuery(document).ready(function($) {
   triggerAjax();
 
   function window_reload() {
-    clearInterval(setInterval1_ID);
-    window.location.reload();
+                              clearInterval(setInterval1_ID);
+                              window.location.reload();
   }
 
   // var timeout1_ID = setTimeout(stopSetInterval1, 100000); // this is 100 seconds for 10 updates
@@ -38,15 +38,15 @@ jQuery(document).ready(function($) {
                                                 // reset the toggle function to 0 if it was at 1 to prevent switch action
                                                 if (toggleGridSwitch) toggleGridSwitch = 0;
 
+                                                // update the screen with new readings from Ajax Call
+                                                updateScreenWithNewData(data);
+
                                                 // console.log('data: ', data);
                                                 //console.log('grid_status_icon: ', $('#grid_status_icon'));
                                                 //console.log('grid_arrow_icon: ', $('#grid_status_icon'));
                                                 //console.log('grid_info: ', $('#grid_info'));
-                                                if (data.update) triggerAjax();
-                                                
-                                                updateScreenWithNewData(data);
+                                                //if (data.update) triggerAjax();
 
-                                                 
                                                 
                                             });
 
@@ -62,7 +62,7 @@ jQuery(document).ready(function($) {
       // Updatehe Grid Info
       $('#grid_info').html( data.grid_info);
 
-      // Updatehe PV solar Panel Grid Arrow
+      //Update the PV solar Panel Grid Arrow
       $('#pv_arrow_icon').html( data.pv_arrow_icon);
 
       // update psolar_info
@@ -73,6 +73,12 @@ jQuery(document).ready(function($) {
 
       // update battery info
       $('#battery_info').html( data.battery_info);
+
+      // update battery arrow
+      $('#battery_arrow_icon').html( data.battery_arrow_icon);
+
+      // update load information
+      $('#load_info').html( data.load_info);
 
     }
 

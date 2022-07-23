@@ -1638,7 +1638,7 @@ class class_transindus_eco
             $solar_arrow_class .= " fa-3x";
           break;
         }
-
+/*
         switch(true)
         {
           case (abs($pout_inverter_ac_kw) < 1.0 ) :
@@ -1653,7 +1653,7 @@ class class_transindus_eco
             $inverter_pout_arrow_class .= " fa-3x";
           break;
         }
-
+*/
         // conditional for Grid input arrow
         if ($transfer_relay_state)
         {

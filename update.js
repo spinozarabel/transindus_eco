@@ -6,7 +6,7 @@ jQuery(document).ready(function($) {
 
   var toggleGridSwitch = 0;
 
-  triggerAjax();
+  //triggerAjax();
 
   function window_reload() {
                               clearInterval(setInterval1_ID);

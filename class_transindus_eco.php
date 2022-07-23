@@ -1983,7 +1983,7 @@ class class_transindus_eco
         else
         {
           // current is -ve so battery is discharging so arrow is up and icon color shall be red
-          $battery_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-down-long fa-rotate-by"
+          $battery_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-uplong fa-rotate-by"
                                                                               style="--fa-rotate-angle: 45deg;
                                                                                                  color:red;">
                                   </i>';

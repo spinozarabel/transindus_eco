@@ -646,6 +646,7 @@ class class_transindus_eco
         // get my user index knowing my login name
         $current_user = wp_get_current_user();
         $wp_user_name = $current_user->user_login;
+        $wp_user_ID   = $current_user->ID;
 
         $config       = $this->config;
 
@@ -654,8 +655,11 @@ class class_transindus_eco
 
         if ($user_index === false) return "User Index invalid, You DO NOT have a Studer Install";
 
+        // extract the control flag as set in user meta
+        $do_shelly_user_meta  = get_user_meta($wp_user_ID, "do_shelly", true) ?? false;
+
         // get the Studer status using the minimal set of readings
-        $studer_readings_obj  = $this->get_studer_min_readings($user_index);
+        $studer_readings_obj  = $this->get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly_user_meta);
 
         // check for valid studer values. Return if not valid
         if( empty(  $studer_readings_obj ) ) {
@@ -1865,7 +1869,7 @@ class class_transindus_eco
         // Positive is charging and negative is discharging
         $battery_charge_adc     =   $studer_readings_obj->battery_charge_adc;
 
-        $battery_kw            = $studer_readings_obj->battery_kw;
+        $pbattery_kw            = $studer_readings_obj->pbattery_kw;
 
         $grid_pin_ac_kw         =   $studer_readings_obj->grid_pin_ac_kw;
         $grid_input_vac         =   $studer_readings_obj->grid_input_vac;
@@ -1970,7 +1974,7 @@ class class_transindus_eco
             $battery_color_style = 'greeniconcolor';
 
             // battery info shall be green in color
-            $battery_info =  '<span style="font-size: 18px;color: Green;">' . $battery_kw  . ' KW<br>' 
+            $battery_info =  '<span style="font-size: 18px;color: Green;">' . $pbattery_kw  . ' KW<br>' 
                                                                             . abs($battery_charge_adc)  . 'A<br>'
                                                                             . $battery_voltage_vdc      . ' V<br></span>';
         }

@@ -39,7 +39,7 @@ jQuery(document).ready(function($) {
                                                 if (toggleGridSwitch) toggleGridSwitch = 0;
 
                                                 // update the screen with new readings from Ajax Call
-                                                updateScreenWithNewData(data);
+                                                //updateScreenWithNewData(data);
 
                                                 // console.log('data: ', data);
                                                 //console.log('grid_status_icon: ', $('#grid_status_icon'));

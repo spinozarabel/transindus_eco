@@ -1865,7 +1865,7 @@ class class_transindus_eco
         // Positive is charging and negative is discharging
         $battery_charge_adc     =   $studer_readings_obj->battery_charge_adc;
 
-        $pbattery_kw            = $studer_readings_obj->pbattery_kw;
+        $battery_kw            = $studer_readings_obj->battery_kw;
 
         $grid_pin_ac_kw         =   $studer_readings_obj->grid_pin_ac_kw;
         $grid_input_vac         =   $studer_readings_obj->grid_input_vac;
@@ -1970,7 +1970,7 @@ class class_transindus_eco
             $battery_color_style = 'greeniconcolor';
 
             // battery info shall be green in color
-            $battery_info =  '<span style="font-size: 18px;color: Green;">' . $pbattery_kw  . ' KW<br>' 
+            $battery_info =  '<span style="font-size: 18px;color: Green;">' . $battery_kw  . ' KW<br>' 
                                                                             . abs($battery_charge_adc)  . 'A<br>'
                                                                             . $battery_voltage_vdc      . ' V<br></span>';
         }

@@ -1884,24 +1884,29 @@ class class_transindus_eco
             $grid_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-right-long fa-rotate-by"
                                                                               style="--fa-rotate-angle: 45deg;">
                                 </i>';
+            $grid_info = '<span style="font-size: 18px;color: Red;"><strong>' . $grid_pin_ac_kw . 
+                          ' KW</strong><br>' . $shelly_api_device_status_voltage . ' V</span>';
         }
         elseif( is_null($shelly_api_device_status_ON) ) {
             $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Yellow;"></i>';
 
             $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
+
+            $grid_info = 'NA';
         }
         else {
             $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Red;"></i>';
 
             $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
+
+            $grid_info = '<span style="font-size: 18px;color: Red;">' . $grid_pin_ac_kw . 
+                     ' KW<br>' . $shelly_api_device_status_voltage . ' V</span>';
         }
 
         $format_object->grid_status_icon = $grid_status_icon;
         $format_object->grid_arrow_icon = $grid_arrow_icon;
 
         // grid power and voltage info
-        $grid_info = '<span style="font-size: 18px;color: Red;"><strong>' . $grid_pin_ac_kw . 
-                     ' KW</strong><br>' . $shelly_api_device_status_voltage . ' V</span>';
         $format_object->grid_info       = $grid_info;
 
         // PV arrow icon psolar_info
@@ -1909,8 +1914,8 @@ class class_transindus_eco
             $pv_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-down-long fa-rotate-by"
                                                                            style="--fa-rotate-angle: 45deg;
                                                                                               color: Green;"></i>';
-            $psolar_info =  '<span style="font-size: 18px;color: Green;">' . $psolar_kw . 
-                            ' KW<br>' . $solar_pv_adc . ' A</span>';
+            $psolar_info =  '<span style="font-size: 18px;color: Green;"><strong>' . $psolar_kw . 
+                            ' KW</strong><br>' . $solar_pv_adc . ' A</span>';
         }
         else {
             $pv_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
@@ -2003,7 +2008,7 @@ class class_transindus_eco
         $format_object->battery_arrow_icon  = $battery_arrow_icon;
         $format_object->battery_info        = $battery_info;
 
-        $load_info = '<span style="font-size: 18px;color: Black;">' . $pout_inverter_ac_kw . ' KW</span>';
+        $load_info = '<span style="font-size: 18px;color: Black;"><strong>' . $pout_inverter_ac_kw . ' KW</strong></span>';
         $load_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-right-long fa-rotate-by"
                                                                           style="--fa-rotate-angle: 45deg;">
                             </i>';

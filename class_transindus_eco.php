@@ -1981,7 +1981,7 @@ class class_transindus_eco
         else
         {
           // current is -ve so battery is discharging so arrow is up and icon color shall be red
-          $battery_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-uplong fa-rotate-by"
+          $battery_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-up fa-rotate-by"
                                                                               style="--fa-rotate-angle: 45deg;
                                                                                                  color:red;">
                                   </i>';
@@ -1992,7 +1992,7 @@ class class_transindus_eco
           $battery_color_style = 'rediconcolor';
 
           // battery info shall be red in color
-          $battery_info =  '<span style="font-size: 18px;color: Red;">' . $battery_kw . ' KW<br>' 
+          $battery_info =  '<span style="font-size: 18px;color: Red;">' . $pbattery_kw . ' KW<br>' 
                                                                         . abs($battery_charge_adc)  . 'A<br>'
                                                                         . $battery_voltage_vdc      . ' V<br></span>';
         }

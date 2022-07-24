@@ -6,7 +6,7 @@ jQuery(document).ready(function($) {
 
   var toggleGridSwitch = 0;
 
-  $(document).on("click","#refresh-button",function() {
+  $(document).on("click","#studer_icon",function() {
       // initialize the counter
       count = 0;
       // set spinner in motion
@@ -67,7 +67,7 @@ jQuery(document).ready(function($) {
 
                             
                         };
-                        
+
     function updateScreenWithNewData(data) {
       // update the Grid  Switch Icon
       $('#grid_status_icon').html( data.grid_staus_icon);

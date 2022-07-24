@@ -1942,7 +1942,7 @@ class class_transindus_eco
         else {
             $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Red;"></i>';
 
-            $grid_arrow_icon = '<i class="fa-solid fa-1x fa-circle-xmark"></i>';
+            $grid_arrow_icon = ''; //'<i class="fa-solid fa-1x fa-circle-xmark"></i>';
 
             $grid_info = '<span style="font-size: 18px;color: Red;">' . $grid_pin_ac_kw . 
                      ' KW<br>' . $shelly_api_device_status_voltage . ' V</span>';

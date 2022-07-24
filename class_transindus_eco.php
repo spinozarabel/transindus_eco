@@ -1878,10 +1878,12 @@ class class_transindus_eco
         $shelly_api_device_status_voltage = $studer_readings_obj->shelly_api_device_status_voltage;
 
         // If power is flowing OR switch has ON status then show CHeck and Green
+        $grid_arrow_size = $this->get_arrow_size_based_on_power($grid_pin_ac_kw);
+
         if ($grid_pin_ac_kw > 0.01 ) {
             $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Green;"></i>';
 
-            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-right-long fa-rotate-by"
+            $grid_arrow_icon = '<i class="fa-solid' . $grid_arrow_size .  'fa-arrow-right-long fa-rotate-by"
                                                                               style="--fa-rotate-angle: 45deg;">
                                 </i>';
             $grid_info = '<span style="font-size: 18px;color: Red;"><strong>' . $grid_pin_ac_kw . 
@@ -1897,7 +1899,7 @@ class class_transindus_eco
         else {
             $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Red;"></i>';
 
-            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
+            $grid_arrow_icon = '<i class="fa-solid fa-1x fa-circle-xmark"></i>';
 
             $grid_info = '<span style="font-size: 18px;color: Red;">' . $grid_pin_ac_kw . 
                      ' KW<br>' . $shelly_api_device_status_voltage . ' V</span>';
@@ -1910,15 +1912,17 @@ class class_transindus_eco
         $format_object->grid_info       = $grid_info;
 
         // PV arrow icon psolar_info
+        $pv_arrow_size = $this->get_arrow_size_based_on_power($psolar_kw);
+
         if ($psolar_kw > 0.1) {
-            $pv_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-down-long fa-rotate-by"
+            $pv_arrow_icon = '<i class="fa-solid' . $pv_arrow_size . 'fa-arrow-down-long fa-rotate-by"
                                                                            style="--fa-rotate-angle: 45deg;
                                                                                               color: Green;"></i>';
             $psolar_info =  '<span style="font-size: 18px;color: Green;"><strong>' . $psolar_kw . 
                             ' KW</strong><br>' . $solar_pv_adc . ' A</span>';
         }
         else {
-            $pv_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
+            $pv_arrow_icon = '<i class="fa-solid fa-1x fa-circle-xmark"></i>';
             $psolar_info =  '<span style="font-size: 18px;">' . $psolar_kw . 
                             ' KW<br>' . $solar_pv_adc . ' A</span>';
         }
@@ -1964,10 +1968,12 @@ class class_transindus_eco
 
         // now determione battery arrow direction and battery color based on charge or discharge
         // conditional class names for battery charge down or up arrow
+        $battery_arrow_size = $this->get_arrow_size_based_on_power($pbattery_kw);
+
         if ($battery_charge_adc > 0.0)
         {
             // current is positive so battery is charging so arrow is down and to left. Also arrow shall be red to indicate charging
-            $battery_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-down-long fa-rotate-by"
+            $battery_arrow_icon = '<i class="fa-solid' .  $battery_arrow_size . 'fa-arrow-down-long fa-rotate-by"
                                                                                 style="--fa-rotate-angle: 45deg;
                                                                                                    color:green;">
                                    </i>';
@@ -1986,7 +1992,7 @@ class class_transindus_eco
         else
         {
           // current is -ve so battery is discharging so arrow is up and icon color shall be red
-          $battery_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-up fa-rotate-by"
+          $battery_arrow_icon = '<i class="fa-solid' . $battery_arrow_size . 'fa-arrow-up fa-rotate-by"
                                                                               style="--fa-rotate-angle: 45deg;
                                                                                                  color:red;">
                                   </i>';
@@ -2002,14 +2008,20 @@ class class_transindus_eco
                                                                         . $battery_voltage_vdc      . ' V<br></span>';
         }
 
+        if  ($pbattery_kw < 0.01 ) $battery_arrow_icon = '<i class="fa-solid fa-1x fa-circle-xmark"></i>';
+
+        $format_object->battery_arrow_icon  = $battery_arrow_icon;
+
         $battery_status_icon = '<i class="' . $battery_icon_class . ' ' . $battery_color_style . '"></i>';
 
         $format_object->battery_status_icon = $battery_status_icon;
         $format_object->battery_arrow_icon  = $battery_arrow_icon;
         $format_object->battery_info        = $battery_info;
 
+        $load_arrow_size = $this->get_arrow_size_based_on_power($pout_inverter_ac_kw);
+
         $load_info = '<span style="font-size: 18px;color: Black;"><strong>' . $pout_inverter_ac_kw . ' KW</strong></span>';
-        $load_arrow_icon = '<i class="fa-solid fa-3x fa-arrow-right-long fa-rotate-by"
+        $load_arrow_icon = '<i class="fa-solid' . $load_arrow_size . 'fa-arrow-right-long fa-rotate-by"
                                                                           style="--fa-rotate-angle: 45deg;">
                             </i>';
 
@@ -2023,4 +2035,26 @@ class class_transindus_eco
 
         return $format_object;
     }
+
+    /**
+     * 
+     */
+    public function get_arrow_size_based_on_power($power)
+    {
+        switch (true)
+        {
+            case ($power > 0.0 && $power < 1.0):
+                return "fa-1x";
+
+            case ($power >= 1.0 && $power < 2.0):
+                return "fa-2x";
+
+            case ($power >= 1.0 && $power < 3.0):
+                return "fa-3x";
+
+            case ($power >= 3.0 && $power < 4.0):
+              return "fa-4x";
+        }
+    }
+
 }

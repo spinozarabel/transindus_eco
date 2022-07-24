@@ -1936,7 +1936,7 @@ class class_transindus_eco
         $format_object->psolar_info   = $psolar_info;
 
         // Studer Inverter icon
-        $studer_icon = '<i class="fa-solid fa-3x fa-cog"></i>';
+        $studer_icon = '<i class="fa-solid fa-align-center fa-3x fa-cog"></i>';
         $format_object->studer_icon = $studer_icon;
 
         // battery status icon: select battery icon based on charge level

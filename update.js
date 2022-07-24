@@ -65,7 +65,7 @@ jQuery(document).ready(function($) {
                                                      // all execution should stop here till further prompt from user
                                                  }
                                                  else {
-                                                     var timeout_ID = setTimeout(triggerAjax, 10000); // this is 10s delay
+                                                     var timeout_ID = setTimeout(triggerAjax, 5000); // this is 10s delay
                                                  }
                                             });
 

@@ -57,10 +57,10 @@ jQuery(document).ready(function($) {
                                                  {
                                                      // remove all animations
                                                      $("#studer_icon").removeClass("fa-spin");
-                                                     $('#grid_arrow_icon').removeClass("fa-beat");
-                                                     $('#pv_arrow_icon').removeClass("fa-beat");
-                                                     $('#battery_arrow_icon').removeClass("fa-beat");
-                                                     $('#load_arrow_icon').removeClass("fa-beat");
+                                                     $('#grid_arrow_icon').removeClass("fa-beat-fade");
+                                                     $('#pv_arrow_icon').removeClass("fa-beat-fade");
+                                                     $('#battery_arrow_icon').removeClass("fa-beat-fade");
+                                                     $('#load_arrow_icon').removeClass("fa-beat-fade");
 
                                                      // all execution should stop here till further prompt from user
                                                  }
@@ -77,13 +77,13 @@ jQuery(document).ready(function($) {
       $('#grid_status_icon').html( data.grid_staus_icon);
 
       // Updatehe Grid Power Flow Arrow
-      $('#grid_arrow_icon').html( data.grid_arrow_icon).addClass("fa-beat");
+      $('#grid_arrow_icon').html( data.grid_arrow_icon).addClass("fa-beat-fade");
 
       // Updatehe Grid Info
       $('#grid_info').html( data.grid_info);
 
       //Update the PV solar Panel Grid Arrow
-      $('#pv_arrow_icon').html( data.pv_arrow_icon).addClass("fa-beat");
+      $('#pv_arrow_icon').html( data.pv_arrow_icon).addClass("fa-beat-fade");
 
       // update psolar_info
       $('#psolar_info').html( data.psolar_info);
@@ -95,13 +95,13 @@ jQuery(document).ready(function($) {
       $('#battery_info').html( data.battery_info);
 
       // update battery arrow
-      $('#battery_arrow_icon').html( data.battery_arrow_icon).addClass("fa-beat");
+      $('#battery_arrow_icon').html( data.battery_arrow_icon).addClass("fa-beat-fade");
 
       // update load information
       $('#load_info').html( data.load_info);
 
       // update load information
-      $('#load_arrow_icon').html( data.load_arrow_icon).addClass("fa-beat");
+      $('#load_arrow_icon').html( data.load_arrow_icon).addClass("fa-beat-fade");
 
     }
 

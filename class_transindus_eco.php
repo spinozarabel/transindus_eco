@@ -1985,7 +1985,7 @@ class class_transindus_eco
             $battery_color_style = 'greeniconcolor';
 
             // battery info shall be green in color
-            $battery_info =  '<span style="font-size: 18px;color: Green;">' . $pbattery_kw  . ' KW<br>' 
+            $battery_info =  '<span style="font-size: 18px;color: Green;"><strong>' . $pbattery_kw  . ' KW</strong><br>' 
                                                                             . abs($battery_charge_adc)  . 'A<br>'
                                                                             . $battery_voltage_vdc      . ' V<br></span>';
         }

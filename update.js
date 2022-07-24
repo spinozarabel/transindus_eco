@@ -6,6 +6,16 @@ jQuery(document).ready(function($) {
 
   var toggleGridSwitch = 0;
 
+  $(document).on("click","#refresh-button",function() {
+      // initialize the counter
+      count = 0;
+      // set spinner in motion
+      $("#studer_icon").addClass("fa-spin");
+      // make Ajax call every 10s for 60s
+      triggerAjax();
+      // after all calls, remove all animations
+ });
+
   //triggerAjax();
 
   function window_reload() {
@@ -39,19 +49,25 @@ jQuery(document).ready(function($) {
                                                 if (toggleGridSwitch) toggleGridSwitch = 0;
 
                                                 // update the screen with new readings from Ajax Call
-                                                //updateScreenWithNewData(data);
+                                                updateScreenWithNewData(data);
 
-                                                // console.log('data: ', data);
-                                                //console.log('grid_status_icon: ', $('#grid_status_icon'));
-                                                //console.log('grid_arrow_icon: ', $('#grid_status_icon'));
-                                                //console.log('grid_info: ', $('#grid_info'));
-                                                //if (data.update) triggerAjax();
-
-                                                
+                                                 //
+                                                 count++; // <== update count
+                                                 if(count >= 9)
+                                                 {
+                                                     // remove spinner on update button
+                                                     $("#studer_icon").removeClass("fa-spin");
+ 
+                                                     // all execution should stop here till further prompt from user
+                                                 }
+                                                 else {
+                                                     var timeout_ID = setTimeout(triggerAjax, 10000); // this is 10s delay
+                                                 }
                                             });
 
                             
                         };
+                        
     function updateScreenWithNewData(data) {
       // update the Grid  Switch Icon
       $('#grid_status_icon').html( data.grid_staus_icon);

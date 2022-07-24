@@ -6,6 +6,8 @@ jQuery(document).ready(function($) {
 
   var toggleGridSwitch = 0;
 
+  var doShellyDisable = 0;
+
   $(document).on("click","#studer_icon",function() {
       // initialize the counter
       count = 0;
@@ -30,10 +32,15 @@ jQuery(document).ready(function($) {
                                                           triggerAjax();
                                                     }
                 );
-
+  $(document).on("click","#shelly_servo_icon",function() {
+                                                          doShellyToggle = 1;
+                                                          triggerAjax();
+                                                        }
+                );
   function triggerAjax() {
 
                             var data =  {toggleGridSwitch : toggleGridSwitch,
+                                           doShellyToggle : doShellyToggle,
                                          wp_user_ID       : my_ajax_obj.wp_user_ID};
                             $.post(my_ajax_obj.ajax_url,
                             {                                 //POST request
@@ -45,8 +52,10 @@ jQuery(document).ready(function($) {
                                                 // update the page with new readings. Lets just log the value sto see if we are getting good data
                                                 // console.log('data: ', data);
                                                 // console.log('battery html', $('#power-battery').html());
-                                                // reset the toggle function to 0 if it was at 1 to prevent switch action
+                                                // reset the toggle function to 0 if it was at 1 to prevent repeat action
                                                 if (toggleGridSwitch) toggleGridSwitch = 0;
+
+                                                if (doShellyToggle) doShellyToggle = 0;
 
                                                 // update the screen with new readings from Ajax Call
                                                 updateScreenWithNewData(data);

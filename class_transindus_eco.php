@@ -399,6 +399,7 @@ class class_transindus_eco
         $studer_readings_obj->switch_release                    = $switch_release;
         $studer_readings_obj->sunset_switch_release             = $sunset_switch_release;
         $studer_readings_obj->switch_release_float_state        = $switch_release_float_state;
+        $studer_readings_obj->control_shelly                    = $control_shelly;
 
         // Update the user meta with new readings
         // update_user_meta( $wp_user_ID, 'studer_readings_object', json_encode($studer_readings_obj) );
@@ -719,7 +720,7 @@ class class_transindus_eco
             <tr>
                 <td id="grid_status_icon">'   . $format_object->grid_status_icon  . '</td>
                 <td></td>
-                <td></td>
+                <td id="shelly_servo_icon">'  . $shelly_servo_icon                . '</td>
                 <td></td>
                 <td id="pv_panel_icon">'      . $format_object->pv_panel_icon      . '</td>
             </tr>
@@ -1825,7 +1826,37 @@ class class_transindus_eco
         // sanitize the POST data
         $wp_user_ID   = sanitize_text_field($wp_user_ID);
 
-        error_log("from Ajax Call: toggleGridSwitch Value: " . $toggleGridSwitch . ' wp_user_ID:' . $wp_user_ID);
+        $doShellyToggle = $data['doShellyToggle'];
+
+        // sanitize the POST data
+        $doShellyToggle = sanitize_text_field($doShellyToggle);
+
+        error_log("from Ajax Call: toggleGridSwitch Value: " . $toggleGridSwitch . 
+                                              ' wp_user_ID:' . $wp_user_ID       . 
+                                         ' doShellyToggle:'  . $doShellyToggle );
+
+        if ( $doShellyToggle )
+        {
+            $current_status_doShelly = get_user_meta($wp_user_ID, "do_shelly", true);
+
+            switch(true)
+            {
+                case( is_null( $current_status_doShelly ) ):
+                    // do nothing
+                break;
+
+                case($current_status_doShelly):
+                    // If this is TRUE then we need to toggle set it to FALSE
+                    update_user_meta( $wp_user_ID, "do_shelly", false);
+                break;
+
+                case( ! $current_status_doShelly):
+                    // If this is FALSE then we need to set it to TRUE
+                    update_user_meta( $wp_user_ID, "do_shelly", true);
+              break;
+            }
+        }
+        
 
         $current_user = get_user_by('id', $wp_user_ID);
         $wp_user_name = $current_user->user_login;
@@ -1981,6 +2012,16 @@ class class_transindus_eco
         // Studer Inverter icon
         $studer_icon = '<i style="display:block; text-align: center;" class="clickableIcon fa-solid fa-3x fa-cog"></i>';
         $format_object->studer_icon = $studer_icon;
+
+        if ($studer_readings_obj->control_shelly)
+        {
+            $shelly_servo_icon = '<span style="color: Green;"><i class="clickableIcon fa-solid fa-2x fa-cloud"></i></span>';
+        }
+        else
+        {
+          $shelly_servo_icon = '<span style="color: Green;"><i class="clickableIcon fa-solid fa-2x fa-cloud"></i></span>';
+        }
+        $format_object->shelly_servo_icon = $shelly_servo_icon;
 
         // battery status icon: select battery icon based on charge level
         switch(true)

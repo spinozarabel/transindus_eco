@@ -6,7 +6,7 @@ jQuery(document).ready(function($) {
 
   var toggleGridSwitch = 0;
 
-  var doShellyDisable = 0;
+  var doShellyToggle = 0;
 
   $(document).on("click","#studer_icon",function() {
       // initialize the counter

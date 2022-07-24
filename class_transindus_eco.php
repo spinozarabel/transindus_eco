@@ -1935,7 +1935,7 @@ class class_transindus_eco
         elseif( is_null($shelly_api_device_status_ON) ) {
             $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Yellow;"></i>';
 
-            $grid_arrow_icon = '<i class="fa-solid fa-3x fa-circle-xmark"></i>';
+            $grid_arrow_icon = ''; //'<i class="fa-solid fa-3x fa-circle-xmark"></i>';
 
             $grid_info = 'NA';
         }
@@ -1965,7 +1965,7 @@ class class_transindus_eco
                             ' KW</strong><br>' . $solar_pv_adc . ' A</span>';
         }
         else {
-            $pv_arrow_icon = '<i class="fa-solid fa-1x fa-circle-xmark"></i>';
+            $pv_arrow_icon = ''; //'<i class="fa-solid fa-1x fa-circle-xmark"></i>';
             $psolar_info =  '<span style="font-size: 18px;">' . $psolar_kw . 
                             ' KW<br>' . $solar_pv_adc . ' A</span>';
         }
@@ -2051,7 +2051,7 @@ class class_transindus_eco
                                                                         . $battery_voltage_vdc      . ' V<br></span>';
         }
 
-        if  ($pbattery_kw < 0.01 ) $battery_arrow_icon = '<i class="fa-solid fa-1x fa-circle-xmark"></i>';
+        if  ($pbattery_kw < 0.01 ) $battery_arrow_icon = ''; // '<i class="fa-solid fa-1x fa-circle-xmark"></i>';
 
         $format_object->battery_arrow_icon  = $battery_arrow_icon;
 

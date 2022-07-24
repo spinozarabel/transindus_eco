@@ -718,9 +718,9 @@ class class_transindus_eco
         $output .= '
         <table id="my-studer-readings-table">
             <tr>
-                <td id="grid_status_icon">'   . $format_object->grid_status_icon  . '</td>
+                <td id="grid_status_icon">'   . $format_object->grid_status_icon   . '</td>
                 <td></td>
-                <td id="shelly_servo_icon">'  . $shelly_servo_icon                . '</td>
+                <td id="shelly_servo_icon">'  . $format_object->shelly_servo_icon  . '</td>
                 <td></td>
                 <td id="pv_panel_icon">'      . $format_object->pv_panel_icon      . '</td>
             </tr>

@@ -2052,7 +2052,7 @@ class class_transindus_eco
             case ($power >= 2.0 && $power < 3.0):
                 return " fa-3x ";
 
-            case ($power >= 3.0 && $power < 4.0):
+            case ($power >= 3.0 ):
               return " fa-4x ";
         }
     }

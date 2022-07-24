@@ -112,6 +112,9 @@ jQuery(document).ready(function($) {
       // update load information
       $('#load_arrow_icon').html( data.load_arrow_icon).addClass("fa-beat-fade");
 
+      // update Shelly Servo icon
+      $('#shelly_servo_icon').html( data.shelly_servo_icon);
+
     }
 
     function round(value, exp) {

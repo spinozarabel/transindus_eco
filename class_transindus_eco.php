@@ -638,7 +638,7 @@ class class_transindus_eco
               }
               .rediconcolor {color:red;}
               .greeniconcolor {color:green;}
-              #clickableGridSwitch {
+              .clickableIcon {
                 cursor: pointer
            }
         </style>';
@@ -1881,7 +1881,7 @@ class class_transindus_eco
         $grid_arrow_size = $this->get_arrow_size_based_on_power($grid_pin_ac_kw);
 
         if ($grid_pin_ac_kw > 0.01 ) {
-            $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Blue;"></i>';
+            $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Blue;"></i>';
 
             $grid_arrow_icon = '<i class="fa-solid' . $grid_arrow_size .  'fa-arrow-right-long fa-rotate-by"
                                                                               style="--fa-rotate-angle: 45deg;">
@@ -1897,7 +1897,7 @@ class class_transindus_eco
             $grid_info = 'NA';
         }
         else {
-            $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Red;"></i>';
+            $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Red;"></i>';
 
             $grid_arrow_icon = '<i class="fa-solid fa-1x fa-circle-xmark"></i>';
 
@@ -1936,7 +1936,7 @@ class class_transindus_eco
         $format_object->psolar_info   = $psolar_info;
 
         // Studer Inverter icon
-        $studer_icon = '<i style="display:block; text-align: center;" class="fa-solid fa-3x fa-cog"></i>';
+        $studer_icon = '<i style="display:block; text-align: center;" class="clickableIcon fa-solid fa-3x fa-cog"></i>';
         $format_object->studer_icon = $studer_icon;
 
         // battery status icon: select battery icon based on charge level

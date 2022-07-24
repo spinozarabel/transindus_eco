@@ -1881,7 +1881,7 @@ class class_transindus_eco
         $grid_arrow_size = $this->get_arrow_size_based_on_power($grid_pin_ac_kw);
 
         if ($grid_pin_ac_kw > 0.01 ) {
-            $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Green;"></i>';
+            $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Blue;"></i>';
 
             $grid_arrow_icon = '<i class="fa-solid' . $grid_arrow_size .  'fa-arrow-right-long fa-rotate-by"
                                                                               style="--fa-rotate-angle: 45deg;">

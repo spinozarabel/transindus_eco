@@ -1912,7 +1912,7 @@ class class_transindus_eco
 
         $format_object = $this->fill_in_icon_details( $studer_readings_obj );
 
-        error_log( print_r($format_object, true) );
+        // error_log( print_r($format_object, true) );
 
         wp_send_json($format_object);
  

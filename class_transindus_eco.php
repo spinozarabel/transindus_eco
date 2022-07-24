@@ -640,50 +640,50 @@ class class_transindus_eco
               .greeniconcolor {color:green;}
               .clickableIcon {
                 cursor: pointer
+              .arrowSliding_nw_se {
+                position: relative;
+                -webkit-animation: slide_nw_se 2s linear infinite;
+                        animation: slide_nw_se 2s linear infinite;
+              }
+        
+              .arrowSliding_ne_sw {
+                position: relative;
+                -webkit-animation: slide_ne_sw 2s linear infinite;
+                        animation: slide_ne_sw 2s linear infinite;
+              }
+        
+              .arrowSliding_sw_ne {
+                position: relative;
+                -webkit-animation: slide_ne_sw 2s linear infinite reverse;
+                        animation: slide_ne_sw 2s linear infinite reverse;
+              }
+        
+              @-webkit-keyframes slide_ne_sw {
+                  0% { opacity:0; transform: translate(20%, -20%); }
+                  20% { opacity:1; transform: translate(10%, -10%); }
+                  80% { opacity:1; transform: translate(-10%, 10%); }
+                100% { opacity:0; transform: translate(-20%, 20%); }
+              }
+              @keyframes slide_ne_sw {
+                  0% { opacity:0; transform: translate(20%, -20%); }
+                  20% { opacity:1; transform: translate(10%, -10%); }
+                  80% { opacity:1; transform: translate(-10%, 10%); }
+                100% { opacity:0; transform: translate(-20%, 20%); }
+              }
+        
+              @-webkit-keyframes slide_nw_se {
+                  0% { opacity:0; transform: translate(-20%, -20%); }
+                  20% { opacity:1; transform: translate(-10%, -10%); }
+                  80% { opacity:1; transform: translate(10%, 10%);   }
+                100% { opacity:0; transform: translate(20%, 20%);   }
+              }
+              @keyframes slide_nw_se {
+                  0% { opacity:0; transform: translate(-20%, -20%); }
+                  20% { opacity:1; transform: translate(-10%, -10%); }
+                  80% { opacity:1; transform: translate(10%, 10%);   }
+                100% { opacity:0; transform: translate(20%, 20%);   }
+              }
            }
-           .arrowSliding_nw_se {
-            position: relative;
-            -webkit-animation: slide_nw_se 2s linear infinite;
-                    animation: slide_nw_se 2s linear infinite;
-          }
-   
-          .arrowSliding_ne_sw {
-            position: relative;
-            -webkit-animation: slide_ne_sw 2s linear infinite;
-                    animation: slide_ne_sw 2s linear infinite;
-          }
-   
-          .arrowSliding_sw_ne {
-            position: relative;
-            -webkit-animation: slide_ne_sw 2s linear infinite reverse;
-                    animation: slide_ne_sw 2s linear infinite reverse;
-          }
-   
-          @-webkit-keyframes slide_ne_sw {
-              0% { opacity:0; transform: translate(20%, -20%); }
-             20% { opacity:1; transform: translate(10%, -10%); }
-             80% { opacity:1; transform: translate(-10%, 10%); }
-            100% { opacity:0; transform: translate(-20%, 20%); }
-          }
-          @keyframes slide_ne_sw {
-              0% { opacity:0; transform: translate(20%, -20%); }
-             20% { opacity:1; transform: translate(10%, -10%); }
-             80% { opacity:1; transform: translate(-10%, 10%); }
-            100% { opacity:0; transform: translate(-20%, 20%); }
-          }
-   
-          @-webkit-keyframes slide_nw_se {
-              0% { opacity:0; transform: translate(-20%, -20%); }
-             20% { opacity:1; transform: translate(-10%, -10%); }
-             80% { opacity:1; transform: translate(10%, 10%);   }
-            100% { opacity:0; transform: translate(20%, 20%);   }
-          }
-          @keyframes slide_nw_se {
-              0% { opacity:0; transform: translate(-20%, -20%); }
-             20% { opacity:1; transform: translate(-10%, -10%); }
-             80% { opacity:1; transform: translate(10%, 10%);   }
-            100% { opacity:0; transform: translate(20%, 20%);   }
-          }
         </style>';
 
         // get my user index knowing my login name

@@ -83,7 +83,7 @@ jQuery(document).ready(function($) {
       $('#grid_info').html( data.grid_info);
 
       //Update the PV solar Panel Grid Arrow
-      $('#pv_arrow_icon').html( data.pv_arrow_icon).addClass("arrowSliding_nw_se");
+      $('#pv_arrow_icon').html( data.pv_arrow_icon).addClass("fa-fade");
 
       // update psolar_info
       $('#psolar_info').html( data.psolar_info);

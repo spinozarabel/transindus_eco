@@ -2044,16 +2044,16 @@ class class_transindus_eco
         switch (true)
         {
             case ($power > 0.0 && $power < 1.0):
-                return "fa-1x";
+                return " fa-1x ";
 
             case ($power >= 1.0 && $power < 2.0):
-                return "fa-2x";
+                return " fa-2x ";
 
-            case ($power >= 1.0 && $power < 3.0):
-                return "fa-3x";
+            case ($power >= 2.0 && $power < 3.0):
+                return " fa-3x ";
 
             case ($power >= 3.0 && $power < 4.0):
-              return "fa-4x";
+              return " fa-4x ";
         }
     }
 

@@ -115,6 +115,9 @@ jQuery(document).ready(function($) {
       // update Shelly Servo icon
       $('#shelly_servo_icon').html( data.shelly_servo_icon);
 
+      // update Shelly Servo icon
+      $('#cron_exit_condition').html( data.cron_exit_condition);
+
     }
 
     function round(value, exp) {

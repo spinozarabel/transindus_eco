@@ -757,7 +757,7 @@ class class_transindus_eco
             <tr>
                 <td id="battery_status_icon">'. $format_object->battery_status_icon . '</td>
                 <td></td>
-                <td></td>
+                <td id="cron_exit_condition">'. $format_object->cron_exit_condition . '</td>
                 <td></td>
                 <td id="load_icon">'          . $format_object->load_icon           . '</td>
             </tr>
@@ -2143,6 +2143,8 @@ class class_transindus_eco
         $format_object->load_info        = $load_info;
         $format_object->load_arrow_icon  = $load_arrow_icon;
         $format_object->load_icon        = $load_icon;
+
+        $format_object->cron_exit_condition = $studer_readings_obj->cron_exit_condition;
 
         return $format_object;
     }

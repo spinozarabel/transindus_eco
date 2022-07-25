@@ -477,7 +477,7 @@ class class_transindus_eco
             default:
                 
                 error_log("Exited via Case Default, NO ACTION TAKEN");
-                $studer_readings_obj->cron_exit_condition = "No Action";
+                // $studer_readings_obj->cron_exit_condition = "No Action";
             break;
         }
 

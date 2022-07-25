@@ -1962,33 +1962,48 @@ class class_transindus_eco
         // If power is flowing OR switch has ON status then show CHeck and Green
         $grid_arrow_size = $this->get_arrow_size_based_on_power($grid_pin_ac_kw);
 
-        if ($grid_pin_ac_kw > 0.01 ) {
-            $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Blue;"></i>';
+        switch (true)
+        {   // choose grid icon info based on switch status
+            case ( is_null($shelly_api_device_status_ON) ): // No Grid OR switch is OFFLINE
+                $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Yellow;"></i>';
 
-            $grid_arrow_icon = '<i class="fa-solid' . $grid_arrow_size .  'fa-arrow-right-long fa-rotate-by"
-                                                                              style="--fa-rotate-angle: 45deg;">
-                                </i>';
-            $grid_info = '<span style="font-size: 18px;color: Red;"><strong>' . $grid_pin_ac_kw . 
-                          ' KW</strong><br>' . $shelly_api_device_status_voltage . ' V</span>';
+                $grid_arrow_icon = ''; //'<i class="fa-solid fa-3x fa-circle-xmark"></i>';
+
+                $grid_info = 'No<br>Grid';
+
+                break;
+
+
+            case ( $grid_pin_ac_kw > 0.05 || $shelly_api_device_status_ON): // Switch is ON
+                $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Blue;"></i>';
+
+                $grid_arrow_icon  = '<i class="fa-solid' . $grid_arrow_size .  'fa-arrow-right-long fa-rotate-by"
+                                                                                  style="--fa-rotate-angle: 45deg;">
+                                    </i>';
+                $grid_info = '<span style="font-size: 18px;color: Red;"><strong>' . $grid_pin_ac_kw . 
+                              ' KW</strong><br>' . $shelly_api_device_status_voltage . ' V</span>';
+                break;
+
+
+            case ( ! $shelly_api_device_status_ON):   // Switch is online and OFF
+                $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Red;"></i>';
+
+                $grid_arrow_icon = ''; //'<i class="fa-solid fa-1x fa-circle-xmark"></i>';
+    
+                $grid_info = '<span style="font-size: 18px;color: Red;">' . $grid_pin_ac_kw . 
+                        ' KW<br>' . $shelly_api_device_status_voltage . ' V</span>';
+                break;
+
+            default:  
+              $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Brown;"></i>';
+
+              $grid_arrow_icon = 'XX'; //'<i class="fa-solid fa-3x fa-circle-xmark"></i>';
+
+              $grid_info = '???';
         }
-        elseif( is_null($shelly_api_device_status_ON) ) {
-            $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Yellow;"></i>';
 
-            $grid_arrow_icon = ''; //'<i class="fa-solid fa-3x fa-circle-xmark"></i>';
-
-            $grid_info = 'NA';
-        }
-        else {
-            $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Red;"></i>';
-
-            $grid_arrow_icon = ''; //'<i class="fa-solid fa-1x fa-circle-xmark"></i>';
-
-            $grid_info = '<span style="font-size: 18px;color: Red;">' . $grid_pin_ac_kw . 
-                     ' KW<br>' . $shelly_api_device_status_voltage . ' V</span>';
-        }
-
-        $format_object->grid_status_icon = $grid_status_icon;
-        $format_object->grid_arrow_icon = $grid_arrow_icon;
+        $format_object->grid_status_icon  = $grid_status_icon;
+        $format_object->grid_arrow_icon   = $grid_arrow_icon;
 
         // grid power and voltage info
         $format_object->grid_info       = $grid_info;

@@ -1974,7 +1974,7 @@ class class_transindus_eco
                 break;
 
 
-            case ( $grid_pin_ac_kw > 0.05 || $shelly_api_device_status_ON): // Switch is ON
+            case ( $shelly_api_device_status_ON): // Switch is ON
                 $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Blue;"></i>';
 
                 $grid_arrow_icon  = '<i class="fa-solid' . $grid_arrow_size .  'fa-arrow-right-long fa-rotate-by"

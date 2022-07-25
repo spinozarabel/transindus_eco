@@ -403,12 +403,6 @@ class class_transindus_eco
         $studer_readings_obj->switch_release_float_state        = $switch_release_float_state;
         $studer_readings_obj->control_shelly                    = $control_shelly;
 
-        // Update the user meta with new readings
-        // update_user_meta( $wp_user_ID, 'studer_readings_object', json_encode($studer_readings_obj) );
-        
-        // New readings Object was updated but not yet read by Ajax
-        // update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
-
         switch(true)
         {
             // if Shelly switch is OPEN but Studer transfer relay is closed and Studer AC voltage is present
@@ -417,6 +411,7 @@ class class_transindus_eco
             case (  $switch_override ):
                   // ignore this user
                   error_log("condition MCB Switch Override - NO ACTION)");
+                  $studer_readings_obj->cron_exit_condition = "Manual Switch Override";
             break;
 
 
@@ -426,6 +421,7 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "on");
 
                 error_log("Exited via Case 1: LVDS - Grid Switched ON");
+                $studer_readings_obj->cron_exit_condition = "Low SOC - Grid ON";
             break;
 
 
@@ -435,6 +431,7 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "on");
 
                 error_log("Exited via Case 3 - keep switch closed always - Grid Switched ON");
+                $studer_readings_obj->cron_exit_condition = "Grid ON always";
             break;
 
 
@@ -444,6 +441,7 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "on");
 
                 error_log("Exited via Case 4 - reduce daytime battery cycling - Grid Switched ON");
+                $studer_readings_obj->cron_exit_condition = "RDBC-Grid ON";
             break;
 
 
@@ -453,6 +451,7 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 5 - adequate Battery SOC, Grid Switched OFF");
+                $studer_readings_obj->cron_exit_condition = "SOC ok-Grid Off";
             break;
 
 
@@ -462,6 +461,7 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 6 - sunset, Grid switched OFF");
+                $studer_readings_obj->cron_exit_condition = "Sunset Grid Off";
             break;
 
 
@@ -470,14 +470,22 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 8 - Battery Float State, Grid switched OFF");
+                $studer_readings_obj->cron_exit_condition = "Float Grid Off";
             break;
 
 
             default:
                 
                 error_log("Exited via Case Default, NO ACTION TAKEN");
+                $studer_readings_obj->cron_exit_condition = "No Action";
             break;
         }
+
+        // Update the user meta with new readings
+        update_user_meta( $wp_user_ID, 'studer_readings_object', json_encode($studer_readings_obj) );
+        
+        // New readings Object was updated but not yet read by Ajax
+        update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
 
         return $studer_readings_obj;
     }
@@ -1816,96 +1824,91 @@ class class_transindus_eco
         // Ensures nonce is correct for security
         check_ajax_referer('my_solar_app_script');
 
-        // extract data from POST sent by the Ajax Call from Client Web Browser
-        $data = $_POST['data'];
+        if ($_POST['data']) {   // extract data from POST sent by the Ajax Call and Sanitize
+            
+            $data = $_POST['data'];
 
-        $toggleGridSwitch = $data['toggleGridSwitch'];
+            $toggleGridSwitch = $data['toggleGridSwitch'];
 
-        // sanitize the POST data
-        $toggleGridSwitch = sanitize_text_field($toggleGridSwitch);
+            // sanitize the POST data
+            $toggleGridSwitch = sanitize_text_field($toggleGridSwitch);
 
-        // get my user index knowing my login name
-        $wp_user_ID   = $data['wp_user_ID'];
+            // get my user index knowing my login name
+            $wp_user_ID   = $data['wp_user_ID'];
 
-        // sanitize the POST data
-        $wp_user_ID   = sanitize_text_field($wp_user_ID);
+            // sanitize the POST data
+            $wp_user_ID   = sanitize_text_field($wp_user_ID);
 
-        $doShellyToggle = $data['doShellyToggle'];
+            $doShellyToggle = $data['doShellyToggle'];
 
-        // sanitize the POST data
-        $doShellyToggle = sanitize_text_field($doShellyToggle);
+            // sanitize the POST data
+            $doShellyToggle = sanitize_text_field($doShellyToggle);
 
-        error_log("from Ajax Call: toggleGridSwitch Value: " . $toggleGridSwitch . 
-                                              ' wp_user_ID:' . $wp_user_ID       . 
-                                         ' doShellyToggle:'  . $doShellyToggle );
+            error_log("from Ajax Call: toggleGridSwitch Value: " . $toggleGridSwitch . 
+                                                  ' wp_user_ID:' . $wp_user_ID       . 
+                                            ' doShellyToggle:'  . $doShellyToggle );
+        }
 
-        if ( $doShellyToggle )
-        {
+        if ( $doShellyToggle ) {  // User request to toggle do_shelly user meta
+
+            // get the current setting from User Meta
             $current_status_doShelly = get_user_meta($wp_user_ID, "do_shelly", true);
 
             switch(true)
             {
-                case( is_null( $current_status_doShelly ) ):
-                    // do nothing
-                break;
+                case( is_null( $current_status_doShelly ) ):  // do nothing, since the user has not formally set this flag.  
+                    break;
 
-                case($current_status_doShelly):
-                    // If this is TRUE then we need to toggle set it to FALSE
+                case($current_status_doShelly):               // If TRUE, update user meta to FALSE
+                    
                     update_user_meta( $wp_user_ID, "do_shelly", false);
-                break;
+                    break;
 
-                case( ! $current_status_doShelly):
-                    // If this is FALSE then we need to set it to TRUE
+                case( ! $current_status_doShelly):            // If FALSE, update user meta to TRUE
                     update_user_meta( $wp_user_ID, "do_shelly", true);
-              break;
+                    break;
             }
         }
         
+        {    // get user_index based on user_name
+            $current_user = get_user_by('id', $wp_user_ID);
+            $wp_user_name = $current_user->user_login;
+            $user_index   = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ;
+        }
 
-        $current_user = get_user_by('id', $wp_user_ID);
-        $wp_user_name = $current_user->user_login;
+        // extract the do_shelly control flag as set in user meta
+        $do_shelly_user_meta  = get_user_meta($wp_user_ID, "do_shelly", true);
 
-        // Now to find the index in the config array using the above
-        $user_index = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ;
+        if ($toggleGridSwitch)  {   // User has requested to toggle the GRID ON/OFF Shelly Switch
 
-        // extract the control flag as set in user meta
-        $do_shelly_user_meta  = get_user_meta($wp_user_ID, "do_shelly", true) ?? false;
+            // Get current status of switch
+            $shelly_api_device_response   = $this->get_shelly_device_status($user_index);
 
-        
-        if ($toggleGridSwitch) 
-        {
-                // user has touched the power icon to toggle it. Get status and toggle status
-                // Get status of switch
-                $shelly_api_device_response   = $this->get_shelly_device_status($user_index);
+            if ( empty($shelly_api_device_response) ) {   // what do we do we do if device is OFFLINE?
+                // do nothing
+            }
+            else {  // valid switch response so we can determine status
+                    
+                    $shelly_api_device_status_ON  = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
 
-                // what do we do we do if device is OFFLINE?
-                if ( empty($shelly_api_device_response) ) {
-                        // do nothing
-                }
-                else {
-                        // valid switch response so we can determine status and toggle switch
-                        $shelly_api_device_status_ON  = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+                    if ($shelly_api_device_status_ON) {   // Switch is ON, toggle switch to OFF
+                        $shelly_switch_status = "ON";
 
-                        if ($shelly_api_device_status_ON)
-                        {
-                            $shelly_switch_status = "ON";
+                        // we need to turn it off because user has toggled switch
+                        $response = $this->turn_on_off_shelly_switch($user_index, "off");
 
-                            // we need to turn it off because user has toggled switch
-                            $response = $this->turn_on_off_shelly_switch($user_index, "off");
+                        error_log('Changed Switch from ON->OFF due to Ajax Request');
 
-                            error_log('Changed Switch from ON->OFF due to Ajax Request');
+                    }
+                    else {    // Switch is OFF, toggle switch to ON
+                        $shelly_switch_status = "OFF";
 
-                        }
-                        else
-                        {
-                            $shelly_switch_status = "OFF";
+                        // we need to turn switch ON since user has toggled switch
+                        $response = $this->turn_on_off_shelly_switch($user_index, "on");
 
-                            // we need to turn switch ON since user has toggled switch
-                            $response = $this->turn_on_off_shelly_switch($user_index, "on");
-
-                            error_log('Changed Switch from OFF->ON due to Ajax Request');
-                        }
-                 }
+                        error_log('Changed Switch from OFF->ON due to Ajax Request');
+                    }
+            }
         }
 
         // get a new set of readings

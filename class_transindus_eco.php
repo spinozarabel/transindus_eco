@@ -91,6 +91,8 @@ class class_transindus_eco
 
       $this->timezone   = "Asia/Kolkata";
 
+      date_default_timezone_set($this->timezone);
+
       $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
 
 	}
@@ -1808,6 +1810,8 @@ class class_transindus_eco
      */
     public function ajax_my_solar_update_handler()     
     {   // service AJax Call
+        // The error log time stamp was showing as UTC so I added the below statement
+      date_default_timezone_set($this->timezone);
 
         // Ensures nonce is correct for security
         check_ajax_referer('my_solar_app_script');

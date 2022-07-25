@@ -1843,10 +1843,6 @@ class class_transindus_eco
 
             // sanitize the POST data
             $doShellyToggle = sanitize_text_field($doShellyToggle);
-
-            error_log("from Ajax Call: toggleGridSwitch Value: " . $toggleGridSwitch . 
-                                                  ' wp_user_ID:' . $wp_user_ID       . 
-                                            ' doShellyToggle:'  . $doShellyToggle );
         }
 
         if ( $doShellyToggle ) {  // User request to toggle do_shelly user meta
@@ -1874,6 +1870,11 @@ class class_transindus_eco
             $current_user = get_user_by('id', $wp_user_ID);
             $wp_user_name = $current_user->user_login;
             $user_index   = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ;
+
+            error_log("from Ajax Call: toggleGridSwitch Value: " . $toggleGridSwitch . 
+                                                  ' wp_user_ID:' . $wp_user_ID       . 
+                                            ' doShellyToggle:'   . $doShellyToggle   . 
+                                                ' user_index:'   . $user_index);
         }
 
         // extract the do_shelly control flag as set in user meta

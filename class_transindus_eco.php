@@ -2144,7 +2144,9 @@ class class_transindus_eco
         $format_object->load_arrow_icon  = $load_arrow_icon;
         $format_object->load_icon        = $load_icon;
 
-        $format_object->cron_exit_condition = $studer_readings_obj->cron_exit_condition;
+        $format_object->cron_exit_condition = '<span style="color: Red; display:block; text-align: center;">' . 
+                                                    $studer_readings_obj->cron_exit_condition . 
+                                              '</span>';
 
         return $format_object;
     }

@@ -2038,11 +2038,15 @@ class class_transindus_eco
 
         if ($studer_readings_obj->control_shelly)
         {
-            $shelly_servo_icon = '<span style="color: Green;"><i class="clickableIcon fa-solid fa-2x fa-cloud"></i></span>';
+            $shelly_servo_icon = '<span style="color: Green; display:block; text-align: center;">
+                                      <i class="clickableIcon fa-solid fa-2x fa-cloud"></i>
+                                  </span>';
         }
         else
         {
-          $shelly_servo_icon = '<span style="color: Red;"><i class="clickableIcon fa-solid fa-2x fa-cloud"></i></span>';
+            $shelly_servo_icon = '<span style="color: Red; display:block; text-align: center;">
+                                      < i class="clickableIcon fa-solid fa-2x fa-cloud"></i>
+                                  </span>';
         }
         $format_object->shelly_servo_icon = $shelly_servo_icon;
 

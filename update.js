@@ -83,7 +83,7 @@ jQuery(document).ready(function($) {
 
     function updateScreenWithNewData(data) {
       // update the Grid  Switch Icon
-      $('#grid_status_icon').html( data.grid_staus_icon);
+      $('#grid_status_icon').html( data.grid_status_icon);
 
       // Updatehe Grid Power Flow Arrow
       $('#grid_arrow_icon').html( data.grid_arrow_icon).addClass("fa-beat-fade");

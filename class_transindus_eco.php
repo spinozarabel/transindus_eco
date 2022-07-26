@@ -487,17 +487,17 @@ class class_transindus_eco
         $studer_readings_obj->datetime            = $now;
         $studer_readings_obj->cron_exit_condition = $cron_exit_condition;
 
-        $array_for_json = [ 'datetime'            => $now,
-                            'cron_exit_condition' => $cron_exit_condition,
+        $array_for_json = [ 'unixdatetime'        => $now->getTimestamp() ,
+                            'cron_exit_condition' => $cron_exit_condition ,
                           ];
 
         // save the data in a transient indexed by the user name. Expiration is 2 minutes
         set_transient( $wp_user_name . '_studer_readings_object', $studer_readings_obj, 1*60 );
 
         // Update the user meta with the CRON exit condition only fir definite ACtion not for no action
-        if ($cron_exit_condition !== "No Action") {
+        //if ($cron_exit_condition !== "No Action") {
             update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
-       }
+       //}
         
         
         // New readings Object was updated but not yet read by Ajax
@@ -2178,7 +2178,8 @@ class class_transindus_eco
           $cron_exit_condition    = $saved_cron_exit_condition;
 
           $now = new DateTime();
-          $past = $cron_exit_condition_user_meta_arr['datetime'];
+          $past_unixdatetime = $cron_exit_condition_user_meta_arr['unixdatetime'];
+          $past = (new DateTime('@' . $past_unixdatetime))->setTimezone($this->timezone);
           $interval_since_last_change = $now->diff($past);
 
         }

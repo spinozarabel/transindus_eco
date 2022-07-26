@@ -45,6 +45,7 @@ class class_transindus_eco
   public $pload_avg;
   public $count_for_averaging;
   public $counter;
+  public $datetime;
 
 
     /**
@@ -90,6 +91,8 @@ class class_transindus_eco
       $this->utc_offset = 5.5;
 
       $this->timezone   = "Asia/Kolkata";
+
+      $datetime = new DateTime();
 
       date_default_timezone_set($this->timezone);
 

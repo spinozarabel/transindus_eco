@@ -2167,7 +2167,7 @@ class class_transindus_eco
         $cron_exit_condition_user_meta_obj = json_decode($json_cron_exit_condition_user_meta);
 
         // extract the last condition saved that was NOT a No Action.
-        $saved_cron_exit_condition = $cron_exit_condition_user_meta_obj->cron_exit_condition;
+        $saved_cron_exit_condition = $cron_exit_condition_user_meta_obj->{'cron_exit_condition'};
 
         // Extract the exit conditioned saved on every update regardless of servo action
         $latest_cron_exit_condition = $studer_readings_obj->cron_exit_condition;
@@ -2185,7 +2185,7 @@ class class_transindus_eco
         else {
             // We have a new Servo Action so display that
             $cron_exit_condition = $latest_cron_exit_condition;
-            $past = $studer_readings_obj->datetime;
+            $past = $studer_readings_obj->{'datetime'};
             $interval_since_last_change = $now->diff($past);
         }
 

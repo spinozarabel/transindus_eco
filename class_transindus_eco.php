@@ -484,7 +484,8 @@ class class_transindus_eco
             break;
         }
 
-        $studer_readings_obj->datetime = new DateTime();
+        $studer_readings_obj->datetime            = new DateTime();
+        $studer_readings_obj->cron_exit_condition = $cron_exit_condition;
 
         $array_for_json = [ 'datetime'            => $studer_readings_obj->datetime,
                             'cron_exit_condition' => $cron_exit_condition,
@@ -2160,9 +2161,9 @@ class class_transindus_eco
         $format_object->load_icon        = $load_icon;
 
         // Get Cron Exit COndition from User Meta and its time stamo
-        $json_cron_exit_condition_user_meat = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
+        $json_cron_exit_condition_user_meta = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
 
-        $cron_exit_condition_user_meta_obj = json_decode($json_cron_exit_condition_user_meat);
+        $cron_exit_condition_user_meta_obj = json_decode($json_cron_exit_condition_user_meta);
 
         $saved_cron_exit_condition = $cron_exit_condition_user_meta_obj->cron_exit_condition;
 

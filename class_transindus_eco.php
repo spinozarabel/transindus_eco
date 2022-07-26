@@ -2181,7 +2181,7 @@ class class_transindus_eco
 
           $now = new DateTime();
           $past_unixdatetime = $cron_exit_condition_user_meta_arr['unixdatetime'];
-          $past = (new DateTime('@' . $past_unixdatetime))->setTimezone(new DateTimeZone($this->timezone));
+          $past = (new DateTime('@' . $past_unixdatetime))->setTimezone(new DateTimeZone("Asia/Kolkata"));
           $interval_since_last_change = $now->diff($past);
 
         }

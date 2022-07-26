@@ -2163,11 +2163,13 @@ class class_transindus_eco
         // Get Cron Exit COndition from User Meta and its time stamo
         $json_cron_exit_condition_user_meta = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
 
+        // decode the JSON encoded string into an Object
         $cron_exit_condition_user_meta_obj = json_decode($json_cron_exit_condition_user_meta);
-        error_log(print_r($cron_exit_condition_user_meta_obj, true));
 
+        // extract the last condition saved that was NOT a No Action.
         $saved_cron_exit_condition = $cron_exit_condition_user_meta_obj->cron_exit_condition;
 
+        // Extract the exit conditioned saved on every update regardless of servo action
         $latest_cron_exit_condition = $studer_readings_obj->cron_exit_condition;
 
         if ( $latest_cron_exit_condition === "No Action" ) {
@@ -2176,18 +2178,20 @@ class class_transindus_eco
           $cron_exit_condition    = $saved_cron_exit_condition;
 
           $now = new DateTime();
-          //$interval_since_last_change = $now->diff($cron_exit_condition_user_meta_obj->datetime);
+          $interval_since_last_change = $now->diff($cron_exit_condition_user_meta_obj->datetime);
 
         }
         else {
             // We have a new Servo Action so display that
             $cron_exit_condition = $latest_cron_exit_condition;
-            //$interval_since_last_change = $now->diff($studer_readings_obj->datetime);
+            $interval_since_last_change = $now->diff($studer_readings_obj->datetime);
         }
 
+        $formatted_interval = $this->format_interval($interval_since_last_change);
+
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' . 
-                                                    // $this->format_interval($interval_since_last_change) . '<br>' .
-                                                    $cron_exit_condition .
+                                                  $formatted_interval   . '<br>' .
+                                                  $cron_exit_condition  .
                                               '</span>';
 
         return $format_object;

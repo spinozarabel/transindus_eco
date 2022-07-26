@@ -581,7 +581,7 @@ class class_transindus_eco
      */
     public function nowIsWithinTimeLimits(string $start_time, string $stop_time): bool
     {
-        date_default_timezone_set($this->timezone);
+        date_default_timezone_set("Asia/Kolkata");
 
         $now =  new DateTime();
         $begin = new DateTime($start_time);

@@ -411,7 +411,7 @@ class class_transindus_eco
             case (  $switch_override ):
                   // ignore this user
                   error_log("condition MCB Switch Override - NO ACTION)");
-                  $studer_readings_obj->cron_exit_condition = "Manual Switch Override";
+                  $cron_exit_condition = "Manual Switch Override";
             break;
 
 
@@ -421,7 +421,7 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "on");
 
                 error_log("Exited via Case 1: LVDS - Grid Switched ON");
-                $studer_readings_obj->cron_exit_condition = "Low SOC - Grid ON";
+                $cron_exit_condition = "Low SOC - Grid ON";
             break;
 
 
@@ -431,7 +431,7 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "on");
 
                 error_log("Exited via Case 3 - keep switch closed always - Grid Switched ON");
-                $studer_readings_obj->cron_exit_condition = "Grid ON always";
+                $cron_exit_condition = "Grid ON always";
             break;
 
 
@@ -441,7 +441,7 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "on");
 
                 error_log("Exited via Case 4 - reduce daytime battery cycling - Grid Switched ON");
-                $studer_readings_obj->cron_exit_condition = "RDBC-Grid ON";
+                $cron_exit_condition = "RDBC-Grid ON";
             break;
 
 
@@ -451,7 +451,7 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 5 - adequate Battery SOC, Grid Switched OFF");
-                $studer_readings_obj->cron_exit_condition = "SOC ok-Grid Off";
+                $cron_exit_condition = "SOC ok-Grid Off";
             break;
 
 
@@ -461,7 +461,7 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 6 - sunset, Grid switched OFF");
-                $studer_readings_obj->cron_exit_condition = "Sunset Grid Off";
+                $cron_exit_condition = "Sunset Grid Off";
             break;
 
 
@@ -470,22 +470,34 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 8 - Battery Float State, Grid switched OFF");
-                $studer_readings_obj->cron_exit_condition = "Float Grid Off";
+                $cron_exit_condition = "Float Grid Off";
             break;
 
 
             default:
                 
                 error_log("Exited via Case Default, NO ACTION TAKEN");
-                // $studer_readings_obj->cron_exit_condition = "No Action";
+                $cron_exit_condition = "No Action";
             break;
         }
 
-        // Update the user meta with new readings
-        update_user_meta( $wp_user_ID, 'studer_readings_object', json_encode($studer_readings_obj) );
+        $studer_readings_obj->datetime = new DateTime();
+
+        $array_for_json = [ 'datetime'            => $studer_readings_obj->datetime,
+                            'cron_exit_condition' => $cron_exit_condition,
+                          ];
+
+        // save the data in a transient indexed by the user name. Expiration is 2 minutes
+        set_transient( $wp_user_name . '_studer_readings_object', $studer_readings_obj, 1*60 );
+
+        // Update the user meta with the CRON exit condition only fir definite ACtion not for no action
+        if ($cron_exit_condition !== "No Action") {
+            update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
+        }
+        
         
         // New readings Object was updated but not yet read by Ajax
-        update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
+        // update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
 
         return $studer_readings_obj;
     }
@@ -722,7 +734,7 @@ class class_transindus_eco
         }
 
         // get the format of all the information for the table in the page
-        $format_object = $this->fill_in_icon_details( $studer_readings_obj );
+        $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj );
 
         // define all the icon styles and colors based on STuder and Switch values
         $output .= '
@@ -1918,7 +1930,7 @@ class class_transindus_eco
                                                                           $wp_user_name, 
                                                                           $do_shelly_user_meta);
 
-        $format_object = $this->fill_in_icon_details( $studer_readings_obj );
+        $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj );
 
         // error_log( print_r($format_object, true) );
 
@@ -1933,7 +1945,7 @@ class class_transindus_eco
      * @return object:format_object contains html for all the icons to be updatd by JS on Ajax call return
      * determine the icons based on updated data
      */
-    public function fill_in_icon_details( $studer_readings_obj )
+    public function prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj )
     {
         $config         = $this->config;
 
@@ -2144,8 +2156,33 @@ class class_transindus_eco
         $format_object->load_arrow_icon  = $load_arrow_icon;
         $format_object->load_icon        = $load_icon;
 
+        // Get Cron Exit COndition from User Meta and its time stamo
+        $json_cron_exit_condition_user_meat = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
+
+        $cron_exit_condition_user_meta_obj = json_decode($json_cron_exit_condition_user_meat);
+
+        $saved_cron_exit_condition = $cron_exit_condition_user_meta_obj->cron_exit_condition;
+
+        $latest_cron_exit_condition = $studer_readings_obj->cron_exit_condition;
+
+        if ( $latest_cron_exit_condition === "No Action" ) {
+
+          // keep the old condition since no further action has taken place
+          $cron_exit_condition    = $saved_cron_exit_condition;
+
+          $now = new DateTime();
+          $interval_since_last_change = $now->diff($cron_exit_condition_user_meta_obj->datetime);
+
+        }
+        else {
+            // We have a new Servo Action so display that
+            $cron_exit_condition = $latest_cron_exit_condition;
+            $interval_since_last_change = $now->diff($studer_readings_obj->datetime);
+        }
+
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' . 
-                                                    $studer_readings_obj->cron_exit_condition . 
+                                                    $this->format_interval($interval_since_last_change) . '<br>' .
+                                                    $cron_exit_condition .
                                               '</span>';
 
         return $format_object;
@@ -2170,6 +2207,27 @@ class class_transindus_eco
             case ($power >= 3.0 ):
               return " fa-4x ";
         }
+    }
+
+    /**
+     * Format an interval to show all existing components.
+     * If the interval doesn't have a time component (years, months, etc)
+     * That component won't be displayed.
+     *
+     * @param DateInterval $interval The interval
+     *
+     * @return string Formatted interval string.
+     */
+    public function format_interval(DateInterval $interval) {
+      $result = "";
+      if ($interval->y) { $result .= $interval->format("%y years "); }
+      if ($interval->m) { $result .= $interval->format("%m months "); }
+      if ($interval->d) { $result .= $interval->format("%d days "); }
+      if ($interval->h) { $result .= $interval->format("%h hours "); }
+      if ($interval->i) { $result .= $interval->format("%i minutes "); }
+      if ($interval->s) { $result .= $interval->format("%s seconds "); }
+
+      return $result;
     }
 
 }

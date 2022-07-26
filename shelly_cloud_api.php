@@ -19,9 +19,9 @@ class shelly_cloud_api
       $this->verbose  = self::VERBOSE;
 
       $this->auth_key		      = $auth_key;    // Auth key to access account
-		  $this->server_uri	      = $server_uri;  // The server uri can be obtained 
+	  $this->server_uri	          = $server_uri;  // The server uri can be obtained 
                                               // on the same page where the authorization key is generated
-      $this->shelly_device_id = $shelly_device_id;
+      $this->shelly_device_id     = $shelly_device_id;
     }       // end construct function
 
     /**

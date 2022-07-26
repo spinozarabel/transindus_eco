@@ -2178,13 +2178,15 @@ class class_transindus_eco
           $cron_exit_condition    = $saved_cron_exit_condition;
 
           $now = new DateTime();
-          $interval_since_last_change = $now->diff($cron_exit_condition_user_meta_obj->datetime);
+          $past = $cron_exit_condition_user_meta_obj->datetime;
+          $interval_since_last_change = $now->diff($past);
 
         }
         else {
             // We have a new Servo Action so display that
             $cron_exit_condition = $latest_cron_exit_condition;
-            $interval_since_last_change = $now->diff($studer_readings_obj->datetime);
+            $past = $studer_readings_obj->datetime;
+            $interval_since_last_change = $now->diff($past);
         }
 
         $formatted_interval = $this->format_interval($interval_since_last_change);

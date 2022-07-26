@@ -483,11 +483,11 @@ class class_transindus_eco
                 $cron_exit_condition = "No Action";
             break;
         }
-
-        $studer_readings_obj->datetime            = new DateTime();
+        $now = new DateTime();
+        $studer_readings_obj->datetime            = $now;
         $studer_readings_obj->cron_exit_condition = $cron_exit_condition;
 
-        $array_for_json = [ 'datetime'            => $studer_readings_obj->datetime,
+        $array_for_json = [ 'datetime'            => $now,
                             'cron_exit_condition' => $cron_exit_condition,
                           ];
 
@@ -2164,10 +2164,10 @@ class class_transindus_eco
         $json_cron_exit_condition_user_meta = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
 
         // decode the JSON encoded string into an Object
-        $cron_exit_condition_user_meta_obj = json_decode($json_cron_exit_condition_user_meta);
+        $cron_exit_condition_user_meta_arr = json_decode($json_cron_exit_condition_user_meta, true);
 
         // extract the last condition saved that was NOT a No Action.
-        $saved_cron_exit_condition = $cron_exit_condition_user_meta_obj->{'cron_exit_condition'};
+        $saved_cron_exit_condition = $cron_exit_condition_user_meta_arr['cron_exit_condition'];
 
         // Extract the exit conditioned saved on every update regardless of servo action
         $latest_cron_exit_condition = $studer_readings_obj->cron_exit_condition;
@@ -2178,7 +2178,7 @@ class class_transindus_eco
           $cron_exit_condition    = $saved_cron_exit_condition;
 
           $now = new DateTime();
-          $past = $cron_exit_condition_user_meta_obj->{'datetime'};
+          $past = $cron_exit_condition_user_meta_arr['datetime'];
           $interval_since_last_change = $now->diff($past);
 
         }

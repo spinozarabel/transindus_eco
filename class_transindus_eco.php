@@ -2164,6 +2164,7 @@ class class_transindus_eco
         $json_cron_exit_condition_user_meta = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
 
         $cron_exit_condition_user_meta_obj = json_decode($json_cron_exit_condition_user_meta);
+        error_log(print_r($cron_exit_condition_user_meta_obj, true));
 
         $saved_cron_exit_condition = $cron_exit_condition_user_meta_obj->cron_exit_condition;
 

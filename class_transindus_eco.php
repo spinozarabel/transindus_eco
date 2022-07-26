@@ -90,11 +90,13 @@ class class_transindus_eco
       $this->lon        = 77.49814;
       $this->utc_offset = 5.5;
 
-      $this->timezone   = "Asia/Kolkata";
+      $this->timezone = new DateTimeZone("Asia/Kolkata");
+
+      
 
       $datetime = new DateTime();
 
-      date_default_timezone_set($this->timezone);
+      date_default_timezone_set("Asia/Kolkata");
 
       $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
 
@@ -1835,7 +1837,7 @@ class class_transindus_eco
     public function ajax_my_solar_update_handler()     
     {   // service AJax Call
         // The error log time stamp was showing as UTC so I added the below statement
-      date_default_timezone_set($this->timezone);
+      date_default_timezone_set("Asia/Kolkata");
 
         // Ensures nonce is correct for security
         check_ajax_referer('my_solar_app_script');
@@ -2179,7 +2181,7 @@ class class_transindus_eco
 
           $now = new DateTime();
           $past_unixdatetime = $cron_exit_condition_user_meta_arr['unixdatetime'];
-          $past = (new DateTime('@' . $past_unixdatetime))->setTimezone($this->timezone);
+          $past = (new DateTime('@' . $past_unixdatetime))->setTimezone(new DateTimeZone($this->timezone));
           $interval_since_last_change = $now->diff($past);
 
         }

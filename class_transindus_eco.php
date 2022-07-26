@@ -2236,10 +2236,10 @@ class class_transindus_eco
       $result = "";
       if ($interval->y) { $result .= $interval->format("%y years "); }
       if ($interval->m) { $result .= $interval->format("%m months "); }
-      if ($interval->d) { $result .= $interval->format("%d days "); }
-      if ($interval->h) { $result .= $interval->format("%h hours "); }
-      if ($interval->i) { $result .= $interval->format("%i minutes "); }
-      if ($interval->s) { $result .= $interval->format("%s seconds "); }
+      if ($interval->d) { $result .= $interval->format("%d d "); }
+      if ($interval->h) { $result .= $interval->format("%h h "); }
+      if ($interval->i) { $result .= $interval->format("%i m "); }
+      if ($interval->s) { $result .= $interval->format("%s s "); }
 
       return $result;
     }

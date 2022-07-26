@@ -495,9 +495,9 @@ class class_transindus_eco
         set_transient( $wp_user_name . '_studer_readings_object', $studer_readings_obj, 1*60 );
 
         // Update the user meta with the CRON exit condition only fir definite ACtion not for no action
-        if ($cron_exit_condition !== "No Action") {
+        //if ($cron_exit_condition !== "No Action") {
             update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
-        }
+       // }
         
         
         // New readings Object was updated but not yet read by Ajax

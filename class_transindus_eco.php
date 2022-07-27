@@ -1854,10 +1854,14 @@ class class_transindus_eco
             $current_user = get_user_by('id', $wp_user_ID);
             $wp_user_name = $current_user->user_login;
             $user_index   = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ;
+
+            error_log('from CRON Ajax Call: wp_user_ID:' . $wp_user_ID . ' user_index:'   . $user_index);
           }
 
           // get the transient related to this user ID that stores the latest Readings
           $studer_readings_obj = get_transient( $wp_user_name . '_studer_readings_object' );
+
+          error_log(print_r($studer_readings_obj, true));
 
           if ($studer_readings_obj) {   // transient exists so we can send it
               

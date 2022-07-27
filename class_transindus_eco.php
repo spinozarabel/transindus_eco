@@ -486,8 +486,6 @@ class class_transindus_eco
             break;
         }
         $now = new DateTime();
-        $studer_readings_obj->datetime            = $now;
-        $studer_readings_obj->cron_exit_condition = $cron_exit_condition;
 
         $array_for_json = [ 'unixdatetime'        => $now->getTimestamp() ,
                             'cron_exit_condition' => $cron_exit_condition ,
@@ -1829,7 +1827,51 @@ class class_transindus_eco
 
       return $studer_readings_obj;
     }
-    
+
+    /**
+     * 
+     */
+    public function ajax_my_solar_cron_update_handler()     
+    {   // service AJax Call for minutely cron updates to my solar screen
+        // The error log time stamp was showing as UTC so I added the below statement
+      date_default_timezone_set("Asia/Kolkata");
+
+          // Ensures nonce is correct for security
+          check_ajax_referer('my_solar_app_script');
+
+          if ($_POST['data']) {   // extract data from POST sent by the Ajax Call and Sanitize
+              
+              $data = $_POST['data'];
+
+              // get my user index knowing my login name
+              $wp_user_ID   = $data['wp_user_ID'];
+
+              // sanitize the POST data
+              $wp_user_ID   = sanitize_text_field($wp_user_ID);
+          }
+
+          {    // get user_index based on user_name
+            $current_user = get_user_by('id', $wp_user_ID);
+            $wp_user_name = $current_user->user_login;
+            $user_index   = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ;
+          }
+
+          // get the transient related to this user ID that stores the latest Readings
+          $studer_readings_obj = get_transient( $wp_user_name . '_studer_readings_object' );
+
+          if ($studer_readings_obj) {   // transient exists so we can send it
+              
+              $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj );
+
+              // send JSON encoded data to client browser AJAX call and then die
+              wp_send_json($format_object);
+          }
+          else {    // transient does not exist so send null
+            wp_send_json(null);
+          }
+      }
+
+
 
     /**
      * 
@@ -1938,12 +1980,7 @@ class class_transindus_eco
 
         $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj );
 
-        // error_log( print_r($format_object, true) );
-
         wp_send_json($format_object);
- 
-	      // finished now die
-        wp_die(); // all ajax handlers should die when finished
     }    
     
     /**
@@ -2164,41 +2201,28 @@ class class_transindus_eco
 
         // Get Cron Exit COndition from User Meta and its time stamo
         $json_cron_exit_condition_user_meta = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
-
         // decode the JSON encoded string into an Object
         $cron_exit_condition_user_meta_arr = json_decode($json_cron_exit_condition_user_meta, true);
-
         // extract the last condition saved that was NOT a No Action.
         $saved_cron_exit_condition = $cron_exit_condition_user_meta_arr['cron_exit_condition'];
-
         // Extract the exit conditioned saved on every update regardless of servo action
         $latest_cron_exit_condition = $studer_readings_obj->cron_exit_condition;
 
-        if ( $latest_cron_exit_condition === "No Action" ) {
-
-          // keep the old condition since no further action has taken place
-          $cron_exit_condition    = $saved_cron_exit_condition;
-
-          $now = new DateTime();
-          $past_unixdatetime = $cron_exit_condition_user_meta_arr['unixdatetime'];
-          $past = (new DateTime('@' . $past_unixdatetime))->setTimezone(new DateTimeZone("Asia/Kolkata"));
-          $interval_since_last_change = $now->diff($past);
-
-        }
-        else {
-            // We have a new Servo Action so display that
-            $cron_exit_condition = $latest_cron_exit_condition;
-            $past = $studer_readings_obj->datetime;
-            $interval_since_last_change = $now->diff($past);
-        }
-
+        // present time
+        $now = new DateTime();
+        // timestamp at last measurement exit
+        $past_unixdatetime = $cron_exit_condition_user_meta_arr['unixdatetime'];
+        // get datetime object from timestamp
+        $past = (new DateTime('@' . $past_unixdatetime))->setTimezone(new DateTimeZone("Asia/Kolkata"));
+        // get the interval object
+        $interval_since_last_change = $now->diff($past);
+        // format the interval for display
         $formatted_interval = $this->format_interval($interval_since_last_change);
-
+        // add property to format object for screen update
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' . 
                                                   $formatted_interval   . '<br>' .
-                                                  $cron_exit_condition  .
+                                                  $saved_cron_exit_condition  .
                                               '</span>';
-
         return $format_object;
     }
 

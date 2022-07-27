@@ -492,7 +492,7 @@ class class_transindus_eco
                           ];
 
         // save the data in a transient indexed by the user name. Expiration is 2 minutes
-        set_transient( $wp_user_name . '_studer_readings_object', $studer_readings_obj, 1*60 );
+        set_transient( $wp_user_name . '_studer_readings_object', $studer_readings_obj, 5*60 );
 
         // Update the user meta with the CRON exit condition only fir definite ACtion not for no action
         if ($cron_exit_condition !== "No Action") {

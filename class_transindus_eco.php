@@ -328,7 +328,7 @@ class class_transindus_eco
 
         $aux1_relay_state     = $studer_readings_obj->aux1_relay_state;
 
-        $now_is_daytime       = $this->nowIsWithinTimeLimits("07:00", "16:30");
+        $now_is_daytime       = $this->nowIsWithinTimeLimits("07:00", "16:30"); // changed from 17:30  on 7/28/22
         $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
 
         $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day;

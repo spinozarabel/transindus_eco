@@ -367,7 +367,7 @@ class class_transindus_eco
 
 
         $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
-                                          ( $battery_voltage_avg	<	51.3 )								&&	// not in float
+                                          ( $battery_voltage_avg	<	50.6 )								&&	// not in float
                                           ( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
                                           ( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
                                           ( $now_is_daytime )                             &&  // Daytime
@@ -390,7 +390,7 @@ class class_transindus_eco
                                       ( $control_shelly == true );
 
         $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
-                                      ( $battery_voltage_avg    >  51.8 )				  		&& 
+                                      ( $battery_voltage_avg    >=  50.9 )				    && 
                                       ( $keep_shelly_switch_closed_always == false )  &&
                                       ( $control_shelly == true );
 

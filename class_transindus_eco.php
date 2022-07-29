@@ -356,7 +356,7 @@ class class_transindus_eco
                             ($studer_readings_obj->grid_input_vac >= 190);
 
         // This is the only condition independent of user meta control settings                    
-        $LVDS =             ( $battery_voltage_avg    <  48.7 )  						&&  // SOC is low but still with some margin if no grid
+        $LVDS =             ( $battery_voltage_avg    <  48.6 )  						&&  // SOC is low but still with some margin if no grid
                             ( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
                             ( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
                             ( $shelly_switch_status == "OFF" );									// The switch is OFF
@@ -367,12 +367,12 @@ class class_transindus_eco
 
 
         $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
-                                          ( $battery_voltage_avg	<	50.4 )								&&	// not in float
+                                          ( $battery_voltage_avg	<	50.3 )								&&	// not in float
                                           ( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
                                           ( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
                                           ( $now_is_daytime )                             &&  // Daytime
                                           ( $psolar > 0.5 )                               &&  // at least some solar generation
-                                          ( $surplus < -0.4 ) 														&&  // Load is greater than Solar Gen
+                                          ( $surplus < -0.6 ) 														&&  // Load is greater than Solar Gen
                                           ( $control_shelly == true );
 
         $switch_release =  (	( $battery_voltage_avg > 49.0 && ! $it_is_a_cloudy_day )						// SOC enpough for not a cloudy day
@@ -380,7 +380,7 @@ class class_transindus_eco
                                ( $battery_voltage_avg > 49.5 &&   $it_is_a_cloudy_day )						// SOC is adequate for a cloudy day
                            )																															&&
                            ( $shelly_switch_status == "ON" )  														&&  		// Switch is ON now
-                           ( $surplus > 0.3 )                															&&  		// Solar is greater than Load
+                           ( $surplus > 0.2 )                															&&  		// Solar is greater than Load
                            ( $keep_shelly_switch_closed_always == false )                 &&			// Emergency flag is False
                            ( $control_shelly == true );
 
@@ -390,7 +390,7 @@ class class_transindus_eco
                                       ( $control_shelly == true );
 
         $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
-                                      ( $battery_voltage_avg    >=  50.7 )				    && 
+                                      ( $battery_voltage_avg    >=  50.6 )				    && 
                                       ( $keep_shelly_switch_closed_always == false )  &&
                                       ( $control_shelly == true );
 

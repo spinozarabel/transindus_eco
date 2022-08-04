@@ -79,11 +79,12 @@ class class_transindus_eco
           // read the config file and build the secrets array
       $this->get_config();
 
-      // Check if shelly config data is non-empty
+      /*
       $valid_shelly_config  = ! empty( $this->config['accounts'][$user_index]['shelly_device_id']   ) &&
                               ! empty( $this->config['accounts'][$user_index]['shelly_server_uri']  ) &&
                               ! empty( $this->config['accounts'][$user_index]['shelly_auth_key']    );
       $this->valid_shelly_config = $valid_shelly_config;
+      */
 
           // set the logging
       $this->verbose = false;
@@ -260,10 +261,13 @@ class class_transindus_eco
      */
     public function get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly_user_meta)
     {
+        $valid_shelly_config  = ! empty( $this->config['accounts'][$user_index]['shelly_device_id']   ) &&
+                                ! empty( $this->config['accounts'][$user_index]['shelly_server_uri']  ) &&
+                                ! empty( $this->config['accounts'][$user_index]['shelly_auth_key']    );
         // get operation flags from user meta. Set it to false if not set
         $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true) ?? false;
 
-        if( $do_shelly_user_meta && $this->valid_shelly_config) {  // Cotrol Shelly TRUE if usermeta AND valid config
+        if( $do_shelly_user_meta && $valid_shelly_config) {  // Cotrol Shelly TRUE if usermeta AND valid config
 
             $control_shelly = true;
         }
@@ -272,7 +276,7 @@ class class_transindus_eco
         }
 
         // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
-        if ( $this->valid_shelly_config ) {   //  get shelly device status ONLY if valid config for switch
+        if ( $valid_shelly_config ) {   //  get shelly device status ONLY if valid config for switch
 
             $shelly_api_device_response = $this->get_shelly_device_status( $user_index );
 

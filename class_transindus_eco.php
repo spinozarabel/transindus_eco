@@ -47,6 +47,8 @@ class class_transindus_eco
   public $counter;
   public $datetime;
 
+  public $valid_shelly_config;
+
 
     /**
 	 * Define the core functionality of the plugin.
@@ -76,6 +78,12 @@ class class_transindus_eco
 
           // read the config file and build the secrets array
       $this->get_config();
+
+      // Check if shelly config data is non-empty
+      $valid_shelly_config  = ! empty( $this->config['accounts'][$user_index]['shelly_device_id']   ) &&
+                              ! empty( $this->config['accounts'][$user_index]['shelly_server_uri']  ) &&
+                              ! empty( $this->config['accounts'][$user_index]['shelly_auth_key']    );
+      $this->valid_shelly_config = $valid_shelly_config;
 
           // set the logging
       $this->verbose = false;
@@ -225,8 +233,11 @@ class class_transindus_eco
                             // extract the control flag as set in user meta
             $do_shelly_user_meta  = get_user_meta($wp_user_ID, "do_shelly", true) ?? false;
 
-            // Check if this's control flag is even set to do this control. set control flag to flase
-            if( $do_shelly_user_meta ) {
+            // extract the control flag as set in user meta
+            $do_minutely_updates  = get_user_meta($wp_user_ID, "do_minutely_updates", true) ?? false;
+
+            // Check if the control flag for minutely updates is TRUE. If so get the readings
+            if( $do_minutely_updates ) {
 
                             // get all the readings for this user. This will write the data to the user meta
                 $this->get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly_user_meta);
@@ -252,42 +263,49 @@ class class_transindus_eco
         // get operation flags from user meta. Set it to false if not set
         $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true) ?? false;
 
-        // Check if this's control flag is even set to do this control. set control flag to flase
-        if( empty( $do_shelly_user_meta ) || ! $do_shelly_user_meta ) {
+        if( $do_shelly_user_meta && $this->valid_shelly_config) {  // Cotrol Shelly TRUE if usermeta AND valid config
 
-            $control_shelly = false;
+            $control_shelly = true;
         }
-        else 
-        {
-          $control_shelly = true;
+        else {    // Cotrol Shelly FALSE if usermeta AND valid config FALSE
+          $control_shelly = false;
         }
 
         // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
-        $shelly_api_device_response = $this->get_shelly_device_status( $user_index );
+        if ( $this->valid_shelly_config ) {   //  get shelly device status ONLY if valid config for switch
 
-        if ( is_null($shelly_api_device_response) ) {
+            $shelly_api_device_response = $this->get_shelly_device_status( $user_index );
 
-            // switch status is unknown
-            error_log("Shelly cloud not responding and or device is offline");
+            if ( is_null($shelly_api_device_response) ) { // switch status is unknown
+
+                error_log("Shelly cloud not responding and or device is offline");
+
+                $shelly_api_device_status_ON = null;
+
+                $shelly_switch_status             = "OFFLINE";
+                $shelly_api_device_status_voltage = "NA";
+            }
+            else {  // Switch is ONLINE - Get its status and Voltage
+                
+                $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+                $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
+
+                if ($shelly_api_device_status_ON)
+                    {
+                        $shelly_switch_status = "ON";
+                    }
+                else
+                    {
+                        $shelly_switch_status = "OFF";
+                    }
+            }
+        }
+        else {  // no valid configuration for shelly switch set variables for logging info
 
             $shelly_api_device_status_ON = null;
 
-            $shelly_switch_status             = "OFFLINE";
-            $shelly_api_device_status_voltage = "NA";
-        }
-        else {
-            // Ascertain switch status: True if Switch is closed, false if Switch is open
-            $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
-            $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
-
-            if ($shelly_api_device_status_ON)
-                {
-                    $shelly_switch_status = "ON";
-                }
-            else
-                {
-                    $shelly_switch_status = "OFF";
-                }
+            $shelly_switch_status             = "Not Configured";
+            $shelly_api_device_status_voltage = "NA";    
         }
 
         // get the smaller set of Studer readings
@@ -299,10 +317,10 @@ class class_transindus_eco
                     $studer_readings_obj->battery_voltage_vdc < 40  ||
             empty(  $studer_readings_obj->pout_inverter_ac_kw ) ) 
         {
-          // cannot trust this Studer reading, do not update
-          error_log($wp_user_name . ": " . "Could not get Studer Reading");
+            // cannot trust this Studer reading, do not update
+            error_log($wp_user_name . ": " . "Could not get Studer Reading");
 
-          return null;
+            return null;
         }
 
         // if we get this far it means that all readings are reliable. Drop the earliest battery voltage
@@ -355,8 +373,8 @@ class class_transindus_eco
         $switch_override =  ($shelly_switch_status == "OFF")               &&
                             ($studer_readings_obj->grid_input_vac >= 190);
 
-        // This is the only condition independent of user meta control settings                    
-        $LVDS =             ( $battery_voltage_avg    <  48.7 )  						&&  // SOC is low but still with some margin if no grid
+        // This is the only condition that gets executed even if Switch Servo Flag is FALSE                  
+        $LVDS =             ( $battery_voltage_avg    <  48.6 )  						&&  // SOC is low but still with some margin if no grid
                             ( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
                             ( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
                             ( $shelly_switch_status == "OFF" );									// The switch is OFF
@@ -420,7 +438,8 @@ class class_transindus_eco
             break;
 
 
-            // <1> If switch is OPEN and running average Battery voltage from 5 readings is lower than limit, go ON-GRID
+            // <1> If switch is OPEN AND running average Battery voltage from 5 readings is lower than limit
+            //      AND control_shelly = TRUE. Note that a valid config and do_shelly user meta need to be TRUE.
             case ( $LVDS ):
 
                 $this->turn_on_off_shelly_switch($user_index, "on");

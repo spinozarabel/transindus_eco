@@ -356,7 +356,7 @@ class class_transindus_eco
                             ($studer_readings_obj->grid_input_vac >= 190);
 
         // This is the only condition independent of user meta control settings                    
-        $LVDS =             ( $battery_voltage_avg    <  48.6 )  						&&  // SOC is low but still with some margin if no grid
+        $LVDS =             ( $battery_voltage_avg    <  48.7 )  						&&  // SOC is low but still with some margin if no grid
                             ( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
                             ( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
                             ( $shelly_switch_status == "OFF" );									// The switch is OFF
@@ -372,7 +372,7 @@ class class_transindus_eco
                                           ( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
                                           ( $now_is_daytime )                             &&  // Daytime
                                           ( $psolar > 0.5 )                               &&  // at least some solar generation
-                                          ( $surplus < -0.6 ) 														&&  // Load is greater than Solar Gen
+                                          ( $surplus < -0.4 ) 														&&  // Load is greater than Solar Gen
                                           ( $control_shelly == true );
 
         $switch_release =  (	( $battery_voltage_avg > 49.0 && ! $it_is_a_cloudy_day )						// SOC enpough for not a cloudy day

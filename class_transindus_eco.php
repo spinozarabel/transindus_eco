@@ -7,6 +7,7 @@
  * public-facing side of the site and the admin area.
  * Ver 1.01
  *     minor changes to voltages and power levels for switching conditions
+ *     Added measurements for: 3078(KWHbatt), 3083(KWHload), 11007 (KWHsolar), and 3081(KWHgrid)
  *
  */
 
@@ -356,6 +357,7 @@ class class_transindus_eco
         $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
 
         $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day;
+        $KWH_solar_today       = $studer_readings_obj->KWH_solar_today;
 
         if (true)
         {
@@ -372,6 +374,7 @@ class class_transindus_eco
             error_log("Cloudy Day?: "          . $it_is_a_cloudy_day                       . "");
             error_log("Within 0700 - 1730?: "  . $now_is_daytime                           . "");
             error_log("AUX1 Relay State: "     . $aux1_relay_state                         . "");
+            error_log("Solar Units Today: "    . $KWH_solar_today                          . "KWH");
         }
 
         // define all the conditions for the SWITCH - CASE tree
@@ -491,7 +494,7 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 6 - sunset, Grid switched OFF");
-                $cron_exit_condition = "Sunset Grid Off";
+                $cron_exit_condition = "Sunset-Grid Off";
             break;
 
 
@@ -500,7 +503,7 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 8 - Battery Float State, Grid switched OFF");
-                $cron_exit_condition = "Float Grid Off";
+                $cron_exit_condition = "SOC Float-Grid Off";
             break;
 
 
@@ -1109,6 +1112,10 @@ class class_transindus_eco
                                "infoAssembly"  => "Master"
                            ),
                        array(
+                               "userRef"       =>  3078,   // Energy from Battery Today till now
+                               "infoAssembly"  => "Master"
+                           ),
+                       array(
                                "userRef"       =>  3082,   // Energy consumed yesterday
                                "infoAssembly"  => "Master"
                            ),
@@ -1236,6 +1243,11 @@ class class_transindus_eco
                $energyout_battery_yesterday = round($user_value->value, 2);
 
              break;
+
+            case ( $user_value->reference == 3078 ) :
+              $KWH_battery_today = round($user_value->value, 2);
+
+            break;
 
              case ( $user_value->reference == 3080 ) :
                $energy_grid_yesterday = round($user_value->value, 2);
@@ -1500,7 +1512,6 @@ class class_transindus_eco
 
         $body = [];
 
-        // get the input AC active power value
         $body = array(array(
                               "userRef"       =>  3136,   // AC active power delivered by inverter
                               "infoAssembly"  => "Master"
@@ -1554,7 +1565,14 @@ class class_transindus_eco
                               "userRef"       =>  11004,   // Psolkw from VT2
                               "infoAssembly"  => "2"
                             ),
-
+                      array(
+                              "userRef"       =>  11007,   // KWHsol generated today till now, from VT1
+                              "infoAssembly"  => "1"
+                            ),
+                      array(
+                              "userRef"       =>  11007,   // KWHsol generated today till now, from VT2
+                              "infoAssembly"  => "2"
+                            ),
                       array(
                               "userRef"       =>  3010,   // Phase of battery charge
                               "infoAssembly"  => "Master"
@@ -1573,6 +1591,7 @@ class class_transindus_eco
         $solar_pv_adc = 0;
         $psolar_kw    = 0;
         $psolar_kw_yesterday = 0;
+        $KWH_solar_today = 0;
 
 
         foreach ($user_values as $user_value)
@@ -1655,6 +1674,12 @@ class class_transindus_eco
                $psolar_kw_yesterday += round($user_value->value, 2);
 
              break;
+
+            case ( $user_value->reference == 11011 ) :
+              // we have to accumulate values form 2 cases so we have used accumulation below
+              $KWH_solar_today += round($user_value->value, 2);
+
+            break;
           }
         }
 
@@ -1827,7 +1852,7 @@ class class_transindus_eco
       $studer_readings_obj->battery_charge_animation_class = $battery_charge_animation_class;
       // $studer_readings_obj->energyout_battery_yesterday    = $energyout_battery_yesterday;
 
-      // update the object with SOlar data read
+      // update the object with Solar data read
       $studer_readings_obj->psolar_kw                   = $psolar_kw;
       $studer_readings_obj->solar_pv_adc                = $solar_pv_adc;
       // $studer_readings_obj->solar_pv_vdc                = $solar_pv_vdc;
@@ -1849,6 +1874,9 @@ class class_transindus_eco
       // $studer_readings_obj->energy_grid_yesterday       = $energy_grid_yesterday;
       // $studer_readings_obj->energy_consumed_yesterday   = $energy_consumed_yesterday;
       $studer_readings_obj->battery_span_fontawesome    = $battery_span_fontawesome;
+
+      // Energy in KWH generated since midnight to now by Solar Panels
+      $studer_readings_obj->KWH_solar_today    = $KWH_solar_today;
 
       return $studer_readings_obj;
     }

@@ -5,6 +5,8 @@
  *
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
+ * Ver 1.01
+ *     minor changes to voltages and power levels for switching conditions
  *
  */
 
@@ -377,10 +379,10 @@ class class_transindus_eco
         $switch_override =  ($shelly_switch_status == "OFF")               &&
                             ($studer_readings_obj->grid_input_vac >= 190);
 
-        // This is the only condition that gets executed even if Switch Servo Flag is FALSE                  
-        $LVDS =             ( $battery_voltage_avg    <  48.6 )  						&&  // SOC is low but still with some margin if no grid
-                            ( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
-                            ( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
+        // This is the only condition that gets executed independent of Shelly COntrol Flag                  
+        $LVDS =             ( $battery_voltage_avg    <=  48.5 )  					&&  // SOC is low but still with some margin if no grid
+                            ( $shelly_api_device_status_voltage >= 199.0	)	&&	// ensure AC is not too low
+                            ( $shelly_api_device_status_voltage <= 242.0	)	&&	// ensure AC is not too high
                             ( $shelly_switch_status == "OFF" );									// The switch is OFF
 
         $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
@@ -389,22 +391,22 @@ class class_transindus_eco
 
 
         $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
-                                          ( $battery_voltage_avg	<	50.3 )								&&	// not in float
-                                          ( $shelly_api_device_status_voltage > 205.0	)		&&	// ensure AC is not too low
-                                          ( $shelly_api_device_status_voltage < 241.0	)		&&	// ensure AC is not too high
-                                          ( $now_is_daytime )                             &&  // Daytime
-                                          ( $psolar > 0.5 )                               &&  // at least some solar generation
-                                          ( $surplus < -0.4 ) 														&&  // Load is greater than Solar Gen
-                                          ( $control_shelly == true );
+                                          ( $battery_voltage_avg	<=	50.2 )							&&	// Battery NOT in FLOAT state
+                                          ( $shelly_api_device_status_voltage >= 200.0	)	&&	// ensure Grid AC is not too low
+                                          ( $shelly_api_device_status_voltage <= 241.0	)	&&	// ensure Grid AC is not too high
+                                          ( $now_is_daytime )                             &&  // Now is Daytime
+                                          ( $psolar  >=  0.5 )                            &&  // at least some solar generation
+                                          ( $surplus <= -0.5 ) 														&&  // Solar Deficit >= 0.5KW
+                                          ( $control_shelly == true );                        // Control Flag is SET
 
-        $switch_release =  (	( $battery_voltage_avg > 49.0 && ! $it_is_a_cloudy_day )						// SOC enpough for not a cloudy day
+        $switch_release =  (	( $battery_voltage_avg > 49.0 && ! $it_is_a_cloudy_day )			  // SOC enpough for not a cloudy day
                                                       ||
-                               ( $battery_voltage_avg > 49.5 &&   $it_is_a_cloudy_day )						// SOC is adequate for a cloudy day
+                               ( $battery_voltage_avg > 49.5 &&   $it_is_a_cloudy_day )			  // SOC is adequate for a cloudy day
                            )																															&&
-                           ( $shelly_switch_status == "ON" )  														&&  		// Switch is ON now
-                           ( $surplus > 0.2 )                															&&  		// Solar is greater than Load
-                           ( $keep_shelly_switch_closed_always == false )                 &&			// Emergency flag is False
-                           ( $control_shelly == true );
+                           ( $shelly_switch_status == "ON" )  														&&  // Switch is ON now
+                           ( $surplus >= 0.2 )                														&&  // Solar surplus is >= 0.2KW
+                           ( $keep_shelly_switch_closed_always == false )                 &&	// Emergency flag is False
+                           ( $control_shelly == true );                                       // Control Flag is SET                              
 
         $sunset_switch_release			=	( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
                                       ( $shelly_switch_status == "ON" )               &&  // Switch is ON now
@@ -412,9 +414,9 @@ class class_transindus_eco
                                       ( $control_shelly == true );
 
         $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
-                                      ( $battery_voltage_avg    >=  50.6 )				    && 
-                                      ( $keep_shelly_switch_closed_always == false )  &&
-                                      ( $control_shelly == true );
+                                      ( $battery_voltage_avg    >=  50.6 )				    &&  // FLoat voltage reached
+                                      ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
+                                      ( $control_shelly == true );                        // Control Flag is False
 
         // write back new values to the readings object
         $studer_readings_obj->battery_voltage_avg               = $battery_voltage_avg;

@@ -336,6 +336,9 @@ class class_transindus_eco
         // add the latest reaiding at the top
         array_push($this->bv_avg_arr, $studer_readings_obj->battery_voltage_vdc);
 
+        // get the installed battery capacity in KWH from config
+        $SOC_capacity = $this->config['accounts'][$user_index]['battery_capacity'];
+
         // average the battery voltage over last 6 readings of about 6 minutes.
         $battery_voltage_avg  = $this->get_battery_voltage_avg();
 
@@ -358,11 +361,22 @@ class class_transindus_eco
 
         $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day;
 
+        // Get the SOC percentage from the user meta.
+        $SOC_percentage       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 75;
+        $SOC_KWH              = $SOC_percentage / 100.00  * $SOC_capacity;
+
         $KWH_solar_today       = $studer_readings_obj->KWH_solar_today;
         $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;
         $KWH_load_today       = $studer_readings_obj->KWH_load_today;
         $KWH_batt_discharged_today = $studer_readings_obj->KWH_batt_discharged_today;
         $KWH_batt_charge_today    = $KWH_solar_today + $KWH_grid_today - $KWH_batt_discharged_today - $KWH_load_today;
+
+        // update the SOC percentage based on actuals. The update is algebraic. It can add or subtract
+        $SOC_KWH = $SOC_KWH + $KWH_batt_charge_today;
+        $SOC_percentage = $SOC_KWH / $SOC_capacity * 100;
+
+        // update the user meta with new value
+        update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage);
 
         if (true)
         {
@@ -384,6 +398,8 @@ class class_transindus_eco
             error_log("Load Units Today: "     . $KWH_load_today                           . "KWH");
             error_log("Battery discharge Units Today: "  . $KWH_batt_discharged_today      . "KWH");
             error_log("Battery Charge Units Today: "     . $KWH_batt_charge_today          . "KWH");
+            error_log("Grid Units Today: "     . $SOC_percentage                           . "%");
+
         }
 
         // define all the conditions for the SWITCH - CASE tree
@@ -528,7 +544,7 @@ class class_transindus_eco
                             'cron_exit_condition' => $cron_exit_condition ,
                           ];
 
-        // save the data in a transient indexed by the user name. Expiration is 2 minutes
+        // save the data in a transient indexed by the user name. Expiration is 5 minutes
         set_transient( $wp_user_name . '_studer_readings_object', $studer_readings_obj, 5*60 );
 
         // Update the user meta with the CRON exit condition only fir definite ACtion not for no action

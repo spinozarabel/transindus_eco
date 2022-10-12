@@ -2343,7 +2343,7 @@ class class_transindus_eco
         $SOC_percentage = $studer_readings_obj->SOC_percentage;
         // add property to format object for screen update
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' . 
-                                                  'SOC:<strong>' . $SOC_percentage . '%' . '</strong><br>' .
+                                                  'SOC: <strong>' . $SOC_percentage . ' %' . '</strong><br>' .
                                                   $formatted_interval   . '<br>' . 
                                                   $saved_cron_exit_condition  .
                                               '</span>';

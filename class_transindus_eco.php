@@ -376,7 +376,7 @@ class class_transindus_eco
         $SOC_percentage = round($SOC_KWH / $SOC_capacity * 100,1);
 
         // update the user meta with new value
-        update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage);
+        // update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage);
 
         if (true)
         {

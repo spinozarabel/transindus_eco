@@ -357,7 +357,12 @@ class class_transindus_eco
         $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
 
         $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day;
+
         $KWH_solar_today       = $studer_readings_obj->KWH_solar_today;
+        $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;
+        $KWH_load_today       = $studer_readings_obj->KWH_load_today;
+        $KWH_batt_discharge_today = $studer_readings_obj->KWH_batt_discharge_today;
+        $KWH_batt_charge_today    = $KWH_solar_today + $KWH_grid_today - $KWH_batt_discharge_today - $KWH_load_today;
 
         if (true)
         {
@@ -375,6 +380,9 @@ class class_transindus_eco
             error_log("Within 0700 - 1730?: "  . $now_is_daytime                           . "");
             error_log("AUX1 Relay State: "     . $aux1_relay_state                         . "");
             error_log("Solar Units Today: "    . $KWH_solar_today                          . "KWH");
+            error_log("Grid Units Today: "     . $KWH_grid_today                           . "KWH");
+            error_log("Load Units Today: "     . $KWH_load_today                           . "KWH");
+            error_log("Battery Charge Units Today: "     . $KWH_batt_charge_today          . "KWH");
         }
 
         // define all the conditions for the SWITCH - CASE tree
@@ -1544,6 +1552,10 @@ class class_transindus_eco
                               "userRef"       =>  3005,   // DC input current to Inverter
                               "infoAssembly"  => "Master"
                             ),
+                      array(
+                              "userRef"       =>  3081,   // KWH today Energy In from GRID
+                              "infoAssembly"  => "Master"
+                            ),
 
                       array(
                               "userRef"       =>  11001,   // DC current into Battery junstion from VT1
@@ -1642,10 +1654,20 @@ class class_transindus_eco
 
              break;
 
+             case ( $user_value->reference == 3081 ) :
+                $KWH_grid_today = round($user_value->value, 2);
+
+            break;
+
              case ( $user_value->reference == 3082 ) :
                $energy_consumed_yesterday = round($user_value->value, 2);
 
              break;
+
+             case ( $user_value->reference == 3083 ) :
+              $KWH_load_today = round($user_value->value, 2);
+
+            break;
 
             case ( $user_value->reference == 11001 ) :
               // we have to accumulate values form 2 cases:VT1 and VT2 so we have used accumulation below
@@ -1877,6 +1899,10 @@ class class_transindus_eco
 
       // Energy in KWH generated since midnight to now by Solar Panels
       $studer_readings_obj->KWH_solar_today    = $KWH_solar_today;
+
+      $studer_readings_obj->KWH_grid_today    = $KWH_grid_today;
+
+      $studer_readings_obj->KWH_load_today    = $KWH_load_today;
 
       return $studer_readings_obj;
     }

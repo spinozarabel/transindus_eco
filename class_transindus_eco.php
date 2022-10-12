@@ -2137,6 +2137,8 @@ class class_transindus_eco
         $shelly_api_device_status_ON      = $studer_readings_obj->shelly_api_device_status_ON;
         $shelly_api_device_status_voltage = $studer_readings_obj->shelly_api_device_status_voltage;
 
+        $SOC_percentage = $studer_readings_obj->SOC_percentage;
+
         // If power is flowing OR switch has ON status then show CHeck and Green
         $grid_arrow_size = $this->get_arrow_size_based_on_power($grid_pin_ac_kw);
 
@@ -2231,26 +2233,26 @@ class class_transindus_eco
         // battery status icon: select battery icon based on charge level
         switch(true)
         {
-            case ($battery_voltage_vdc < $config['battery_vdc_state']["25p"] ):
+            case ($SOC_percentage < 25):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-empty";
             break;
 
-            case ($battery_voltage_vdc >= $config['battery_vdc_state']["25p"] &&
-                  $battery_voltage_vdc <  $config['battery_vdc_state']["50p"] ):
+            case ($SOC_percentage >= 25 &&
+                  $SOC_percentage <  37.5 ):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-quarter";
             break;
 
-            case ($battery_voltage_vdc >= $config['battery_vdc_state']["50p"] &&
-                  $battery_voltage_vdc <  $config['battery_vdc_state']["75p"] ):
+            case ($SOC_percentage >= 37.5 &&
+                  $SOC_percentage <  50 ):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-half";
             break;
 
-            case ($battery_voltage_vdc >= $config['battery_vdc_state']["75p"] &&
-                  $battery_voltage_vdc <  $config['battery_vdc_state']["100p"] ):
+            case ($SOC_percentage >= 50 &&
+                  $SOC_percentage <  77.5):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-three-quarters";
             break;
 
-            case ($battery_voltage_vdc >= $config['battery_vdc_state']["100p"] ):
+            case ($SOC_percentage >= 77.5):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-full";
             break;
         }
@@ -2340,7 +2342,6 @@ class class_transindus_eco
         // format the interval for display
         $formatted_interval = $this->format_interval($interval_since_last_change);
 
-        $SOC_percentage = $studer_readings_obj->SOC_percentage;
         // add property to format object for screen update
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' . 
                                                   'SOC: <strong>' . $SOC_percentage . ' %' . '</strong><br>' .

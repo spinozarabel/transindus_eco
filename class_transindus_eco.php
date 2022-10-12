@@ -1556,6 +1556,10 @@ class class_transindus_eco
                               "userRef"       =>  3081,   // KWH today Energy In from GRID
                               "infoAssembly"  => "Master"
                             ),
+                      array(
+                              "userRef"       =>  3083,   // KWH today Energy consumed by Load
+                              "infoAssembly"  => "Master"
+                            ),
 
                       array(
                               "userRef"       =>  11001,   // DC current into Battery junstion from VT1

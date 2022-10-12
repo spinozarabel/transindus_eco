@@ -1701,7 +1701,7 @@ class class_transindus_eco
 
              break;
 
-            case ( $user_value->reference == 11011 ) :
+            case ( $user_value->reference == 11007 ) :
               // we have to accumulate values form 2 cases so we have used accumulation below
               $KWH_solar_today += round($user_value->value, 2);
 

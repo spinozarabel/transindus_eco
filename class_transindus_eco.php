@@ -362,7 +362,7 @@ class class_transindus_eco
         $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;
         $KWH_load_today       = $studer_readings_obj->KWH_load_today;
         $KWH_batt_discharged_today = $studer_readings_obj->KWH_batt_discharged_today;
-        $KWH_batt_charge_today    = $KWH_solar_today + $KWH_grid_today - $KWH_batt_discharge_today - $KWH_load_today;
+        $KWH_batt_charge_today    = $KWH_solar_today + $KWH_grid_today - $KWH_batt_discharged_today - $KWH_load_today;
 
         if (true)
         {
@@ -382,6 +382,7 @@ class class_transindus_eco
             error_log("Solar Units Today: "    . $KWH_solar_today                          . "KWH");
             error_log("Grid Units Today: "     . $KWH_grid_today                           . "KWH");
             error_log("Load Units Today: "     . $KWH_load_today                           . "KWH");
+            error_log("Battery discharge Units Today: "  . $KWH_batt_discharged_today      . "KWH");
             error_log("Battery Charge Units Today: "     . $KWH_batt_charge_today          . "KWH");
         }
 

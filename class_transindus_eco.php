@@ -2337,6 +2337,8 @@ class class_transindus_eco
         $interval_since_last_change = $now->diff($past);
         // format the interval for display
         $formatted_interval = $this->format_interval($interval_since_last_change);
+
+        $SOC_percentage = $studer_readings_obj->SOC_percentage;
         // add property to format object for screen update
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' . 
                                                   'SOC:' . $SOC_percentage . '%' . '<br>' .

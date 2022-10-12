@@ -373,7 +373,7 @@ class class_transindus_eco
 
         // update the SOC percentage based on actuals. The update is algebraic. It can add or subtract
         $SOC_KWH = $SOC_KWH + $KWH_batt_charge_today;
-        $SOC_percentage = $SOC_KWH / $SOC_capacity * 100;
+        $SOC_percentage = round($SOC_KWH / $SOC_capacity * 100,1);
 
         // update the user meta with new value
         update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage);
@@ -398,7 +398,7 @@ class class_transindus_eco
             error_log("Load Units Today: "     . $KWH_load_today                           . "KWH");
             error_log("Battery discharge Units Today: "  . $KWH_batt_discharged_today      . "KWH");
             error_log("Battery Charge Units Today: "     . $KWH_batt_charge_today          . "KWH");
-            error_log("Grid Units Today: "     . $SOC_percentage                           . "%");
+            error_log("SOC Percentage: "     . $SOC_percentage                           . "%");
 
         }
 

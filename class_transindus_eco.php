@@ -361,7 +361,7 @@ class class_transindus_eco
         $KWH_solar_today       = $studer_readings_obj->KWH_solar_today;
         $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;
         $KWH_load_today       = $studer_readings_obj->KWH_load_today;
-        $KWH_batt_discharge_today = $studer_readings_obj->KWH_batt_discharge_today;
+        $KWH_batt_discharged_today = $studer_readings_obj->KWH_batt_discharged_today;
         $KWH_batt_charge_today    = $KWH_solar_today + $KWH_grid_today - $KWH_batt_discharge_today - $KWH_load_today;
 
         if (true)
@@ -1553,6 +1553,10 @@ class class_transindus_eco
                               "infoAssembly"  => "Master"
                             ),
                       array(
+                              "userRef"       =>  3078,   // KWH today Energy discharged from Battery
+                              "infoAssembly"  => "Master"
+                            ),      
+                      array(
                               "userRef"       =>  3081,   // KWH today Energy In from GRID
                               "infoAssembly"  => "Master"
                             ),
@@ -1652,6 +1656,11 @@ class class_transindus_eco
                $energyout_battery_yesterday = round($user_value->value, 2);
 
              break;
+
+             case ( $user_value->reference == 3078 ) :
+                $KWH_batt_discharged_today = round($user_value->value, 2);
+
+            break;
 
              case ( $user_value->reference == 3080 ) :
                $energy_grid_yesterday = round($user_value->value, 2);
@@ -1907,6 +1916,8 @@ class class_transindus_eco
       $studer_readings_obj->KWH_grid_today    = $KWH_grid_today;
 
       $studer_readings_obj->KWH_load_today    = $KWH_load_today;
+
+      $studer_readings_obj->KWH_batt_discharged_today    = $KWH_batt_discharged_today;
 
       return $studer_readings_obj;
     }

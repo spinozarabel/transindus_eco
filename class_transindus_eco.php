@@ -464,6 +464,7 @@ class class_transindus_eco
         $studer_readings_obj->sunset_switch_release             = $sunset_switch_release;
         $studer_readings_obj->switch_release_float_state        = $switch_release_float_state;
         $studer_readings_obj->control_shelly                    = $control_shelly;
+        $studer_readings_obj->SOC_percentage                    = $SOC_percentage;
 
         switch(true)
         {
@@ -2338,7 +2339,8 @@ class class_transindus_eco
         $formatted_interval = $this->format_interval($interval_since_last_change);
         // add property to format object for screen update
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' . 
-                                                  $formatted_interval   . '<br>' .
+                                                  'SOC:' . $SOC_percentage . '%' . '<br>' .
+                                                  $formatted_interval   . '<br>' . 
                                                   $saved_cron_exit_condition  .
                                               '</span>';
         return $format_object;

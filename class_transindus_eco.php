@@ -336,9 +336,6 @@ class class_transindus_eco
         // add the latest reaiding at the top
         array_push($this->bv_avg_arr, $studer_readings_obj->battery_voltage_vdc);
 
-        // get the installed battery capacity in KWH from config
-        $SOC_capacity = $this->config['accounts'][$user_index]['battery_capacity'];
-
         // average the battery voltage over last 6 readings of about 6 minutes.
         $battery_voltage_avg  = $this->get_battery_voltage_avg();
 
@@ -359,31 +356,41 @@ class class_transindus_eco
         $now_is_daytime       = $this->nowIsWithinTimeLimits("07:00", "16:30"); // changed from 17:30  on 7/28/22
         $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
 
-        $now_is_end_of_day    = $this->nowIsWithinTimeLimits("23:50", "23:59"); // close to midnight
+        $now_is_end_of_day    = $this->nowIsWithinTimeLimits("23:54:00", "23:58:00"); // close to midnight
 
         $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day;
 
-        // Get the SOC percentage from the user meta.
-        $SOC_percentage       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 75;
-        $SOC_KWH              = $SOC_percentage / 100.00  * $SOC_capacity;
+        // Get the SOC percentage at end of last day from the user meta.
+        $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 75;
 
-        $KWH_solar_today       = $studer_readings_obj->KWH_solar_today;
+        // get the installed battery capacity in KWH from config
+        $SOC_capacity = $this->config['accounts'][$user_index]['battery_capacity'];
+
+        // Calculate the SOC at beginning of day in terms of KWH based on percentage and capacity
+        $SOC_KWH_beg_of_day   = $SOC_percentage_beg_of_day / 100.00  * $SOC_capacity;
+
+        $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;
         $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;
         $KWH_load_today       = $studer_readings_obj->KWH_load_today;
         $KWH_batt_discharged_today = $studer_readings_obj->KWH_batt_discharged_today;
 
         // If there is no battery charging oby Grid Charge is Solar - discharge
         // $KWH_batt_charge_today    = $KWH_solar_today - $KWH_batt_discharged_today;
-        $KWH_batt_charge_today = $KWH_solar_today + ($KWH_grid_today - $KWH_load_today) * 0.98;
+        $KWH_batt_charge_today = $KWH_solar_today + ($KWH_grid_today - $KWH_load_today) * 0.96;
 
         // update the SOC percentage based on actuals. The update is algebraic. It can add or subtract
-        $SOC_KWH = $SOC_KWH + $KWH_batt_charge_today;
-        $SOC_percentage = round($SOC_KWH / $SOC_capacity * 100,1);
+        $SOC_KWH_now        = $SOC_KWH_beg_of_day + $KWH_batt_charge_today;
+        $SOC_percentage_now = round($SOC_KWH / $SOC_capacity * 100,1);
 
-        // update the user meta with new value at end of day
-        if ($now_is_end_of_day)
+        // update the user meta with new value at end of day. This will become the start at end of next day
+        if ($now_is_end_of_day && ! $end_of_day_soc_meta_update)
         {
-          update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage);
+          update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_now);
+          $end_of_day_soc_meta_update = true;
+        }
+        else
+        {
+          $end_of_day_soc_meta_update = false;
         }
 
         if (true)
@@ -406,7 +413,7 @@ class class_transindus_eco
             error_log("Load Units Today: "     . $KWH_load_today                           . "KWH");
             error_log("Battery discharge Units Today: "  . $KWH_batt_discharged_today      . "KWH");
             error_log("Battery Charge Units Today: "     . $KWH_batt_charge_today          . "KWH");
-            error_log("SOC Percentage: "     . $SOC_percentage                           . "%");
+            error_log("SOC Percentage: "     . $SOC_percentage_now                         . "%");
 
         }
 
@@ -467,7 +474,7 @@ class class_transindus_eco
         $studer_readings_obj->sunset_switch_release             = $sunset_switch_release;
         $studer_readings_obj->switch_release_float_state        = $switch_release_float_state;
         $studer_readings_obj->control_shelly                    = $control_shelly;
-        $studer_readings_obj->SOC_percentage                    = $SOC_percentage;
+        $studer_readings_obj->SOC_percentage_now                = $SOC_percentage_now;
 
         switch(true)
         {
@@ -2138,7 +2145,7 @@ class class_transindus_eco
         $shelly_api_device_status_ON      = $studer_readings_obj->shelly_api_device_status_ON;
         $shelly_api_device_status_voltage = $studer_readings_obj->shelly_api_device_status_voltage;
 
-        $SOC_percentage = $studer_readings_obj->SOC_percentage;
+        $SOC_percentage_now = $studer_readings_obj->SOC_percentage_now;
 
         // If power is flowing OR switch has ON status then show CHeck and Green
         $grid_arrow_size = $this->get_arrow_size_based_on_power($grid_pin_ac_kw);
@@ -2234,26 +2241,26 @@ class class_transindus_eco
         // battery status icon: select battery icon based on charge level
         switch(true)
         {
-            case ($SOC_percentage < 25):
+            case ($SOC_percentage_now < 25):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-empty";
             break;
 
-            case ($SOC_percentage >= 25 &&
-                  $SOC_percentage <  37.5 ):
+            case ($SOC_percentage_now >= 25 &&
+                  $SOC_percentage_now <  37.5 ):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-quarter";
             break;
 
-            case ($SOC_percentage >= 37.5 &&
-                  $SOC_percentage <  50 ):
+            case ($SOC_percentage_now >= 37.5 &&
+                  $SOC_percentage_now <  50 ):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-half";
             break;
 
-            case ($SOC_percentage >= 50 &&
-                  $SOC_percentage <  77.5):
+            case ($SOC_percentage_now >= 50 &&
+                  $SOC_percentage_now <  77.5):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-three-quarters";
             break;
 
-            case ($SOC_percentage >= 77.5):
+            case ($SOC_percentage_now >= 77.5):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-full";
             break;
         }
@@ -2345,7 +2352,7 @@ class class_transindus_eco
 
         // add property to format object for screen update
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' . 
-                                                  'SOC: <strong>' . $SOC_percentage . ' %' . '</strong><br>' .
+                                                  'SOC: <strong>' . $SOC_percentage_now . ' %' . '</strong><br>' .
                                                   $formatted_interval   . '<br>' . 
                                                   $saved_cron_exit_condition  .
                                               '</span>';

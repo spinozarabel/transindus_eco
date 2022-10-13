@@ -387,6 +387,7 @@ class class_transindus_eco
         {
           update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_now);
           $end_of_day_soc_meta_update = true;
+          error_log("SOC Percentage Beg of Day User Meta Reset to: " . $SOC_percentage_now  . " %");
         }
         else
         {
@@ -551,6 +552,8 @@ class class_transindus_eco
                 $SOC_percentage_beg_of_day_recal = 100.00 - ($KWH_batt_charge_today / $SOC_capacity) * 100.00;
 
                 update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
+
+                error_log("SOC Percentage Beg of Day User Meta Reset to: " . $SOC_percentage_beg_of_day_recal  . " %");
             break;
 
 
@@ -581,6 +584,7 @@ class class_transindus_eco
           // Energy data to recalibrate the soc_percentage user meta
           $SOC_percentage_beg_of_day_recal = 100.00 - ($KWH_batt_charge_today / $SOC_capacity) * 100.00;
           update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
+          error_log("SOC Percentage Beg of Day User Meta Reset to: " . $SOC_percentage_beg_of_day_recal  . " %");
         }
         
         

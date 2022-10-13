@@ -457,7 +457,7 @@ class class_transindus_eco
                                       ( $control_shelly == true );
 
         $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
-                                      ( $battery_voltage_avg    >=  50.6 )				    &&  // FLoat voltage reached
+                                      ( $battery_voltage_avg    >=  50.7 )				    &&  // FLoat voltage reached
                                       ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
                                       ( $control_shelly == true );                        // Control Flag is False
 
@@ -545,6 +545,12 @@ class class_transindus_eco
 
                 error_log("Exited via Case 8 - Battery Float State, Grid switched OFF");
                 $cron_exit_condition = "SOC Float-Grid Off";
+
+                // SInce we know that the battery SOC is 100% use this knowledge along with
+                // Energy data to recalibrate the soc_percentage user meta
+                $SOC_percentage_beg_of_day_recal = 100.00 - ($KWH_batt_charge_today / $SOC_capacity) * 100.00;
+
+                update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
             break;
 
 
@@ -564,9 +570,18 @@ class class_transindus_eco
         set_transient( $wp_user_name . '_studer_readings_object', $studer_readings_obj, 5*60 );
 
         // Update the user meta with the CRON exit condition only fir definite ACtion not for no action
-        if ($cron_exit_condition !== "No Action") {
+        if ($cron_exit_condition !== "No Action") 
+        {
             update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
-       }
+        }
+
+        if ($battery_voltage_avg >=  50.7)
+        {
+          // SInce we know that the battery SOC is 100% use this knowledge along with
+          // Energy data to recalibrate the soc_percentage user meta
+          $SOC_percentage_beg_of_day_recal = 100.00 - ($KWH_batt_charge_today / $SOC_capacity) * 100.00;
+          update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
+        }
         
         
         // New readings Object was updated but not yet read by Ajax

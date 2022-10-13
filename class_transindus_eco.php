@@ -380,7 +380,7 @@ class class_transindus_eco
 
         // update the SOC percentage based on actuals. The update is algebraic. It can add or subtract
         $SOC_KWH_now        = $SOC_KWH_beg_of_day + $KWH_batt_charge_today;
-        $SOC_percentage_now = round($SOC_KWH / $SOC_capacity * 100,1);
+        $SOC_percentage_now = round($SOC_KWH_now / $SOC_capacity * 100,1);
 
         // update the user meta with new value at end of day. This will become the start at end of next day
         if ($now_is_end_of_day && ! $end_of_day_soc_meta_update)

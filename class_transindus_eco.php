@@ -356,8 +356,6 @@ class class_transindus_eco
         $now_is_daytime       = $this->nowIsWithinTimeLimits("07:00", "16:30"); // changed from 17:30  on 7/28/22
         $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
 
-        $now_is_end_of_day    = $this->nowIsWithinTimeLimits("23:54:00", "23:58:00"); // close to midnight
-
         $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day;
 
         // Get the SOC percentage at end of last day from the user meta.
@@ -383,16 +381,14 @@ class class_transindus_eco
         $SOC_percentage_now = round($SOC_KWH_now / $SOC_capacity * 100,1);
 
         // update the user meta with new value at end of day. This will become the start at end of next day
-        if ($now_is_end_of_day && ! $end_of_day_soc_meta_update)
+        // New day effectively starts when the readings for solar reset to 0 and so does the load
+        if ( $KWH_solar_today <= 0.1 && $KWH_load_today <= 0.1 )
         {
           update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_now);
-          $end_of_day_soc_meta_update = true;
+
           error_log("SOC Percentage Beg of Day User Meta Reset to: " . $SOC_percentage_now  . " %");
         }
-        else
-        {
-          $end_of_day_soc_meta_update = false;
-        }
+        
 
         if (true)
         {

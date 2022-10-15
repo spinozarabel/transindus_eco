@@ -359,7 +359,7 @@ class class_transindus_eco
         $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day;
 
         // Get the SOC percentage at end of last day from the user meta.
-        $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 75;
+        $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
 
         // get the installed battery capacity in KWH from config
         $SOC_capacity = $this->config['accounts'][$user_index]['battery_capacity'];
@@ -367,26 +367,38 @@ class class_transindus_eco
         // Calculate the SOC at beginning of day in terms of KWH based on percentage and capacity
         $SOC_KWH_beg_of_day   = $SOC_percentage_beg_of_day / 100.00  * $SOC_capacity;
 
+        // get the current Measurements saved as part of the StiderReadings Object
         $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;
         $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;
         $KWH_load_today       = $studer_readings_obj->KWH_load_today;
         $KWH_batt_discharged_today = $studer_readings_obj->KWH_batt_discharged_today;
 
-        // If there is no battery charging oby Grid Charge is Solar - discharge
-        // $KWH_batt_charge_today    = $KWH_solar_today - $KWH_batt_discharged_today;
-        $KWH_batt_charge_today = $KWH_solar_today + ($KWH_grid_today - $KWH_load_today) * 0.96;
+        
 
-        // update the SOC percentage based on actuals. The update is algebraic. It can add or subtract
-        $SOC_KWH_now        = $SOC_KWH_beg_of_day + $KWH_batt_charge_today;
-        $SOC_percentage_now = round($SOC_KWH_now / $SOC_capacity * 100,1);
+        // get the SOC% from the previous reading from user meta
+        $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true) ?? 50.0;
 
-        // update the user meta with new value at end of day. This will become the start at end of next day
-        // New day effectively starts when the readings for solar reset to 0 and so does the load
+        // Check to see if new day accounting has begun. Check for reset of SOlar and Load units reset to 0
         if ( $KWH_solar_today <= 0.1 && $KWH_load_today <= 0.1 )
         {
-          update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_now);
+          // SInce new day accounting has begun, update user meta for SOC at beginning of new day
+          // This update only happens at beginning of day and also during battery float
+          update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_previous);
 
-          error_log("SOC Percentage Beg of Day User Meta Reset to: " . $SOC_percentage_now  . " %");
+          error_log("SOC Percentage Beg of Day User Meta Reset to: " . $SOC_percentage_previous  . " %");
+        }
+        else
+        {
+          // New day accounting has not started yet. This is the Usual case. Most of the time this gets executed
+          // So update the SOC percentage at current moment as calculated
+          // update the SOC percentage based on actuals. The update is algebraic. It can add or subtract
+          // If there is no battery charging oby Grid Charge is Solar - discharge
+          // $KWH_batt_charge_today    = $KWH_solar_today - $KWH_batt_discharged_today;
+          $KWH_batt_charge_today = $KWH_solar_today + ($KWH_grid_today - $KWH_load_today) * 0.96;
+          $SOC_KWH_now        = $SOC_KWH_beg_of_day + $KWH_batt_charge_today;
+          $SOC_percentage_now = round($SOC_KWH_now / $SOC_capacity * 100,1);
+
+          update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
         }
         
 
@@ -411,6 +423,7 @@ class class_transindus_eco
             error_log("Battery discharge Units Today: "  . $KWH_batt_discharged_today      . "KWH");
             error_log("Battery Charge Units Today: "     . $KWH_batt_charge_today          . "KWH");
             error_log("SOC Percentage: "     . $SOC_percentage_now                         . "%");
+            error_log("");
 
         }
 

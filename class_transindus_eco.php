@@ -2379,8 +2379,10 @@ class class_transindus_eco
         $formatted_interval = $this->format_interval($interval_since_last_change);
 
         // add property to format object for screen update
-        $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' . 
-                                                  'SOC: <strong>' . $SOC_percentage_now . ' %' . '</strong><br>' .
+        $format_object->cron_exit_condition = '<span style="font-size: 18px;color: Blue; display:block; text-align: center;">' . 
+                                                  'SOC: <strong>' . $SOC_percentage_now . ' %' . '</strong><br>
+                                               </span>' .
+                                              '<span style="color: Blue; display:block; text-align: center;">' .
                                                   $formatted_interval   . '<br>' . 
                                                   $saved_cron_exit_condition  .
                                               '</span>';

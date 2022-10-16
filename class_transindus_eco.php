@@ -404,6 +404,10 @@ class class_transindus_eco
           update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_previous);
 
           error_log("SOC Percentage Beg of Day User Meta Reset to: " . $SOC_percentage_previous  . " %");
+
+          // since the battery nett charge for the new day is 0, SOC now is same as SOC previous
+          // Otherwise SOC now will be indeterminate when coming through this branch
+          $SOC_percentage_now = $SOC_percentage_previous;
         }
         else
         {
@@ -416,6 +420,9 @@ class class_transindus_eco
           $SOC_KWH_now            = $SOC_KWH_beg_of_day + $KWH_batt_charge_today;
           $SOC_percentage_now     = round($SOC_KWH_now / $SOC_capacity * 100,1);
 
+          // clamp the SOC % to  100%
+          if ( $SOC_percentage_now >= 100.0) $SOC_percentage_now = 100.0;
+
           $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now;
 
           update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
@@ -427,14 +434,6 @@ class class_transindus_eco
             error_log("SOC Percentage: "     . $SOC_percentage_now                         . "%");
             error_log("");  // print out blank line for better readability
           }
-        }
-        
-
-        if (true)
-        {
-            
-            
-
         }
 
         // define all the conditions for the SWITCH - CASE tree

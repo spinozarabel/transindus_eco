@@ -439,11 +439,11 @@ class class_transindus_eco
         $switch_override =  ($shelly_switch_status == "OFF")               &&
                             ($studer_readings_obj->grid_input_vac >= 190);
 
-        // This is the only condition that gets executed independent of Shelly COntrol Flag                  
-        $LVDS =             ( $battery_voltage_avg    <=  48.5 )  					&&  // SOC is low but still with some margin if no grid
-                            ( $shelly_api_device_status_voltage >= 199.0	)	&&	// ensure AC is not too low
-                            ( $shelly_api_device_status_voltage <= 242.0	)	&&	// ensure AC is not too high
-                            ( $shelly_switch_status == "OFF" );									// The switch is OFF
+        // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC                
+        $LVDS =             ( $battery_voltage_avg  <=  48.3 || $SOC_percentage_now <= 35 ) &&  // SOC is low
+                            ( $shelly_api_device_status_voltage >= 196.0	)	                &&	// ensure AC is not too low
+                            ( $shelly_api_device_status_voltage <= 242.0	)	                &&	// ensure AC is not too high
+                            ( $shelly_switch_status == "OFF" );									                // The switch is OFF
 
         $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
                                       ( $keep_shelly_switch_closed_always == true )  &&
@@ -459,9 +459,9 @@ class class_transindus_eco
                                           ( $surplus <= -0.5 ) 														&&  // Solar Deficit >= 0.5KW
                                           ( $control_shelly == true );                        // Control Flag is SET
 
-        $switch_release =  (	( $battery_voltage_avg > 49.0 && ! $it_is_a_cloudy_day )			  // SOC enpough for not a cloudy day
+        $switch_release =  (	( $SOC_percentage_now > 40 && ! $it_is_a_cloudy_day )			  // SOC enpough for not a cloudy day
                                                       ||
-                               ( $battery_voltage_avg > 49.5 &&   $it_is_a_cloudy_day )			  // SOC is adequate for a cloudy day
+                              ( $SOC_percentage_now > 45 &&   $it_is_a_cloudy_day )			  // SOC is adequate for a cloudy day
                            )																															&&
                            ( $shelly_switch_status == "ON" )  														&&  // Switch is ON now
                            ( $surplus >= 0.2 )                														&&  // Solar surplus is >= 0.2KW

@@ -379,7 +379,7 @@ class class_transindus_eco
         $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true) ?? 50.0;
 
         // Check to see if new day accounting has begun. Check for reset of SOlar and Load units reset to 0
-        if ( $KWH_solar_today <= 0.1 && $KWH_load_today <= 0.1 )
+        if ( $KWH_solar_today <= 0.05 && $KWH_load_today <= 0.02 )
         {
           // SInce new day accounting has begun, update user meta for SOC at beginning of new day
           // This update only happens at beginning of day and also during battery float
@@ -398,7 +398,17 @@ class class_transindus_eco
           $SOC_KWH_now        = $SOC_KWH_beg_of_day + $KWH_batt_charge_today;
           $SOC_percentage_now = round($SOC_KWH_now / $SOC_capacity * 100,1);
 
+          $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now;
+
           update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
+
+          if (true)
+          {
+            error_log("Battery discharge Units Today: "  . $KWH_batt_discharged_today      . "KWH");
+            error_log("Battery Charge Units Today: "     . $KWH_batt_charge_today          . "KWH");
+            error_log("SOC Percentage: "     . $SOC_percentage_now                         . "%");
+            error_log("");
+          }
         }
         
 
@@ -420,10 +430,7 @@ class class_transindus_eco
             error_log("Solar Units Today: "    . $KWH_solar_today                          . "KWH");
             error_log("Grid Units Today: "     . $KWH_grid_today                           . "KWH");
             error_log("Load Units Today: "     . $KWH_load_today                           . "KWH");
-            error_log("Battery discharge Units Today: "  . $KWH_batt_discharged_today      . "KWH");
-            error_log("Battery Charge Units Today: "     . $KWH_batt_charge_today          . "KWH");
-            error_log("SOC Percentage: "     . $SOC_percentage_now                         . "%");
-            error_log("");
+            
 
         }
 
@@ -484,7 +491,7 @@ class class_transindus_eco
         $studer_readings_obj->sunset_switch_release             = $sunset_switch_release;
         $studer_readings_obj->switch_release_float_state        = $switch_release_float_state;
         $studer_readings_obj->control_shelly                    = $control_shelly;
-        $studer_readings_obj->SOC_percentage_now                = $SOC_percentage_now;
+        
 
         switch(true)
         {

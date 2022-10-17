@@ -514,7 +514,7 @@ class class_transindus_eco
 
                 $this->turn_on_off_shelly_switch($user_index, "on");
 
-                error_log("Exited via Case 1: LVDS - Grid Switched ON");
+                error_log("LVDS - Grid ON.  SOC: " . $SOC_percentage_now . " % and Vbatt(V): " . $battery_voltage_avg);
                 $cron_exit_condition = "Low SOC - Grid ON";
             break;
 

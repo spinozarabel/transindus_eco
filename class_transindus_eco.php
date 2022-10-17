@@ -476,7 +476,7 @@ class class_transindus_eco
                                       ( $control_shelly == true );
 
         $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
-                                      ( $battery_voltage_avg  =  51.7 ||                  // Float Voltage reached
+                                      ( $battery_voltage_avg  <=  51.7 ||                  // Float Voltage reached
                                         $SOC_percentage_now     >= 97       )				  &&  // OR SOC reached 97%
                                       ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
                                       ( $control_shelly == true );                        // Control Flag is False
@@ -597,7 +597,7 @@ class class_transindus_eco
             update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
         }
 
-        if (  $battery_voltage_avg  =  51.7   ||                  // Float Voltage reached
+        if (  $battery_voltage_avg  >=  51.7   ||                 // Float Voltage reached
               $SOC_percentage_now   >= 97       )				          // OR SOC reached 97%
         {
           // SInce we know that the battery SOC is 100% use this knowledge along with

@@ -568,7 +568,7 @@ class class_transindus_eco
 
                 // SInce we know that the battery SOC is 100% use this knowledge along with
                 // Energy data to recalibrate the soc_percentage user meta
-                $SOC_percentage_beg_of_day_recal = 96 - ($KWH_batt_charge_today / $SOC_capacity) * 100.00;
+                $SOC_percentage_beg_of_day_recal = 96 - round( ($KWH_batt_charge_today / $SOC_capacity * 100), 1);
 
                 update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 
@@ -602,8 +602,10 @@ class class_transindus_eco
         {
           // SInce we know that the battery SOC is 100% use this knowledge along with
           // Energy data to recalibrate the soc_percentage user meta
-          $SOC_percentage_beg_of_day_recal = 96 - ($KWH_batt_charge_today / $SOC_capacity) * 100.00;
+          $SOC_percentage_beg_of_day_recal = 96 - round( ($KWH_batt_charge_today / $SOC_capacity * 100), 1);
+
           update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
+          
           error_log("SOC Percentage Beg of Day User Meta Reset to: " . $SOC_percentage_beg_of_day_recal  . " %");
         }
         

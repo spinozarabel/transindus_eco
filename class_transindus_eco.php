@@ -442,7 +442,7 @@ class class_transindus_eco
                             ($studer_readings_obj->grid_input_vac >= 190);
 
         // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC                
-        $LVDS =             ( $battery_voltage_avg  <=  48.3 || $SOC_percentage_now <= 35 ) &&  // SOC is low
+        $LVDS =             ( $battery_voltage_avg  <=  48.5 || $SOC_percentage_now <= 35 ) &&  // SOC is low
                             ( $shelly_api_device_status_voltage >= 196.0	)	                &&	// ensure AC is not too low
                             ( $shelly_api_device_status_voltage <= 242.0	)	                &&	// ensure AC is not too high
                             ( $shelly_switch_status == "OFF" );									                // The switch is OFF
@@ -453,7 +453,7 @@ class class_transindus_eco
 
 
         $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
-                                          ( $battery_voltage_avg	<=	51.4 )							&&	// Battery NOT in FLOAT state
+                                          ( $battery_voltage_avg	<=	51.3 )							&&	// Battery NOT in FLOAT state
                                           ( $shelly_api_device_status_voltage >= 200.0	)	&&	// ensure Grid AC is not too low
                                           ( $shelly_api_device_status_voltage <= 241.0	)	&&	// ensure Grid AC is not too high
                                           ( $now_is_daytime )                             &&  // Now is Daytime
@@ -476,8 +476,8 @@ class class_transindus_eco
                                       ( $control_shelly == true );
 
         $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
-                                      ( $battery_voltage_avg  <=  51.7 ||                  // Float Voltage reached
-                                        $SOC_percentage_now     >= 97       )				  &&  // OR SOC reached 97%
+                                      ( $battery_voltage_avg  <=  51.7  ||                // Float Voltage reached
+                                        $SOC_percentage_now   >=  96       )				  &&  // OR SOC reached 97%
                                       ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
                                       ( $control_shelly == true );                        // Control Flag is False
 
@@ -568,7 +568,7 @@ class class_transindus_eco
 
                 // SInce we know that the battery SOC is 100% use this knowledge along with
                 // Energy data to recalibrate the soc_percentage user meta
-                $SOC_percentage_beg_of_day_recal = 100.00 - ($KWH_batt_charge_today / $SOC_capacity) * 100.00;
+                $SOC_percentage_beg_of_day_recal = 96 - ($KWH_batt_charge_today / $SOC_capacity) * 100.00;
 
                 update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 
@@ -598,11 +598,11 @@ class class_transindus_eco
         }
 
         if (  $battery_voltage_avg  >=  51.7   ||                 // Float Voltage reached
-              $SOC_percentage_now   >= 97       )				          // OR SOC reached 97%
+              $SOC_percentage_now   >=  96        )				        // OR SOC reached 97%
         {
           // SInce we know that the battery SOC is 100% use this knowledge along with
           // Energy data to recalibrate the soc_percentage user meta
-          $SOC_percentage_beg_of_day_recal = 100.00 - ($KWH_batt_charge_today / $SOC_capacity) * 100.00;
+          $SOC_percentage_beg_of_day_recal = 96 - ($KWH_batt_charge_today / $SOC_capacity) * 100.00;
           update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
           error_log("SOC Percentage Beg of Day User Meta Reset to: " . $SOC_percentage_beg_of_day_recal  . " %");
         }

@@ -453,7 +453,7 @@ class class_transindus_eco
 
 
         $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
-                                          ( $battery_voltage_avg	<=	50.2 )							&&	// Battery NOT in FLOAT state
+                                          ( $battery_voltage_avg	<=	51.4 )							&&	// Battery NOT in FLOAT state
                                           ( $shelly_api_device_status_voltage >= 200.0	)	&&	// ensure Grid AC is not too low
                                           ( $shelly_api_device_status_voltage <= 241.0	)	&&	// ensure Grid AC is not too high
                                           ( $now_is_daytime )                             &&  // Now is Daytime
@@ -476,7 +476,8 @@ class class_transindus_eco
                                       ( $control_shelly == true );
 
         $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
-                                      ( $battery_voltage_avg    >=  50.7 )				    &&  // FLoat voltage reached
+                                      ( $battery_voltage_avg  =  51.7 ||                  // Float Voltage reached
+                                        $SOC_percentage_now     >= 97       )				  &&  // OR SOC reached 97%
                                       ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
                                       ( $control_shelly == true );                        // Control Flag is False
 
@@ -596,7 +597,8 @@ class class_transindus_eco
             update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
         }
 
-        if ($battery_voltage_avg >=  50.7)
+        if (  $battery_voltage_avg  =  51.7   ||                  // Float Voltage reached
+              $SOC_percentage_now   >= 97       )				          // OR SOC reached 97%
         {
           // SInce we know that the battery SOC is 100% use this knowledge along with
           // Energy data to recalibrate the soc_percentage user meta

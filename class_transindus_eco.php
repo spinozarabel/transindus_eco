@@ -443,7 +443,7 @@ class class_transindus_eco
 
         // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC                
         $LVDS =             ( $battery_voltage_avg  <=  48.5 || $SOC_percentage_now <= 35 ) &&  // SOC is low
-                            ( $shelly_api_device_status_voltage >= 196.0	)	                &&	// ensure AC is not too low
+                            ( $shelly_api_device_status_voltage >= 195.0	)	                &&	// ensure AC is not too low
                             ( $shelly_api_device_status_voltage <= 242.0	)	                &&	// ensure AC is not too high
                             ( $shelly_switch_status == "OFF" );									                // The switch is OFF
 
@@ -453,7 +453,7 @@ class class_transindus_eco
 
 
         $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
-                                          ( $battery_voltage_avg	<=	51.3 )							&&	// Battery NOT in FLOAT state
+                                          ( $battery_voltage_avg	<=	51.2 )							&&	// Battery NOT in FLOAT state
                                           ( $shelly_api_device_status_voltage >= 200.0	)	&&	// ensure Grid AC is not too low
                                           ( $shelly_api_device_status_voltage <= 241.0	)	&&	// ensure Grid AC is not too high
                                           ( $now_is_daytime )                             &&  // Now is Daytime
@@ -476,8 +476,7 @@ class class_transindus_eco
                                       ( $control_shelly == true );
 
         $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
-                                      ( $battery_voltage_avg  <=  51.7  ||                // Float Voltage reached
-                                        $SOC_percentage_now   >=  96       )				  &&  // OR SOC reached 97%
+                                      ( $battery_voltage_avg  >= 51.7 )				        &&  // OR SOC reached 97%
                                       ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
                                       ( $control_shelly == true );                        // Control Flag is False
 

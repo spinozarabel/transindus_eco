@@ -498,7 +498,7 @@ class class_transindus_eco
                                       ( $control_shelly == true );
 
         $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
-                                      ( $battery_voltage_avg  >= 51.7 )				        &&  // OR SOC reached 97%
+                                      ( $battery_voltage_avg  >= 51.0 )				        &&  // OR SOC reached 97%
                                       ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
                                       ( $control_shelly == true );                        // Control Flag is False
 
@@ -589,7 +589,7 @@ class class_transindus_eco
 
                 // SInce we know that the battery SOC is 100% use this knowledge along with
                 // Energy data to recalibrate the soc_percentage user meta
-                $SOC_percentage_beg_of_day_recal = 100 - $SOC_batt_charge_net_percent_today;
+                $SOC_percentage_beg_of_day_recal = 96 - $SOC_batt_charge_net_percent_today;
 
                 update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 
@@ -618,12 +618,11 @@ class class_transindus_eco
             update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
         }
 
-        if (  $battery_voltage_avg  >=  51.7   ||                 // Float Voltage reached
-              $SOC_percentage_now   >=  96        )				        // OR SOC reached 97%
+        if (  $battery_voltage_avg  >=  51.0 )				        // OR SOC reached 97%
         {
           // SInce we know that the battery SOC is 100% use this knowledge along with
           // Energy data to recalibrate the soc_percentage user meta
-          $SOC_percentage_beg_of_day_recal = 100 - $SOC_batt_charge_net_percent_today;
+          $SOC_percentage_beg_of_day_recal = 96 - $SOC_batt_charge_net_percent_today;
 
           update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 

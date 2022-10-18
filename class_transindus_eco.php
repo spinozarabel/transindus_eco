@@ -436,8 +436,8 @@ class class_transindus_eco
           {
             // unreasonable update, keep the previous value
             $studer_readings_obj->SOC_percentage_now = $SOC_percentage_previous;
-
-            // do not update user meta
+            // Update user meta so this becomes the previous value for next cycle
+            update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
           }
           else
           {

@@ -423,7 +423,7 @@ class class_transindus_eco
           // update the SOC percentage based on actuals. The update is algebraic. It can add or subtract
           // If there is no battery charging oby Grid Charge is Solar - discharge
 
-          $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + ($KWH_grid_today - $KWH_load_today) * 1.04;
+          $KWH_batt_charge_net_today  = $KWH_solar_today * 0.95 + ($KWH_grid_today - $KWH_load_today) * 1.05;
 
           $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
           // $SOC_KWH_now            = $SOC_KWH_beg_of_day + $KWH_batt_charge_today;
@@ -589,7 +589,7 @@ class class_transindus_eco
 
                 // SInce we know that the battery SOC is 100% use this knowledge along with
                 // Energy data to recalibrate the soc_percentage user meta
-                $SOC_percentage_beg_of_day_recal = 97 - $SOC_batt_charge_net_percent_today;
+                $SOC_percentage_beg_of_day_recal = 96 - $SOC_batt_charge_net_percent_today;
 
                 update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 
@@ -622,7 +622,7 @@ class class_transindus_eco
         {
           // SInce we know that the battery SOC is 100% use this knowledge along with
           // Energy data to recalibrate the soc_percentage user meta
-          $SOC_percentage_beg_of_day_recal = 97 - $SOC_batt_charge_net_percent_today;
+          $SOC_percentage_beg_of_day_recal = 96 - $SOC_batt_charge_net_percent_today;
 
           update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 

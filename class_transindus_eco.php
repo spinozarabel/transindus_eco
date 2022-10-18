@@ -5,9 +5,10 @@
  *
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
- * Ver 1.01
+ * Ver 1.1
  *     minor changes to voltages and power levels for switching conditions
  *     Added measurements for: 3078(KWHbatt), 3083(KWHload), 11007 (KWHsolar), and 3081(KWHgrid)
+ *     Changed SOC computation using percentages instead of Units
  *
  */
 
@@ -219,8 +220,8 @@ class class_transindus_eco
 
 
     /**
-     *  This function is called by the scheduler probably every minute or so.
-     *  Its job is to get the minimal set of studer readings and the state of the ACIN shelly switch
+     *  This function is called by the scheduler  every minute or so.
+     *  Its job is to get the needed set of studer readings and the state of the ACIN shelly switch
      *  For every user in the config array who has the do_shelly variable set to TRUE.
      *  The ACIN switch is turned ON or OFF based on a complex algorithm. and user meta settings
      */
@@ -243,8 +244,8 @@ class class_transindus_eco
             // Check if the control flag for minutely updates is TRUE. If so get the readings
             if( $do_minutely_updates ) {
 
-                            // get all the readings for this user. This will write the data to the user meta
-                $this->get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly_user_meta);
+                // get all the readings for this user. This will write the data to a transient for quick retrieval
+                $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly_user_meta );
             }
             // loop for all users
         }
@@ -341,37 +342,43 @@ class class_transindus_eco
 
         // get the estimated solar power from calculations for a clear day
         $est_solar_kw         = $this->estimated_solar_power($user_index);
-
+        // SOlar power Now
         $psolar               = $studer_readings_obj->psolar_kw;
+        // Solar Current into Battery Junction at present moment
         $solar_pv_adc         = $studer_readings_obj->solar_pv_adc;
 
-        $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;
-        $grid_input_vac       = $studer_readings_obj->grid_input_vac;
-        $inverter_current_adc = $studer_readings_obj->inverter_current_adc;
+        // Inverter readings at present Instant
+        $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;    // Inverter Output Power in KW
+        $grid_input_vac       = $studer_readings_obj->grid_input_vac;         // Grid Input AC Voltage to Studer
+        $inverter_current_adc = $studer_readings_obj->inverter_current_adc;   // DC current into Inverter to convert to AC power
 
+        // Surplus power from Solar after supplying the Load
         $surplus              = $psolar - $pout_inverter;
 
         $aux1_relay_state     = $studer_readings_obj->aux1_relay_state;
 
+        // Boolean values for checking is present time is within defined time intervals
         $now_is_daytime       = $this->nowIsWithinTimeLimits("07:00", "16:30"); // changed from 17:30  on 7/28/22
         $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
 
+        // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
         $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day;
 
-        // Get the SOC percentage at end of last day from the user meta.
+        // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only at beginning of day, once.
         $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
 
         // get the installed battery capacity in KWH from config
-        $SOC_capacity = $this->config['accounts'][$user_index]['battery_capacity'];
+        $SOC_capacity_KWH = $this->config['accounts'][$user_index]['battery_capacity'];
 
         // Calculate the SOC at beginning of day in terms of KWH based on percentage and capacity
-        $SOC_KWH_beg_of_day   = $SOC_percentage_beg_of_day / 100.00  * $SOC_capacity;
+        // $SOC_KWH_beg_of_day   = $SOC_percentage_beg_of_day / 100.00  * $SOC_capacity;
 
-        // get the current Measurements saved as part of the StiderReadings Object
+        // get the current Measurement values from the Stider Readings Object
         $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;
         $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;
         $KWH_load_today       = $studer_readings_obj->KWH_load_today;
-        $KWH_batt_discharged_today = $studer_readings_obj->KWH_batt_discharged_today;
+
+        $KWH_batt_percent_discharged_today = round( $studer_readings_obj->KWH_batt_discharged_today / $SOC_capacity_KWH * 100, 1);
 
         if (true)
         {
@@ -396,10 +403,10 @@ class class_transindus_eco
         // get the SOC% from the previous reading from user meta
         $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true) ?? 50.0;
 
-        // Check to see if new day accounting has begun. Check for reset of SOlar and Load units reset to 0
-        if ( $KWH_solar_today <= 0.05 && $KWH_load_today <= 0.02 )
+        // Check to see if new day accounting has begun. Check for reset of Solar and Load units reset to 0
+        if ( $KWH_solar_today <= 0.05 && $KWH_load_today <= 0.05 )
         {
-          // SInce new day accounting has begun, update user meta for SOC at beginning of new day
+          // Since new day accounting has begun, update user meta for SOC at beginning of new day
           // This update only happens at beginning of day and also during battery float
           update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_previous);
 
@@ -415,23 +422,37 @@ class class_transindus_eco
           // So update the SOC percentage at current moment as calculated
           // update the SOC percentage based on actuals. The update is algebraic. It can add or subtract
           // If there is no battery charging oby Grid Charge is Solar - discharge
-          // $KWH_batt_charge_today    = $KWH_solar_today - $KWH_batt_discharged_today;
-          $KWH_batt_charge_today  = $KWH_solar_today + ($KWH_grid_today - $KWH_load_today) * 1.07;
-          $SOC_KWH_now            = $SOC_KWH_beg_of_day + $KWH_batt_charge_today;
-          $SOC_percentage_now     = round($SOC_KWH_now / $SOC_capacity * 100,1);
 
-          // clamp the SOC % to  100%
-          if ( $SOC_percentage_now >= 100.0) $SOC_percentage_now = 100.0;
+          $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + ($KWH_grid_today - $KWH_load_today) * 1.04;
 
-          $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now;
+          $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
+          // $SOC_KWH_now            = $SOC_KWH_beg_of_day + $KWH_batt_charge_today;
+          // $SOC_percentage_now     = round($SOC_KWH_now / $SOC_capacity_KWH * 100,1);
+          $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
 
-          update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
+          // clamp the SOC Percentage Update value if update is unreasonable 
+          // If the change in SOC percentage from previous value to  current value is too large then refuse the update
+          if ( abs( $SOC_percentage_now - $SOC_percentage_previous) > 2 )
+          {
+            // unreasonable update, keep the previous value
+            $studer_readings_obj->SOC_percentage_now = $SOC_percentage_previous;
+
+            // do not update user meta
+          }
+          else
+          {
+            // reasonable values, update the SOC present number
+            $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now;
+
+            // Update user meta so this becomes the previous value for next cycle
+            update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
+          }
 
           if (true)
           {
-            error_log("Battery discharge Units Today: "  . $KWH_batt_discharged_today      . "KWH");
-            error_log("Battery Charge Units Today: "     . $KWH_batt_charge_today          . "KWH");
-            error_log("SOC Percentage: "     . $SOC_percentage_now                         . "%");
+            error_log("Battery discharge Percentage of Capacity Today: "  . $KWH_batt_percent_discharged_today      . " %");
+            error_log("Battery Nett Charge Percentage of Capacity Today: "     . $KWH_batt_charge_today          . "KWH");
+            error_log("SOC Percentage: "                 . $SOC_percentage_now             . "%");
             error_log("");  // print out blank line for better readability
           }
         }
@@ -1996,7 +2017,7 @@ class class_transindus_eco
     }
 
     /**
-     * 
+     *  service AJax Call for minutely cron updates to my solar page of website
      */
     public function ajax_my_solar_cron_update_handler()     
     {   // service AJax Call for minutely cron updates to my solar screen

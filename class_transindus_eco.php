@@ -423,7 +423,7 @@ class class_transindus_eco
           // update the SOC percentage based on actuals. The update is algebraic. It can add or subtract
           // If there is no battery charging oby Grid Charge is Solar - discharge
 
-          $KWH_batt_charge_net_today  = $KWH_solar_today * 0.95 + ($KWH_grid_today - $KWH_load_today) * 1.05;
+          $KWH_batt_charge_net_today  = $KWH_solar_today * 0.94 + ($KWH_grid_today - $KWH_load_today) * 1.06;
 
           $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
           // $SOC_KWH_now            = $SOC_KWH_beg_of_day + $KWH_batt_charge_today;

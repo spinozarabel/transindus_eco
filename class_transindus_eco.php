@@ -451,7 +451,7 @@ class class_transindus_eco
           if (true)
           {
             error_log("Battery discharge Percentage of Capacity Today: "  . $KWH_batt_percent_discharged_today      . " %");
-            error_log("Battery Nett Charge Percentage of Capacity Today: "     . $SOC_batt_charge_net_percent_today . "KWH");
+            error_log("Battery Nett Charge Percentage of Capacity Today: "     . $SOC_batt_charge_net_percent_today . "%");
             error_log("SOC Percentage: "                 . $SOC_percentage_now             . "%");
             error_log("");  // print out blank line for better readability
           }
@@ -475,7 +475,7 @@ class class_transindus_eco
 
         $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
                                           ( $battery_voltage_avg	<=	51.2 )							&&	// Battery NOT in FLOAT state
-                                          ( $shelly_api_device_status_voltage >= 200.0	)	&&	// ensure Grid AC is not too low
+                                          ( $shelly_api_device_status_voltage >= 199.0	)	&&	// ensure Grid AC is not too low
                                           ( $shelly_api_device_status_voltage <= 241.0	)	&&	// ensure Grid AC is not too high
                                           ( $now_is_daytime )                             &&  // Now is Daytime
                                           ( $psolar  >=  0.3 )                            &&  // at least some solar generation

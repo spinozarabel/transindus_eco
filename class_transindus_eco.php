@@ -475,7 +475,7 @@ class class_transindus_eco
 
 
         $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
-                                          ( $battery_voltage_avg	<=	51.2 )							&&	// Battery NOT in FLOAT state
+                                          ( $battery_voltage_avg	<=	50.5 )							&&	// Battery NOT in FLOAT state
                                           ( $shelly_api_device_status_voltage >= 199.0	)	&&	// ensure Grid AC is not too low
                                           ( $shelly_api_device_status_voltage <= 241.0	)	&&	// ensure Grid AC is not too high
                                           ( $now_is_daytime )                             &&  // Now is Daytime
@@ -498,7 +498,7 @@ class class_transindus_eco
                                       ( $control_shelly == true );
 
         $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
-                                      ( $battery_voltage_avg  >= 51.0 )				        &&  // OR SOC reached 97%
+                                      ( $battery_voltage_avg  >= 50.8 )				        &&  // OR SOC reached 97%
                                       ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
                                       ( $control_shelly == true );                        // Control Flag is False
 
@@ -589,7 +589,7 @@ class class_transindus_eco
 
                 // SInce we know that the battery SOC is 100% use this knowledge along with
                 // Energy data to recalibrate the soc_percentage user meta
-                $SOC_percentage_beg_of_day_recal = 96 - $SOC_batt_charge_net_percent_today;
+                $SOC_percentage_beg_of_day_recal = 100 - $SOC_batt_charge_net_percent_today;
 
                 update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 
@@ -622,7 +622,7 @@ class class_transindus_eco
         {
           // SInce we know that the battery SOC is 100% use this knowledge along with
           // Energy data to recalibrate the soc_percentage user meta
-          $SOC_percentage_beg_of_day_recal = 96 - $SOC_batt_charge_net_percent_today;
+          $SOC_percentage_beg_of_day_recal = 100 - $SOC_batt_charge_net_percent_today;
 
           update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 

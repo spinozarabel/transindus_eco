@@ -451,7 +451,7 @@ class class_transindus_eco
           if (true)
           {
             error_log("Battery discharge Percentage of Capacity Today: "  . $KWH_batt_percent_discharged_today      . " %");
-            error_log("Battery Nett Charge Percentage of Capacity Today: "     . $KWH_batt_charge_today          . "KWH");
+            error_log("Battery Nett Charge Percentage of Capacity Today: "     . $SOC_batt_charge_net_percent_today . "KWH");
             error_log("SOC Percentage: "                 . $SOC_percentage_now             . "%");
             error_log("");  // print out blank line for better readability
           }
@@ -588,7 +588,7 @@ class class_transindus_eco
 
                 // SInce we know that the battery SOC is 100% use this knowledge along with
                 // Energy data to recalibrate the soc_percentage user meta
-                $SOC_percentage_beg_of_day_recal = 96 - round( ($KWH_batt_charge_today / $SOC_capacity * 100), 1);
+                $SOC_percentage_beg_of_day_recal = 96 - $SOC_batt_charge_net_percent_today;
 
                 update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 
@@ -622,7 +622,7 @@ class class_transindus_eco
         {
           // SInce we know that the battery SOC is 100% use this knowledge along with
           // Energy data to recalibrate the soc_percentage user meta
-          $SOC_percentage_beg_of_day_recal = 96 - round( ($KWH_batt_charge_today / $SOC_capacity * 100), 1);
+          $SOC_percentage_beg_of_day_recal = 96 - $SOC_batt_charge_net_percent_today;
 
           update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 

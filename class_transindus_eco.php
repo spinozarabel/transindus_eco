@@ -430,23 +430,11 @@ class class_transindus_eco
           // $SOC_percentage_now     = round($SOC_KWH_now / $SOC_capacity_KWH * 100,1);
           $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
 
-          // clamp the SOC Percentage Update value if update is unreasonable 
-          // If the change in SOC percentage from previous value to  current value is too large then refuse the update
-          if ( abs( $SOC_percentage_now - $SOC_percentage_previous) > 2 )
-          {
-            // unreasonable update, keep the previous value
-            $studer_readings_obj->SOC_percentage_now = $SOC_percentage_previous;
-            // Update user meta so this becomes the previous value for next cycle
-            update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
-          }
-          else
-          {
-            // reasonable values, update the SOC present number
-            $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now;
+          // reasonable values, update the SOC present number
+          $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now;
 
-            // Update user meta so this becomes the previous value for next cycle
-            update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
-          }
+          // Update user meta so this becomes the previous value for next cycle
+          update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
 
           if (true)
           {

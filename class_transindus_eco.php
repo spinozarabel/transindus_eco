@@ -475,7 +475,7 @@ class class_transindus_eco
 
 
         $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
-                                          ( $battery_voltage_avg	<=	50.5 )							&&	// Battery NOT in FLOAT state
+                                          ( $battery_voltage_avg	<=	50.4 )							&&	// Battery NOT in FLOAT state
                                           ( $shelly_api_device_status_voltage >= 199.0	)	&&	// ensure Grid AC is not too low
                                           ( $shelly_api_device_status_voltage <= 241.0	)	&&	// ensure Grid AC is not too high
                                           ( $now_is_daytime )                             &&  // Now is Daytime

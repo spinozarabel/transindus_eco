@@ -370,14 +370,12 @@ class class_transindus_eco
         // get the installed battery capacity in KWH from config
         $SOC_capacity_KWH = $this->config['accounts'][$user_index]['battery_capacity'];
 
-        // Calculate the SOC at beginning of day in terms of KWH based on percentage and capacity
-        // $SOC_KWH_beg_of_day   = $SOC_percentage_beg_of_day / 100.00  * $SOC_capacity;
-
         // get the current Measurement values from the Stider Readings Object
-        $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;
-        $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;
-        $KWH_load_today       = $studer_readings_obj->KWH_load_today;
+        $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;  // Net SOlar Units generated Today
+        $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;   // Net Grid Units consumed Today
+        $KWH_load_today       = $studer_readings_obj->KWH_load_today;   // Net Load units consumed Today
 
+        // Battery discharge today in terms of SOC capacity percventage
         $KWH_batt_percent_discharged_today = round( $studer_readings_obj->KWH_batt_discharged_today / $SOC_capacity_KWH * 100, 1);
 
         if (true)
@@ -400,7 +398,7 @@ class class_transindus_eco
             error_log("Load Units Today: "     . $KWH_load_today                           . "KWH");
         }
 
-        // get the SOC% from the previous reading from user meta
+        // get the SOC % from the previous reading from user meta
         $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true) ?? 50.0;
 
         // Check to see if new day accounting has begun. Check for reset of Solar and Load units reset to 0
@@ -422,15 +420,15 @@ class class_transindus_eco
           // So update the SOC percentage at current moment as calculated
           // update the SOC percentage based on actuals. The update is algebraic. It can add or subtract
           // If there is no battery charging oby Grid Charge is Solar - discharge
-
+          // Assumes 94% for Solar power to battery power and 94% efficiency for Inverter to give 1.07 factor
           $KWH_batt_charge_net_today  = $KWH_solar_today * 0.94 + ($KWH_grid_today - $KWH_load_today) * 1.07;
 
+          // Calculate accumulated nett charge into Battery in % of SOC Capacity
           $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
-          // $SOC_KWH_now            = $SOC_KWH_beg_of_day + $KWH_batt_charge_today;
-          // $SOC_percentage_now     = round($SOC_KWH_now / $SOC_capacity_KWH * 100,1);
+
           $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
 
-          // reasonable values, update the SOC present number
+          // update the object and user meta
           $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now;
 
           // Update user meta so this becomes the previous value for next cycle
@@ -439,9 +437,9 @@ class class_transindus_eco
           if (true)
           {
             error_log("Battery discharge Percentage of Capacity Today: "      . $KWH_batt_percent_discharged_today      . " %");
-            error_log("Battery Nett Charge Percentage of Capacity Today: "    . $SOC_batt_charge_net_percent_today . " %");
-            error_log("Battery Percentage of Capacity Beginning of Day: "     . $SOC_percentage_beg_of_day . " %");
-            error_log("SOC Percentage: "                 . $SOC_percentage_now             . " %");
+            error_log("Battery Nett Charge Percentage of Capacity Today: "    . $SOC_batt_charge_net_percent_today      . " %");
+            error_log("Battery Percentage of Capacity Beginning of Day: "     . $SOC_percentage_beg_of_day              . " %");
+            error_log("SOC Percentage: "                                      . $SOC_percentage_now                     . " %");
             error_log("");  // print out blank line for better readability
           }
         }

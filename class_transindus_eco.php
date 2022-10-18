@@ -457,7 +457,7 @@ class class_transindus_eco
                                           ( $shelly_api_device_status_voltage >= 200.0	)	&&	// ensure Grid AC is not too low
                                           ( $shelly_api_device_status_voltage <= 241.0	)	&&	// ensure Grid AC is not too high
                                           ( $now_is_daytime )                             &&  // Now is Daytime
-                                          ( $psolar  >=  0.5 )                            &&  // at least some solar generation
+                                          ( $psolar  >=  0.3 )                            &&  // at least some solar generation
                                           ( $surplus <= -0.5 ) 														&&  // Solar Deficit >= 0.5KW
                                           ( $control_shelly == true );                        // Control Flag is SET
 

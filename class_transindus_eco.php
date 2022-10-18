@@ -464,7 +464,7 @@ class class_transindus_eco
                             ($studer_readings_obj->grid_input_vac >= 190);
 
         // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC                
-        $LVDS =             ( $battery_voltage_avg  <=  48.5 || $SOC_percentage_now <= 35 ) &&  // SOC is low
+        $LVDS =             ( $battery_voltage_avg  <=  48.7 || $SOC_percentage_now <= 35 ) &&  // SOC is low
                             ( $shelly_api_device_status_voltage >= 195.0	)	                &&	// ensure AC is not too low
                             ( $shelly_api_device_status_voltage <= 242.0	)	                &&	// ensure AC is not too high
                             ( $shelly_switch_status == "OFF" );									                // The switch is OFF

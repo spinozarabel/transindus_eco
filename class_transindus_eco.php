@@ -463,7 +463,7 @@ class class_transindus_eco
 
         $switch_release =  (	( $SOC_percentage_now > 40 && ! $it_is_a_cloudy_day )			  // SOC enpough for not a cloudy day
                                                       ||
-                              ( $SOC_percentage_now > 45 &&   $it_is_a_cloudy_day )			  // SOC is adequate for a cloudy day
+                              ( $SOC_percentage_now > 40 &&   $it_is_a_cloudy_day )			  // SOC is adequate for a cloudy day
                            )																															&&
                            ( $shelly_switch_status == "ON" )  														&&  // Switch is ON now
                            ( $surplus >= 0.2 )                														&&  // Solar surplus is >= 0.2KW

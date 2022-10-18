@@ -618,7 +618,7 @@ class class_transindus_eco
             update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
         }
 
-        if (  $battery_voltage_avg  >=  51.0 )				        // OR SOC reached 96%
+        if (  $battery_voltage_avg  >=  50.8 )				        // OR SOC reached 96%
         {
           // SInce we know that the battery SOC is 100% use this knowledge along with
           // Energy data to recalibrate the soc_percentage user meta

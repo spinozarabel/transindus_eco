@@ -466,7 +466,7 @@ class class_transindus_eco
                                           ( $shelly_api_device_status_voltage <= 241.0	)	&&	// ensure Grid AC is not too high
                                           ( $now_is_daytime )                             &&  // Now is Daytime
                                           ( $psolar  >=  0.3 )                            &&  // at least some solar generation
-                                          ( $surplus <= -0.5 ) 														&&  // Solar Deficit >= 0.5KW
+                                          ( $surplus <= -1.0 ) 														&&  // Solar Deficit >= 0.5KW
                                           ( $control_shelly == true );                        // Control Flag is SET
 
         $switch_release =  (	( $SOC_percentage_now > 40 && ! $it_is_a_cloudy_day )			  // SOC enpough for not a cloudy day

@@ -5,9 +5,9 @@
  *
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
- * Ver 1.11
+ * Ver 1.12
+ *     Changed RDBC Psurplus back to 0.5
  *     Changed the efficiency factor for Solar to 0.96 from 0.94
- *     minor changes to voltages and power levels for switching conditions
  *     Added measurements for: 3078(KWHbatt), 3083(KWHload), 11007 (KWHsolar), and 3081(KWHgrid)
  *     Changed SOC computation using percentages instead of Units
  *
@@ -467,7 +467,7 @@ class class_transindus_eco
                                           ( $shelly_api_device_status_voltage <= 241.0	)	&&	// ensure Grid AC is not too high
                                           ( $now_is_daytime )                             &&  // Now is Daytime
                                           ( $psolar  >=  0.3 )                            &&  // at least some solar generation
-                                          ( $surplus <= -1.0 ) 														&&  // Solar Deficit >= 0.5KW
+                                          ( $surplus <= -0.5 ) 														&&  // Solar Deficit >= 0.5KW
                                           ( $control_shelly == true );                        // Control Flag is SET
 
         $switch_release =  (	( $SOC_percentage_now > 40 && ! $it_is_a_cloudy_day )			  // SOC enpough for not a cloudy day

@@ -5,7 +5,8 @@
  *
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
- * Ver 1.1
+ * Ver 1.11
+ *     Changed the efficiency factor for Solar to 0.95 from 0.94
  *     minor changes to voltages and power levels for switching conditions
  *     Added measurements for: 3078(KWHbatt), 3083(KWHload), 11007 (KWHsolar), and 3081(KWHgrid)
  *     Changed SOC computation using percentages instead of Units
@@ -421,7 +422,7 @@ class class_transindus_eco
           // update the SOC percentage based on actuals. The update is algebraic. It can add or subtract
           // If there is no battery charging oby Grid Charge is Solar - discharge
           // Assumes 94% for Solar power to battery power and 94% efficiency for Inverter to give 1.07 factor
-          $KWH_batt_charge_net_today  = $KWH_solar_today * 0.94 + ($KWH_grid_today - $KWH_load_today) * 1.07;
+          $KWH_batt_charge_net_today  = $KWH_solar_today * 0.95 + ($KWH_grid_today - $KWH_load_today) * 1.07;
 
           // Calculate accumulated nett charge into Battery in % of SOC Capacity
           $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);

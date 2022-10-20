@@ -48,7 +48,7 @@ class openweathermap_api
          $clouds_all += $weather->clouds->all;
 
          // get the date text for each of the periods in the list
-         $dt_txt = $weather->clouds->dt_txt;
+         $dt_txt = $weather->dt_txt;
          
          switch(true)
          {
@@ -104,7 +104,7 @@ class openweathermap_api
       $cloudiness_forecast->cloudiness_average_percentage_weighted  = $cloudiness_average_percentage_weighted;
 
       error_log(print_r($cloudiness_forecast, true));
-      
+
       return $cloudiness_forecast;
     }
 

@@ -22,7 +22,7 @@ class openweathermap_api
 		  $this->lat        = $lat;     // The server uri can be obtained 
       $this->lon        = $lon;
       $this->server_uri = 'https://api.openweathermap.org/data/2.5';
-      $this->cnt        =  $cnt ??  3;
+      $this->cnt        =  $cnt ??  4;      // used to be 3. Changed on 10/20/2020
     }       // end construct function
 
     /**
@@ -30,18 +30,55 @@ class openweathermap_api
      */
     public function forecast_is_cloudy()
     {
+      // initialize stdclass object that is to be returned by the function
       $cloudiness_forecast = new stdClass;
 
+      // get the details using API from external vendor service
       $forecast = $this->get_weather_forecast();
 
+      // initialize the variale that accumuates the cloudiness percentage over 'cnt' number of periods
       $clouds_all = 0;
+
+      // Intilaize the variabke that acculuates cloudiness weighted by time of day
+      $clouds_all_weighted = 0;
 
       foreach ($forecast->list as $key => $weather) 
       {
+        // accumulate the cloudiness percentage for all the intervals in the list
          $clouds_all += $weather->clouds->all;
+
+         // get the date text for each of the periods in the list
+         $dt_txt = $weather->clouds->dt_txt;
+         
+         switch(true)
+         {
+          case ( stripos($dt_txt, "06:00:00") !== false ):
+            // Period is from 6AM to 9AM so weight the cloudiness here by 10% since the solar here is not that important
+            $clouds_all_weighted += $weather->clouds->all * 0.5;
+          break;
+
+          case ( stripos($dt_txt, "09:00:00") !== false ):
+            // Period is from 9AM to 12 Noon so weight the cloudiness here by 10% since the solar here is not that important
+            $clouds_all_weighted += $weather->clouds->all * 1.0;
+          break;
+
+          case ( stripos($dt_txt, "12:00:00") !== false ):
+            // Period is from 12 Noon to 3PM so weight the cloudiness here by 10% since the solar here is not that important
+            $clouds_all_weighted += $weather->clouds->all * 1.0;
+          break;
+
+          case ( stripos($dt_txt, "15:00:00") !== false ):
+            // Period is from 3pm TO 6pm so weight the cloudiness here by 10% since the solar here is not that important
+            $clouds_all_weighted += $weather->clouds->all * 0.5;
+          break;
+         }
       }
 
+      // Divide to get the average cloudiness over the day starting from 0600 and ending after 3h x cnt or by 1800
       $cloudiness_average_percentage = $clouds_all /  $forecast->cnt;
+
+      // Calculate the average weighted cloudpercentage as follows
+      $cloudiness_average_percentage_weighted = $clouds_all_weighted / (0.5+1+1+0.5);
 
       if ( $cloudiness_average_percentage > 50 )
       {
@@ -51,9 +88,23 @@ class openweathermap_api
       {
         $it_is_a_cloudy_day = false;
       }
-      $cloudiness_forecast->it_is_a_cloudy_day            = $it_is_a_cloudy_day;
-      $cloudiness_forecast->cloudiness_average_percentage  = $cloudiness_average_percentage;
 
+      if ( $cloudiness_average_percentage_weighted > 50 )
+      {
+        $it_is_a_cloudy_day_weighted_average = true;
+      }
+      else 
+      {
+        $it_is_a_cloudy_day_weighted_average = false;
+      }
+
+      $cloudiness_forecast->it_is_a_cloudy_day                      = $it_is_a_cloudy_day;
+      $cloudiness_forecast->it_is_a_cloudy_day_weighted_average     = $it_is_a_cloudy_day_weighted_average;
+      $cloudiness_forecast->cloudiness_average_percentage           = $cloudiness_average_percentage;
+      $cloudiness_forecast->cloudiness_average_percentage_weighted  = $cloudiness_average_percentage_weighted;
+
+      error_log(print_r($cloudiness_forecast, true));
+      
       return $cloudiness_forecast;
     }
 

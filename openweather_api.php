@@ -103,7 +103,7 @@ class openweathermap_api
       $cloudiness_forecast->cloudiness_average_percentage           = $cloudiness_average_percentage;
       $cloudiness_forecast->cloudiness_average_percentage_weighted  = $cloudiness_average_percentage_weighted;
 
-      error_log(print_r($cloudiness_forecast, true));
+      // error_log(print_r($cloudiness_forecast, true));
 
       return $cloudiness_forecast;
     }

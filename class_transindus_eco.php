@@ -403,7 +403,7 @@ class class_transindus_eco
         $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true) ?? 50.0;
 
         // Check to see if new day accounting has begun. Check for reset of Solar and Load units reset to 0
-        if ( $KWH_solar_today <= 0.05 && $KWH_load_today <= 0.05 )
+        if ( $KWH_solar_today <= 0.05 && $KWH_load_today <= 0.05 && $this->nowIsWithinTimeLimits("00:00", "01:00"))
         {
           // Since new day accounting has begun, update user meta for SOC at beginning of new day
           // This update only happens at beginning of day and also during battery float

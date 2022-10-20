@@ -42,6 +42,9 @@ class openweathermap_api
       // Intilaize the variabke that acculuates cloudiness weighted by time of day
       $clouds_all_weighted = 0;
 
+      // initialize the divider variable to calculate the wighted average
+      $divider_weighted = 0;
+
       foreach ($forecast->list as $key => $weather) 
       {
         // accumulate the cloudiness percentage for all the intervals in the list
@@ -55,21 +58,26 @@ class openweathermap_api
           case ( stripos($dt_txt, "06:00:00") !== false ):
             // Period is from 6AM to 9AM so weight the cloudiness here by 10% since the solar here is not that important
             $clouds_all_weighted += $weather->clouds->all * 0.5;
+            $divider_weighted += 0.5;
+
           break;
 
           case ( stripos($dt_txt, "09:00:00") !== false ):
             // Period is from 9AM to 12 Noon so weight the cloudiness here by 10% since the solar here is not that important
             $clouds_all_weighted += $weather->clouds->all * 1.0;
+            $divider_weighted += 1.0;
           break;
 
           case ( stripos($dt_txt, "12:00:00") !== false ):
             // Period is from 12 Noon to 3PM so weight the cloudiness here by 10% since the solar here is not that important
             $clouds_all_weighted += $weather->clouds->all * 1.0;
+            $divider_weighted += 1.0;
           break;
 
           case ( stripos($dt_txt, "15:00:00") !== false ):
             // Period is from 3pm TO 6pm so weight the cloudiness here by 10% since the solar here is not that important
             $clouds_all_weighted += $weather->clouds->all * 0.5;
+            $divider_weighted += 0.5;
           break;
          }
       }
@@ -78,7 +86,7 @@ class openweathermap_api
       $cloudiness_average_percentage = $clouds_all /  $forecast->cnt;
 
       // Calculate the average weighted cloudpercentage as follows
-      $cloudiness_average_percentage_weighted = $clouds_all_weighted / (0.5+1+1+0.5);
+      $cloudiness_average_percentage_weighted = $clouds_all_weighted / $divider_weighted;
 
       if ( $cloudiness_average_percentage > 50 )
       {

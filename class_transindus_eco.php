@@ -453,7 +453,7 @@ class class_transindus_eco
         // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage
         // On CLoudy date, LVDS trips at higher values of SOC% on normal days, it can go down lower before tripping
         $LVDS_cloudy_day =  (   $it_is_a_cloudy_day && ( $battery_voltage_avg  <=  48.5 || $SOC_percentage_now <= 40 ) );
-        $LVDS_normal_day =  ( ! $it_is_a_cloudy_day && ( $battery_voltage_avg  <=  48.3 || $SOC_percentage_now <= 25 ) );      
+        $LVDS_normal_day =  ( ! $it_is_a_cloudy_day && ( $battery_voltage_avg  <=  48.3 || $SOC_percentage_now <= 30 ) );      
         $LVDS =             ( $LVDS_cloudy_day || $LVDS_normal_day )  &&  // SOC is low
                             ( $shelly_switch_status == "OFF" );					  // The switch is OFF
 

@@ -43,7 +43,7 @@ class openweathermap_api
       $clouds_all_weighted = 0;
 
       // initialize the divider variable to calculate the wighted average
-      $divider_weighted = 0;
+      $divider_weighted = 0.01;   // prevent division by 0
 
       foreach ($forecast->list as $key => $weather) 
       {

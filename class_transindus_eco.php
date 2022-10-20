@@ -459,9 +459,9 @@ class class_transindus_eco
 
         // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage
         // On CLoudy date, LVDS trips at higher values of SOC% on normal days, it can go down lower before tripping
-        $LVDS_cloudy_day =  (   $it_is_a_cloudy_day && ( $battery_voltage_avg  <=  48.5 || $SOC_percentage_now <= 40 ) );
-        $LVDS_normal_day =  ( ! $it_is_a_cloudy_day && ( $battery_voltage_avg  <=  48.3 || $SOC_percentage_now <= 30 ) );      
-        $LVDS =             ( $LVDS_cloudy_day || $LVDS_normal_day )  &&  // SOC is low
+        // $LVDS_cloudy_day =  (   $it_is_a_cloudy_day && ( $battery_voltage_avg  <=  48.5 || $SOC_percentage_now <= 40 ) );
+        // $LVDS_normal_day =  ( ! $it_is_a_cloudy_day && ( $battery_voltage_avg  <=  48.3 || $SOC_percentage_now <= 30 ) );      
+        $LVDS =             ( $battery_voltage_avg  <=  48.5 || $SOC_percentage_now <= 35 )  &&  // SOC is low
                             ( $shelly_switch_status == "OFF" );					  // The switch is OFF
 
         $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
@@ -478,10 +478,7 @@ class class_transindus_eco
                                           ( $surplus <= -0.5 ) 														&&  // Solar Deficit >= 0.5KW
                                           ( $control_shelly == true );                        // Control Flag is SET
 
-        $switch_release =  (	( $SOC_percentage_now > 40 && ! $it_is_a_cloudy_day )			  // SOC enpough for not a cloudy day
-                                                      ||
-                              ( $SOC_percentage_now > 40 &&   $it_is_a_cloudy_day )			  // SOC is adequate for a cloudy day
-                           )																															&&
+        $switch_release =  (	$SOC_percentage_now >= 40  )                                &&  // SOC OK
                            ( $shelly_switch_status == "ON" )  														&&  // Switch is ON now
                            ( $surplus >= 0.2 )                														&&  // Solar surplus is >= 0.2KW
                            ( $keep_shelly_switch_closed_always == false )                 &&	// Emergency flag is False

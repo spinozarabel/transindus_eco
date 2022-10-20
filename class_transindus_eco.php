@@ -363,7 +363,7 @@ class class_transindus_eco
         $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
 
         // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
-        $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day;
+        $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
 
         // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only at beginning of day, once.
         $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
@@ -391,7 +391,7 @@ class class_transindus_eco
             error_log("AC at Studer Input: "   . $shelly_api_device_status_voltage      	 . "Vac ");
             error_log("Surplus PowerOut: "     . $surplus                                  . "KW ");
             error_log("Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW ");
-            error_log("Cloudy Day?: "          . $it_is_a_cloudy_day                       . "");
+            error_log("Cloudy Day Weighted?: " . $it_is_a_cloudy_day                       . "");
             error_log("Within 0700 - 1730?: "  . $now_is_daytime                           . "");
             error_log("AUX1 Relay State: "     . $aux1_relay_state                         . "");
             error_log("Solar Units Today: "    . $KWH_solar_today                          . "KWH");
@@ -450,11 +450,12 @@ class class_transindus_eco
         $switch_override =  ($shelly_switch_status == "OFF")               &&
                             ($studer_readings_obj->grid_input_vac >= 190);
 
-        // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC                
-        $LVDS =             ( $battery_voltage_avg  <=  48.7 || $SOC_percentage_now <= 35 ) &&  // SOC is low
-                            ( $shelly_api_device_status_voltage >= 195.0	)	                &&	// ensure AC is not too low
-                            ( $shelly_api_device_status_voltage <= 242.0	)	                &&	// ensure AC is not too high
-                            ( $shelly_switch_status == "OFF" );									                // The switch is OFF
+        // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage
+        // On CLoudy date, LVDS trips at higher values of SOC% on normal days, it can go down lower before tripping
+        $LVDS_cloudy_day =  (   $it_is_a_cloudy_day && ( $battery_voltage_avg  <=  48.5 || $SOC_percentage_now <= 40 ) );
+        $LVDS_normal_day =  ( ! $it_is_a_cloudy_day && ( $battery_voltage_avg  <=  48.3 || $SOC_percentage_now <= 25 ) );      
+        $LVDS =             ( $LVDS_cloudy_day || $LVDS_normal_day )  &&  // SOC is low
+                            ( $shelly_switch_status == "OFF" );					  // The switch is OFF
 
         $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
                                       ( $keep_shelly_switch_closed_always == true )  &&

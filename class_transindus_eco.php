@@ -403,7 +403,7 @@ class class_transindus_eco
         $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true) ?? 50.0;
 
         // Check to see if new day accounting has begun. Check for reset of Solar and Load units reset to 0
-        if ( $KWH_solar_today <= 0.05 && $KWH_load_today <= 0.05 && $this->nowIsWithinTimeLimits("00:00", "01:00"))
+        if ( $KWH_solar_today <= 0.05 && $KWH_load_today <= 0.05 && $this->nowIsWithinTimeLimits("00:00", "01:00") )
         {
           // Since new day accounting has begun, update user meta for SOC at beginning of new day
           // This update only happens at beginning of day and also during battery float
@@ -428,6 +428,13 @@ class class_transindus_eco
           $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
 
           $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
+
+          // check if the SOC now is too different from previous, It should not be more than 
+          if ( abs($SOC_percentage_previous - $SOC_percentage_now) > 1 )
+          {
+              error_log("Warning - SOC update questionable - previous and now differ by more than 1 point");
+              error_log("SOC Previous: " . $SOC_percentage_previous . " % , SOC Now: " . $SOC_percentage_now . " %");
+          }
 
           // update the object and user meta
           $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now;

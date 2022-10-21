@@ -332,11 +332,13 @@ class class_transindus_eco
             return null;
         }
 
-        // initialize the voltage holding array
-        $bv_avg_arr = [];
-
         // Load the voltage array that might have been pushed into transient space
-        $bv_avg_arr = get_transient( $wp_user_name . '_bv_avg_arr' ) ?? [];
+        $bv_arr_transient = get_transient( $wp_user_name . '_bv_avg_arr' );
+
+        if ( ! is_array($bv_arr_transient))
+        {
+          $bv_avg_arr = [];
+        }
         
         // push the new voltage to the holding array
         array_push($bv_avg_arr, $studer_readings_obj->battery_voltage_vdc);

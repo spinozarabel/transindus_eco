@@ -339,6 +339,10 @@ class class_transindus_eco
         {
           $bv_avg_arr = [];
         }
+        else
+        {
+          $bv_avg_arr = $bv_arr_transient;
+        }
         
         // push the new voltage to the holding array
         array_push($bv_avg_arr, $studer_readings_obj->battery_voltage_vdc);

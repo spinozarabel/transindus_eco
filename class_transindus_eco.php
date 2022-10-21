@@ -5,8 +5,8 @@
  *
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
- * Ver 1.12
- *     Changed RDBC Psurplus back to 0.5
+ * Ver 1.2
+ *     Changed Averaging using Transient. The previous voltage averaging was not happening due to stateless
  *     Changed the efficiency factor for Solar to 0.96 from 0.94
  *     Added measurements for: 3078(KWHbatt), 3083(KWHload), 11007 (KWHsolar), and 3081(KWHgrid)
  *     Changed SOC computation using percentages instead of Units
@@ -95,9 +95,9 @@ class class_transindus_eco
       $this->verbose = false;
 
       // Initialize the aarrays to hold quantities for running averages
-      $this->bv_avg_arr       = [0, 0, 0, 0, 0, 0]; // 6 minutes of averaging
-      $this->psolar_avg_arr   = [];
-      $this->pload_avg        = [];
+      // $this->bv_avg_arr       = [0, 0, 0]; // 3 minutes of averaging
+      // $this->psolar_avg_arr   = [];
+      // $this->pload_avg        = [];
 
       // lat and lon at Trans Indus from Google Maps
       $this->lat        = 12.83463;
@@ -332,11 +332,25 @@ class class_transindus_eco
             return null;
         }
 
-        // if we get this far it means that all readings are reliable. Drop the earliest battery voltage
-        array_shift($this->bv_avg_arr);
+        // initialize the voltage holding array
+        $bv_avg_arr = [];
 
-        // add the latest reaiding at the top
-        array_push($this->bv_avg_arr, $studer_readings_obj->battery_voltage_vdc);
+        // Load the voltage array that might have been pushed into transient space
+        $bv_avg_arr = get_transient( $wp_user_name . '_bv_avg_arr' ) ?? [];
+        
+        // push the new voltage to the holding array
+        array_push($bv_avg_arr, $studer_readings_obj->battery_voltage_vdc);
+
+        // If the array has more than 3 elements then drop the earliest one
+        // We are averaging for only 3 minutes
+        if ( sizeof($bv_avg_arr) > 3 )  {   // drop the earliest reading
+            array_shift($bv_avg_arr);
+        }
+        // Write it to this object for access elsewhere easily
+        $this->bv_avg_arr = $bv_avg_arr;
+
+        // Setup transiet to keep previous state for averaging
+        set_transient( $wp_user_name . '_bv_avg_arr', $bv_avg_arr, 5*60 );
 
         // average the battery voltage over last 6 readings of about 6 minutes.
         $battery_voltage_avg  = $this->get_battery_voltage_avg();
@@ -384,7 +398,9 @@ class class_transindus_eco
             error_log("username: "             . $wp_user_name                             . "");
             error_log("Shelly Switch State: "  . $shelly_switch_status                     . "");
             error_log("Shelly Switch Servo: "  . $control_shelly                     . "");
+            error_log("Battery Voltage Now:  " . $studer_readings_obj->battery_voltage_vdc . "");
             error_log("Battery Avg Voltage: "  . $battery_voltage_avg                         . "Vdc ");
+            error_log(print_r($bv_avg_arr, true));
             error_log("Battery Current: "      . $studer_readings_obj->battery_charge_adc     . "Adc ");
 
             error_log("Solar PowerGen: "       . $psolar                                   . "KW ");

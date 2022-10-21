@@ -409,7 +409,7 @@ class class_transindus_eco
 
             error_log("Battery Current: "      . $studer_readings_obj->battery_charge_adc     . "Adc ");
 
-            error_log("Psolar: " . $psolar . " - Psurplus" . $surplus . " KW ");
+            error_log("Psolar: " . $psolar . " - Psurplus: " . $surplus . " KW ");
             error_log("AC at Studer Input: "   . $shelly_api_device_status_voltage      	 . "Vac ");
 
         //  error_log("Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW ");
@@ -696,11 +696,11 @@ class class_transindus_eco
 
 
     /**
-     *  Takes the average of the battery values stored from last 5 readings
+     *  Takes the average of the battery values stored in the array, independent of its size
      */
     public function get_battery_voltage_avg()
     {
-        $count  = 0;
+        $count  = 0.00001;    // prevent division by 0 error
         $sum    = 0;
         foreach ($this->bv_avg_arr as $key => $bv_reading)
         {
@@ -713,7 +713,7 @@ class class_transindus_eco
         }
         unset($bv_reading);
 
-        return ($sum / $count);
+        return ( round( $sum / $count, 2) );
     }
 
     /**

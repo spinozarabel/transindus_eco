@@ -448,7 +448,7 @@ class class_transindus_eco
 
           $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
 
-          $SOC_batt_charge_net_percent_today_alt = $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today;
+          $SOC_batt_charge_net_percent_today_alt = 0.96 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today;
 
           $SOC_percentage_now_alt = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_alt;
 

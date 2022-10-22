@@ -391,6 +391,8 @@ class class_transindus_eco
         $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;   // Net Grid Units consumed Today
         $KWH_load_today       = $studer_readings_obj->KWH_load_today;   // Net Load units consumed Today
 
+        $KWH_solar_percentage_today = round( $KWH_solar_today / $SOC_capacity_KWH *100, 1);
+
         // Battery discharge today in terms of SOC capacity percventage
         $KWH_batt_percent_discharged_today = round( $studer_readings_obj->KWH_batt_discharged_today / $SOC_capacity_KWH * 100, 1);
 
@@ -446,6 +448,10 @@ class class_transindus_eco
 
           $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
 
+          $SOC_batt_charge_net_percent_today_alt = $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today;
+
+          $SOC_percentage_now_alt = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_alt;
+
           // check if the SOC now is too different from previous, It should not be more than 
           if ( abs($SOC_percentage_previous - $SOC_percentage_now) > 1 )
           {
@@ -465,6 +471,7 @@ class class_transindus_eco
             error_log("Battery Nett Charge Percentage of Capacity Today: "    . $SOC_batt_charge_net_percent_today      . " %");
             error_log("Battery Percentage of Capacity Beginning of Day: "     . $SOC_percentage_beg_of_day              . " %");
             error_log("SOC Percentage: "                                      . $SOC_percentage_now                     . " %");
+            error_log("SOC Percentage ALT: "                                  . $SOC_percentage_now_alt                 . " %");
             error_log("");  // print out blank line for better readability
           }
         }

@@ -417,9 +417,9 @@ class class_transindus_eco
         //  error_log("Cloudy Day Weighted?: " . $it_is_a_cloudy_day                       . "");
         //  error_log("Within 0700 - 1730?: "  . $now_is_daytime                           . "");
         //  error_log("AUX1 Relay State: "     . $aux1_relay_state                         . "");
-            //error_log("Solar Units Today: "    . $KWH_solar_today                          . "KWH");
-            //error_log("Grid Units Today: "     . $KWH_grid_today                           . "KWH");
-            //error_log("Load Units Today: "     . $KWH_load_today                           . "KWH");
+            error_log("Solar Units Today: "    . $KWH_solar_today                          . "KWH");
+            error_log("Grid Units Today: "     . $KWH_grid_today                           . "KWH");
+            error_log("Load Units Today: "     . $KWH_load_today                           . "KWH");
         }
 
         // get the SOC % from the previous reading from user meta

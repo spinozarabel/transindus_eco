@@ -450,11 +450,13 @@ class class_transindus_eco
           // Calculate accumulated nett charge into Battery in % of SOC Capacity
           $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
 
-          $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
+          // $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
 
           $SOC_batt_charge_net_percent_today_alt = 0.90 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today;
 
           $SOC_percentage_now_alt = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_alt;
+
+          $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_alt;
 
           // check if the SOC now is too different from previous, It should not be more than 
           if ( abs($SOC_percentage_previous - $SOC_percentage_now) > 1 )

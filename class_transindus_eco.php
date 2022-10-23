@@ -457,7 +457,7 @@ class class_transindus_eco
           // this is the old method
           $SOC_percentage_now_alt = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
 
-          $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_alt;
+          $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_alt,1);
 
           // check if the SOC now is too different from previous, It should not be more than 
           if ( abs($SOC_percentage_previous - $SOC_percentage_now) > 1 )

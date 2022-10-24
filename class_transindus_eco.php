@@ -919,10 +919,10 @@ class class_transindus_eco
                 <td></td>
                 <td id="load_icon">'          . $format_object->load_icon               . '</td>
             </tr>
-            <tr>
-                <td id="cron_exit_condition">'. $format_object->cron_exit_condition     . '</td>
-            </tr>
+            
         </table>';
+        
+        $output .= '<div id="cron_exit_condition">'. $format_object->cron_exit_condition     . '</div>';
 
         return $output;
     }

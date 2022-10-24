@@ -131,6 +131,9 @@ jQuery(document).ready(function($) {
             $('#shelly_servo_icon').html( data.shelly_servo_icon);
 
             // update Shelly Servo icon
+            $('#soc_percentage_now').html( data.soc_percentage_now_html);
+
+            // update CRON exit condition and time it happened
             $('#cron_exit_condition').html( data.cron_exit_condition);
         }
 

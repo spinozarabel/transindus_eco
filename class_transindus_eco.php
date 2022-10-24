@@ -391,6 +391,7 @@ class class_transindus_eco
         $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;   // Net Grid Units consumed Today
         $KWH_load_today       = $studer_readings_obj->KWH_load_today;   // Net Load units consumed Today
 
+        // Units of Solar Energy converted to percentage of Battery Capacity Installed
         $KWH_solar_percentage_today = round( $KWH_solar_today / $SOC_capacity_KWH *100, 1);
 
         // Battery discharge today in terms of SOC capacity percventage
@@ -436,17 +437,16 @@ class class_transindus_eco
           // Assumes 94% for Solar power to battery power and 94% efficiency for Inverter to give 1.07 factor
           $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + ($KWH_grid_today - $KWH_load_today) * 1.07;
 
-          // Calculate accumulated nett charge into Battery in % of SOC Capacity
-          $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
+          // Calculate accumulated nett charge into Battery in % of SOC Capacity using the old method
+          $SOC_batt_charge_net_percent_today_old = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
 
-          // $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
-
-          $SOC_batt_charge_net_percent_today_alt = 0.90 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today;
+          // This is the new simpler method. 
+          $SOC_batt_charge_net_percent_today = 0.90 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today;
 
           // this is the old method
-          $SOC_percentage_now_alt = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
+          $SOC_percentage_now_old = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_old;
 
-          $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_alt,1);
+          $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today,1);
 
           // check if the SOC now is too different from previous, It should not be more than 
           if ( abs($SOC_percentage_previous - $SOC_percentage_now) > 1 )
@@ -471,7 +471,7 @@ class class_transindus_eco
             //error_log("SOC Percentage ALT: "                                  . $SOC_percentage_now_alt                 . " %");
             //error_log("");  // print out blank line for better readability
             error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . $KWH_batt_percent_discharged_today . 
-                      " SOC_0%: " . $SOC_percentage_beg_of_day . " SOC%: " . $SOC_percentage_now . " SOCalt%: " . $SOC_percentage_now_alt);
+                      " SOC_0%: " . $SOC_percentage_beg_of_day . " SOC%: " . $SOC_percentage_now . " SOCold%: " . $SOC_percentage_now_old);
           }
         }
 
@@ -913,11 +913,14 @@ class class_transindus_eco
                 <td id="load_info">'          . $format_object->load_info          . '</td>
             </tr>
             <tr>
-                <td id="battery_status_icon">'. $format_object->battery_status_icon . '</td>
+                <td id="battery_status_icon">'. $format_object->battery_status_icon     . '</td>
                 <td></td>
-                <td id="cron_exit_condition">'. $format_object->cron_exit_condition . '</td>
+                <td id="soc_percentage_now">'. $format_object->soc_percentage_now_html  . '</td>
                 <td></td>
-                <td id="load_icon">'          . $format_object->load_icon           . '</td>
+                <td id="load_icon">'          . $format_object->load_icon               . '</td>
+            </tr>
+            <tr>
+                <td id="cron_exit_condition">'. $format_object->cron_exit_condition     . '</td>
             </tr>
         </table>';
 
@@ -2423,13 +2426,20 @@ class class_transindus_eco
         // format the interval for display
         $formatted_interval = $this->format_interval($interval_since_last_change);
 
-        // add property to format object for screen update
+        /*
         $format_object->cron_exit_condition = '<span style="font-size: 18px;color: Blue; display:block; text-align: center;">' . 
                                                   'SOC: <strong>' . $SOC_percentage_now . ' %' . '</strong><br>
                                                </span>' .
                                               '<span style="color: Blue; display:block; text-align: center;">' .
                                                   $formatted_interval   . '<br>' . 
                                                   $saved_cron_exit_condition  .
+                                              '</span>';
+        */
+        $format_object->soc_percentage_now_html = '<span style="font-size: 18px;color: Blue; display:block; text-align: center;">' . 
+                                                      '<strong>' . $SOC_percentage_now . ' %' . '</strong><br>' .
+                                                  '</span>';
+        $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' .
+                                                    $formatted_interval   . ' ' . $saved_cron_exit_condition  .
                                               '</span>';
         return $format_object;
     }

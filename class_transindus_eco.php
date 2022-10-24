@@ -405,7 +405,7 @@ class class_transindus_eco
                                                  $battery_voltage_avg . ' V, ' . $studer_readings_obj->battery_charge_adc . 'A ' .
                                                  $shelly_api_device_status_voltage . ' VAC');
             error_log("Pcalc: " . array_sum($est_solar_kw) . " Psolar: " . $psolar . " - Psurplus: " . 
-                       $surplus . " KW - It is a CLoudy Day?: " , $it_is_a_cloudy_day);
+                       $surplus . " KW - It is a CLoudy Day?: " . $it_is_a_cloudy_day);
         //  error_log("Within 0700 - 1730?: "  . $now_is_daytime                           . "");
         //  error_log("AUX1 Relay State: "     . $aux1_relay_state                         . "");
             error_log("Solar Units Today: "    . $KWH_solar_today                          . "KWH");

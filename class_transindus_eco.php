@@ -402,19 +402,8 @@ class class_transindus_eco
             error_log("username: "             . $wp_user_name . ' Switch: ' . $shelly_switch_status . ' ' . 
                                                  $battery_voltage_avg . ' V, ' . $studer_readings_obj->battery_charge_adc . 'A ' .
                                                  $shelly_api_device_status_voltage . ' VAC');
-            // error_log("Shelly Switch State: "  . $shelly_switch_status . " - Shelly Switch Servo: " . $control_shelly . "");
-        // error_log("Shelly Switch Servo: "  . $control_shelly                     . "");
-            //error_log("Battery Voltage Now:  " . $studer_readings_obj->battery_voltage_vdc . " - Avg(3 readings): " . 
-                                                 // $battery_voltage_avg . " Vdc ");
-
-            //error_log("Battery Current: "      . $studer_readings_obj->battery_charge_adc     . "Adc ");
-
-            // error_log("Psolar: " . $psolar . " - Psurplus: " . $surplus . " KW ");
-            
-            // error_log("AC at Studer Input: "   . $shelly_api_device_status_voltage      	 . "Vac ");
-
-        //  error_log("Calc Solar Pwr: "       . array_sum($est_solar_kw)                  . "KW ");
-        //  error_log("Cloudy Day Weighted?: " . $it_is_a_cloudy_day                       . "");
+            error_log("Pcalc: " . array_sum($est_solar_kw) . " Psolar: " . $psolar . " - Psurplus: " . 
+                       $surplus . " KW - It is a CLoudy Day?: " , $it_is_a_cloudy_day);
         //  error_log("Within 0700 - 1730?: "  . $now_is_daytime                           . "");
         //  error_log("AUX1 Relay State: "     . $aux1_relay_state                         . "");
             error_log("Solar Units Today: "    . $KWH_solar_today                          . "KWH");

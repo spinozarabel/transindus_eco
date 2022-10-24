@@ -220,6 +220,7 @@ class class_transindus_eco
      *  Its job is to get the needed set of studer readings and the state of the ACIN shelly switch
      *  For every user in the config array who has the do_shelly variable set to TRUE.
      *  The ACIN switch is turned ON or OFF based on a complex algorithm. and user meta settings
+     *  A data object is created and stored as a transient to be accessed by an AJAX request running asynchronously to the CRON
      */
     public function shellystuder_cron_exec()
     {                        // Loop over all of the eligible users
@@ -786,7 +787,8 @@ class class_transindus_eco
     }
 
     /**
-     *
+     *  This function defined the shortcode to a page called mysolar that renders a user's solar system readings
+     *  The HTML is created in a string variable and returned as is typical of a shortcode function
      */
     public function my_studer_readings_page_render()
     {
@@ -921,7 +923,7 @@ class class_transindus_eco
             </tr>
             
         </table>';
-        
+
         $output .= '<div id="cron_exit_condition">'. $format_object->cron_exit_condition     . '</div>';
 
         return $output;

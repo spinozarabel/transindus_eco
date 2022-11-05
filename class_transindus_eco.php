@@ -5,7 +5,8 @@
  *
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
- * Ver 1.2
+ * Ver 1.3
+ *     Removed SOC clamp when Vbatt > 50.7. Now CLap works only for SOC
  *     Changed Averaging using Transient. The previous voltage averaging was not happening due to stateless
  *     Changed the efficiency factor for Solar to 0.96 from 0.94
  *     Added measurements for: 3078(KWHbatt), 3083(KWHload), 11007 (KWHsolar), and 3081(KWHgrid)
@@ -440,12 +441,11 @@ class class_transindus_eco
 
           // Calculate accumulated nett charge into Battery in % of SOC Capacity using the old method
           $SOC_batt_charge_net_percent_today_old = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
+          // this is the old method
+          $SOC_percentage_now_old = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_old;
 
           // This is the new simpler method. 
           $SOC_batt_charge_net_percent_today = 0.93 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.05;
-
-          // this is the old method
-          $SOC_percentage_now_old = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_old;
 
           $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today,1);
 
@@ -600,13 +600,14 @@ class class_transindus_eco
                 error_log("Exited via Case 8 - Battery Float State, Grid switched OFF");
                 $cron_exit_condition = "SOC Float-Grid Off";
 
-                // SInce we know that the battery SOC is 100% use this knowledge along with
-                // Energy data to recalibrate the soc_percentage user meta
+                /*
                 $SOC_percentage_beg_of_day_recal = 100 - $SOC_batt_charge_net_percent_today;
 
                 update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 
                 error_log("SOC Percentage Beg of Day User Meta Reset to: " . $SOC_percentage_beg_of_day_recal  . " %");
+                */
+
             break;
 
 
@@ -631,7 +632,7 @@ class class_transindus_eco
             update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
         }
 
-        if (  $battery_voltage_avg  >=  50.8 || $SOC_percentage_now > 100.0 )	// OR SOC reached 96%
+        if (  $SOC_percentage_now > 100.0 )
         {
           // SInce we know that the battery SOC is 100% use this knowledge along with
           // Energy data to recalibrate the soc_percentage user meta

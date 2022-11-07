@@ -515,7 +515,7 @@ class class_transindus_eco
                                       ( $control_shelly == true );
 
         $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
-                                      ( $battery_voltage_avg  >= 50.7 )				        &&  // OR SOC reached 97%
+                                      ( $SOC_percentage_now >= 95 )				        &&  // OR SOC reached 97%
                                       ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
                                       ( $control_shelly == true );                        // Control Flag is False
 

@@ -421,7 +421,7 @@ class class_transindus_eco
         if (  $KWH_solar_today <= 0.05  && 
               $KWH_load_today <= 0.05   &&
               // check if time is before or after midnight approximately accounting for clock error of Studer
-              ( $this->nowIsWithinTimeLimits("00:00", "01:00") || $this->nowIsWithinTimeLimits("23:30", "23:59:59") )
+              ( $this->nowIsWithinTimeLimits("00:00", "00:05") || $this->nowIsWithinTimeLimits("23:55", "23:59:59") )
             )
         {
           // Since new day accounting has begun, update user meta for SOC at beginning of new day

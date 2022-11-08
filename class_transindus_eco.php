@@ -511,6 +511,7 @@ class class_transindus_eco
                                           ( $now_is_daytime )                             &&  // Now is Daytime
                                           ( $psolar  >=  0.3 )                            &&  // at least some solar generation
                                           ( $surplus <= -0.5 ) 														&&  // Solar Deficit >= 0.5KW
+                                          ( $it_is_a_cloudy_day )                         &&  // Only on Cloudy Days
                                           ( $control_shelly == true );                        // Control Flag is SET
 
         $switch_release =  (	$SOC_percentage_now >= 32  )                                &&  // SOC OK

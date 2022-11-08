@@ -82,15 +82,8 @@ class class_transindus_eco
           // load public facing actions
       $this->define_public_hooks();
 
-          // read the config file and build the secrets array
+          // read the config file and build the secrets array for all users 
       $this->get_config();
-
-      /*
-      $valid_shelly_config  = ! empty( $this->config['accounts'][$user_index]['shelly_device_id']   ) &&
-                              ! empty( $this->config['accounts'][$user_index]['shelly_server_uri']  ) &&
-                              ! empty( $this->config['accounts'][$user_index]['shelly_auth_key']    );
-      $this->valid_shelly_config = $valid_shelly_config;
-      */
 
           // set the logging
       $this->verbose = false;
@@ -101,8 +94,6 @@ class class_transindus_eco
       $this->utc_offset = 5.5;
 
       $this->timezone = new DateTimeZone("Asia/Kolkata");
-
-      
 
       $datetime = new DateTime();
 

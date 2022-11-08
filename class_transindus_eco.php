@@ -418,9 +418,8 @@ class class_transindus_eco
         $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true) ?? 50.0;
 
         // Check to see if new day accounting has begun. Check for reset of Solar and Load units reset to 0
-        if (  $KWH_solar_today <= 0.05  && 
-              $KWH_load_today <= 0.05   &&
-              // check if time is before or after midnight approximately accounting for clock error of Studer
+        if (  $KWH_solar_today <= 0.01  && 
+              $KWH_load_today  <= 0.05  &&
               ( $this->nowIsWithinTimeLimits("00:00", "00:05") || $this->nowIsWithinTimeLimits("23:55", "23:59:59") )
             )
         {
@@ -428,7 +427,7 @@ class class_transindus_eco
           // This update only happens at beginning of day and also during battery float
           update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_previous);
 
-          error_log("SOC Percentage Beg of Day User Meta Reset to: " . $SOC_percentage_previous  . " %");
+          error_log("SOC new day rollover activated: " . $SOC_percentage_previous  . " %");
 
           // since the battery nett charge for the new day is 0, SOC now is same as SOC previous
           // Otherwise SOC now will be indeterminate when coming through this branch
@@ -644,7 +643,7 @@ class class_transindus_eco
 
           update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 
-          error_log("SOC Percentage Beg of Day User Meta Reset to: " . $SOC_percentage_beg_of_day_recal  . " %");
+          error_log("SOC 100% clamp activated: " . $SOC_percentage_beg_of_day_recal  . " %");
         }
         
         

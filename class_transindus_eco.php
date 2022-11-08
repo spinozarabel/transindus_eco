@@ -99,8 +99,28 @@ class class_transindus_eco
 
       date_default_timezone_set("Asia/Kolkata");
 
-      $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
+      if ( $this->nowIsWithinTimeLimits("05:00", "06:00") )
+      {   // Get the weather forecast if time is between 5 to 6 in the morning.
+        $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
 
+        // write the weatehr forecast to a transient valid for 24h
+        set_transient( 'cloudiness_forecast', $this->cloudiness_forecast, 24*60*60 );
+      }
+      else  
+      {   // Read the transient for the weatehr forecast that has already been read between 5 and 6 AM
+        if ( false === get_transient( 'cloudiness_forecast' ) )
+        {
+          // Transient does not exist or has expired, so regenerate the cloud forecast
+          $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
+
+          // write the weatehr forecast to a transient valid for 24h
+          set_transient( 'cloudiness_forecast', $this->cloudiness_forecast, 24*60*60 );
+        }
+        else
+        {
+          $this->cloudiness_forecast = get_transient( 'cloudiness_forecast' );
+        }
+      }
 	}
 
     /**
@@ -385,7 +405,7 @@ class class_transindus_eco
         $KWH_load_today       = $studer_readings_obj->KWH_load_today;   // Net Load units consumed Today
 
         // Units of Solar Energy converted to percentage of Battery Capacity Installed
-        $KWH_solar_percentage_today = round( $KWH_solar_today / $SOC_capacity_KWH *100, 1);
+        $KWH_solar_percentage_today = round( $KWH_solar_today / $SOC_capacity_KWH * 100, 1);
 
         // Battery discharge today in terms of SOC capacity percventage
         $KWH_batt_percent_discharged_today = round( $studer_readings_obj->KWH_batt_discharged_today / $SOC_capacity_KWH * 100, 1);
@@ -398,8 +418,7 @@ class class_transindus_eco
                                                  $shelly_api_device_status_voltage . ' VAC');
             error_log("Pcalc: " . array_sum($est_solar_kw) . " Psolar: " . $psolar . " - Psurplus: " . 
                        $surplus . " KW - It is a CLoudy Day?: " . $it_is_a_cloudy_day);
-        //  error_log("Within 0700 - 1730?: "  . $now_is_daytime                           . "");
-        //  error_log("AUX1 Relay State: "     . $aux1_relay_state                         . "");
+        
             error_log("Solar Units Today: "    . $KWH_solar_today                          . "KWH");
             error_log("Grid Units Today: "     . $KWH_grid_today                           . "KWH");
             error_log("Load Units Today: "     . $KWH_load_today                           . "KWH");
@@ -409,9 +428,10 @@ class class_transindus_eco
         $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true) ?? 50.0;
 
         // Check to see if new day accounting has begun. Check for reset of Solar and Load units reset to 0
-        if (  $KWH_solar_today <= 0.01  && 
-              $KWH_load_today  <= 0.05  &&
-              ( $this->nowIsWithinTimeLimits("00:00", "00:05") || $this->nowIsWithinTimeLimits("23:55", "23:59:59") )
+        if (  $KWH_solar_today <= 0.01  &&  // Solar has been reset to 0
+              $KWH_load_today  <= 0.05  &&  // Accumulated new day load is still small so window still open for roll over
+              ( $this->nowIsWithinTimeLimits("00:00", "00:05") || 
+                $this->nowIsWithinTimeLimits("23:55", "23:59:59") )   // Time wi close to either side of midnoght for roll over
             )
         {
           // Since new day accounting has begun, update user meta for SOC at beginning of new day
@@ -626,7 +646,7 @@ class class_transindus_eco
             update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
         }
 
-        if (  $SOC_percentage_now > 100.0 )
+        if (  $SOC_percentage_now > 100.0 || $battery_voltage_avg  >=  52.-0 )
         {
           // SInce we know that the battery SOC is 100% use this knowledge along with
           // Energy data to recalibrate the soc_percentage user meta

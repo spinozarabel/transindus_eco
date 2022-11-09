@@ -155,8 +155,10 @@ class class_transindus_eco
         // register shortcode for pages. This is for showing the page with studer readings
         add_shortcode( 'transindus-studer-readings',  [$this, 'studer_readings_page_render'] );
 
-        add_shortcode( 'transindus-studer-settings',  [$this, 'studer_settings_page_render'] );
+        // The page for INdividual user to set Studer settings incluing INstataneous Cal of SOC%
+        // add_shortcode( 'my-studer-settings',          [$this, 'my_studer_settings_page_render'] );
 
+        // This is the page that displays the Individual Studer with All powers, voltages, currents, and SOC% and Shelly Status
         add_shortcode( 'my-studer-readings',          [$this, 'my_studer_readings_page_render'] );
     }
 
@@ -294,7 +296,7 @@ class class_transindus_eco
 
         $ACIN_max_voltage_for_RDBC          = 241;  // Max voltage at ACIN for RDBC to switch to GRID
 
-        $psolar_deficit_for_RDBC_setting    = -1 * 0.5;  // KW of deficit after which RDBC activates to GRID
+        $psolar_surplus_for_RDBC_setting    = -1 * 0.5;  // KW of deficit after which RDBC activates to GRID. Usually a -ve number
 
         $psolar_min_for_RDBC_setting        = 0.3;  // Minimum Psolar before RDBC can be actiated
 
@@ -482,7 +484,7 @@ class class_transindus_eco
           // This is the new simpler method.
           if ($surplus >= 0.0)
           {
-            $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.00;
+            $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.04;
           }
           else
           {
@@ -538,7 +540,7 @@ class class_transindus_eco
                                           ( $shelly_api_device_status_voltage <= $ACIN_max_voltage_for_RDBC	)	&&	// ensure Grid AC is not too high
                                           ( $now_is_daytime )                             &&  // Now is Daytime
                                           ( $psolar  >= $psolar_min_for_RDBC_setting )    &&  // at least some solar generation
-                                          ( $surplus <= $psolar_deficit_for_RDBC_setting ) &&  // Solar Deficit is negative
+                                          ( $surplus <= $psolar_surplus_for_RDBC_setting ) &&  // Solar Deficit is negative
                                           ( $psolar <= 0.5 * array_sum($est_solar_kw) )    &&  // Only when it is cloudy
                                           ( $control_shelly == true );                        // Control Flag is SET
         // switch release typically after RDBC when Psurplus is positive.

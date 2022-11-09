@@ -277,6 +277,27 @@ class class_transindus_eco
         $valid_shelly_config  = ! empty( $this->config['accounts'][$user_index]['shelly_device_id']   ) &&
                                 ! empty( $this->config['accounts'][$user_index]['shelly_server_uri']  ) &&
                                 ! empty( $this->config['accounts'][$user_index]['shelly_auth_key']    );
+
+        $SOC_percentage_LVDS_setting            = 30.0; // SOC percentage needed to trigger LVDS
+
+        $SOC_percentage_RDBC_setting            = 85.0; // RDBC active only if SOC is above this percentage level.
+
+        $SOC_percentage_switch_release_setting  = 95.0; // Switch releases if SOC is above this level
+
+        $min_SOC_percentage_for_switch_release_after_RDBC = 32; // SOC needs to be higher than this to allow switch release after RDBC
+
+        $min_solar_surplus_for_switch_release_after_RDBC = 0.2; // min KW of Surplus Solar to release switch after RDBC
+
+        $battery_voltage_avg_float_setting  = 51.9; // battery float voltage setting. Only used for SOC clamp for 100%
+
+        $ACIN_min_voltage_for_RDBC          = 199;  // Min VOltage at ACIN for RDBC to switch to GRID
+
+        $ACIN_max_voltage_for_RDBC          = 241;  // Max voltage at ACIN for RDBC to switch to GRID
+
+        $psolar_deficit_for_RDBC_setting    = -1 * 0.5;  // KW of deficit after which RDBC activates to GRID
+
+        $psolar_min_for_RDBC_setting        = 0.3;  // Minimum Psolar before RDBC can be actiated
+
         // get operation flags from user meta. Set it to false if not set
         $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true) ?? false;
 
@@ -458,8 +479,15 @@ class class_transindus_eco
           // this is the old method
           $SOC_percentage_now_old = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_old;
 
-          // This is the new simpler method. 
-          $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.00;
+          // This is the new simpler method.
+          if ($surplus >= 0.0)
+          {
+            $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.00;
+          }
+          else
+          {
+            $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.04;
+          }
 
           $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today,1);
 
@@ -496,7 +524,7 @@ class class_transindus_eco
                             ($studer_readings_obj->grid_input_vac >= 190);
 
         // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage     
-        $LVDS =             ( $battery_voltage_avg  <=  48.3 || $SOC_percentage_now <= 30 )  &&  // SOC is low
+        $LVDS =             ( $battery_voltage_avg  <=  48.3 || $SOC_percentage_now <= $SOC_percentage_LVDS_setting )  &&
                             ( $shelly_switch_status == "OFF" );					  // The switch is OFF
 
         $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
@@ -505,28 +533,30 @@ class class_transindus_eco
 
 
         $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
-                                          ( $SOC_percentage_now <= 85 )	&&	// Battery NOT in FLOAT state
-                                          ( $shelly_api_device_status_voltage >= 199.0	)	&&	// ensure Grid AC is not too low
-                                          ( $shelly_api_device_status_voltage <= 241.0	)	&&	// ensure Grid AC is not too high
+                                          ( $SOC_percentage_now <= $SOC_percentage_RDBC_setting )	&&	// Battery NOT in FLOAT state
+                                          ( $shelly_api_device_status_voltage >= $ACIN_min_voltage_for_RDBC	)	&&	// ensure Grid AC is not too low
+                                          ( $shelly_api_device_status_voltage <= $ACIN_max_voltage_for_RDBC	)	&&	// ensure Grid AC is not too high
                                           ( $now_is_daytime )                             &&  // Now is Daytime
-                                          ( $psolar  >=  0.3 )                            &&  // at least some solar generation
-                                          ( $surplus <= -0.5 ) 														&&  // Solar Deficit >= 0.5KW
-                                          ( $it_is_a_cloudy_day )                         &&  // Only on Cloudy Days
+                                          ( $psolar  >= $psolar_min_for_RDBC_setting )    &&  // at least some solar generation
+                                          ( $surplus <= $psolar_deficit_for_RDBC_setting ) &&  // Solar Deficit is negative
+                                          ( $psolar <= 0.5 * array_sum($est_solar_kw) )    &&  // Only when it is cloudy
                                           ( $control_shelly == true );                        // Control Flag is SET
-
-        $switch_release =  (	$SOC_percentage_now >= 32  )                                &&  // SOC OK
-                           ( $shelly_switch_status == "ON" )  														&&  // Switch is ON now
-                           ( $surplus >= 0.2 )                														&&  // Solar surplus is >= 0.2KW
-                           ( $keep_shelly_switch_closed_always == false )                 &&	// Emergency flag is False
+        // switch release typically after RDBC when Psurplus is positive.
+        $switch_release =  ( $SOC_percentage_now >= $min_SOC_percentage_for_switch_release_after_RDBC ) &&  // SOC OK
+                           ( $shelly_switch_status == "ON" )  														  &&  // Switch is ON now
+                           ( $surplus >= $min_solar_surplus_for_switch_release_after_RDBC ) &&  // Solar surplus is >= 0.2KW
+                           ( $keep_shelly_switch_closed_always == false )                   &&	// Emergency flag is False
                            ( $control_shelly == true );                                       // Control Flag is SET                              
 
+        // In general we want home to be on Battery after sunset
         $sunset_switch_release			=	( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
                                       ( $shelly_switch_status == "ON" )               &&  // Switch is ON now
                                       ( $now_is_sunset )                              &&  // around sunset
                                       ( $control_shelly == true );
 
+        // This is needed when RDBC was triggered and Psolar is charging battery beyond 95%
         $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
-                                      ( $SOC_percentage_now >= 95 )				        &&  // OR SOC reached 97%
+                                      ( $SOC_percentage_now >= $SOC_percentage_switch_release_setting )	&&  // OR SOC reached 95%
                                       ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
                                       ( $control_shelly == true );                        // Control Flag is False
 
@@ -647,7 +677,7 @@ class class_transindus_eco
             update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
         }
 
-        if (  $SOC_percentage_now > 100.0 || $battery_voltage_avg  >=  52.-0 )
+        if (  $SOC_percentage_now > 100.0 || $battery_voltage_avg  >=  $battery_voltage_avg_float_setting )
         {
           // SInce we know that the battery SOC is 100% use this knowledge along with
           // Energy data to recalibrate the soc_percentage user meta

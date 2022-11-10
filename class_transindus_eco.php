@@ -281,6 +281,7 @@ class class_transindus_eco
                                 ! empty( $this->config['accounts'][$user_index]['shelly_auth_key']    );
 
         $SOC_percentage_LVDS_setting            = 30.0; // SOC percentage needed to trigger LVDS
+        $battery_voltage_avg_LVDS_setting       = 48.3; // Avg Battery Voltage lower threshold for LVDS triggers
 
         $SOC_percentage_RDBC_setting            = 85.0; // RDBC active only if SOC is above this percentage level.
 
@@ -526,7 +527,8 @@ class class_transindus_eco
                             ($studer_readings_obj->grid_input_vac >= 190);
 
         // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage     
-        $LVDS =             ( $battery_voltage_avg  <=  48.3 || $SOC_percentage_now <= $SOC_percentage_LVDS_setting )  &&
+        $LVDS =             ( $battery_voltage_avg  <= $battery_voltage_avg_LVDS_setting || 
+                              $SOC_percentage_now   <= $SOC_percentage_LVDS_setting           )  &&
                             ( $shelly_switch_status == "OFF" );					  // The switch is OFF
 
         $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&

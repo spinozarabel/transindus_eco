@@ -86,7 +86,7 @@ class class_transindus_eco
       $this->get_config();
 
           // get user object index and user name into $this
-      $this->get_user_index_of_logged_in_user();
+      // $this->get_user_index_of_logged_in_user();
 
           // set the logging
       $this->verbose = false;

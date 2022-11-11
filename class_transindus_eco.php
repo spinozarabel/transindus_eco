@@ -85,6 +85,9 @@ class class_transindus_eco
           // read the config file and build the secrets array for all users 
       $this->get_config();
 
+          // get user object index and user name into $this
+      $this->get_user_index_of_logged_in_user();
+
           // set the logging
       $this->verbose = false;
 
@@ -155,8 +158,8 @@ class class_transindus_eco
         // register shortcode for pages. This is for showing the page with studer readings
         add_shortcode( 'transindus-studer-readings',  [$this, 'studer_readings_page_render'] );
 
-        // The page for INdividual user to set Studer settings incluing INstataneous Cal of SOC%
-        // add_shortcode( 'my-studer-settings',          [$this, 'my_studer_settings_page_render'] );
+        // Action to process submitted data from a Ninja Form.
+        add_action( 'ninja_forms_after_submission',   [$transindus_eco, 'my_ninja_forms_after_submission'] );
 
         // This is the page that displays the Individual Studer with All powers, voltages, currents, and SOC% and Shelly Status
         add_shortcode( 'my-studer-readings',          [$this, 'my_studer_readings_page_render'] );
@@ -176,6 +179,10 @@ class class_transindus_eco
 
         // Now to find the index in the config array using the above
         $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
+
+        $this->index_of_logged_in_user = $user_index;
+        $this->wp_user_name_logged_in_user = $wp_user_name;
+        $this->wp_user_obj = $current_user;
 
         return $user_index;
     }
@@ -699,7 +706,13 @@ class class_transindus_eco
         return $studer_readings_obj;
     }
 
-
+    /**
+     * 
+     */
+    public function my_ninja_forms_after_submission( $form_data )
+    {
+      error_log(print_r($form_data, true));
+    }
 
     /**
      *

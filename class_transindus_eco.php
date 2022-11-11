@@ -159,7 +159,7 @@ class class_transindus_eco
         add_shortcode( 'transindus-studer-readings',  [$this, 'studer_readings_page_render'] );
 
         // Action to process submitted data from a Ninja Form.
-        add_action( 'ninja_forms_after_submission',   [$transindus_eco, 'my_ninja_forms_after_submission'] );
+        add_action( 'ninja_forms_after_submission',   [$this, 'my_ninja_forms_after_submission'] );
 
         // This is the page that displays the Individual Studer with All powers, voltages, currents, and SOC% and Shelly Status
         add_shortcode( 'my-studer-readings',          [$this, 'my_studer_readings_page_render'] );

@@ -18,7 +18,7 @@ define('TRANSINDUS_ECO_VERSION', '1.0');
 
 require_once(__DIR__."/class_transindus_eco.php");         // contains the main class
 
-// instantiate the class for head start admission
+// instantiate the class
 $transindus_eco           = new class_transindus_eco();
 
 $user_readings_array = [];

@@ -85,8 +85,10 @@ class class_transindus_eco
           // read the config file and build the secrets array for all users 
       $this->get_config();
 
-          // get user object index and user name into $this
-      // $this->get_user_index_of_logged_in_user();
+      // Initialize the defaults array to blank
+      $this->user_meta_defaults_arr = [];
+
+      // Cannot call wp_get_current_user in a constructor
 
           // set the logging
       $this->verbose = false;
@@ -163,6 +165,133 @@ class class_transindus_eco
 
         // This is the page that displays the Individual Studer with All powers, voltages, currents, and SOC% and Shelly Status
         add_shortcode( 'my-studer-readings',          [$this, 'my_studer_readings_page_render'] );
+
+        // Define shortcode to prepare for my-studer-settings page
+        add_shortcode( 'my-studer-settings',          [$this, 'my_studer_settings'] );
+    }
+
+    /**
+     *  This shoercode checks the user meta for studer settings to see if they are set.
+     *  If not set the user meta are set using defaults.
+     *  When the Ninja Forms opens it uses the user meta. If a user meta was not set, now it will be, with programmed defaults
+     */
+    public function my_studer_settings()
+    {
+      $defaults     = [];   // Initialize the defaults array
+      $current_user = wp_get_current_user();
+      $wp_user_ID   = $current_user->ID;
+
+      if ( empty($this->user_meta_defaults_arr) || in_array(null, $this->user_meta_defaults_arr, true) )
+      {
+
+        $defaults['soc_percentage_lvds_setting']                      = 30;       // %
+        $defaults['battery_voltage_avg_lvds_setting']                 = 48.3;     // V
+        $defaults['soc_percentage_rdbc_setting']                      = 85;       // %
+        $defaults['soc_percentage_switch_release_setting']            = 95;       // %
+        $defaults['min_soc_percentage_for_switch_release_after_rdbc'] = 32;       // %
+        $defaults['min_solar_surplus_for_switch_release_after_rdbc']  = 0.2;      // KW
+        $defaults['battery_voltage_avg_float_setting']                = 51.9;     // V
+        $defaults['acin_min_voltage_for_rdbc']                        = 199;      // V
+        $defaults['acin_max_voltage_for_rdbc']                        = 241;      // V
+        $defaults['psolar_surplus_for_rdbc_setting']                  = -1 * 0.5; // KW
+        $defaults['psolar_min_for_rdbc_setting']                      = 0.3;      // KW
+        $defaults['do_minutely_updates']                              = true;
+        $defaults['do_shelly']                                        = false;
+        $defaults['keep_shelly_switch_closed_always']                 = false;
+
+        $this->user_meta_defaults_arr = $defaults;
+
+        foreach ($defaults as $user_meta_key => $default_value) {
+          $user_meta_value  = get_user_meta($wp_user_ID, $user_meta_key,  true);
+  
+          if ( empty( $user_meta_value ) ) {
+            update_user_meta( $wp_user_ID, $user_meta_key, $default_value);
+          }
+        }
+      }
+      add_action( 'nf_get_form_id', function( $form_id )
+      {
+
+        // Check for a specific Form ID.
+        if( 2 !== $form_id ) return;
+      
+        /**
+         * Change a field's settings when localized to the page.
+         *   ninja_forms_localize_field_{$field_type}
+         *
+         * @param array $field [ id, settings => [ type, key, label, etc. ] ]
+         * @return array $field
+         */
+        add_filter( 'ninja_forms_localize_field_checkbox', function( $field )
+        {
+          $wp_user_ID = get_current_user_id();
+
+          switch ( $field[ 'settings' ][ 'key' ] )
+            {
+              case 'keep_shelly_switch_closed_always_1668236647429':
+                // get the user's metadata for this flag
+                $user_meta_value = get_user_meta($wp_user_ID, 'keep_shelly_switch_closed_always',  true);
+
+                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
+                if ($user_meta_value == true)
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'checked';
+                }
+                else
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
+                }
+              break;
+
+              case 'do_minutely_updates_1668237024770':
+                // get the user's metadata for this flag
+                $user_meta_value = get_user_meta($wp_user_ID, 'do_minutely_updates',  true);
+
+                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
+                if ($user_meta_value == true)
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'checked';
+                }
+                else
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
+                }
+              break;
+
+              case 'do_shelly_1668237633880':
+                // get the user's metadata for this flag
+                $user_meta_value = get_user_meta($wp_user_ID, 'do_shelly',  true);
+
+                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
+                if ($user_meta_value == true)
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'checked';
+                }
+                else
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
+                }
+              break;
+
+              case 'do_soc_cal_now_1668238058579':
+                // get the user's metadata for this flag
+                $user_meta_value = get_user_meta($wp_user_ID, 'do_soc_cal_now',  true);
+
+                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
+                if ($user_meta_value == true)
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'checked';
+                }
+                else
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
+                }
+              break;
+            }
+          return $field;
+        } );  // Add filter to check for checkbox field and set the default using user meta
+      } );    // Add Action to check form ID
+      
     }
 
 
@@ -290,7 +419,7 @@ class class_transindus_eco
         $SOC_percentage_LVDS_setting            = 30.0; // SOC percentage needed to trigger LVDS
         $battery_voltage_avg_LVDS_setting       = 48.3; // Avg Battery Voltage lower threshold for LVDS triggers
 
-        $SOC_percentage_RDBC_setting            = 85.0; // RDBC active only if SOC is above this percentage level.
+        $SOC_percentage_RDBC_setting            = 85.0; // RDBC active only if SOC is below this percentage level.
 
         $SOC_percentage_switch_release_setting  = 95.0; // Switch releases if SOC is above this level
 

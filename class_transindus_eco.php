@@ -228,7 +228,7 @@ class class_transindus_eco
 
           switch ( true )
             {
-              case ( stripos( 'keep_shelly_switch_closed_always', $field[ 'settings' ][ 'key' ] )!== false ):
+              case ( stripos( $field[ 'settings' ][ 'key' ], 'keep_shelly_switch_closed_always' )!== false ):
                 // get the user's metadata for this flag
                 $user_meta_value = get_user_meta($wp_user_ID, 'keep_shelly_switch_closed_always',  true);
 
@@ -243,7 +243,7 @@ class class_transindus_eco
                 }
               break;
 
-              case ( stripos( 'do_minutely_updates', $field[ 'settings' ][ 'key' ] )!== false ):
+              case ( stripos( $field[ 'settings' ][ 'key' ], 'do_minutely_updates' )!== false ):
                 // get the user's metadata for this flag
                 $user_meta_value = get_user_meta($wp_user_ID, 'do_minutely_updates',  true);
 
@@ -258,7 +258,7 @@ class class_transindus_eco
                 }
               break;
 
-              case ( stripos( 'do_shelly', $field[ 'settings' ][ 'key' ] )!== false ):
+              case ( stripos( $field[ 'settings' ][ 'key' ], 'do_shelly' )!== false ):
                 // get the user's metadata for this flag
                 $user_meta_value = get_user_meta($wp_user_ID, 'do_shelly',  true);
 
@@ -273,7 +273,7 @@ class class_transindus_eco
                 }
               break;
 
-              case ( stripos( 'do_soc_cal_now', $field[ 'settings' ][ 'key' ] )!== false ):
+              case ( stripos( $field[ 'settings' ][ 'key' ], 'do_soc_cal_now' )!== false ):
                 // get the user's metadata for this flag
                 $user_meta_value = get_user_meta($wp_user_ID, 'do_soc_cal_now',  true);
 

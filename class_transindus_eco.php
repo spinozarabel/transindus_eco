@@ -875,7 +875,7 @@ class class_transindus_eco
         switch ( true ):
         
 
-          case ( stripos( $field[ 'key' ], 'keep_shelly_switch_closed_always' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'keep_shelly_switch_closed_always' ) !== false ):
             if ( $field[ 'value' ] )
             {
               $submitted_field_value = true;
@@ -899,7 +899,7 @@ class class_transindus_eco
 
 
 
-          case ( stripos( $field[ 'key' ], 'do_minutely_updates' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'do_minutely_updates' ) !== false ):
             if ( $field[ 'value' ] )
             {
               $submitted_field_value = true;
@@ -923,7 +923,7 @@ class class_transindus_eco
 
 
 
-          case ( stripos( $field[ 'key' ], 'do_shelly' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'do_shelly' ) !== false ):
             if ( $field[ 'value' ] )
             {
               $submitted_field_value = true;
@@ -947,7 +947,7 @@ class class_transindus_eco
 
 
 
-          case ( stripos( $field[ 'key' ], 'do_soc_cal_now' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'do_soc_cal_now' ) !== false ):
             if ( $field[ 'value' ] )
             {
               $do_soc_cal_now = true;
@@ -960,7 +960,7 @@ class class_transindus_eco
 
 
 
-          case ( stripos( $field[ 'key' ], 'soc_percentage_now' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'soc_percentage_now' ) !== false ):
             $defaults_key = array_search('soc_percentage_now', $defaults_arr_keys); // get the index of desired row in array
             $defaults_row = $defaults_arr_values[$defaults_key];
 
@@ -972,7 +972,7 @@ class class_transindus_eco
 
 
 
-          case ( stripos( $field[ 'key' ], 'battery_voltage_avg_lvds_setting' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'battery_voltage_avg_lvds_setting' ) !== false ):
 
             // define the meta key of interest
             $user_meta_key = 'battery_voltage_avg_lvds_setting';
@@ -1001,7 +1001,7 @@ class class_transindus_eco
 
 
           
-          case ( stripos( $field[ 'key' ], 'soc_percentage_lvds_setting' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'soc_percentage_lvds_setting' ) !== false ):
 
             // define the meta key of interest
             $user_meta_key = 'soc_percentage_lvds_setting';
@@ -1031,7 +1031,7 @@ class class_transindus_eco
 
 
 
-          case ( stripos( $field[ 'key' ], 'soc_percentage_rdbc_setting' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'soc_percentage_rdbc_setting' ) !== false ):
 
             // define the meta key of interest
             $user_meta_key = 'soc_percentage_rdbc_setting';
@@ -1060,7 +1060,7 @@ class class_transindus_eco
 
 
 
-          case ( stripos( $field[ 'key' ], 'soc_percentage_switch_release_setting' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'soc_percentage_switch_release_setting' ) !== false ):
 
             // define the meta key of interest
             $user_meta_key = 'soc_percentage_switch_release_setting';
@@ -1089,7 +1089,7 @@ class class_transindus_eco
 
 
 
-          case ( stripos( $field[ 'key' ], 'min_soc_percentage_for_switch_release_after_rdbc' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'min_soc_percentage_for_switch_release_after_rdbc' ) !== false ):
 
             // define the meta key of interest
             $user_meta_key = 'min_soc_percentage_for_switch_release_after_rdbc';
@@ -1118,7 +1118,7 @@ class class_transindus_eco
 
 
 
-          case ( stripos( $field[ 'key' ], 'min_solar_surplus_for_switch_release_after_rdbc' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'min_solar_surplus_for_switch_release_after_rdbc' ) !== false ):
 
             // define the meta key of interest
             $user_meta_key = 'min_solar_surplus_for_switch_release_after_rdbc';
@@ -1147,7 +1147,7 @@ class class_transindus_eco
 
 
 
-          case ( stripos( $field[ 'key' ], 'battery_voltage_avg_float_setting' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'battery_voltage_avg_float_setting' ) !== false ):
 
             // define the meta key of interest
             $user_meta_key = 'battery_voltage_avg_float_setting';
@@ -1175,7 +1175,7 @@ class class_transindus_eco
           break;
 
 
-          case ( stripos( $field[ 'key' ], 'acin_min_voltage_for_rdbc' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'acin_min_voltage_for_rdbc' ) !== false ):
 
             // define the meta key of interest
             $user_meta_key = 'acin_min_voltage_for_rdbc';
@@ -1203,7 +1203,7 @@ class class_transindus_eco
           break;
 
 
-          case ( stripos( $field[ 'key' ], 'acin_max_voltage_for_rdbc' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'acin_max_voltage_for_rdbc' ) !== false ):
 
             // define the meta key of interest
             $user_meta_key = 'acin_max_voltage_for_rdbc';
@@ -1232,7 +1232,7 @@ class class_transindus_eco
 
 
 
-          case ( stripos( $field[ 'key' ], 'psolar_surplus_for_rdbc_setting' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'psolar_surplus_for_rdbc_setting' ) !== false ):
 
             // define the meta key of interest
             $user_meta_key = 'psolar_surplus_for_rdbc_setting';
@@ -1261,7 +1261,7 @@ class class_transindus_eco
 
 
 
-          case ( stripos( $field[ 'key' ], 'psolar_min_for_rdbc_setting' !== false ) ):
+          case ( stripos( $field[ 'key' ], 'psolar_min_for_rdbc_setting' ) !== false ):
 
             // define the meta key of interest
             $user_meta_key = 'psolar_min_for_rdbc_setting';

@@ -199,7 +199,8 @@ class class_transindus_eco
         $defaults['do_shelly']                                        = ['default' => false,  'lower_limit' =>true,  'upper_limit' =>true];
         $defaults['keep_shelly_switch_closed_always']                 = ['default' => false,  'lower_limit' =>true,  'upper_limit' =>true];
 
-        $this->user_meta_defaults_arr = $defaults;
+        // save the data in a transient indexed by the user ID. Expiration is 30 minutes
+        set_transient( $wp_user_ID . 'user_meta_defaults_arr', $defaults, 30*60 );
 
         foreach ($defaults as $user_meta_key => $default_row) {
           $user_meta_value  = get_user_meta($wp_user_ID, $user_meta_key,  true);
@@ -866,12 +867,22 @@ class class_transindus_eco
 
       $do_soc_cal_now = false;    // initialize variable
 
-      $defaults_arr         = $this->user_meta_defaults_arr;
+      if (false !== get_transient( $wp_user_ID . 'user_meta_defaults_arr'))
+      {
+        $defaults_arr = get_transient( $wp_user_ID . 'user_meta_defaults_arr');
+      }
+      else
+      {
+        // transient does not exist so exit
+        return;
+      }
+
       error_log(print_r($defaults_arr, true));
       $defaults_arr_keys    = array_keys($defaults_arr);       // get all the keys in numerically indexed array
       error_log(print_r($defaults_arr_keys, true));
       $defaults_arr_values  = array_values($defaults_arr);    // get all the rows in a numerically indexed array
       error_log(print_r($defaults_arr_values, true));
+      
       foreach( $form_data[ 'fields' ] as $field ): 
 
         switch ( true ):

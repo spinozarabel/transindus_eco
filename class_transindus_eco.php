@@ -687,6 +687,7 @@ class class_transindus_eco
         // Keep Grid Switch CLosed Untless Solar charges Battery to $soc_percentage_switch_release_setting - 5 or say 90%
         // So between this and switch_release_float_state battery may cycle up and down by 5 points
         // Ofcourse if the Psurplus is too much it will charge battery to 100% inspite of this.
+        // Obviously after sunset the battery will remain at 90% till sunrise the next day
         $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
                                       ( $keep_shelly_switch_closed_always == true )  &&
                                       ( $SOC_percentage_now <= ($soc_percentage_switch_release_setting - 5) )	&&  // OR SOC reached 90%
@@ -716,6 +717,7 @@ class class_transindus_eco
                                       ( $control_shelly == true );
 
         // This is needed when RDBC or always ON was triggered and Psolar is charging battery beyond 95%
+        // independent of keep_shelly_switch_closed_always flag status
         $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
                                       ( $SOC_percentage_now >= $soc_percentage_switch_release_setting )	&&  // OR SOC reached 95%
                                       // ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF

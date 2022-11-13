@@ -867,9 +867,11 @@ class class_transindus_eco
       $do_soc_cal_now = false;    // initialize variable
 
       $defaults_arr         = $this->user_meta_defaults_arr;
-      $defaults_arr_keys   = array_keys($defaults_arr);       // get all the keys in numerically indexed array
+      error_log(print_r($defaults_arr, true));
+      $defaults_arr_keys    = array_keys($defaults_arr);       // get all the keys in numerically indexed array
+      error_log(print_r($defaults_arr_keys, true));
       $defaults_arr_values  = array_values($defaults_arr);    // get all the rows in a numerically indexed array
-
+      error_log(print_r($defaults_arr_values, true));
       foreach( $form_data[ 'fields' ] as $field ): 
 
         switch ( true ):

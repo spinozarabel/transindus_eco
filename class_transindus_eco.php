@@ -856,7 +856,7 @@ class class_transindus_eco
      */
     public function my_ninja_forms_after_submission( $form_data )
     {
-      if ( 2 !== $form_data['form_id'] ) 
+      if ( 2 != $form_data['form_id'] ) 
       {
         error_log("returning from post submission due to form id not matching");
         return; // we don;t casre about any form except form with id=2

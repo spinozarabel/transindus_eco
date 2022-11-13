@@ -869,20 +869,21 @@ class class_transindus_eco
 
       if (false !== get_transient( $wp_user_ID . 'user_meta_defaults_arr'))
       {
+        // Valid transient aretrieved so proceed to use it
         $defaults_arr = get_transient( $wp_user_ID . 'user_meta_defaults_arr');
       }
       else
       {
-        // transient does not exist so exit
+        // transient does not exist so exit so abort
+        error_log("Could not retrieve transient data for defaults array for settings, aborting without user meta updates");
         return;
       }
 
-      error_log(print_r($defaults_arr, true));
       $defaults_arr_keys    = array_keys($defaults_arr);       // get all the keys in numerically indexed array
-      error_log(print_r($defaults_arr_keys, true));
-      $defaults_arr_values  = array_values($defaults_arr);    // get all the rows in a numerically indexed array
-      error_log(print_r($defaults_arr_values, true));
       
+      $defaults_arr_values  = array_values($defaults_arr);    // get all the rows in a numerically indexed array
+      
+
       foreach( $form_data[ 'fields' ] as $field ): 
 
         switch ( true ):

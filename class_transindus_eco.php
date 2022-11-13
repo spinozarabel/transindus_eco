@@ -184,28 +184,28 @@ class class_transindus_eco
       if ( empty($this->user_meta_defaults_arr) || in_array(null, $this->user_meta_defaults_arr, true) )
       {
 
-        $defaults['soc_percentage_lvds_setting']                      = 30;       // %
-        $defaults['battery_voltage_avg_lvds_setting']                 = 48.3;     // V
-        $defaults['soc_percentage_rdbc_setting']                      = 85;       // %
-        $defaults['soc_percentage_switch_release_setting']            = 95;       // %
-        $defaults['min_soc_percentage_for_switch_release_after_rdbc'] = 32;       // %
-        $defaults['min_solar_surplus_for_switch_release_after_rdbc']  = 0.2;      // KW
-        $defaults['battery_voltage_avg_float_setting']                = 51.9;     // V
-        $defaults['acin_min_voltage_for_rdbc']                        = 199;      // V
-        $defaults['acin_max_voltage_for_rdbc']                        = 241;      // V
-        $defaults['psolar_surplus_for_rdbc_setting']                  = -1 * 0.5; // KW
-        $defaults['psolar_min_for_rdbc_setting']                      = 0.3;      // KW
+        $defaults['soc_percentage_lvds_setting']                      = ['default' => 30,   'lower_limit' =>10,   'upper_limit' =>90];  // lower Limit of SOC for LVDS
+        $defaults['battery_voltage_avg_lvds_setting']                 = ['default' => 48.3, 'lower_limit' =>47,   'upper_limit' =>54];  // lower limit of BV for LVDS
+        $defaults['soc_percentage_rdbc_setting']                      = ['default' => 85,   'lower_limit' =>30,   'upper_limit' =>90];  // upper limit of SOC for RDBC activation
+        $defaults['soc_percentage_switch_release_setting']            = ['default' => 95,   'lower_limit' =>90,   'upper_limit' =>100]; // Upper limit of SOC for switch release
+        $defaults['min_soc_percentage_for_switch_release_after_rdbc'] = ['default' => 32,   'lower_limit' =>20,   'upper_limit' =>90];  // Lower limit of SOC for switch release after RDBC
+        $defaults['min_solar_surplus_for_switch_release_after_rdbc']  = ['default' => 0.2,  'lower_limit' =>0,    'upper_limit' =>4];   // Lower limit of Psurplus for switch release after RDBC
+        $defaults['battery_voltage_avg_float_setting']                = ['default' => 51.9, 'lower_limit' =>50.5, 'upper_limit' =>54];  // Upper limit of BV for SOC clamp/recal takes place
+        $defaults['acin_min_voltage_for_rdbc']                        = ['default' => 199,  'lower_limit' =>190,  'upper_limit' =>210]; // Lower limit of ACIN for RDBC
+        $defaults['acin_max_voltage_for_rdbc']                        = ['default' => 241,  'lower_limit' =>230,  'upper_limit' =>250]; // Upper limit of ACIN for RDBC
+        $defaults['psolar_surplus_for_rdbc_setting']                  = ['default' => -0.5, 'lower_limit' =>-4,   'upper_limit' =>0];   // Lower limit of Psurplus for surplus for RDBC
+        $defaults['psolar_min_for_rdbc_setting']                      = ['default' => 0.3,  'lower_limit' =>0.1,  'upper_limit' =>4];   // lower limit of Psolar for RDBC activation
         $defaults['do_minutely_updates']                              = true;
         $defaults['do_shelly']                                        = false;
         $defaults['keep_shelly_switch_closed_always']                 = false;
 
         $this->user_meta_defaults_arr = $defaults;
 
-        foreach ($defaults as $user_meta_key => $default_value) {
+        foreach ($defaults as $user_meta_key => $default_row) {
           $user_meta_value  = get_user_meta($wp_user_ID, $user_meta_key,  true);
   
           if ( empty( $user_meta_value ) ) {
-            update_user_meta( $wp_user_ID, $user_meta_key, $default_value);
+            update_user_meta( $wp_user_ID, $user_meta_key, $default_row['default']);
           }
         }
       }
@@ -226,9 +226,9 @@ class class_transindus_eco
         {
           $wp_user_ID = get_current_user_id();
 
-          switch ( $field[ 'settings' ][ 'key' ] )
+          switch ( true )
             {
-              case 'keep_shelly_switch_closed_always_1668236647429':
+              case ( stripos( 'keep_shelly_switch_closed_always', $field[ 'settings' ][ 'key' ] )!== false ):
                 // get the user's metadata for this flag
                 $user_meta_value = get_user_meta($wp_user_ID, 'keep_shelly_switch_closed_always',  true);
 
@@ -243,7 +243,7 @@ class class_transindus_eco
                 }
               break;
 
-              case 'do_minutely_updates_1668237024770':
+              case ( stripos( 'do_minutely_updates', $field[ 'settings' ][ 'key' ] )!== false ):
                 // get the user's metadata for this flag
                 $user_meta_value = get_user_meta($wp_user_ID, 'do_minutely_updates',  true);
 
@@ -258,7 +258,7 @@ class class_transindus_eco
                 }
               break;
 
-              case 'do_shelly_1668237633880':
+              case ( stripos( 'do_shelly', $field[ 'settings' ][ 'key' ] )!== false ):
                 // get the user's metadata for this flag
                 $user_meta_value = get_user_meta($wp_user_ID, 'do_shelly',  true);
 
@@ -273,7 +273,7 @@ class class_transindus_eco
                 }
               break;
 
-              case 'do_soc_cal_now_1668238058579':
+              case ( stripos( 'do_soc_cal_now', $field[ 'settings' ][ 'key' ] )!== false ):
                 // get the user's metadata for this flag
                 $user_meta_value = get_user_meta($wp_user_ID, 'do_soc_cal_now',  true);
 
@@ -415,27 +415,41 @@ class class_transindus_eco
         $valid_shelly_config  = ! empty( $this->config['accounts'][$user_index]['shelly_device_id']   ) &&
                                 ! empty( $this->config['accounts'][$user_index]['shelly_server_uri']  ) &&
                                 ! empty( $this->config['accounts'][$user_index]['shelly_auth_key']    );
+        // Get limits from user meta
+        // SOC percentage needed to trigger LVDS
+        $soc_percentage_lvds_setting            = get_user_meta($wp_user_ID, "soc_percentage_lvds_setting",  true) ?? 30;
 
-        $SOC_percentage_LVDS_setting            = 30.0; // SOC percentage needed to trigger LVDS
-        $battery_voltage_avg_LVDS_setting       = 48.3; // Avg Battery Voltage lower threshold for LVDS triggers
+        // Avg Battery Voltage lower threshold for LVDS triggers
+        $battery_voltage_avg_lvds_setting       = get_user_meta($wp_user_ID, "battery_voltage_avg_lvds_setting",  true) ?? 48.3;
 
-        $SOC_percentage_RDBC_setting            = 85.0; // RDBC active only if SOC is below this percentage level.
+        // RDBC active only if SOC is below this percentage level.
+        $soc_percentage_rdbc_setting            = get_user_meta($wp_user_ID, "soc_percentage_rdbc_setting",  true) ?? 80.0;
 
-        $SOC_percentage_switch_release_setting  = 95.0; // Switch releases if SOC is above this level
+        // Switch releases if SOC is above this level 
+        $soc_percentage_switch_release_setting  = get_user_meta($wp_user_ID, "soc_percentage_switch_release_setting",  true) ?? 95.0; 
 
-        $min_SOC_percentage_for_switch_release_after_RDBC = 32; // SOC needs to be higher than this to allow switch release after RDBC
+        // SOC needs to be higher than this to allow switch release after RDBC
+        $min_soc_percentage_for_switch_release_after_rdbc 
+                                      = get_user_meta($wp_user_ID, "min_soc_percentage_for_switch_release_after_rdbc",  true) ?? 32;
 
-        $min_solar_surplus_for_switch_release_after_RDBC = 0.2; // min KW of Surplus Solar to release switch after RDBC
+        // min KW of Surplus Solar to release switch after RDBC
+        $min_solar_surplus_for_switch_release_after_rdbc 
+                                      = get_user_meta($wp_user_ID, "min_solar_surplus_for_switch_release_after_rdbc",  true) ?? 0.2; 
 
-        $battery_voltage_avg_float_setting  = 51.9; // battery float voltage setting. Only used for SOC clamp for 100%
+        // battery float voltage setting. Only used for SOC clamp for 100%
+        $battery_voltage_avg_float_setting  = get_user_meta($wp_user_ID, "battery_voltage_avg_float_setting",  true) ?? 51.9; 
 
-        $ACIN_min_voltage_for_RDBC          = 199;  // Min VOltage at ACIN for RDBC to switch to GRID
+        // Min VOltage at ACIN for RDBC to switch to GRID
+        $acin_min_voltage_for_rdbc          = get_user_meta($wp_user_ID, "acin_min_voltage_for_rdbc",  true) ?? 199;  
 
-        $ACIN_max_voltage_for_RDBC          = 241;  // Max voltage at ACIN for RDBC to switch to GRID
+        // Max voltage at ACIN for RDBC to switch to GRID
+        $acin_max_voltage_for_rdbc          = get_user_meta($wp_user_ID, "acin_max_voltage_for_rdbc",  true) ?? 241; 
 
-        $psolar_surplus_for_RDBC_setting    = -1 * 0.5;  // KW of deficit after which RDBC activates to GRID. Usually a -ve number
+        // KW of deficit after which RDBC activates to GRID. Usually a -ve number
+        $psolar_surplus_for_rdbc_setting    = get_user_meta($wp_user_ID, "psolar_surplus_for_rdbc_setting",  true) ?? -0.5;  
 
-        $psolar_min_for_RDBC_setting        = 0.3;  // Minimum Psolar before RDBC can be actiated
+        // Minimum Psolar before RDBC can be actiated
+        $psolar_min_for_rdbc_setting        = get_user_meta($wp_user_ID, "psolar_min_for_rdbc_setting",  true) ?? 0.3;  
 
         // get operation flags from user meta. Set it to false if not set
         $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true) ?? false;
@@ -659,12 +673,14 @@ class class_transindus_eco
 
         // define all the conditions for the SWITCH - CASE tree
 
+        // AC input voltage is being sensed by Studer even though switch status is OFF meaning manual MCB before Studer is ON
+        // In this case, since grid is manually switched ON there is nothing we can do
         $switch_override =  ($shelly_switch_status == "OFF")               &&
                             ($studer_readings_obj->grid_input_vac >= 190);
 
         // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage     
-        $LVDS =             ( $battery_voltage_avg  <= $battery_voltage_avg_LVDS_setting || 
-                              $SOC_percentage_now   <= $SOC_percentage_LVDS_setting           )  &&
+        $LVDS =             ( $battery_voltage_avg  <= $battery_voltage_avg_lvds_setting || 
+                              $SOC_percentage_now   <= $soc_percentage_lvds_setting           )  &&
                             ( $shelly_switch_status == "OFF" );					  // The switch is OFF
 
         $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
@@ -673,20 +689,20 @@ class class_transindus_eco
 
 
         $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
-                                          ( $SOC_percentage_now <= $SOC_percentage_RDBC_setting )	&&	// Battery NOT in FLOAT state
-                                          ( $shelly_api_device_status_voltage >= $ACIN_min_voltage_for_RDBC	)	&&	// ensure Grid AC is not too low
-                                          ( $shelly_api_device_status_voltage <= $ACIN_max_voltage_for_RDBC	)	&&	// ensure Grid AC is not too high
-                                          ( $now_is_daytime )                             &&  // Now is Daytime
-                                          ( $psolar  >= $psolar_min_for_RDBC_setting )    &&  // at least some solar generation
-                                          ( $surplus <= $psolar_surplus_for_RDBC_setting ) &&  // Solar Deficit is negative
+                                          ( $SOC_percentage_now <= $soc_percentage_rdbc_setting )	&&	// Battery NOT in FLOAT state
+                                          ( $shelly_api_device_status_voltage >= $acin_min_voltage_for_rdbc	)	&&	// ensure Grid AC is not too low
+                                          ( $shelly_api_device_status_voltage <= $acin_max_voltage_for_rdbc	)	&&	// ensure Grid AC is not too high
+                                          ( $now_is_daytime )                             &&   // Now is Daytime
+                                          ( $psolar  >= $psolar_min_for_rdbc_setting )    &&   // at least some solar generation
+                                          ( $surplus <= $psolar_surplus_for_rdbc_setting ) &&  // Solar Deficit is negative
                                           ( $psolar <= 0.5 * array_sum($est_solar_kw) )    &&  // Only when it is cloudy
-                                          ( $control_shelly == true );                        // Control Flag is SET
+                                          ( $control_shelly == true );                         // Control Flag is SET
         // switch release typically after RDBC when Psurplus is positive.
-        $switch_release =  ( $SOC_percentage_now >= $min_SOC_percentage_for_switch_release_after_RDBC ) &&  // SOC OK
+        $switch_release =  ( $SOC_percentage_now >= $min_soc_percentage_for_switch_release_after_rdbc ) &&  // SOC ?= 32%
                            ( $shelly_switch_status == "ON" )  														  &&  // Switch is ON now
-                           ( $surplus >= $min_solar_surplus_for_switch_release_after_RDBC ) &&  // Solar surplus is >= 0.2KW
+                           ( $surplus >= $min_solar_surplus_for_switch_release_after_rdbc ) &&  // Solar surplus is >= 0.2KW
                            ( $keep_shelly_switch_closed_always == false )                   &&	// Emergency flag is False
-                           ( $control_shelly == true );                                       // Control Flag is SET                              
+                           ( $control_shelly == true );                                         // Control Flag is SET                              
 
         // In general we want home to be on Battery after sunset
         $sunset_switch_release			=	( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
@@ -696,7 +712,7 @@ class class_transindus_eco
 
         // This is needed when RDBC was triggered and Psolar is charging battery beyond 95%
         $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
-                                      ( $SOC_percentage_now >= $SOC_percentage_switch_release_setting )	&&  // OR SOC reached 95%
+                                      ( $SOC_percentage_now >= $soc_percentage_switch_release_setting )	&&  // OR SOC reached 95%
                                       ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
                                       ( $control_shelly == true );                        // Control Flag is False
 
@@ -840,8 +856,441 @@ class class_transindus_eco
      */
     public function my_ninja_forms_after_submission( $form_data )
     {
-      error_log(print_r($form_data, true));
-    }
+      if ( 2 !== $form_data['form_id'] ) return; // we don;t casre about any form except form with id=2
+
+      $wp_user_ID = get_current_user_id();
+
+      $do_soc_cal_now = false;    // initialize variable
+
+      $defaults_arr         = $this->user_meta_defaults_arr;
+      $defaults_arr_keys   = array_keys($defaults_arr);       // get all the keys in numerically indexed array
+      $defaults_arr_values  = array_values($defaults_arr);    // get all the rows in a numerically indexed array
+
+      foreach( $form_data[ 'fields' ] as $field ): 
+
+        switch ( true ):
+        
+
+          case ( stripos( $field[ 'key' ], 'keep_shelly_switch_closed_always' !== false ) ):
+            if ( $field[ 'value' ] )
+            {
+              $submitted_field_value = true;
+            }
+            else 
+            {
+              $submitted_field_value = false;
+            }
+
+            // get the existing user meta value
+            $existing_user_meta_value = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true);
+
+            if ( $existing_user_meta_value != $submitted_field_value )
+            {
+              // update the user meta with value from form since it is different from existing setting
+              update_user_meta( $wp_user_ID, 'keep_shelly_switch_closed_always', $submitted_field_value);
+
+              error_log( "Updated User Meta - keep_shelly_switch_closed_always - from Settings Form: " . $field[ 'value' ] );
+            }
+          break;
+
+
+
+          case ( stripos( $field[ 'key' ], 'do_minutely_updates' !== false ) ):
+            if ( $field[ 'value' ] )
+            {
+              $submitted_field_value = true;
+            }
+            else 
+            {
+              $submitted_field_value = false;
+            }
+
+            // get the existing user meta value
+            $existing_user_meta_value = get_user_meta($wp_user_ID, "do_minutely_updates",  true);
+
+            if ( $existing_user_meta_value != $submitted_field_value )
+            {
+              // update the user meta with value from form since it is different from existing setting
+              update_user_meta( $wp_user_ID, 'do_minutely_updates', $submitted_field_value);
+
+              error_log( "Updated User Meta - do_minutely_updates - from Settings Form: " . $field[ 'value' ] );
+            }
+          break;
+
+
+
+          case ( stripos( $field[ 'key' ], 'do_shelly' !== false ) ):
+            if ( $field[ 'value' ] )
+            {
+              $submitted_field_value = true;
+            }
+            else 
+            {
+              $submitted_field_value = false;
+            }
+
+            // get the existing user meta value
+            $existing_user_meta_value = get_user_meta($wp_user_ID, "do_shelly",  true);
+
+            if ( $existing_user_meta_value != $submitted_field_value )
+            {
+              // update the user meta with value from form since it is different from existing setting
+              update_user_meta( $wp_user_ID, 'do_shelly', $submitted_field_value);
+
+              error_log( "Updated User Meta - do_shelly - from Settings Form: " . $field[ 'value' ] );
+            }
+          break;
+
+
+
+          case ( stripos( $field[ 'key' ], 'do_soc_cal_now' !== false ) ):
+            if ( $field[ 'value' ] )
+            {
+              $do_soc_cal_now = true;
+            }
+            else 
+            {
+              $do_soc_cal_now = false;
+            }
+          break;
+
+
+
+          case ( stripos( $field[ 'key' ], 'soc_percentage_now' !== false ) ):
+            $defaults_key = array_search('soc_percentage_now', $defaults_arr_keys); // get the index of desired row in array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              $soc_percentage_now_for_cal = $field[ 'value' ];
+            }
+          break;
+
+
+
+          case ( stripos( $field[ 'key' ], 'battery_voltage_avg_lvds_setting' !== false ) ):
+
+            // define the meta key of interest
+            $user_meta_key = 'battery_voltage_avg_lvds_setting';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+
+          
+          case ( stripos( $field[ 'key' ], 'soc_percentage_lvds_setting' !== false ) ):
+
+            // define the meta key of interest
+            $user_meta_key = 'soc_percentage_lvds_setting';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+
+
+
+          case ( stripos( $field[ 'key' ], 'soc_percentage_rdbc_setting' !== false ) ):
+
+            // define the meta key of interest
+            $user_meta_key = 'soc_percentage_rdbc_setting';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+
+
+          case ( stripos( $field[ 'key' ], 'soc_percentage_switch_release_setting' !== false ) ):
+
+            // define the meta key of interest
+            $user_meta_key = 'soc_percentage_switch_release_setting';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+
+
+          case ( stripos( $field[ 'key' ], 'min_soc_percentage_for_switch_release_after_rdbc' !== false ) ):
+
+            // define the meta key of interest
+            $user_meta_key = 'min_soc_percentage_for_switch_release_after_rdbc';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+
+
+          case ( stripos( $field[ 'key' ], 'min_solar_surplus_for_switch_release_after_rdbc' !== false ) ):
+
+            // define the meta key of interest
+            $user_meta_key = 'min_solar_surplus_for_switch_release_after_rdbc';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+
+
+          case ( stripos( $field[ 'key' ], 'battery_voltage_avg_float_setting' !== false ) ):
+
+            // define the meta key of interest
+            $user_meta_key = 'battery_voltage_avg_float_setting';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+
+          case ( stripos( $field[ 'key' ], 'acin_min_voltage_for_rdbc' !== false ) ):
+
+            // define the meta key of interest
+            $user_meta_key = 'acin_min_voltage_for_rdbc';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+
+          case ( stripos( $field[ 'key' ], 'acin_max_voltage_for_rdbc' !== false ) ):
+
+            // define the meta key of interest
+            $user_meta_key = 'acin_max_voltage_for_rdbc';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+
+
+          case ( stripos( $field[ 'key' ], 'psolar_surplus_for_rdbc_setting' !== false ) ):
+
+            // define the meta key of interest
+            $user_meta_key = 'psolar_surplus_for_rdbc_setting';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+
+
+          case ( stripos( $field[ 'key' ], 'psolar_min_for_rdbc_setting' !== false ) ):
+
+            // define the meta key of interest
+            $user_meta_key = 'psolar_min_for_rdbc_setting';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+        endswitch;       // end of switch
+
+      endforeach;        // end of foreach
+
+      // perform the SOC cal if user input has set flag and given value
+
+    } // end function
 
     /**
      *

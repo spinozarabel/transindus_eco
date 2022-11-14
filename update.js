@@ -25,6 +25,7 @@ jQuery(document).ready(function($) {
 
   $(document).on("click","#grid_status_icon",function() {
                                                           toggleGridSwitch = 1;
+                                                          count = 4; // prevent multiple Ajax triggers
                                                           triggerAjax();
                                                         }
                 );

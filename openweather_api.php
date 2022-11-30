@@ -26,7 +26,12 @@ class openweathermap_api
     }       // end construct function
 
     /**
-     * 
+     *  @return obj $cloudiness_forecast
+     *  Queries the weather forecast using API. 
+     *  $cloudiness_forecast->it_is_a_cloudy_day  is a boolean variable with no weighting
+     *  $cloudiness_forecast->it_is_a_cloudy_day_weighted_average  is a boolean variable using weighting for midday
+     *  $cloudiness_forecast->cloudiness_average_percentage  Percentage average cloudiness with no weighting
+     *  $cloudiness_forecast->cloudiness_average_percentage_weighted  Weighted percentage average cloudiness
      */
     public function forecast_is_cloudy()
     {

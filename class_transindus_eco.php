@@ -569,7 +569,7 @@ class class_transindus_eco
         $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
 
         // Weighted percentage cloudiness
-        $cloudiness_average_percentage_weighted = $this->cloudiness_forecast->cloudiness_average_percentage_weighted;
+        $cloudiness_average_percentage_weighted = round($this->cloudiness_forecast->cloudiness_average_percentage_weighted, 0);
 
         // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only at beginning of day, once.
         $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;

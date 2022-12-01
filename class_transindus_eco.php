@@ -562,11 +562,14 @@ class class_transindus_eco
         $aux1_relay_state     = $studer_readings_obj->aux1_relay_state;
 
         // Boolean values for checking is present time is within defined time intervals
-        $now_is_daytime       = $this->nowIsWithinTimeLimits("07:00", "16:30"); // changed from 17:30  on 7/28/22
+        $now_is_daytime       = $this->nowIsWithinTimeLimits("08:30", "16:30"); // changed from 17:30  on 7/28/22
         $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
 
         // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
         $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
+
+        // Weighted percentage cloudiness
+        $cloudiness_average_percentage_weighted = $this->cloudiness_forecast->cloudiness_average_percentage_weighted;
 
         // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only at beginning of day, once.
         $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
@@ -736,6 +739,8 @@ class class_transindus_eco
         $studer_readings_obj->sunset_switch_release             = $sunset_switch_release;
         $studer_readings_obj->switch_release_float_state        = $switch_release_float_state;
         $studer_readings_obj->control_shelly                    = $control_shelly;
+
+        $studer_readings_obj->cloudiness_average_percentage_weighted  = $cloudiness_average_percentage_weighted;
         
 
         switch(true)
@@ -824,7 +829,9 @@ class class_transindus_eco
                 error_log("Exited via Case Default, NO ACTION TAKEN");
                 $cron_exit_condition = "No Action";
             break;
-        }
+
+        }   // end witch statement
+
         $now = new DateTime();
 
         $array_for_json = [ 'unixdatetime'        => $now->getTimestamp() ,
@@ -2858,8 +2865,8 @@ class class_transindus_eco
     }    
     
     /**
-     * @param object:studer_readings_obj contains details of all the readings
-     * @return object:format_object contains html for all the icons to be updatd by JS on Ajax call return
+     * @param stdClass:studer_readings_obj contains details of all the readings
+     * @return stdClass:format_object contains html for all the icons to be updatd by JS on Ajax call return
      * determine the icons based on updated data
      */
     public function prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj )
@@ -3081,6 +3088,7 @@ class class_transindus_eco
         $cron_exit_condition_user_meta_arr = json_decode($json_cron_exit_condition_user_meta, true);
         // extract the last condition saved that was NOT a No Action.
         $saved_cron_exit_condition = $cron_exit_condition_user_meta_arr['cron_exit_condition'];
+        $saved_cron_exit_condition .= " Cloudiness: " . $studer_readings_obj->cloudiness_average_percentage_weighted . " %";
 
         // present time
         $now = new DateTime();

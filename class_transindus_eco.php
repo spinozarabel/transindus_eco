@@ -546,8 +546,13 @@ class class_transindus_eco
 
         // get the estimated solar power from calculations for a clear day
         $est_solar_kw         = $this->estimated_solar_power($user_index);
-        // SOlar power Now
+
+        // Solar power Now
         $psolar               = $studer_readings_obj->psolar_kw;
+
+        // Check if it is cloudy AT THE MOMENT. Yes if solar is less than half of estimate
+        $it_is_cloudy_at_the_moment = $psolar <= 0.5 * array_sum($est_solar_kw);
+
         // Solar Current into Battery Junction at present moment
         $solar_pv_adc         = $studer_readings_obj->solar_pv_adc;
 
@@ -704,7 +709,7 @@ class class_transindus_eco
                                           ( $now_is_daytime )                             &&   // Now is Daytime
                                           ( $psolar  >= $psolar_min_for_rdbc_setting )    &&   // at least some solar generation
                                           ( $surplus <= $psolar_surplus_for_rdbc_setting ) &&  // Solar Deficit is negative
-                                          ( $psolar <= 0.5 * array_sum($est_solar_kw) )    &&  // Only when it is cloudy
+                                          ( $it_is_cloudy_at_the_moment )                 &&   // Only when it is cloudy
                                           ( $control_shelly == true );                         // Control Flag is SET
         // switch release typically after RDBC when Psurplus is positive.
         $switch_release =  ( $SOC_percentage_now >= $min_soc_percentage_for_switch_release_after_rdbc ) &&  // SOC ?= 32%

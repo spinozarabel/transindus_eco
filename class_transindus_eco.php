@@ -644,11 +644,11 @@ class class_transindus_eco
           // This is the new simpler method.
           if ($surplus >= 0.0)
           {
-            $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.04;
+            $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.03;
           }
           else
           {
-            $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.04;
+            $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.03;
           }
 
           $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today,1);
@@ -746,6 +746,7 @@ class class_transindus_eco
         $studer_readings_obj->control_shelly                    = $control_shelly;
 
         $studer_readings_obj->cloudiness_average_percentage_weighted  = $cloudiness_average_percentage_weighted;
+        $studer_readings_obj->est_solar_kw  = round( array_sum($est_solar_kw), 1);
         
 
         switch(true)
@@ -3094,6 +3095,7 @@ class class_transindus_eco
         // extract the last condition saved that was NOT a No Action.
         $saved_cron_exit_condition = $cron_exit_condition_user_meta_arr['cron_exit_condition'];
         $saved_cron_exit_condition .= " Cloudiness: " . $studer_readings_obj->cloudiness_average_percentage_weighted . " %";
+        $saved_cron_exit_condition .= " Pest: " . $studer_readings_obj->est_solar_kw . " KW";
 
         // present time
         $now = new DateTime();

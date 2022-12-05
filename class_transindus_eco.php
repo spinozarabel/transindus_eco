@@ -3092,7 +3092,8 @@ class class_transindus_eco
         $json_cron_exit_condition_user_meta = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
         // decode the JSON encoded string into an Object
         $cron_exit_condition_user_meta_arr = json_decode($json_cron_exit_condition_user_meta, true);
-        // extract the last condition saved that was NOT a No Action.
+
+        // extract the last condition saved that was NOT a No Action. Add cloudiness and Estimated Solar to message
         $saved_cron_exit_condition = $cron_exit_condition_user_meta_arr['cron_exit_condition'];
         $saved_cron_exit_condition .= " Cloud: " . $studer_readings_obj->cloudiness_average_percentage_weighted . " %";
         $saved_cron_exit_condition .= " Pest: " . $studer_readings_obj->est_solar_kw . " KW";

@@ -714,7 +714,7 @@ class class_transindus_eco
                                           ( $it_is_cloudy_at_the_moment )                 &&   // Only when it is cloudy
                                           ( $control_shelly == true );                         // Control Flag is SET
         // switch release typically after RDBC when Psurplus is positive.
-        $switch_release =  ( $SOC_percentage_now >= $min_soc_percentage_for_switch_release_after_rdbc ) &&  // SOC ?= 32%
+        $switch_release =  ( $SOC_percentage_now >= ( $soc_percentage_lvds_setting + 2 ) ) &&  // SOC ?= LBDS + offset
                            ( $shelly_switch_status == "ON" )  														  &&  // Switch is ON now
                            ( $surplus >= $min_solar_surplus_for_switch_release_after_rdbc ) &&  // Solar surplus is >= 0.2KW
                            ( $keep_shelly_switch_closed_always == false )                   &&	// Emergency flag is False

@@ -638,16 +638,21 @@ class class_transindus_eco
           $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + ($KWH_grid_today - $KWH_load_today) * 1.07;
 
           // Calculate accumulated nett charge into Battery in % of SOC Capacity using the old method
-          $SOC_batt_charge_net_percent_today_old = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
+          // $SOC_batt_charge_net_percent_today_old = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
           // this is the old method
-          $SOC_percentage_now_old = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_old;
+          // $SOC_percentage_now_old = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_old;
 
-          // This is the new simpler method.
+          // This is the new simpler method. Nett charge in KWH is Solar KWH - Battery KWH discharged
           $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.00;
 
+          // calculate the new SOC percentage compared to 49 x 300 KAH
           $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today,1);
 
-          $delta_soc_percentage = ( $SOC_percentage_previous - $SOC_percentage_now ) / 49.0 * $battery_voltage_avg;
+          // Calculate the difference in SOC% from previous measurement to now.
+          // Adjust the difference for the current battery voltage vs 49V assumed in SOC capacity in KWH
+          $delta_soc_percentage = ( $SOC_percentage_previous -  $SOC_percentage_now ) / 49.0 * $battery_voltage_avg;
+
+          // If the delta SOC was positive it meant SOC was decreasing. So  subtract delta algebraically so signs are taken care of
           $SOC_percentage_now = round( $SOC_percentage_previous - $delta_soc_percentage, 1);
 
           // check if the SOC now is too different from previous, It should not be more than 
@@ -673,7 +678,7 @@ class class_transindus_eco
             //error_log("SOC Percentage ALT: "                                  . $SOC_percentage_now_alt                 . " %");
             //error_log("");  // print out blank line for better readability
             error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . $KWH_batt_percent_discharged_today . 
-                      " SOC_0%: " . $SOC_percentage_beg_of_day . " SOC%: " . $SOC_percentage_now . " SOCold%: " . $SOC_percentage_now_old);
+                      " SOC_0%: " . $SOC_percentage_beg_of_day . " SOC%: " . $SOC_percentage_now );
           }
         }
 

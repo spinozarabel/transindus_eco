@@ -678,7 +678,7 @@ class class_transindus_eco
             //error_log("SOC Percentage ALT: "                                  . $SOC_percentage_now_alt                 . " %");
             //error_log("");  // print out blank line for better readability
             error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . $KWH_batt_percent_discharged_today . 
-                      " SOC_0%: " . $SOC_percentage_beg_of_day . " SOC%: " . $SOC_percentage_now );
+                      " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC Now: " . $SOC_percentage_now . " %" );
           }
         }
 

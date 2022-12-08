@@ -646,14 +646,14 @@ class class_transindus_eco
           $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.08;
 
           // calculate the new SOC percentage compared to 49 x 300 KAH
-          $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today,1);
+          $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today, 1);
 
           // Calculate the difference in SOC% from previous measurement to now.
           // Adjust the difference for the current battery voltage vs 49V assumed in SOC capacity in KWH
-          $delta_soc_percentage = ( $SOC_percentage_previous -  $SOC_percentage_now ) / 49.0 * $battery_voltage_avg;
+          // $delta_soc_percentage = ( $SOC_percentage_previous -  $SOC_percentage_now ) / 49.0 * $battery_voltage_avg;
 
           // If the delta SOC was positive it meant SOC was decreasing. So  subtract delta algebraically so signs are taken care of
-          $SOC_percentage_now = round( $SOC_percentage_previous - $delta_soc_percentage, 1);
+          // $SOC_percentage_now = round( $SOC_percentage_previous - $delta_soc_percentage, 1);
 
           // check if the SOC now is too different from previous, It should not be more than 
           if ( abs($SOC_percentage_previous - $SOC_percentage_now) > 1 )

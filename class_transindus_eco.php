@@ -600,12 +600,12 @@ class class_transindus_eco
             error_log("username: "             . $wp_user_name . ' Switch: ' . $shelly_switch_status . ' ' . 
                                                  $battery_voltage_avg . ' V, ' . $studer_readings_obj->battery_charge_adc . 'A ' .
                                                  $shelly_api_device_status_voltage . ' VAC');
-            error_log("Pcalc: " . array_sum($est_solar_kw) . " Psolar: " . $psolar . " - Psurplus: " . 
-                       $surplus . " KW - It is a CLoudy Day?: " . $it_is_a_cloudy_day);
+            error_log("Psolar_calc: " . array_sum($est_solar_kw) . " Psolar_act: " . $psolar . " - Psurplus: " . 
+                       $surplus . " KW - Is it a Cloudy Day?: " . $it_is_a_cloudy_day);
         
-            error_log("Solar Units Today: "    . $KWH_solar_today                          . "KWH");
-            error_log("Grid Units Today: "     . $KWH_grid_today                           . "KWH");
-            error_log("Load Units Today: "     . $KWH_load_today                           . "KWH");
+            // error_log("Solar Units Today: "    . $KWH_solar_today                          . "KWH");
+            // error_log("Grid Units Today: "     . $KWH_grid_today                           . "KWH");
+            // error_log("Load Units Today: "     . $KWH_load_today                           . "KWH");
         }
 
         // get the SOC % from the previous reading from user meta

@@ -5,7 +5,8 @@
  *
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
- * Ver 1.3
+ * Ver 1.4
+ *     Making SOC based on AH of battery not in terms of KWH
  *     Removed SOC clamp when Vbatt > 50.7. Now CLap works only for SOC
  *     Changed Averaging using Transient. The previous voltage averaging was not happening due to stateless
  *     Changed the efficiency factor for Solar to 0.96 from 0.94
@@ -648,7 +649,7 @@ class class_transindus_eco
           }
           else
           {
-            $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.00;
+            $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.03;
           }
 
           $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today,1);

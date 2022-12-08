@@ -648,7 +648,7 @@ class class_transindus_eco
           $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today,1);
 
           $delta_soc_percentage = ( $SOC_percentage_previous - $SOC_percentage_now ) * 49.0 / $battery_voltage_avg;
-          $SOC_percentage_now_old = round( $SOC_percentage_previous - $delta_soc_percentage, 1);
+          $SOC_percentage_now = round( $SOC_percentage_previous - $delta_soc_percentage, 1);
 
           // check if the SOC now is too different from previous, It should not be more than 
           if ( abs($SOC_percentage_previous - $SOC_percentage_now) > 1 )

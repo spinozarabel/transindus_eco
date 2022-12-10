@@ -640,13 +640,13 @@ class class_transindus_eco
           // Calculate accumulated nett charge into Battery in % of SOC Capacity using the old method
           $SOC_batt_charge_net_percent_today_old = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
           // this is the old method
-          $SOC_percentage_now_old = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_old;
+          $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_old;
 
           // This is the new simpler method. Nett charge in KWH is Solar KWH - Battery KWH discharged
           $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.04;
 
           // calculate the new SOC percentage compared to 49 x 300 KAH
-          $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today, 1);
+          // $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today, 1);
 
           // Calculate the difference in SOC% from previous measurement to now.
           // Adjust the difference for the current battery voltage vs 49V assumed in SOC capacity in KWH
@@ -663,10 +663,10 @@ class class_transindus_eco
           }
 
           // update the object and user meta
-          $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now_old;
+          $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now;
 
           // Update user meta so this becomes the previous value for next cycle
-          update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now_old);
+          update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
 
           if (true)
           {

@@ -638,12 +638,12 @@ class class_transindus_eco
           $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + ($KWH_grid_today - $KWH_load_today) * 1.07;
 
           // Calculate accumulated nett charge into Battery in % of SOC Capacity using the old method
-          $SOC_batt_charge_net_percent_today_old = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
+          $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
           // this is the old method
-          $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_old;
+          $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
 
           // This is the new simpler method. Nett charge in KWH is Solar KWH - Battery KWH discharged
-          $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.04;
+          // $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.04;
 
           // calculate the new SOC percentage compared to 49 x 300 KAH
           // $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today, 1);
@@ -758,7 +758,7 @@ class class_transindus_eco
             // so ignore attempting any control and skip this user
             case (  $switch_override ):
                   // ignore this user
-                  error_log("condition MCB Switch Override - NO ACTION)");
+                  error_log("MCB Switch Override - NO ACTION)");
                   $cron_exit_condition = "Manual Switch Override";
             break;
 

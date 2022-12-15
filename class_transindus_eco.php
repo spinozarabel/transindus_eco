@@ -635,7 +635,7 @@ class class_transindus_eco
           // update the SOC percentage based on actuals. The update is algebraic. It can add or subtract
           // If there is no battery charging oby Grid Charge is Solar - discharge
           // Assumes 94% for Solar power to battery power and 94% efficiency for Inverter to give 1.07 factor
-          $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07;
+          $KWH_batt_charge_net_today  = $KWH_solar_today * 0.92 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07;
 
           // Calculate accumulated nett charge into Battery in % of SOC Capacity using the old method
           $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);

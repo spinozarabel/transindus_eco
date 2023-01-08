@@ -585,7 +585,7 @@ class class_transindus_eco
         $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
 
         // get the installed battery capacity in KWH from config
-        $SOC_capacity_KWH = $soh_percentage_setting * $this->config['accounts'][$user_index]['battery_capacity'];
+        $SOC_capacity_KWH = $soh_percentage_setting / 100  * $this->config['accounts'][$user_index]['battery_capacity'];
 
         // get the current Measurement values from the Stider Readings Object
         $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;  // Net SOlar Units generated Today

@@ -585,7 +585,7 @@ class class_transindus_eco
         $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
 
         // get the installed battery capacity in KWH from config
-        $SOC_capacity_KWH = $this->config['accounts'][$user_index]['battery_capacity'];
+        $SOC_capacity_KWH = $soh_percentage_setting * $this->config['accounts'][$user_index]['battery_capacity'];
 
         // get the current Measurement values from the Stider Readings Object
         $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;  // Net SOlar Units generated Today
@@ -855,24 +855,21 @@ class class_transindus_eco
 
         // Update the user meta with the CRON exit condition only fir definite ACtion not for no action
         if ($cron_exit_condition !== "No Action") 
-        {
-            update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
-        }
+          {
+              update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
+          }
 
         if (  $SOC_percentage_now > 100.0 || $battery_voltage_avg  >=  $battery_voltage_avg_float_setting )
-        {
-          // SInce we know that the battery SOC is 100% use this knowledge along with
-          // Energy data to recalibrate the soc_percentage user meta
-          $SOC_percentage_beg_of_day_recal = 100 - $SOC_batt_charge_net_percent_today;
+          {
+            // SInce we know that the battery SOC is 100% use this knowledge along with
+            // Energy data to recalibrate the soc_percentage user meta
+            $SOC_percentage_beg_of_day_recal = 100 - $SOC_batt_charge_net_percent_today;
 
-          update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
+            update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 
-          error_log("SOC 100% clamp activated: " . $SOC_percentage_beg_of_day_recal  . " %");
-        }
+            error_log("SOC 100% clamp activated: " . $SOC_percentage_beg_of_day_recal  . " %");
+          }
         
-        
-        // New readings Object was updated but not yet read by Ajax
-        // update_user_meta( $wp_user_ID, 'new_readings_read_by_ajax', true );
 
         return $studer_readings_obj;
     }
@@ -1044,6 +1041,35 @@ class class_transindus_eco
 
             // define the meta key of interest
             $user_meta_key = 'soc_percentage_lvds_setting';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+
+
+          case ( stripos( $field[ 'key' ], 'soh_percentage_setting' ) !== false ):
+
+            // define the meta key of interest
+            $user_meta_key = 'soh_percentage_setting';
 
             // look for the defaults using the user meta key
             $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array

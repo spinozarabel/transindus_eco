@@ -647,7 +647,7 @@ class class_transindus_eco
           // this is the old method
           $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
 
-          $SOC_percentage_now += - 1* (100 - $soh_percentage_setting); // say -4 ponts reduced due to SOH
+          // $SOC_percentage_now += - 1* (100 - $soh_percentage_setting); // say -4 ponts reduced due to SOH
 
           // This is the new simpler method. Nett charge in KWH is Solar KWH - Battery KWH discharged
           // $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.04;

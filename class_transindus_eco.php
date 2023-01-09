@@ -585,7 +585,7 @@ class class_transindus_eco
         $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
 
         // get the installed battery capacity in KWH from config
-        $SOC_capacity_KWH = $soh_percentage_setting / 100  * $this->config['accounts'][$user_index]['battery_capacity'];
+        $SOC_capacity_KWH     = $this->config['accounts'][$user_index]['battery_capacity'];
 
         // get the current Measurement values from the Stider Readings Object
         $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;  // Net SOlar Units generated Today
@@ -643,8 +643,11 @@ class class_transindus_eco
 
           // Calculate accumulated nett charge into Battery in % of SOC Capacity using the old method
           $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
+
           // this is the old method
           $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
+
+          $SOC_percentage_now += - 1* (100 - $soh_percentage_setting); // say -4 ponts reduced due to SOH
 
           // This is the new simpler method. Nett charge in KWH is Solar KWH - Battery KWH discharged
           // $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.04;

@@ -56,6 +56,8 @@ class class_transindus_eco
 
   public $valid_shelly_config;
 
+  public $do_soc_cal_now_arr;
+
 
     /**
 	 * Define the core functionality of the plugin.
@@ -639,7 +641,7 @@ class class_transindus_eco
           // update the SOC percentage based on actuals. The update is algebraic. It can add or subtract
           // If there is no battery charging oby Grid Charge is Solar - discharge
           // Assumes 94% for Solar power to battery power and 94% efficiency for Inverter to give 1.07 factor
-          $KWH_batt_charge_net_today  = $KWH_solar_today * 0.93 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.06;
+          $KWH_batt_charge_net_today  = $KWH_solar_today * 0.93 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.09;
 
           // Calculate accumulated nett charge into Battery in % of SOC Capacity using the old method
           $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
@@ -864,7 +866,7 @@ class class_transindus_eco
 
         if (  $SOC_percentage_now > 100.0 || $battery_voltage_avg  >=  $battery_voltage_avg_float_setting )
           {
-            // SInce we know that the battery SOC is 100% use this knowledge along with
+            // Since we know that the battery SOC is 100% use this knowledge along with
             // Energy data to recalibrate the soc_percentage user meta
             $SOC_percentage_beg_of_day_recal = 100 - $SOC_batt_charge_net_percent_today;
 
@@ -878,7 +880,8 @@ class class_transindus_eco
     }
 
     /**
-     * 
+     *  Ninja form data is checked for proper limits.
+     *  If data is changed the corresponding user meta is updated to trhe new form data.
      */
     public function my_ninja_forms_after_submission( $form_data )
     {
@@ -995,6 +998,8 @@ class class_transindus_eco
             {
               $do_soc_cal_now = false;
             }
+            // Set the $this object for this flag
+            $this->do_soc_cal_now_arr[$wp_user_ID] = $do_soc_cal_now;
           break;
 
 
@@ -1359,8 +1364,6 @@ class class_transindus_eco
         endswitch;       // end of switch
 
       endforeach;        // end of foreach
-
-      // perform the SOC cal if user input has set flag and given value
 
     } // end function
 

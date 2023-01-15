@@ -628,8 +628,8 @@ class class_transindus_eco
 
         // set a clamp if the update is bad
         if ( $SOC_percentage_now < 25 ) {
+          error_log("SOC now bad update: " .  $SOC_percentage_now . " %");
           $SOC_percentage_now = 25;
-          error_log("SOC now bad update: " . $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today  . " %");
         }
 
         // Check to see if new day accounting has begun. Check for reset of Solar and Load units reset to 0

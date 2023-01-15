@@ -617,13 +617,29 @@ class class_transindus_eco
         // get the SOC % from the previous reading from user meta
         $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true) ?? 50.0;
 
+        // Net battery charge in KWH (discharge if minus)
+        $KWH_batt_charge_net_today  = $KWH_solar_today * 0.93 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.09;
+
+        // Calculate in percentage of  installed battery capacity
+        $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
+
+        //  Update SOC  number
+        $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
+
+        // set a clamp if the update is bad
+        if ( $SOC_percentage_now < 25 ) {
+          $SOC_percentage_now = 25;
+          error_log("SOC now bad update: " . $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today  . " %");
+        }
+
         // Check to see if new day accounting has begun. Check for reset of Solar and Load units reset to 0
-        if (  $KWH_solar_today <= 0.01  &&  // Solar has been reset to 0
-              $KWH_load_today  <= 0.05  &&  // Accumulated new day load is still small so window still open for roll over
-              ( $this->nowIsWithinTimeLimits("00:00", "00:05") || 
-                $this->nowIsWithinTimeLimits("23:55", "23:59:59") )   // Time wi close to either side of midnoght for roll over
-            )
-        {
+        // 
+        if (  ( $KWH_solar_today <= 0.01 )                                &&    // Solar has been reset to 0
+              ( $KWH_load_today  <= 1 )                                   &&
+              ( abs($SOC_percentage_previous - $SOC_percentage_now) > 4 ) &&    // if difference is small we don't care
+              ( $this->nowIsWithinTimeLimits("00:00", "00:59") || 
+                $this->nowIsWithinTimeLimits("23:00", "23:59:59") )          )    {
+
           // Since new day accounting has begun, update user meta for SOC at beginning of new day
           // This update only happens at beginning of day and also during battery float
           update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_previous);
@@ -631,65 +647,21 @@ class class_transindus_eco
           error_log("SOC new day rollover activated: " . $SOC_percentage_previous  . " %");
 
           // since the battery nett charge for the new day is 0, SOC now is same as SOC previous
-          // Otherwise SOC now will be indeterminate when coming through this branch
           $SOC_percentage_now = $SOC_percentage_previous;
         }
-        else
+        
+        // Update user meta so this becomes the previous value for next cycle
+        update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
+
+        // update the object and user meta
+        $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now;
+
+        if (true)
         {
-          // New day accounting has not started yet. This is the Usual case. Most of the time this gets executed
-          // So update the SOC percentage at current moment as calculated
-          // update the SOC percentage based on actuals. The update is algebraic. It can add or subtract
-          // If there is no battery charging oby Grid Charge is Solar - discharge
-          // Assumes 94% for Solar power to battery power and 94% efficiency for Inverter to give 1.07 factor
-          $KWH_batt_charge_net_today  = $KWH_solar_today * 0.93 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.09;
-
-          // Calculate accumulated nett charge into Battery in % of SOC Capacity using the old method
-          $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
-
-          // this is the old method
-          $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
-
-          // $SOC_percentage_now += - 1* (100 - $soh_percentage_setting); // say -4 ponts reduced due to SOH
-
-          // This is the new simpler method. Nett charge in KWH is Solar KWH - Battery KWH discharged
-          // $SOC_batt_charge_net_percent_today = 0.92 * $KWH_solar_percentage_today - $KWH_batt_percent_discharged_today * 1.04;
-
-          // calculate the new SOC percentage compared to 49 x 300 KAH
-          // $SOC_percentage_now = round($SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today, 1);
-
-          // Calculate the difference in SOC% from previous measurement to now.
-          // Adjust the difference for the current battery voltage vs 49V assumed in SOC capacity in KWH
-          // $delta_soc_percentage = ( $SOC_percentage_previous -  $SOC_percentage_now ) / 49.0 * $battery_voltage_avg;
-
-          // If the delta SOC was positive it meant SOC was decreasing. So  subtract delta algebraically so signs are taken care of
-          // $SOC_percentage_now = round( $SOC_percentage_previous - $delta_soc_percentage, 1);
-
-          // check if the SOC now is too different from previous, It should not be more than 
-          if ( abs($SOC_percentage_previous - $SOC_percentage_now) > 1 )
-          {
-              error_log("Warning - SOC update questionable - previous and now differ by more than 1 point");
-              error_log("SOC Previous: " . $SOC_percentage_previous . " % , SOC Now: " . $SOC_percentage_now . " %");
-          }
-
-          // update the object and user meta
-          $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now;
-
-          // Update user meta so this becomes the previous value for next cycle
-          update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
-
-          if (true)
-          {
-            //error_log("Solar KWH Percentage of Capacity Today: "      . $KWH_solar_percentage_today      . " %");
-            //error_log("Battery discharge Percentage of Capacity Today: "      . $KWH_batt_percent_discharged_today      . " %");
-           // error_log("Battery Nett Charge Percentage of Capacity Today: "    . $SOC_batt_charge_net_percent_today      . " %");
-            //error_log("Battery Percentage of Capacity Beginning of Day: "     . $SOC_percentage_beg_of_day              . " %");
-            //error_log("SOC Percentage: "                                      . $SOC_percentage_now                     . " %");
-            //error_log("SOC Percentage ALT: "                                  . $SOC_percentage_now_alt                 . " %");
-            //error_log("");  // print out blank line for better readability
-            error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . $KWH_batt_percent_discharged_today . 
-                      " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC Now: " . $SOC_percentage_now . " %" );
-          }
+          error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . $KWH_batt_percent_discharged_today . 
+                    " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC Now: " . $SOC_percentage_now . " %" );
         }
+        
 
         // define all the conditions for the SWITCH - CASE tree
 

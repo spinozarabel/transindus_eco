@@ -620,6 +620,8 @@ class class_transindus_eco
         // Net battery charge in KWH (discharge if minus)
         $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.10;
 
+        $batt_disc_percentage_calc_from_load = (0.988 * $KWH_grid_today - $KWH_load_today) * 1.10;
+
         // Calculate in percentage of  installed battery capacity
         $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
 
@@ -660,6 +662,7 @@ class class_transindus_eco
         {
           error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . $KWH_batt_percent_discharged_today . 
                     " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC Now: " . $SOC_percentage_now . " %" );
+          error_log('Battery Dis %: ' . $batt_disc_percentage_calc_from_load . ' %');
         }
         
 

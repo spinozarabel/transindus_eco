@@ -618,7 +618,7 @@ class class_transindus_eco
         $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true) ?? 50.0;
 
         // Net battery charge in KWH (discharge if minus)
-        $KWH_batt_charge_net_today  = $KWH_solar_today * 0.93 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.10;
+        $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.10;
 
         // Calculate in percentage of  installed battery capacity
         $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);

@@ -381,7 +381,7 @@ class class_transindus_eco
     {                        // Loop over all of the eligible users
         foreach ($this->config['accounts'] as $user_index => $account)
         {
-            $wp_user_name = $this->config['accounts'][$user_index]['wp_user_name'];
+            $wp_user_name = $account['wp_user_name'];
 
                             // Get the wp user object given the above username
             $wp_user_obj          = get_user_by('login', $wp_user_name);

@@ -385,6 +385,9 @@ class class_transindus_eco
 
                             // Get the wp user object given the above username
             $wp_user_obj          = get_user_by('login', $wp_user_name);
+
+            if ( empty($wp_user_obj) ) continue;
+            
             $wp_user_ID           = $wp_user_obj->ID;
 
                             // extract the control flag as set in user meta

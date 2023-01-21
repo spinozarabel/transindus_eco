@@ -621,6 +621,7 @@ class class_transindus_eco
         $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.10;
 
         $batt_disc_percentage_calc_from_load = (0.988 * $KWH_grid_today - $KWH_load_today) * 1.10;
+        $batt_disc_percentage_calc_from_load = round( $batt_disc_percentage_calc_from_load / $SOC_capacity_KWH * 100, 1);
 
         // Calculate in percentage of  installed battery capacity
         $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);

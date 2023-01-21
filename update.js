@@ -88,7 +88,7 @@ jQuery(document).ready(function($) {
               // update the screen with new readings from Ajax Call
               updateScreenWithNewData(data);
               
-              var timeout_ID1 = setTimeout(triggerAjaxForCronNativeUpdates, 60000); // this is 60s delay
+              var timeout_ID1 = setTimeout(triggerAjaxForCronNativeUpdates, 30000); // this is 30s delay
           }
           );  // end of ajax post
 

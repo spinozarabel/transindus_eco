@@ -744,11 +744,13 @@ class class_transindus_eco
             // if Shelly switch is OPEN but Studer transfer relay is closed and Studer AC voltage is present
             // it means that the ACIN is manually overridden at control panel
             // so ignore attempting any control and skip this user
+            /*
             case (  $switch_override ):
                   // ignore this user
                   error_log("MCB Switch Override - NO ACTION)");
                   $cron_exit_condition = "Manual Switch Override";
             break;
+            */
 
 
             // <1> If switch is OPEN AND running average Battery voltage from 5 readings is lower than limit

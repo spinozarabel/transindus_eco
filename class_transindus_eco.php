@@ -5,13 +5,10 @@
  *
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
- * Ver 1.4
- *     Making SOC based on AH of battery not in terms of KWH
- *     Removed SOC clamp when Vbatt > 50.7. Now CLap works only for SOC
- *     Changed Averaging using Transient. The previous voltage averaging was not happening due to stateless
- *     Changed the efficiency factor for Solar to 0.96 from 0.94
- *     Added measurements for: 3078(KWHbatt), 3083(KWHload), 11007 (KWHsolar), and 3081(KWHgrid)
- *     Changed SOC computation using percentages instead of Units
+ * Ver 2
+ *     Added Shelly 4 PM for energy readings to home. 
+ *      During dark SOC updates can use this if Studer API calls fail
+ * 
  *
  */
 
@@ -74,7 +71,7 @@ class class_transindus_eco
       }
       else
       {
-          $this->version = '1.0';
+          $this->version = '2.0';
       }
 
       $this->plugin_name = 'transindus_eco';
@@ -93,42 +90,9 @@ class class_transindus_eco
 
       // Cannot call wp_get_current_user in a constructor
 
-          // set the logging
-      $this->verbose = false;
-
-      // lat and lon at Trans Indus from Google Maps
-      $this->lat        = 12.83463;
-      $this->lon        = 77.49814;
-      $this->utc_offset = 5.5;
-
       $this->timezone = new DateTimeZone("Asia/Kolkata");
 
-      $datetime = new DateTime();
-
-      date_default_timezone_set("Asia/Kolkata");
-
-      if ( $this->nowIsWithinTimeLimits("05:00", "06:00") )
-      {   // Get the weather forecast if time is between 5 to 6 in the morning.
-        $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
-
-        // write the weatehr forecast to a transient valid for 24h
-        set_transient( 'cloudiness_forecast', $this->cloudiness_forecast, 24*60*60 );
-      }
-      else  
-      {   // Read the transient for the weatehr forecast that has already been read between 5 and 6 AM
-        if ( false === get_transient( 'cloudiness_forecast' ) )
-        {
-          // Transient does not exist or has expired, so regenerate the cloud forecast
-          $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
-
-          // write the weatehr forecast to a transient valid for 24h
-          set_transient( 'cloudiness_forecast', $this->cloudiness_forecast, 24*60*60 );
-        }
-        else
-        {
-          $this->cloudiness_forecast = get_transient( 'cloudiness_forecast' );
-        }
-      }
+      $this->init();
 	}
 
     /**
@@ -171,6 +135,56 @@ class class_transindus_eco
 
         // Define shortcode to prepare for my-studer-settings page
         add_shortcode( 'my-studer-settings',          [$this, 'my_studer_settings'] );
+    }
+
+    /**
+     *  Separated this init function so that it can execute frequently rather than just at class construct
+     */
+    public function init()
+    {
+      $this->set_default_timezone();
+
+      // set the logging
+      $this->verbose = false;
+
+      // lat and lon at Trans Indus from Google Maps
+      $this->lat        = 12.83463;
+      $this->lon        = 77.49814;
+      $this->utc_offset = 5.5;
+
+      if ( $this->nowIsWithinTimeLimits("05:00", "06:00") )
+      {   // Get the weather forecast if time is between 5 to 6 in the morning.
+        $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
+
+        // write the weatehr forecast to a transient valid for 24h
+        set_transient( 'cloudiness_forecast', $this->cloudiness_forecast, 24*60*60 );
+      }
+      else  
+      {   // Read the transient for the weatehr forecast that has already been read between 5 and 6 AM
+        if ( false === get_transient( 'cloudiness_forecast' ) )
+        {
+          // Transient does not exist or has expired, so regenerate the cloud forecast
+          $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
+
+          // write the weatehr forecast to a transient valid for 24h
+          set_transient( 'cloudiness_forecast', $this->cloudiness_forecast, 24*60*60 );
+        }
+        else
+        {
+          // transient exists so just read it in to object property
+          $this->cloudiness_forecast = get_transient( 'cloudiness_forecast' );
+        }
+      }
+    }
+
+
+
+    /**
+     * 
+     */
+    public static function set_default_timezone()
+    {
+      date_default_timezone_set("Asia/Kolkata");
     }
 
     /**
@@ -368,6 +382,331 @@ class class_transindus_eco
             [$this, 'my_api_tools_render']
         );
     }
+
+
+    /**
+     * 
+     */
+    public function get_all_usermeta( int $user_index , int $wp_user_ID ):array
+    {
+      $all_usermeta = [];
+      // set default timezone to Asia Kolkata
+      $this->set_default_timezone();
+
+      $config       = $this->get_config();
+
+      $all_usermeta = array_map( function( $a ){ return $a[0]; }, get_user_meta( $wp_user_ID ) );
+
+      // Set this as class property valid for the user index under consideration.
+      $this->all_usermeta = $all_usermeta;
+
+      return $all_usermeta;
+
+      /*
+
+      // SOC percentage needed to trigger LVDS
+      $usermeta['soc_percentage_lvds_setting']            = get_user_meta($wp_user_ID, "soc_percentage_lvds_setting",  true) ?? 30;
+
+      // SOH of battery currently. 
+      $usermeta['soh_percentage_setting']                 = get_user_meta($wp_user_ID, "soh_percentage_setting",  true) ?? 100;
+
+      // Avg Battery Voltage lower threshold for LVDS triggers
+      $usermeta['battery_voltage_avg_lvds_setting']       = get_user_meta($wp_user_ID, "battery_voltage_avg_lvds_setting",  true) ?? 48.3;
+
+      // RDBC active only if SOC is below this percentage level.
+      $usermeta['soc_percentage_rdbc_setting']            = get_user_meta($wp_user_ID, "soc_percentage_rdbc_setting",  true) ?? 80.0;
+
+      // Switch releases if SOC is above this level 
+      $usermeta['soc_percentage_switch_release_setting']  = get_user_meta($wp_user_ID, "soc_percentage_switch_release_setting",  true) ?? 95.0;
+
+      // SOC needs to be higher than this to allow switch release after RDBC
+      $usermeta['min_soc_percentage_for_switch_release_after_rdbc'] 
+                                                          = get_user_meta($wp_user_ID, "min_soc_percentage_for_switch_release_after_rdbc",  true) ?? 32;
+      
+      // min KW of Surplus Solar to release switch after RDBC
+      $usermeta['min_solar_surplus_for_switch_release_after_rdbc'] 
+                                                          = get_user_meta($wp_user_ID, "min_solar_surplus_for_switch_release_after_rdbc",  true) ?? 0.2;
+
+      // battery float voltage setting. Only used for SOC clamp for 100%
+      $usermeta['battery_voltage_avg_float_setting']      = get_user_meta($wp_user_ID, "battery_voltage_avg_float_setting",  true) ?? 51.9;
+
+      // Min VOltage at ACIN for RDBC to switch to GRID
+      $usermeta['acin_min_voltage_for_rdbc']              = get_user_meta($wp_user_ID, "acin_min_voltage_for_rdbc",  true) ?? 199;
+
+      // Max voltage at ACIN for RDBC to switch to GRID
+      $usermeta['acin_max_voltage_for_rdbc']              = get_user_meta($wp_user_ID, "acin_max_voltage_for_rdbc",  true) ?? 241; 
+
+      // KW of deficit after which RDBC activates to GRID. Usually a -ve number
+      $usermeta['psolar_surplus_for_rdbc_setting']        = get_user_meta($wp_user_ID, "psolar_surplus_for_rdbc_setting",  true) ?? -0.5;  
+
+      // Minimum Psolar before RDBC can be actiated
+      $usermeta['psolar_min_for_rdbc_setting']            = get_user_meta($wp_user_ID, "psolar_min_for_rdbc_setting",  true) ?? 0.3;  
+
+      // get operation flags from user meta. Set it to false if not set
+      $usermeta['keep_shelly_switch_closed_always']       = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true) ?? false;
+
+      // get the user meta that stores the SOC capture calculated from Studer API just after dark
+      $usermeta['soc_update_from_studer_after_dark']      = get_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', true);
+
+      $usermeta['shelly_energy_counter_after_dark']       = get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', true);
+
+      $usermeta['timestamp_soc_capture_after_dark']       = get_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', true);
+
+      */
+    }
+
+
+    /**
+     *  @return array containing values from API call on Shelly 4PM including energies, ts, power, soc update
+     */
+    public function get_shelly_switch_acin_details( int $user_index) : array
+    {
+      $return_array = [];
+
+      // set default timezone to Asia Kolkata
+      $this->set_default_timezone();
+
+      $config         = $this->get_config();
+
+      // ensure that the data below is current before coming here
+      $all_usermeta = $this->all_usermeta;
+
+      $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['shelly_device_id_acin']   )  &&
+                              ! empty( $config['accounts'][$user_index]['shelly_device_id_homepwr'] ) &&
+                              ! empty( $config['accounts'][$user_index]['shelly_server_uri']  )       &&
+                              ! empty( $config['accounts'][$user_index]['shelly_auth_key']    );
+    
+      if( $all_usermeta['do_shelly_user_meta'] && $valid_shelly_config) 
+      {  // Cotrol Shelly TRUE if usermeta AND valid config
+
+        $control_shelly = true;
+      }
+      else {    // Cotrol Shelly FALSE if usermeta AND valid config FALSE
+        $control_shelly = false;
+      }
+
+      // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
+      if ( $valid_shelly_config ) 
+      {   //  get shelly device status ONLY if valid config for switch
+
+          $shelly_api_device_response = self::get_shelly_device_status_acin( $user_index );
+
+          if ( is_null($shelly_api_device_response) ) { // switch status is unknown
+
+              error_log("Shelly cloud not responding and or device is offline");
+
+              $shelly_api_device_status_ON = null;
+
+              $shelly_switch_status             = "OFFLINE";
+              $shelly_api_device_status_voltage = "NA";
+          }
+          else {  // Switch is ONLINE - Get its status and Voltage
+              
+              $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+              $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
+
+              if ($shelly_api_device_status_ON)
+                  {
+                      $shelly_switch_status = "ON";
+                  }
+              else
+                  {
+                      $shelly_switch_status = "OFF";
+                  }
+          }
+      }
+      else 
+      {  // no valid configuration for shelly switch set variables for logging info
+
+          $shelly_api_device_status_ON = null;
+
+          $shelly_switch_status             = "Not Configured";
+          $shelly_api_device_status_voltage = "NA";    
+      }  
+
+      $return_array['valid_shelly_config']              = $valid_shelly_config;
+      $return_array['control_shelly']                   = $control_shelly;
+      $return_array['shelly_switch_status']             = $shelly_switch_status;
+      $return_array['shelly_api_device_status_voltage'] = $shelly_api_device_status_voltage;
+
+      $this->shelly_switch_acin_details = $return_array;
+
+      return $return_array;
+    }
+
+
+    /**
+     *  @param object:$return_obj has as properties values from API call on Shelly 4PM and calculations thereof
+     *  Update SOC using Shelly energy readings do not update usermeta for soc_percentage_now
+     *  The update only happens if SOC after dark baselining has happened and it is still dark now
+     *  This routine is typically called when the Studer API call fails and it is still dark.
+     */
+    public function compute_soc_from_shelly_energy_readings( int $user_index, int $wp_user_ID, string $wp_user_name): ? object
+    {
+      // set default timezone to Asia Kolkata
+      $this->set_default_timezone();
+
+      $config = $this->config;
+
+      $all_usermeta = $this->get_all_usermeta( $user_index, $wp_user_ID);
+
+      // get the installed battery capacity in KWH from config
+      $SOC_capacity_KWH                   = $config['accounts'][$user_index]['battery_capacity'];
+
+      // This is the value of the SOC as updated by Studer API, captured just after dark
+      $soc_update_from_studer_after_dark  = $all_usermeta['soc_update_from_studer_after_dark'];
+
+      // This is the Shelly energy counter at the moment of SOC capture just after dark
+      $shelly_energy_counter_after_dark   = $all_usermeta['shelly_energy_counter_after_dark'];
+
+      // This is the tiestamp at the moent of SOC capture just after dark
+      $timestamp_soc_capture_after_dark   = $all_usermeta['timestamp_soc_capture_after_dark'];
+
+      $soc_percentage_lvds_setting        = $all_usermeta['soc_percentage_lvds_setting'];
+
+      // Keep the SOC from previous update handy just in case
+      $SOC_percentage_previous            = $all_usermeta['soc_percentage_now'];
+
+      // get a reading now from the Shelly energy counter
+      $current_energy_counter_wh  = $this->get_shelly_device_status_homepwr( $user_index )->energy_total_to_home_ts;
+      $current_power_to_home_wh   = $this->get_shelly_device_status_homepwr( $user_index )->power_total_to_home;
+      $current_timestamp          = $this->get_shelly_device_status_homepwr( $user_index )->minute_ts;
+      
+      // total energy consumed in KWH from just after dark to now
+      $energy_consumed_since_after_dark_update_kwh = ( $current_energy_counter_wh - $shelly_energy_counter_after_dark ) * 0.001;
+
+      // assumes that grid power is not there. We will have to put in a Shelly to measure that
+      $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH *100, 1 ) * 1.07;
+
+      // Change in SOC ( a decrease) from value captured just after dark to now based on energy consumed by home during dark
+      $soc_percentage_now_computed_using_shelly  = $soc_update_from_studer_after_dark - $soc_percentage_discharged;
+
+      // set flag to true for update using Shelly energy readings method
+      $this->soc_updated_using_shelly_energy_readings = true;
+
+      // since Studer reading is null lets updatethe soc using shelly computed value
+      // no need to worry about clamp to 100 since value will only decrease never increase, no solar
+      // update_user_meta( $wp_user_ID, 'soc_percentage_now', $soc_percentage_now_computed_using_shelly );
+
+      // log if verbose is set to true
+      $this_verbose ? error_log( "SOC after dark: " . $soc_update_from_studer_after_dark . 
+                                  "%,  SOC NOW as computed using Shelly: " . 
+                                  $soc_percentage_now_computed_using_shelly . " %") : ' ';
+
+      $return_obj = new stdClass;
+
+      $return_obj->SOC_percentage_previous           = $SOC_percentage_previous;
+      $return_obj->SOC_percentage_now                = $soc_percentage_now_computed_using_shelly;
+
+      $return_obj->current_energy_counter_wh         = $current_energy_counter_wh;
+      $return_obj->current_power_to_home_wh          = $current_power_to_home_wh;
+      $return_obj->current_timestamp                 = $current_timestamp;
+      $return_obj->soc_percentage_discharged         = $soc_percentage_discharged;
+      $return_obj->energy_consumed_since_after_dark_update_kwh = $energy_consumed_since_after_dark_update_kwh;
+      
+      return $return_obj;
+    }
+
+
+    /**
+     *  @return object:$shelly_device_data contains energy counter and its timestamp along with switch status object
+     */
+    public function get_shelly_device_status_homepwr(int $user_index): ?object
+    {
+        // get API and device ID from config based on user index
+        $config = $this->config;
+        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_homepwr'];
+
+        $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+
+        // this is $curl_response.
+        $shelly_device_data = $shelly_api->get_shelly_device_status();
+
+        // check to make sure that it exists. If null API call was fruitless
+        if ( empty( $shelly_device_data ) )
+        {
+          $this->verbose ? error_log("Shelly Homepwr switch API call failed"): false;
+          
+          return null;
+        }
+
+        // Since this is the switch that also measures the power and energy to home, let;s extract those details
+        $power_channel_0 = $shelly_api_device_response->data->device_status->{"switch:0"}->apower;
+        $power_channel_1 = $shelly_api_device_response->data->device_status->{"switch:1"}->apower;
+        $power_channel_2 = $shelly_api_device_response->data->device_status->{"switch:2"}->apower;
+        $power_channel_3 = $shelly_api_device_response->data->device_status->{"switch:3"}->apower;
+
+        $power_total_to_home = $power_channel_0 + $power_channel_1 + $power_channel_2 + $power_channel_3;
+
+        $energy_channel_0_ts = $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->total;
+        $energy_channel_1_ts = $shelly_api_device_response->data->device_status->{"switch:1"}->aenergy->total;
+        $energy_channel_2_ts = $shelly_api_device_response->data->device_status->{"switch:2"}->aenergy->total;
+        $energy_channel_3_ts = $shelly_api_device_response->data->device_status->{"switch:3"}->aenergy->total;
+
+        $energy_total_to_home_ts = $energy_channel_0_ts + $energy_channel_1_ts + $energy_channel_2_ts + $energy_channel_3_ts;
+
+        // Unix minute time stamp for the power and energy readings
+        $minute_ts = $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->minute_ts;
+
+        // add these to returned object for later use in calling program
+        $shelly_device_data->power_total_to_home      = $power_total_to_home;
+        $shelly_device_data->energy_total_to_home_ts  = $energy_total_to_home_ts;
+        $shelly_device_data->minute_ts                = $minute_ts;
+
+        return $shelly_device_data;
+    }
+
+
+    /**
+     *  @param int:$rcc_timestamp_localized is what is returned for parameter 5002 from Studer
+     *  We check to see if Studer night is just past midnight
+     */
+    public function is_studer_time_just_pass_midnight( int $rcc_timestamp_localized, string $wp_user_name ): bool
+    {
+      if ( false === get_transient( $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' ) )
+      {
+        // create datetime object from studer timestamp. Note that this already has the UTC offeset for India
+        $rcc_datetime_obj = new DateTime();
+        $rcc_datetime_obj->setTimeStamp($rcc_timestamp_localized);
+
+        $now = new DateTimee();
+
+        // form interval object between now and Studer's time stamp under investigation
+        $diff = $now->diff( $rcc_datetime_obj );
+
+        // positive means lagging behind, negative means leading ahead, of correct server time.
+        // If Studer clock was correctr the offset should be 0 but Studer clock seems slow for some reason
+        // 330 comes from pre-existing UTC offest of 5:30 already present in Studer's time stamp
+        $studer_time_offset_in_mins_lagging = 330 - ( $diff->i  + $diff->h *60);
+
+        set_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging',  
+                        $studer_time_offset_in_mins_lagging, 
+                        24*60*60 );
+      }
+      else
+      {
+        // offset already computed and transient still valid, just read in the value
+        $studer_time_offset_in_mins_lagging = get_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' );
+      }
+
+      // get current time compensated for our timezone
+      $test = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+      $h=$test->format('H');
+      $m=$test->format('i');
+      $s=$test->format('s');
+
+      // if hours are 0 and offset adjusted minutes are 0 then we are just pass midnight per Studer clock
+      if( $h == 0 && ($m - $studer_time_offset_in_mins_lagging) > 0 ) 
+      {
+        // We are just past midnight on Studer clock, so return true
+        return true;
+      }
+      // not yet past midnight, so return false
+      return false;
+    }
+
 
 
     /**

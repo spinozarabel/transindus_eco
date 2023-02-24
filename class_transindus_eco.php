@@ -361,7 +361,7 @@ class class_transindus_eco
      * @param int:user_index
      * @return object:wp_user_obj
      */
-    public function get_wp_user_from_user_index($user_index)
+    public function get_wp_user_from_user_index( int $user_index): ? object
     {
         $config = $this->get_config();
 
@@ -472,9 +472,9 @@ class class_transindus_eco
       // set default timezone to Asia Kolkata
       $this->set_default_timezone();
 
-      $config         = $this->get_config();
+      $config     = $this->get_config();
 
-      $wp_user_obj = 
+      $wp_user_ID = $this->get_wp_user_from_user_index( $user_index )->ID;
 
       // ensure that the data below is current before coming here
       $all_usermeta = $this->get_all_usermeta($user_index, $wp_user_ID);

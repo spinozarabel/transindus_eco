@@ -359,7 +359,7 @@ class class_transindus_eco
      */
     public function get_wp_user_from_user_index($user_index)
     {
-        $wp_user_name = $this->config['accounts'][$user_index]['wp_user_name'];
+        $wp_user_name = $this->get_config()['accounts'][$user_index]['wp_user_name'];
 
         // Get the wp user object given the above username
         $wp_user_obj  = get_user_by('login', $wp_user_name);

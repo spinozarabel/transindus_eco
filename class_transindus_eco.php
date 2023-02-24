@@ -491,7 +491,7 @@ class class_transindus_eco
       if ( $valid_shelly_config ) 
       {   //  get shelly device status ONLY if valid config for switch
 
-          $shelly_api_device_response = self::get_shelly_device_status_acin( $user_index );
+          $shelly_api_device_response = $this->get_shelly_device_status_acin( $user_index );
 
           if ( is_null($shelly_api_device_response) ) { // switch status is unknown
 

@@ -2161,7 +2161,7 @@ class class_transindus_eco
             case "get_all_usermeta":
 
               $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
-              $all_usermeta = $this->get_all_usermeta( $config_index, $wp_user_ID );
+              $all_usermeta = $this->get_all_usermeta( $config_index, $wp_user_ID )['soc_percentage_rdbc_setting'];
 
               print_r( $all_usermeta );
             break;

@@ -628,7 +628,7 @@ class class_transindus_eco
         if ( empty( $shelly_device_data ) )
         {
           $this->verbose ? error_log("Shelly Homepwr switch API call failed"): false;
-          
+
           return null;
         }
 
@@ -2076,7 +2076,7 @@ class class_transindus_eco
                 <input type="submit" name="button" 	value="turn_Shelly_Switch_OFF"/>
                 <input type="submit" name="button" 	value="run_cron_exec_once"/>
                 <input type="submit" name="button" 	value="estimated_solar_power"/>
-                <input type="submit" name="button" 	value="check_if_cloudy_day"/>
+                <input type="submit" name="button" 	value="get_all_usermeta"/>
             </form>
 
 
@@ -2156,6 +2156,14 @@ class class_transindus_eco
 
               echo "<pre>" . "Is it a cloudy day?: " .    $it_is_a_cloudy_day . "</pre>";
               echo "<pre>" . "Average CLoudiness percentage?: " .    $cloud_cover_percentage . "%</pre>";
+            break;
+
+            case "get_all_usermeta":
+
+              $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
+              $all_usermeta = $this->get_all_usermeta( $config_index, $wp_user_ID );
+
+              print_r( $all_usermeta );
             break;
 
         }

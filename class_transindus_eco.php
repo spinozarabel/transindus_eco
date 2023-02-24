@@ -756,7 +756,7 @@ class class_transindus_eco
 
 
         // Capture the SOC value as computed from studer readings valid for next 12 hours
-        set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now, 10 * 60 );
+        set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now, 12 * 60 * 60 );
 
         // update the user meta just inc  case transients get deleted, as a safety
         update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $SOC_percentage_now);

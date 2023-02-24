@@ -360,7 +360,7 @@ class class_transindus_eco
     public function get_wp_user_from_user_index($user_index)
     {
         $config = $this->get_config();
-        
+
         $wp_user_name = $config['accounts'][$user_index]['wp_user_name'];
 
         // Get the wp user object given the above username
@@ -2080,7 +2080,7 @@ class class_transindus_eco
                 <input type="submit" name="button" 	value="turn_Shelly_Switch_OFF"/>
                 <input type="submit" name="button" 	value="run_cron_exec_once"/>
                 <input type="submit" name="button" 	value="estimated_solar_power"/>
-                <input type="submit" name="button" 	value="get_all_usermeta"/>
+                <input type="submit" name="button" 	value="shelly_status_acin"/>
             </form>
 
 

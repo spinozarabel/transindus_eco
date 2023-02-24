@@ -659,12 +659,14 @@ class class_transindus_eco
         // Unix minute time stamp for the power and energy readings
         $minute_ts = $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->minute_ts;
 
-        // add these to returned object for later use in calling program
-        $shelly_device_data->power_total_to_home      = $power_total_to_home;
-        $shelly_device_data->energy_total_to_home_ts  = $energy_total_to_home_ts;
-        $shelly_device_data->minute_ts                = $minute_ts;
+        $energy_obj = new stdClass;
 
-        return $shelly_device_data;
+        // add these to returned object for later use in calling program
+        $energy_obj->power_total_to_home      = $power_total_to_home;
+        $energy_obj->energy_total_to_home_ts  = $energy_total_to_home_ts;
+        $energy_obj->minute_ts                = $minute_ts;
+
+        return $energy_obj;
     }
 
 

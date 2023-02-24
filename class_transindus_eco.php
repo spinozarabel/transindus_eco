@@ -478,7 +478,7 @@ class class_transindus_eco
                               ! empty( $config['accounts'][$user_index]['shelly_server_uri']  )       &&
                               ! empty( $config['accounts'][$user_index]['shelly_auth_key']    );
     
-      if( $all_usermeta['do_shelly_user_meta'] && $valid_shelly_config) 
+      if( $all_usermeta['do_shelly'] && $valid_shelly_config) 
       {  // Cotrol Shelly TRUE if usermeta AND valid config
 
         $control_shelly = true;

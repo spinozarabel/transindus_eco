@@ -736,7 +736,7 @@ class class_transindus_eco
       $now = new DateTime();
 
       // check if it is after dark and before midnightdawn annd that the transient has not been set yet
-      if (  self::nowIsWithinTimeLimits("18:55", "23:00")   && 
+      if (  $this->nowIsWithinTimeLimits("18:55", "23:00")   && 
             ( false === get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) )
           ) 
       {

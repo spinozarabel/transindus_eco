@@ -622,7 +622,8 @@ class class_transindus_eco
     public function get_shelly_device_status_homepwr(int $user_index): ?object
     {
         // get API and device ID from config based on user index
-        $config = $this->config;
+        $config = $this->get_config();
+
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
         $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_homepwr'];
@@ -2084,7 +2085,7 @@ class class_transindus_eco
                 <input type="submit" name="button" 	value="turn_Shelly_Switch_OFF"/>
                 <input type="submit" name="button" 	value="run_cron_exec_once"/>
                 <input type="submit" name="button" 	value="estimated_solar_power"/>
-                <input type="submit" name="button" 	value="shelly_status_acin"/>
+                <input type="submit" name="button" 	value="get_shelly_device_status_homepwr"/>
             </form>
 
 
@@ -2179,6 +2180,11 @@ class class_transindus_eco
               $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
 
               print_r( $this->get_shelly_switch_acin_details($config_index) );
+            break;
+
+            case "get_shelly_device_status_homepwr":
+
+              print_r( $this->get_shelly_device_status_homepwr($config_index) );
             break;
 
         }

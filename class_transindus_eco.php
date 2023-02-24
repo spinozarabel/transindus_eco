@@ -650,7 +650,7 @@ class class_transindus_eco
         $power_total_to_home = $power_channel_0 + $power_channel_1 + $power_channel_2 + $power_channel_3;
 
         $energy_channel_0_ts = $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->total;
-        error_log("Energy Channel_0 Total " . $energy_channel_0_ts);
+      
         $energy_channel_1_ts = $shelly_api_device_response->data->device_status->{"switch:1"}->aenergy->total;
         $energy_channel_2_ts = $shelly_api_device_response->data->device_status->{"switch:2"}->aenergy->total;
         $energy_channel_3_ts = $shelly_api_device_response->data->device_status->{"switch:3"}->aenergy->total;
@@ -669,7 +669,7 @@ class class_transindus_eco
 
         $energy_obj->energy_channel_0_ts      = $energy_channel_0_ts;
 
-        return $energy_obj;
+        return $shelly_api_device_response->data->device_status;
     }
 
 

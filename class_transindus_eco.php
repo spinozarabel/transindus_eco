@@ -622,7 +622,7 @@ class class_transindus_eco
     public function get_shelly_device_status_homepwr(int $user_index): ?object
     {
         // get API and device ID from config based on user index
-        $config = $this->get_config();
+        $config = $this->config;
 
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
@@ -2098,6 +2098,9 @@ class class_transindus_eco
         $config_index = sanitize_text_field( $_POST['config_index'] );
         $button_text  = sanitize_text_field( $_POST['button'] );
 
+        // force a config run since we may be starting from the middle.
+        $this->get_config();
+
         echo "<pre>" . "config_index: " .    $config_index . "</pre>";
         echo "<pre>" . "button: " .    $button_text . "</pre>";
 
@@ -2252,7 +2255,7 @@ class class_transindus_eco
     public function get_shelly_device_status_acin(int $user_index): ?object
     {
         // get API and device ID from config based on user index
-        $config = $this->get_config();
+        $config = $this->config;
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
         $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];

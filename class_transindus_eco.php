@@ -2233,6 +2233,22 @@ class class_transindus_eco
         return $shelly_device_data;
     }
 
+    public function get_shelly_device_status_acin(int $user_index): ?object
+    {
+        // get API and device ID from config based on user index
+        $config = $this->config;
+        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
+
+        $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+
+        // this is $curl_response.
+        $shelly_device_data = $shelly_api->get_shelly_device_status();
+
+        return $shelly_device_data;
+    }
+
     /**
     ** This function returns an object that comprises data read form user's installtion
     *  @param int:$user_index  is the numeric index to denote a particular installtion

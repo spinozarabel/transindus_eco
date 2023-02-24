@@ -105,7 +105,11 @@ class class_transindus_eco
      */
     private function get_config()
     {
-      $this->config = include( __DIR__."/" . $this->plugin_name . "_config.php");
+      $config = include( __DIR__."/" . $this->plugin_name . "_config.php");
+
+      $this->config = $config;
+
+      return $config;
     }
 
     /**
@@ -470,7 +474,7 @@ class class_transindus_eco
 
       $config         = $this->get_config();
 
-      $wp_user_ID = $this->get_wp_user_from_user_index($user_index)->ID;
+      $wp_user_obj = 
 
       // ensure that the data below is current before coming here
       $all_usermeta = $this->get_all_usermeta($user_index, $wp_user_ID);

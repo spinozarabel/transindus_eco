@@ -2076,7 +2076,7 @@ class class_transindus_eco
                 <input type="submit" name="button" 	value="turn_Shelly_Switch_OFF"/>
                 <input type="submit" name="button" 	value="run_cron_exec_once"/>
                 <input type="submit" name="button" 	value="estimated_solar_power"/>
-                <input type="submit" name="button" 	value="get_all_usermeta"/>
+                <input type="submit" name="button" 	value="shelly_status_acin"/>
             </form>
 
 
@@ -2161,9 +2161,16 @@ class class_transindus_eco
             case "get_all_usermeta":
 
               $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
-              $all_usermeta = $this->get_all_usermeta( $config_index, $wp_user_ID )['soc_percentage_rdbc_setting'];
+              $all_usermeta = $this->get_all_usermeta( $config_index, $wp_user_ID )['soc_percentage'];
 
               print_r( $all_usermeta );
+            break;
+
+            case "shelly_status_acin":
+
+              $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
+
+              print_r( $this->get_shelly_switch_acin_details($config_index) );
             break;
 
         }

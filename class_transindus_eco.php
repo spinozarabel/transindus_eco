@@ -720,6 +720,54 @@ class class_transindus_eco
       return false;
     }
 
+    /**
+     *  If now is after 6:55PM and before 11PM today and if timestamp is not yet set then capture soc
+     *  The transients are set to last 4h so if capture happens at 6PM transients expire at 11PM
+     *  However the captured values are saved to user meta for retrieval.
+     *  @preturn bool:true if SOC capture happened this run, false if it did not happen
+     */
+    public function capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index ) : bool
+    {
+      // set default timezone to Asia Kolkata
+      $this->set_default_timezone();
+
+      if ( empty( $SOC_percentage_now) ) return false;
+
+      $now = new DateTime();
+
+      // check if it is after dark and before midnightdawn annd that the transient has not been set yet
+      if (  self::nowIsWithinTimeLimits("18:55", "23:00")   && 
+            ( false === get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) )
+          ) 
+      {
+        // This routine should execute just once after dark. If transient gets deleted then it will get executed again
+        // Now read the Shelly Pro 4 PM energy meter for energy counter and imestamp
+        $timestamp_soc_capture_after_dark = $this->get_shelly_device_status_homepwr( $user_index )->minute_ts;
+
+        $shelly_energy_counter_after_dark = $this->get_shelly_device_status_homepwr( $user_index )->energy_total_to_home_ts;
+
+        set_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark, 4*60*60 );
+
+        set_transient( $wp_user_name . '_' . 'shelly_energy_counter_after_dark',  $shelly_energy_counter_after_dark, 4*60*60 );
+
+        update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_energy_counter_after_dark);
+
+        update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $timestamp_soc_capture_after_dark);
+
+
+        // Capture the SOC value as computed from studer readings valid for next 12 hours
+        set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now, 10 * 60 );
+
+        // update the user meta just inc  case transients get deleted, as a safety
+        update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $SOC_percentage_now);
+
+        error_log("SOC Capture after dark took place. SOC: " . $SOC_percentage_now . " %, Energy Counter: " . $shelly_energy_counter_after_dark);
+
+        return true;
+      }
+      return false;
+    }
+
 
 
     /**
@@ -1089,6 +1137,8 @@ class class_transindus_eco
 
         $studer_readings_obj->cloudiness_average_percentage_weighted  = $cloudiness_average_percentage_weighted;
         $studer_readings_obj->est_solar_kw  = round( array_sum($est_solar_kw), 1);
+
+        $this->capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index );
         
 
         switch(true)

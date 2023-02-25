@@ -2317,9 +2317,15 @@ class class_transindus_eco
 
               $timestamp_soc_capture_after_dark = get_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', true );
 
-              $this->check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark );
-              
-              print_r( $this->check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark ) );
+              if ( $this->check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark ) )
+              {
+                print ("SOC after dark already happened");
+              }
+              else
+              {
+                print ("SOC after dark DID NOT happen yet");
+              }
+
             break;
 
         }

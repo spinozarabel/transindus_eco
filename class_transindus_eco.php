@@ -732,7 +732,7 @@ class class_transindus_eco
 
     /**
      *  @param int:$timestamp_soc_capture_after_dark is the UNIX timestamp when the SOC capture after dark took place
-     *  @return bool
+     *  @return bool true if timestamp is witin last 12h
      *  Check if SOC capture after dark took place based on timestamp
      */
     public function check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark ) :bool
@@ -746,9 +746,6 @@ class class_transindus_eco
 
         return false;
       }
-      
-      // If now is after 07:00 then this is not valid
-      if ( $this->nowIsWithinTimeLimits("07:00", "17:30") ) return false;
 
       // we have a non-emty timestamp. To check if it is valid.
       // It is valid if the timestamp is after 6:55 PM and is within the last 12h
@@ -786,9 +783,10 @@ class class_transindus_eco
 
       // check if it is after dark and before midnightdawn annd that the transient has not been set yet
       // The time window is large just in case Studer API fails repeatedly during this time.
-      if (  $this->nowIsWithinTimeLimits("18:55", "23:00")  ) 
+      if (  $this->nowIsWithinTimeLimits("19:00", "23:00")  ) 
       {
-        // so it is dark. Has this capture already happened today? This routine should execute just once after dark.
+        // so it is dark. Has this capture already happened today? let's check
+        // lets get the transient
         if ( false === ( $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) )
         {
           // transient has expired or doesn't exist, so Capture has NOT happend yet.
@@ -811,13 +809,39 @@ class class_transindus_eco
         }
         else
         {
-          //  transient exists so capture has already taken place, exit
-          return true;
-        }
-        
-      }
+          // transient exists, but lets double check the validity
+          $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' );
 
-      //  Not yet dark in the evening
+          $check_if_soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark );
+
+          if ( $check_if_soc_after_dark_happened )
+          {
+            // Yes it all looks good, the timestamp is less than 12h old
+            return true;
+          }
+          else
+          {
+            // looks like the transient was bad so lets redo the capture
+            // Now read the Shelly Pro 4 PM energy meter for energy counter and imestamp
+          $timestamp_soc_capture_after_dark = $this->get_shelly_device_status_homepwr( $user_index )->minute_ts;
+          $shelly_energy_counter_after_dark = $this->get_shelly_device_status_homepwr( $user_index )->energy_total_to_home_ts;
+
+          set_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark, 4*60*60 );
+          set_transient( $wp_user_name . '_' . 'shelly_energy_counter_after_dark',  $shelly_energy_counter_after_dark, 4*60*60 );
+          set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now, 12 * 60 * 60 );
+
+
+          update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_energy_counter_after_dark);
+          update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $timestamp_soc_capture_after_dark);
+          update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $SOC_percentage_now);
+
+          error_log("SOC Capture after dark took place - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $shelly_energy_counter_after_dark);
+
+          return true;
+          }
+        }
+      }
+      //  before or after 4h window in the evening
       return false;
     }
 
@@ -931,6 +955,8 @@ class class_transindus_eco
         // get operation flags from user meta. Set it to false if not set
         $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true) ?? false;
 
+        // --------------------- ACIN SWITCH sDetails  -------------------------------------------------------
+
         if( $do_shelly && $valid_shelly_config) {  // Cotrol Shelly TRUE if usermeta AND valid config
 
             $control_shelly = true;
@@ -980,6 +1006,10 @@ class class_transindus_eco
             $shelly_api_device_status_voltage = "NA";    
         }
 
+
+
+        // -----------------------Studer API Call -----------------------------------------
+
         // get the smaller set of Studer readings
         $studer_readings_obj  = $this->get_studer_min_readings($user_index);
 
@@ -991,6 +1021,12 @@ class class_transindus_eco
         {
             // cannot trust this Studer reading, do not update
             error_log($wp_user_name . ": " . "Could not get Studer Reading");
+
+            // 
+
+
+
+
 
             return null;
         }
@@ -1135,7 +1171,9 @@ class class_transindus_eco
           error_log('Battery Dis %: ' . $batt_disc_percentage_calc_from_load . ' %');
         }
 
+        // capture soc after dark using shelly 4 pm. Only happens once between 7-11 pm. 
         $this->capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index );
+        
         
 
         // define all the conditions for the SWITCH - CASE tree

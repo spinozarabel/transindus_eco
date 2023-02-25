@@ -3320,6 +3320,8 @@ class class_transindus_eco
 
       $studer_readings_obj->studer_clock_unix_timestamp_with_utc_offset    = $studer_clock_unix_timestamp_with_utc_offset;
 
+      error_log("Studer clock timestamp: " . $studer_readings_obj->studer_clock_unix_timestamp_with_utc_offset);
+
       return $studer_readings_obj;
     }
 

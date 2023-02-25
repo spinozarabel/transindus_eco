@@ -2206,6 +2206,7 @@ class class_transindus_eco
                 <input type="submit" name="button" 	value="run_cron_exec_once"/>
                 <input type="submit" name="button" 	value="estimated_solar_power"/>
                 <input type="submit" name="button" 	value="get_shelly_device_status_homepwr"/>
+                <input type="submit" name="button" 	value="check_if_soc_after_dark_happened"/>
             </form>
 
 
@@ -2308,6 +2309,17 @@ class class_transindus_eco
             case "get_shelly_device_status_homepwr":
 
               print_r( $this->get_shelly_device_status_homepwr($config_index) );
+            break;
+
+            case "check_if_soc_after_dark_happened":
+
+              // get timestamp for soc after dark capture
+
+              $timestamp_soc_capture_after_dark = get_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', true );
+
+              $this->check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark );
+              
+              print_r( $this->check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark ) );
             break;
 
         }

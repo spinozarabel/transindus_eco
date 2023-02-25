@@ -556,24 +556,22 @@ class class_transindus_eco
 
       $config = $this->config;
 
-      $all_usermeta = $this->get_all_usermeta( $user_index, $wp_user_ID);
-
       // get the installed battery capacity in KWH from config
       $SOC_capacity_KWH                   = $config['accounts'][$user_index]['battery_capacity'];
 
       // This is the value of the SOC as updated by Studer API, captured just after dark
-      $soc_update_from_studer_after_dark  = $all_usermeta['soc_update_from_studer_after_dark'];
+      $soc_update_from_studer_after_dark  = get_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', true );
 
       // This is the Shelly energy counter at the moment of SOC capture just after dark
-      $shelly_energy_counter_after_dark   = $all_usermeta['shelly_energy_counter_after_dark'];
+      $shelly_energy_counter_after_dark   = get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', true );
 
       // This is the tiestamp at the moent of SOC capture just after dark
-      $timestamp_soc_capture_after_dark   = $all_usermeta['timestamp_soc_capture_after_dark'];
+      $timestamp_soc_capture_after_dark   = get_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', true );
 
-      $soc_percentage_lvds_setting        = $all_usermeta['soc_percentage_lvds_setting'];
+      $soc_percentage_lvds_setting        = get_user_meta( $wp_user_ID, 'soc_percentage_lvds_setting', true );
 
       // Keep the SOC from previous update handy just in case
-      $SOC_percentage_previous            = $all_usermeta['soc_percentage_now'];
+      $SOC_percentage_previous            = get_user_meta( $wp_user_ID, 'soc_percentage_now', true );
 
       // get a reading now from the Shelly energy counter
       $current_energy_counter_wh  = $this->get_shelly_device_status_homepwr( $user_index )->energy_total_to_home_ts;
@@ -582,6 +580,14 @@ class class_transindus_eco
       
       // total energy consumed in KWH from just after dark to now
       $energy_consumed_since_after_dark_update_kwh = ( $current_energy_counter_wh - $shelly_energy_counter_after_dark ) * 0.001;
+
+      // if energy computed is less than or equal to 0 then return null
+      if ( $energy_consumed_since_after_dark_update_kwh <= 0.0 )
+      {
+        $this->verbose ? error_log("Energy computed using Shelly is less than or equal to 0 - Error") : false;
+
+        return null;
+      }
 
       // assumes that grid power is not there. We will have to put in a Shelly to measure that
       $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH *100, 1 ) * 1.07;
@@ -599,7 +605,7 @@ class class_transindus_eco
       // log if verbose is set to true
       $this_verbose ? error_log( "SOC after dark: " . $soc_update_from_studer_after_dark . 
                                   "%,  SOC NOW as computed using Shelly: " . 
-                                  $soc_percentage_now_computed_using_shelly . " %") : ' ';
+                                  $soc_percentage_now_computed_using_shelly . " %") : false;
 
       $return_obj = new stdClass;
 
@@ -674,17 +680,19 @@ class class_transindus_eco
 
     /**
      *  @param int:$rcc_timestamp_localized is what is returned for parameter 5002 from Studer
-     *  We check to see if Studer night is just past midnight
+     *  @param string:$wp_user_name is the user name for current loop's user
+     *  We check to see if Studer clock is just past midnight
      */
     public function is_studer_time_just_pass_midnight( int $rcc_timestamp_localized, string $wp_user_name ): bool
     {
-      if ( false === get_transient( $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' ) )
+      if ( false === ( $studer_time_offset_in_mins_lagging = 
+                              get_transient( $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' ) ) )
       {
         // create datetime object from studer timestamp. Note that this already has the UTC offeset for India
         $rcc_datetime_obj = new DateTime();
         $rcc_datetime_obj->setTimeStamp($rcc_timestamp_localized);
 
-        $now = new DateTimee();
+        $now = new DateTimee(); // present time per this server
 
         // form interval object between now and Studer's time stamp under investigation
         $diff = $now->diff( $rcc_datetime_obj );
@@ -697,6 +705,8 @@ class class_transindus_eco
         set_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging',  
                         $studer_time_offset_in_mins_lagging, 
                         24*60*60 );
+
+        $this->verbose ? error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins"): false;
       }
       else
       {
@@ -716,9 +726,52 @@ class class_transindus_eco
         // We are just past midnight on Studer clock, so return true
         return true;
       }
-      // not yet past midnight, so return false
+      // not yet just past midnight, so return false
       return false;
     }
+
+    /**
+     *  @param int:$timestamp_soc_capture_after_dark is the UNIX timestamp when the SOC capture after dark took place
+     *  @return bool
+     *  Check if SOC capture after dark took place based on timestamp
+     */
+    public function check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark ) :bool
+    {
+      $this->set_default_timezone();
+
+      if ( empty( $timestamp_soc_capture_after_dark ) )
+      {
+        // timestamp is not valid
+        $this->verbose ? error_log( "Time stamp for SOC capture after dark is empty or not valid") : false;
+
+        return false;
+      }
+      
+      // If now is after 07:00 then this is not valid
+      if ( $this->nowIsWithinTimeLimits("07:00", "17:30") ) return false;
+
+      // we have a non-emty timestamp. To check if it is valid.
+      // It is valid if the timestamp is after 6:55 PM and is within the last 12h
+      $now = new DateTime();
+
+      $datetimeobj_from_timestamp = new DateTime();
+      $datetimeobj_from_timestamp->setTimestamp($timestamp_soc_capture_after_dark);
+
+      // form the intervel object
+      $diff = $now->diff( $datetimeobj_from_timestamp );
+
+      $hours = $diff->h;
+      $hours = $hours + ($diff->days*24);
+
+      if ( $hours < 12 )
+      {
+        return true;
+      }
+      return false;
+    }
+
+
+
 
     /**
      *  If now is after 6:55PM and before 11PM today and if timestamp is not yet set then capture soc
@@ -828,6 +881,14 @@ class class_transindus_eco
         $valid_shelly_config  = ! empty( $this->config['accounts'][$user_index]['shelly_device_id']   ) &&
                                 ! empty( $this->config['accounts'][$user_index]['shelly_server_uri']  ) &&
                                 ! empty( $this->config['accounts'][$user_index]['shelly_auth_key']    );
+
+        // Is it dark now?
+        $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:00" );
+
+        // Boolean values for checking is present time is within defined time intervals
+        $now_is_daytime       = $this->nowIsWithinTimeLimits("08:30", "16:30"); // changed from 17:30  on 7/28/22
+        $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
+
         // Get limits from user meta
         // SOC percentage needed to trigger LVDS
         $soc_percentage_lvds_setting            = get_user_meta($wp_user_ID, "soc_percentage_lvds_setting",  true) ?? 30;
@@ -879,11 +940,13 @@ class class_transindus_eco
         }
 
         // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
-        if ( $valid_shelly_config ) {   //  get shelly device status ONLY if valid config for switch
+        if ( $valid_shelly_config ) 
+        {   //  get shelly device status ONLY if valid config for switch
 
             $shelly_api_device_response = $this->get_shelly_device_status( $user_index );
 
-            if ( is_null($shelly_api_device_response) ) { // switch status is unknown
+            if ( is_null($shelly_api_device_response) ) 
+            { // switch status is unknown
 
                 error_log("Shelly cloud not responding and or device is offline");
 
@@ -892,7 +955,8 @@ class class_transindus_eco
                 $shelly_switch_status             = "OFFLINE";
                 $shelly_api_device_status_voltage = "NA";
             }
-            else {  // Switch is ONLINE - Get its status and Voltage
+            else 
+            {  // Switch is ONLINE - Get its status and Voltage
                 
                 $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
                 $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
@@ -907,7 +971,8 @@ class class_transindus_eco
                     }
             }
         }
-        else {  // no valid configuration for shelly switch set variables for logging info
+        else 
+        {  // no valid configuration for shelly switch set variables for logging info
 
             $shelly_api_device_status_ON = null;
 
@@ -980,10 +1045,6 @@ class class_transindus_eco
         $surplus              = $psolar - $pout_inverter;
 
         $aux1_relay_state     = $studer_readings_obj->aux1_relay_state;
-
-        // Boolean values for checking is present time is within defined time intervals
-        $now_is_daytime       = $this->nowIsWithinTimeLimits("08:30", "16:30"); // changed from 17:30  on 7/28/22
-        $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
 
         // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
         $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;

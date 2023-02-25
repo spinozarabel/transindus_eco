@@ -2352,6 +2352,7 @@ class class_transindus_eco
             case "check_if_soc_after_dark_happened":
 
               // get timestamp for soc after dark capture
+              $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
 
               $timestamp_soc_capture_after_dark = get_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', true );
 

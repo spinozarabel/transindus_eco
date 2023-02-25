@@ -779,7 +779,7 @@ class class_transindus_eco
     public function capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index ) : bool
     {
       // set default timezone to Asia Kolkata
-      date_default_timezone_set("Asia/Kolkata");;
+      date_default_timezone_set("Asia/Kolkata");
 
       // check if it is after dark and before midnightdawn annd that the transient has not been set yet
       // The time window is large just in case Studer API fails repeatedly during this time.

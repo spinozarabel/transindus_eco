@@ -146,7 +146,7 @@ class class_transindus_eco
      */
     public function init()
     {
-      $this->set_default_timezone();
+      date_default_timezone_set("Asia/Kolkata");;
 
       // set the logging
       $this->verbose = true;
@@ -397,7 +397,7 @@ class class_transindus_eco
     {
       $all_usermeta = [];
       // set default timezone to Asia Kolkata
-      $this->set_default_timezone();
+      date_default_timezone_set("Asia/Kolkata");;
 
       $config       = $this->get_config();
 
@@ -470,7 +470,7 @@ class class_transindus_eco
       $return_array = [];
 
       // set default timezone to Asia Kolkata
-      $this->set_default_timezone();
+      date_default_timezone_set("Asia/Kolkata");;
 
       $config     = $this->get_config();
 
@@ -552,7 +552,7 @@ class class_transindus_eco
     public function compute_soc_from_shelly_energy_readings( int $user_index, int $wp_user_ID, string $wp_user_name): ? object
     {
       // set default timezone to Asia Kolkata
-      $this->set_default_timezone();
+      date_default_timezone_set("Asia/Kolkata");;
 
       $config = $this->config;
 
@@ -737,7 +737,7 @@ class class_transindus_eco
      */
     public function check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark ) :bool
     {
-      $this->set_default_timezone();
+      date_default_timezone_set("Asia/Kolkata");;
 
       if ( empty( $timestamp_soc_capture_after_dark ) )
       {
@@ -779,7 +779,7 @@ class class_transindus_eco
     public function capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index ) : bool
     {
       // set default timezone to Asia Kolkata
-      $this->set_default_timezone();
+      date_default_timezone_set("Asia/Kolkata");;
 
       // check if it is after dark and before midnightdawn annd that the transient has not been set yet
       // The time window is large just in case Studer API fails repeatedly during this time.
@@ -1030,6 +1030,13 @@ class class_transindus_eco
 
             return null;
         }
+
+        //----------------Compute Studer Clock Offset and store in a transient ------------------------------
+        //
+        $studer_clock_unix_timestamp_with_utc_offset = $studer_readings_obj->studer_clock_unix_timestamp_with_utc_offset;
+        
+
+        //----------------------------------------------------------------------------------------------------
 
         // Load the voltage array that might have been pushed into transient space
         $bv_arr_transient = get_transient( $wp_user_name . '_bv_avg_arr' );
@@ -2245,6 +2252,7 @@ class class_transindus_eco
                 <input type="submit" name="button" 	value="estimated_solar_power"/>
                 <input type="submit" name="button" 	value="get_shelly_device_status_homepwr"/>
                 <input type="submit" name="button" 	value="check_if_soc_after_dark_happened"/>
+                <input type="submit" name="button" 	value="get_studer_clock_offset"/>
             </form>
 
 
@@ -2365,6 +2373,26 @@ class class_transindus_eco
                 print ("SOC after dark DID NOT happen yet");
               }
 
+            break;
+
+            case "get_studer_clock_offset":
+
+              // create datetime object from studer timestamp. Note that this already has the UTC offeset for India
+              $rcc_datetime_obj = new DateTime();
+              $rcc_datetime_obj->setTimeStamp($rcc_timestamp_localized);
+
+              $now = new DateTimee(); // present time per this server
+
+              // form interval object between now and Studer's time stamp under investigation
+              $diff = $now->diff( $rcc_datetime_obj );
+
+            // positive means lagging behind, negative means leading ahead, of correct server time.
+            // If Studer clock was correctr the offset should be 0 but Studer clock seems slow for some reason
+            // 330 comes from pre-existing UTC offest of 5:30 already present in Studer's time stamp
+            $studer_time_offset_in_mins_lagging = 330 - ( $diff->i  + $diff->h *60); 
+                              
+
+              print_r( $this->get_shelly_device_status_homepwr($config_index) );
             break;
 
         }
@@ -2543,7 +2571,7 @@ class class_transindus_eco
                             ),
 
                       array(
-                              "userRef"       =>  3010,   // Phase of battery charge
+                              "userRef"       =>  5002,   // Studer RCC date in Unix timestamp with UTC offset built in
                               "infoAssembly"  => "Master"
                             ),
                       );
@@ -2647,6 +2675,12 @@ class class_transindus_eco
                $psolar_kw_yesterday += round($user_value->value, 2);
 
              break;
+
+            case ( $user_value->reference == 5002 ) :
+
+              $studer_clock_unix_timestamp_with_utc_offset = $user_value->value;
+
+            break;
           }
         }
 
@@ -2844,6 +2878,7 @@ class class_transindus_eco
       $studer_readings_obj->energy_consumed_yesterday   = $energy_consumed_yesterday;
       $studer_readings_obj->battery_span_fontawesome    = $battery_span_fontawesome;
 
+      $studer_readings_obj->studer_clock_unix_timestamp_with_utc_offset = $studer_clock_unix_timestamp_with_utc_offset;
 
       // update the object with the fontawesome cdn from Studer API object
       // $studer_readings_obj->fontawesome_cdn             = $studer_api->fontawesome_cdn;
@@ -2947,7 +2982,7 @@ class class_transindus_eco
                               "infoAssembly"  => "2"
                             ),
                       array(
-                              "userRef"       =>  3010,   // Phase of battery charge
+                              "userRef"       =>  5002,   // Studer clock unix timestamp with UTC offset for India
                               "infoAssembly"  => "Master"
                             ),
                       );
@@ -3066,6 +3101,12 @@ class class_transindus_eco
             case ( $user_value->reference == 11007 ) :
               // we have to accumulate values form 2 cases so we have used accumulation below
               $KWH_solar_today += round($user_value->value, 2);
+
+            break;
+
+            case ( $user_value->reference == 5002 ) :
+              
+              $studer_clock_unix_timestamp_with_utc_offset = $user_value->value;
 
             break;
           }
@@ -3271,6 +3312,8 @@ class class_transindus_eco
       $studer_readings_obj->KWH_load_today    = $KWH_load_today;
 
       $studer_readings_obj->KWH_batt_discharged_today    = $KWH_batt_discharged_today;
+
+      $studer_readings_obj->studer_clock_unix_timestamp_with_utc_offset    = $studer_clock_unix_timestamp_with_utc_offset;
 
       return $studer_readings_obj;
     }

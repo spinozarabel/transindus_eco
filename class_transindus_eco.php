@@ -724,47 +724,47 @@ class class_transindus_eco
      *  If now is after 6:55PM and before 11PM today and if timestamp is not yet set then capture soc
      *  The transients are set to last 4h so if capture happens at 6PM transients expire at 11PM
      *  However the captured values are saved to user meta for retrieval.
-     *  @preturn bool:true if SOC capture happened this run, false if it did not happen
+     *  @preturn bool:true if SOC capture happened today, false if it did not happen yet today.
      */
     public function capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index ) : bool
     {
       // set default timezone to Asia Kolkata
       $this->set_default_timezone();
 
-      if ( empty( $SOC_percentage_now) ) return false;
-
-      $now = new DateTime();
-
       // check if it is after dark and before midnightdawn annd that the transient has not been set yet
-      if (  $this->nowIsWithinTimeLimits("18:55", "23:00")   && 
-            ( false === get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) )
-          ) 
+      // The time window is large just in case Studer API fails repeatedly during this time.
+      if (  $this->nowIsWithinTimeLimits("18:55", "23:00")  ) 
       {
-        // This routine should execute just once after dark. If transient gets deleted then it will get executed again
-        // Now read the Shelly Pro 4 PM energy meter for energy counter and imestamp
-        $timestamp_soc_capture_after_dark = $this->get_shelly_device_status_homepwr( $user_index )->minute_ts;
+        // so it is dark. Has this capture already happened today? This routine should execute just once after dark.
+        if ( false === ( $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) )
+        {
+          // transient has expired or doesn't exist, so Capture has NOT happend yet.
+          // Now read the Shelly Pro 4 PM energy meter for energy counter and imestamp
+          $timestamp_soc_capture_after_dark = $this->get_shelly_device_status_homepwr( $user_index )->minute_ts;
+          $shelly_energy_counter_after_dark = $this->get_shelly_device_status_homepwr( $user_index )->energy_total_to_home_ts;
 
-        $shelly_energy_counter_after_dark = $this->get_shelly_device_status_homepwr( $user_index )->energy_total_to_home_ts;
-
-        set_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark, 4*60*60 );
-
-        set_transient( $wp_user_name . '_' . 'shelly_energy_counter_after_dark',  $shelly_energy_counter_after_dark, 4*60*60 );
-
-        update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_energy_counter_after_dark);
-
-        update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $timestamp_soc_capture_after_dark);
+          set_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark, 4*60*60 );
+          set_transient( $wp_user_name . '_' . 'shelly_energy_counter_after_dark',  $shelly_energy_counter_after_dark, 4*60*60 );
+          set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now, 12 * 60 * 60 );
 
 
-        // Capture the SOC value as computed from studer readings valid for next 12 hours
-        set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now, 12 * 60 * 60 );
+          update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_energy_counter_after_dark);
+          update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $timestamp_soc_capture_after_dark);
+          update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $SOC_percentage_now);
 
-        // update the user meta just inc  case transients get deleted, as a safety
-        update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $SOC_percentage_now);
+          error_log("SOC Capture after dark took place - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $shelly_energy_counter_after_dark);
 
-        error_log("SOC Capture after dark took place. SOC: " . $SOC_percentage_now . " %, Energy Counter: " . $shelly_energy_counter_after_dark);
-
-        return true;
+          return true;
+        }
+        else
+        {
+          //  transient exists so capture has already taken place, exit
+          return true;
+        }
+        
       }
+
+      //  Not yet dark in the evening
       return false;
     }
 
@@ -783,25 +783,30 @@ class class_transindus_eco
         {
             $wp_user_name = $account['wp_user_name'];
 
-                            // Get the wp user object given the above username
-            $wp_user_obj          = get_user_by('login', $wp_user_name);
+            // Get the wp user object given the above username
+            $wp_user_obj  = get_user_by('login', $wp_user_name);
 
             if ( empty($wp_user_obj) ) continue;
 
-            $wp_user_ID           = $wp_user_obj->ID;
+            $wp_user_ID   = $wp_user_obj->ID;
 
-                            // extract the control flag as set in user meta
-            $do_shelly  = get_user_meta($wp_user_ID, "do_shelly", true) ?? false;
+            if ( $wp_user_ID )
+            {
+              // we have a valid user
+              // extract the control flag for the servo loop to pass to the servo routine
+              $do_shelly  = get_user_meta($wp_user_ID, "do_shelly", true) ?? false;
 
-            // extract the control flag as set in user meta
-            $do_minutely_updates  = get_user_meta($wp_user_ID, "do_minutely_updates", true) ?? false;
+              // extract the control flag to perform minutely updates
+              $do_minutely_updates  = get_user_meta($wp_user_ID, "do_minutely_updates", true) ?? false;
 
-            // Check if the control flag for minutely updates is TRUE. If so get the readings
-            if( $do_minutely_updates ) {
+              // Check if the control flag for minutely updates is TRUE. If so get the readings
+              if( $do_minutely_updates ) {
 
                 // get all the readings for this user. This will write the data to a transient for quick retrieval
                 $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly );
+              }
             }
+
             // loop for all users
         }
 

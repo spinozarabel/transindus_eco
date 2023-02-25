@@ -791,7 +791,7 @@ class class_transindus_eco
             $wp_user_ID           = $wp_user_obj->ID;
 
                             // extract the control flag as set in user meta
-            $do_shelly_user_meta  = get_user_meta($wp_user_ID, "do_shelly", true) ?? false;
+            $do_shelly  = get_user_meta($wp_user_ID, "do_shelly", true) ?? false;
 
             // extract the control flag as set in user meta
             $do_minutely_updates  = get_user_meta($wp_user_ID, "do_minutely_updates", true) ?? false;
@@ -800,7 +800,7 @@ class class_transindus_eco
             if( $do_minutely_updates ) {
 
                 // get all the readings for this user. This will write the data to a transient for quick retrieval
-                $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly_user_meta );
+                $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly );
             }
             // loop for all users
         }
@@ -815,10 +815,10 @@ class class_transindus_eco
      * @param int:user_index
      * @param int:wp_user_ID
      * @param string:wp_user_name
-     * @param bool:do_shelly_user_meta
+     * @param bool:do_shelly
      * @return object:studer_readings_obj
      */
-    public function get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly_user_meta)
+    public function get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly)
     {
         $valid_shelly_config  = ! empty( $this->config['accounts'][$user_index]['shelly_device_id']   ) &&
                                 ! empty( $this->config['accounts'][$user_index]['shelly_server_uri']  ) &&
@@ -865,7 +865,7 @@ class class_transindus_eco
         // get operation flags from user meta. Set it to false if not set
         $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true) ?? false;
 
-        if( $do_shelly_user_meta && $valid_shelly_config) {  // Cotrol Shelly TRUE if usermeta AND valid config
+        if( $do_shelly && $valid_shelly_config) {  // Cotrol Shelly TRUE if usermeta AND valid config
 
             $control_shelly = true;
         }
@@ -1068,6 +1068,8 @@ class class_transindus_eco
                     " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC Now: " . $SOC_percentage_now . " %" );
           error_log('Battery Dis %: ' . $batt_disc_percentage_calc_from_load . ' %');
         }
+
+        $this->capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index );
         
 
         // define all the conditions for the SWITCH - CASE tree
@@ -1137,8 +1139,6 @@ class class_transindus_eco
 
         $studer_readings_obj->cloudiness_average_percentage_weighted  = $cloudiness_average_percentage_weighted;
         $studer_readings_obj->est_solar_kw  = round( array_sum($est_solar_kw), 1);
-
-        $this->capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index );
         
 
         switch(true)
@@ -1969,10 +1969,10 @@ class class_transindus_eco
         if ($user_index === false) return "User Index invalid, You DO NOT have a Studer Install";
 
         // extract the control flag as set in user meta
-        $do_shelly_user_meta  = get_user_meta($wp_user_ID, "do_shelly", true) ?? false;
+        $do_shelly  = get_user_meta($wp_user_ID, "do_shelly", true) ?? false;
 
         // get the Studer status using the minimal set of readings
-        $studer_readings_obj  = $this->get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly_user_meta);
+        $studer_readings_obj  = $this->get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly);
 
         // check for valid studer values. Return if not valid
         if( empty(  $studer_readings_obj ) ) {
@@ -3266,7 +3266,7 @@ class class_transindus_eco
         }
 
         // extract the do_shelly control flag as set in user meta
-        $do_shelly_user_meta  = get_user_meta($wp_user_ID, "do_shelly", true);
+        $do_shelly  = get_user_meta($wp_user_ID, "do_shelly", true);
 
         if ($toggleGridSwitch)  {   // User has requested to toggle the GRID ON/OFF Shelly Switch
 
@@ -3304,7 +3304,7 @@ class class_transindus_eco
         $studer_readings_obj = $this->get_readings_and_servo_grid_switch  ($user_index, 
                                                                           $wp_user_ID, 
                                                                           $wp_user_name, 
-                                                                          $do_shelly_user_meta);
+                                                                          $do_shelly);
 
         $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj );
 

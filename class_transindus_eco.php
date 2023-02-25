@@ -781,14 +781,18 @@ class class_transindus_eco
       // set default timezone to Asia Kolkata
       date_default_timezone_set("Asia/Kolkata");
 
+      $wp_user_ID = $this->get_wp_user_from_user_index($user_index)->ID;
+
       // check if it is after dark and before midnightdawn annd that the transient has not been set yet
       // The time window is large just in case Studer API fails repeatedly during this time.
       if (  $this->nowIsWithinTimeLimits("19:00", "23:00")  ) 
       {
-        error_log("We are within 19:00 and 23:00 hrs");
         // so it is dark. Has this capture already happened today? let's check
         // lets get the transient
-        if ( false === ( $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) )
+        if ( false === ( $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) 
+                                                                ||
+                       empty(get_user_meta($wp_user_ID, 'timestamp_soc_capture_after_dark', true))
+            )
         {
           // transient has expired or doesn't exist, so Capture has NOT happend yet.
           // Now read the Shelly Pro 4 PM energy meter for energy counter and imestamp

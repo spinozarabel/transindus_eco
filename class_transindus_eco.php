@@ -1038,7 +1038,7 @@ class class_transindus_eco
 
         //----------------Compute Studer Clock Offset and store in a transient ------------------------------
         //
-        $studer_clock_unix_timestamp_with_utc_offset = $studer_readings_obj->studer_clock_unix_timestamp_with_utc_offset;
+        // $studer_clock_unix_timestamp_with_utc_offset = $studer_readings_obj->studer_clock_unix_timestamp_with_utc_offset;
         
 
         //----------------------------------------------------------------------------------------------------

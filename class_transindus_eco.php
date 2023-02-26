@@ -2904,7 +2904,7 @@ class class_transindus_eco
 
         // Make the API call to get the parameter value
         $studer_clock_unix_timestamp_with_utc_offset = $studer_api->get_parameter_value();
-
+        error_log( "studer_clock_unix_timestamp_with_utc_offset: " . $studer_clock_unix_timestamp_with_utc_offset );
         // if the value is null due to a bad API response then do nothing and return
         if ( empty( $studer_clock_unix_timestamp_with_utc_offset )) return;
 

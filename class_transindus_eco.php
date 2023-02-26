@@ -472,7 +472,7 @@ class class_transindus_eco
       // set default timezone to Asia Kolkata
       date_default_timezone_set("Asia/Kolkata");;
 
-      $config     = $this->get_config();
+      $config     = $this->config;
 
       $wp_user_ID = $this->get_wp_user_from_user_index( $user_index )->ID;
 
@@ -679,18 +679,18 @@ class class_transindus_eco
 
 
     /**
-     *  @param int:$rcc_timestamp_localized is what is returned for parameter 5002 from Studer
+     *  @param int:$studer_timestamp_with_utc_offset is what is returned for parameter 5002 from Studer
      *  @param string:$wp_user_name is the user name for current loop's user
      *  We check to see if Studer clock is just past midnight
      */
-    public function is_studer_time_just_pass_midnight( int $rcc_timestamp_localized, string $wp_user_name ): bool
+    public function is_studer_time_just_pass_midnight( int $studer_timestamp_with_utc_offset, string $wp_user_name ): bool
     {
       if ( false === ( $studer_time_offset_in_mins_lagging = 
                               get_transient( $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' ) ) )
       {
         // create datetime object from studer timestamp. Note that this already has the UTC offeset for India
         $rcc_datetime_obj = new DateTime();
-        $rcc_datetime_obj->setTimeStamp($rcc_timestamp_localized);
+        $rcc_datetime_obj->setTimeStamp($studer_timestamp_with_utc_offset);
 
         $now = new DateTimee(); // present time per this server
 
@@ -2265,6 +2265,7 @@ class class_transindus_eco
 
         $config_index = sanitize_text_field( $_POST['config_index'] );
         $button_text  = sanitize_text_field( $_POST['button'] );
+        
 
         // force a config run since we may be starting from the middle.
         $this->get_config();
@@ -2382,22 +2383,10 @@ class class_transindus_eco
 
             case "get_studer_clock_offset":
 
-              // create datetime object from studer timestamp. Note that this already has the UTC offeset for India
-              $rcc_datetime_obj = new DateTime();
-              $rcc_datetime_obj->setTimeStamp($rcc_timestamp_localized);
+              $studer_time_offset_in_mins_lagging = $this->get_studer_clock_offset( $config_index );
 
-              $now = new DateTimee(); // present time per this server
-
-              // form interval object between now and Studer's time stamp under investigation
-              $diff = $now->diff( $rcc_datetime_obj );
-
-            // positive means lagging behind, negative means leading ahead, of correct server time.
-            // If Studer clock was correctr the offset should be 0 but Studer clock seems slow for some reason
-            // 330 comes from pre-existing UTC offest of 5:30 already present in Studer's time stamp
-            $studer_time_offset_in_mins_lagging = 330 - ( $diff->i  + $diff->h *60); 
-                              
-
-              print_r( $this->get_shelly_device_status_homepwr($config_index) );
+              print( "Studer time offset in mins lagging = " . $studer_time_offset_in_mins_lagging);
+              
             break;
 
         }
@@ -2892,6 +2881,64 @@ class class_transindus_eco
     }
 
     /**
+     * 
+     */
+    public function get_studer_clock_offset( int $user_index )
+    {
+      $config = $this->config;
+
+      $wp_user_name = $config['accounts'][$user_index]['wp_user_name'];
+
+      // Get transient of Studer offset if it exists
+      if ( false === get_transient( $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' ) )
+      {
+        // make an API call to get value of parameter 5002 which is the UNIX time stamp including the UTC offest
+        $base_url  = $config['studer_api_baseurl'];
+        $uhash     = $config['accounts'][$user_index]['uhash'];
+        $phash     = $config['accounts'][$user_index]['phash'];
+
+        $studer_api = new studer_api($uhash, $phash, $base_url);
+          $studer_api->paramId = 5002;
+          $studer_api->device = "RCC1";
+          $studer_api->paramPart = "Value";
+
+        // Make the API call to get the parameter value
+        $studer_clock_unix_timestamp_with_utc_offset = $studer_api->get_parameter_value();
+
+        // if the value is null due to a bad API response then do nothing and return
+        if ( empty( $studer_clock_unix_timestamp_with_utc_offset )) return;
+
+        // create datetime object from studer timestamp. Note that this already has the UTC offeset for India
+        $rcc_datetime_obj = new DateTime();
+        $rcc_datetime_obj->setTimeStamp($studer_timestamp_with_utc_offset);
+
+        $now = new DateTimee(); // present time per this server
+
+        // form interval object between now and Studer's time stamp under investigation
+        $diff = $now->diff( $rcc_datetime_obj );
+
+        // positive means lagging behind, negative means leading ahead, of correct server time.
+        // If Studer clock was correctr the offset should be 0 but Studer clock seems slow for some reason
+        // 330 comes from pre-existing UTC offest of 5:30 already present in Studer's time stamp
+        $studer_time_offset_in_mins_lagging = 330 - ( $diff->i  + $diff->h *60);
+
+        set_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging',  
+                        $studer_time_offset_in_mins_lagging, 
+                        24*60*60 );
+
+        $this->verbose ? error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins"): false;
+      }
+      else
+      {
+        // offset already computed and transient still valid, just read in the value
+        $studer_time_offset_in_mins_lagging = get_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' );
+      }
+      return $studer_time_offset_in_mins_lagging;
+    }
+
+
+
+    /**
     ** This function returns an object that comprises data read form user's installtion
     *  @param int:$user_index  is the numeric index to denote a particular installtion
     *  @return object:$studer_readings_obj
@@ -2986,11 +3033,8 @@ class class_transindus_eco
                               "userRef"       =>  11007,   // KWHsol generated today till now, from VT2
                               "infoAssembly"  => "2"
                             ),
-                      array(
-                              "userRef"       =>  5002,   // Studer clock unix timestamp with UTC offset for India
-                              "infoAssembly"  => "Master"
-                            ),
                       );
+
         $studer_api->body   = $body;
 
         // POST curl request to Studer
@@ -3109,11 +3153,6 @@ class class_transindus_eco
 
             break;
 
-            case ( $user_value->reference == 5002 ) :
-              
-              $studer_clock_unix_timestamp_with_utc_offset = $user_value->value;
-
-            break;
           }
         }
 
@@ -3317,10 +3356,6 @@ class class_transindus_eco
       $studer_readings_obj->KWH_load_today    = $KWH_load_today;
 
       $studer_readings_obj->KWH_batt_discharged_today    = $KWH_batt_discharged_today;
-
-      $studer_readings_obj->studer_clock_unix_timestamp_with_utc_offset    = $studer_clock_unix_timestamp_with_utc_offset;
-
-      error_log("Studer clock timestamp: " . $studer_readings_obj->studer_clock_unix_timestamp_with_utc_offset);
 
       return $studer_readings_obj;
     }

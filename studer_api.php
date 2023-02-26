@@ -115,19 +115,30 @@ class studer_api
 
       $curlResponse   = $this->getCurl($endpoint, $headers, $params);
 
+      switch (true)
+        {
+            case ( $curlResponse->status == "OK" && $paramId == 5002 ):
 
-      if ($curlResponse->status == "OK")
-          {
+              return $curlResponse->uIntValue;  // returns the integer value not the usual float value
+
+            break;
+
+            case ( $curlResponse->status == "OK" && $paramId != 5002 ):
+
               return $curlResponse->floatValue; // returns parameter value
-          }
-      else
-          {
+
+            break;
+
+            default:
+
               if ($this->verbose)
               {
                   error_log( "This is the response while querying for your Studer parameter" . print_r($curlResponse, true) );
               }
               return null;
-          }
+
+            break;
+        }
     }
 
 

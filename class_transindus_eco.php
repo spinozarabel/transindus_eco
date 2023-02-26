@@ -2910,7 +2910,7 @@ class class_transindus_eco
 
         // create datetime object from studer timestamp. Note that this already has the UTC offeset for India
         $rcc_datetime_obj = new DateTime();
-        $rcc_datetime_obj->setTimeStamp($studer_timestamp_with_utc_offset);
+        $rcc_datetime_obj->setTimeStamp($studer_clock_unix_timestamp_with_utc_offset);
 
         $now = new DateTimee(); // present time per this server
 

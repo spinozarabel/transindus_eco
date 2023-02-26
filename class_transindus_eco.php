@@ -548,6 +548,7 @@ class class_transindus_eco
      *  Update SOC using Shelly energy readings do not update usermeta for soc_percentage_now
      *  The update only happens if SOC after dark baselining has happened and it is still dark now
      *  This routine is typically called when the Studer API call fails and it is still dark.
+     *  The check to see if it is dark and if SOC capture after dark etc., should be done before this call
      */
     public function compute_soc_from_shelly_energy_readings( int $user_index, int $wp_user_ID, string $wp_user_name): ? object
     {
@@ -679,20 +680,39 @@ class class_transindus_eco
 
 
     /**
-     *  @param int:$studer_timestamp_with_utc_offset is what is returned for parameter 5002 from Studer
-     *  @param string:$wp_user_name is the user name for current loop's user
-     *  We check to see if Studer clock is just past midnight
+     *  @param int:$user_index in the config file
+     *  @return int:$studer_time_offset_in_mins_lagging is the number of minutes that the Studer CLock is Lagging the server
      */
-    public function is_studer_time_just_pass_midnight( int $studer_timestamp_with_utc_offset, string $wp_user_name ): bool
+    public function get_studer_clock_offset( int $user_index )
     {
-      if ( false === ( $studer_time_offset_in_mins_lagging = 
-                              get_transient( $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' ) ) )
+      $config = $this->config;
+
+      $wp_user_name = $config['accounts'][$user_index]['wp_user_name'];
+
+      // Get transient of Studer offset if it exists
+      if ( false === get_transient( $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' ) )
       {
+        // make an API call to get value of parameter 5002 which is the UNIX time stamp including the UTC offest
+        $base_url  = $config['studer_api_baseurl'];
+        $uhash     = $config['accounts'][$user_index]['uhash'];
+        $phash     = $config['accounts'][$user_index]['phash'];
+
+        $studer_api = new studer_api($uhash, $phash, $base_url);
+          $studer_api->paramId = 5002;
+          $studer_api->device = "RCC1";
+          $studer_api->paramPart = "Value";
+
+        // Make the API call to get the parameter value
+        $studer_clock_unix_timestamp_with_utc_offset = $studer_api->get_parameter_value();
+        error_log( "studer_clock_unix_timestamp_with_utc_offset: " . $studer_clock_unix_timestamp_with_utc_offset );
+        // if the value is null due to a bad API response then do nothing and return
+        if ( empty( $studer_clock_unix_timestamp_with_utc_offset )) return;
+
         // create datetime object from studer timestamp. Note that this already has the UTC offeset for India
         $rcc_datetime_obj = new DateTime();
-        $rcc_datetime_obj->setTimeStamp($studer_timestamp_with_utc_offset);
+        $rcc_datetime_obj->setTimeStamp($studer_clock_unix_timestamp_with_utc_offset);
 
-        $now = new DateTimee(); // present time per this server
+        $now = new DateTime();
 
         // form interval object between now and Studer's time stamp under investigation
         $diff = $now->diff( $rcc_datetime_obj );
@@ -713,6 +733,19 @@ class class_transindus_eco
         // offset already computed and transient still valid, just read in the value
         $studer_time_offset_in_mins_lagging = get_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' );
       }
+      return $studer_time_offset_in_mins_lagging;
+    }
+
+
+    /**
+     *  @param int:$user_index
+     *  @param string:$wp_user_name is the user name for current loop's user
+     *  We check to see if Studer clock is just past midnight
+     */
+    public function is_studer_time_just_pass_midnight( int $user_index, string $wp_user_name ): bool
+    {
+      // this could also be leading in which case the sign will be automatically negative
+      $studer_time_offset_in_mins_lagging = $this->get_studer_clock_offset( $user_index );
 
       // get current time compensated for our timezone
       $test = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
@@ -721,7 +754,8 @@ class class_transindus_eco
       $s=$test->format('s');
 
       // if hours are 0 and offset adjusted minutes are 0 then we are just pass midnight per Studer clock
-      if( $h == 0 && ($m - $studer_time_offset_in_mins_lagging) > 0 ) 
+      // we added an additional offset just to be sure to account for any seconds offset
+      if( $h == 0 && ($m + $studer_time_offset_in_mins_lagging + 1) > 0 ) 
       {
         // We are just past midnight on Studer clock, so return true
         return true;
@@ -1036,12 +1070,33 @@ class class_transindus_eco
             return null;
         }
 
-        //----------------Compute Studer Clock Offset and store in a transient ------------------------------
-        //
-        // $studer_clock_unix_timestamp_with_utc_offset = $studer_readings_obj->studer_clock_unix_timestamp_with_utc_offset;
-        
+        //---------------- Studer Midnight Rollover ------------------------------
+        // Each time the following executes it looks at the transient. Only when it expires does an API call made on Studer for 5002
+        $is_studer_time_just_pass_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
 
-        //----------------------------------------------------------------------------------------------------
+        if ( $is_studer_time_just_pass_midnight )
+        {
+          // first check if SOC capture after dark has happened
+          if (false === ($timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) )
+          {
+            $timestamp_soc_capture_after_dark = get_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', true);
+          }
+          else
+          {
+            $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' );
+          }
+         $check_if_soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark );
+
+          if ( $check_if_soc_after_dark_happened )
+          {
+            $soc_from_shelly_energy_readings = $this->compute_soc_from_shelly_energy_readings( $user_index, $wp_user_ID, $wp_user_name);
+
+            // for now we would like to just log the values to see if all works corretly
+            error_log("Studer CLock just passed midnight-SOC=: " . $soc_from_shelly_energy_readings->SOC_percentage_now);
+          }
+          
+        }
+        //------------------------------- Battery VOltage Processing -----------------------------------
 
         // Load the voltage array that might have been pushed into transient space
         $bv_arr_transient = get_transient( $wp_user_name . '_bv_avg_arr' );
@@ -1071,6 +1126,8 @@ class class_transindus_eco
 
         // average the battery voltage over last 6 readings of about 6 minutes.
         $battery_voltage_avg  = $this->get_battery_voltage_avg();
+
+        // -------------------------------------------------------------------------
 
         // get the estimated solar power from calculations for a clear day
         $est_solar_kw         = $this->estimated_solar_power($user_index);
@@ -2880,61 +2937,7 @@ class class_transindus_eco
       return $studer_readings_obj;
     }
 
-    /**
-     * 
-     */
-    public function get_studer_clock_offset( int $user_index )
-    {
-      $config = $this->config;
-
-      $wp_user_name = $config['accounts'][$user_index]['wp_user_name'];
-
-      // Get transient of Studer offset if it exists
-      if ( false === get_transient( $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' ) )
-      {
-        // make an API call to get value of parameter 5002 which is the UNIX time stamp including the UTC offest
-        $base_url  = $config['studer_api_baseurl'];
-        $uhash     = $config['accounts'][$user_index]['uhash'];
-        $phash     = $config['accounts'][$user_index]['phash'];
-
-        $studer_api = new studer_api($uhash, $phash, $base_url);
-          $studer_api->paramId = 5002;
-          $studer_api->device = "RCC1";
-          $studer_api->paramPart = "Value";
-
-        // Make the API call to get the parameter value
-        $studer_clock_unix_timestamp_with_utc_offset = $studer_api->get_parameter_value();
-        error_log( "studer_clock_unix_timestamp_with_utc_offset: " . $studer_clock_unix_timestamp_with_utc_offset );
-        // if the value is null due to a bad API response then do nothing and return
-        if ( empty( $studer_clock_unix_timestamp_with_utc_offset )) return;
-
-        // create datetime object from studer timestamp. Note that this already has the UTC offeset for India
-        $rcc_datetime_obj = new DateTime();
-        $rcc_datetime_obj->setTimeStamp($studer_clock_unix_timestamp_with_utc_offset);
-
-        $now = new DateTime();
-
-        // form interval object between now and Studer's time stamp under investigation
-        $diff = $now->diff( $rcc_datetime_obj );
-
-        // positive means lagging behind, negative means leading ahead, of correct server time.
-        // If Studer clock was correctr the offset should be 0 but Studer clock seems slow for some reason
-        // 330 comes from pre-existing UTC offest of 5:30 already present in Studer's time stamp
-        $studer_time_offset_in_mins_lagging = 330 - ( $diff->i  + $diff->h *60);
-
-        set_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging',  
-                        $studer_time_offset_in_mins_lagging, 
-                        24*60*60 );
-
-        $this->verbose ? error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins"): false;
-      }
-      else
-      {
-        // offset already computed and transient still valid, just read in the value
-        $studer_time_offset_in_mins_lagging = get_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' );
-      }
-      return $studer_time_offset_in_mins_lagging;
-    }
+    
 
 
 

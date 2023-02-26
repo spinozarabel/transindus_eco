@@ -765,13 +765,25 @@ class class_transindus_eco
     }
 
     /**
-     *  @param int:$timestamp_soc_capture_after_dark is the UNIX timestamp when the SOC capture after dark took place
-     *  @return bool true if timestamp is witin last 12h
+     *  @param int:$user_index
+     *  @param string:$wp_user_name
+     *  @param int:$wp_user_ID
+     *  @return bool:true if timestamp is witin last 12h of present server time
      *  Check if SOC capture after dark took place based on timestamp
      */
-    public function check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark ) :bool
+    public function check_if_soc_after_dark_happened( int $user_index, string $wp_user_name, int $wp_user_ID ) :bool
     {
-      date_default_timezone_set("Asia/Kolkata");;
+      date_default_timezone_set("Asia/Kolkata");
+
+      // first check if SOC capture after dark has happened
+      if (false === ($timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) )
+      {
+        $timestamp_soc_capture_after_dark = get_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', true);
+      }
+      else
+      {
+        $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' );
+      }
 
       if ( empty( $timestamp_soc_capture_after_dark ) )
       {
@@ -1061,7 +1073,8 @@ class class_transindus_eco
             // cannot trust this Studer reading, do not update
             error_log($wp_user_name . ": " . "Could not get Studer Reading");
 
-            // 
+            //  If it is after dark we can use the Shelly SOC instead
+
 
 
 
@@ -1071,21 +1084,13 @@ class class_transindus_eco
         }
 
         //---------------- Studer Midnight Rollover ------------------------------
+
         // Each time the following executes it looks at the transient. Only when it expires does an API call made on Studer for 5002
         $is_studer_time_just_pass_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
 
         if ( $is_studer_time_just_pass_midnight )
         {
-          // first check if SOC capture after dark has happened
-          if (false === ($timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) )
-          {
-            $timestamp_soc_capture_after_dark = get_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', true);
-          }
-          else
-          {
-            $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' );
-          }
-         $check_if_soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark );
+          $check_if_soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
 
           if ( $check_if_soc_after_dark_happened )
           {

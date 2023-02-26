@@ -2912,7 +2912,7 @@ class class_transindus_eco
         $rcc_datetime_obj = new DateTime();
         $rcc_datetime_obj->setTimeStamp($studer_clock_unix_timestamp_with_utc_offset);
 
-        $now = new DateTimee(); // present time per this server
+        $now = new DateTime();
 
         // form interval object between now and Studer's time stamp under investigation
         $diff = $now->diff( $rcc_datetime_obj );

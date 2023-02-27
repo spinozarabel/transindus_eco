@@ -878,7 +878,7 @@ class class_transindus_eco
           // transient exists, but lets double check the validity
           $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' );
 
-          $check_if_soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark );
+          $check_if_soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
 
           if ( $check_if_soc_after_dark_happened )
           {
@@ -1093,7 +1093,7 @@ class class_transindus_eco
             $soc_from_shelly_energy_readings = $this->compute_soc_from_shelly_energy_readings(  $user_index, 
                                                                                                 $wp_user_ID, 
                                                                                                 $wp_user_name );
-                                                                                                
+
             error_log("SOC update calculated by Shelly 4PM SOC= " . $soc_from_shelly_energy_readings->SOC_percentage_now);
 
             if ( $studer_api_call_failed && $soc_from_shelly_energy_readings )

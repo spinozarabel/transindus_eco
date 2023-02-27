@@ -50,10 +50,12 @@ class class_transindus_eco
   public $count_for_averaging;
   public $counter;
   public $datetime;
-
   public $valid_shelly_config;
-
   public $do_soc_cal_now_arr;
+
+  // This flag is true when SOC update in cron loop is done using Shelly readings and not studer readings
+  // This can only happen when it is dark and when SOC after dark capture are both true
+  public $soc_updated_using_shelly_energy_readings;
 
 
     /**
@@ -740,27 +742,40 @@ class class_transindus_eco
     /**
      *  @param int:$user_index
      *  @param string:$wp_user_name is the user name for current loop's user
-     *  We check to see if Studer clock is just past midnight
+     *  We check to see if Studer clock is just past midnight. This will be true only once in 24h.
+     *  Typically it happens close to Servers's midnight due to any offset in Studers clock.
+     *  So we check in a window of 30mr on either side of server midnight.
      */
     public function is_studer_time_just_pass_midnight( int $user_index, string $wp_user_name ): bool
     {
-      // this could also be leading in which case the sign will be automatically negative
-      $studer_time_offset_in_mins_lagging = $this->get_studer_clock_offset( $user_index );
-
-      // get current time compensated for our timezone
-      $test = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-      $h=$test->format('H');
-      $m=$test->format('i');
-      $s=$test->format('s');
-
-      // if hours are 0 and offset adjusted minutes are 0 then we are just pass midnight per Studer clock
-      // we added an additional offset just to be sure to account for any seconds offset
-      if( $h == 0 && ($m + $studer_time_offset_in_mins_lagging + 1) > 0 ) 
+      // if not within an hour of server clocks midnight return false. Studer offset will never be allowed to be more than 1h
+      if ($this->nowIsWithinTimeLimits("00:30:00", "23:30:00") )
       {
-        // We are just past midnight on Studer clock, so return true
-        return true;
+        return false;
       }
-      // not yet just past midnight, so return false
+      // if the transient is expired it means we need to check
+      if ( false === get_transient( $wp_user_name . '_' . 'is_studer_time_just_pass_midnight' ) )
+      {
+        // this could also be leading in which case the sign will be automatically negative
+        $studer_time_offset_in_mins_lagging = $this->get_studer_clock_offset( $user_index );
+
+        // get current time compensated for our timezone
+        $test = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+        $h=$test->format('H');
+        $m=$test->format('i');
+        $s=$test->format('s');
+
+        // if hours are 0 and offset adjusted minutes are 0 then we are just pass midnight per Studer clock
+        // we added an additional offset just to be sure to account for any seconds offset
+        if( $h == 0 && ($m + $studer_time_offset_in_mins_lagging + 1) > 0 ) 
+        {
+          // We are just past midnight on Studer clock, so return true after setiimg the transient
+          set_transient( $wp_user_name . '_' . 'is_studer_time_just_pass_midnight',  'yes', 2*60*60 );
+          return true;
+        }
+      }
+
+      //  If we het here it means that the transient exists and so we are way past midnight, check was triggered already
       return false;
     }
 
@@ -1057,50 +1072,59 @@ class class_transindus_eco
             $shelly_api_device_status_voltage = "NA";    
         }
 
-
-
-        // -----------------------Studer API Call -----------------------------------------
-
         // get the smaller set of Studer readings
         $studer_readings_obj  = $this->get_studer_min_readings($user_index);
 
-        // check for valid studer values. Return if not valid
-        if( empty(  $studer_readings_obj )                          ||
-            empty(  $studer_readings_obj->battery_voltage_vdc )     ||
-                    $studer_readings_obj->battery_voltage_vdc < 40  ||
-            empty(  $studer_readings_obj->pout_inverter_ac_kw ) ) 
-        {
-            // cannot trust this Studer reading, do not update
-            error_log($wp_user_name . ": " . "Could not get Studer Reading");
-
-            //  If it is after dark we can use the Shelly SOC instead
+        $studer_api_call_failed =   ( empty(  $studer_readings_obj )                          ||
+                                      empty(  $studer_readings_obj->battery_voltage_vdc )     ||
+                                      $studer_readings_obj->battery_voltage_vdc < 40          ||
+                                      empty(  $studer_readings_obj->pout_inverter_ac_kw ) );
 
 
+        //---------------- Studer Midnight Rollover and SOC from Shelly readings after dark ------------------------------
 
-
-
-
-            return null;
-        }
-
-        //---------------- Studer Midnight Rollover ------------------------------
-
-        // Each time the following executes it looks at the transient. Only when it expires does an API call made on Studer for 5002
-        $is_studer_time_just_pass_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
-
-        if ( $is_studer_time_just_pass_midnight )
+        if ( $it_is_still_dark )
         {
           $check_if_soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
 
           if ( $check_if_soc_after_dark_happened )
           {
-            $soc_from_shelly_energy_readings = $this->compute_soc_from_shelly_energy_readings( $user_index, $wp_user_ID, $wp_user_name);
+            // it is dark AND soc capture after dark has happened so we can compute soc using Shelly readings
+            $soc_from_shelly_energy_readings = $this->compute_soc_from_shelly_energy_readings(  $user_index, 
+                                                                                                $wp_user_ID, 
+                                                                                                $wp_user_name );
+                                                                                                
+            error_log("SOC update calculated by Shelly 4PM SOC= " . $soc_from_shelly_energy_readings->SOC_percentage_now);
 
-            // for now we would like to just log the values to see if all works corretly
-            error_log("Studer CLock just passed midnight-SOC=: " . $soc_from_shelly_energy_readings->SOC_percentage_now);
+            if ( $studer_api_call_failed && $soc_from_shelly_energy_readings )
+            {
+              // we can use the shelly soc updates since our Studer API call has failed
+              $this->soc_updated_using_shelly_energy_readings = true;
+              
+            }
+            // we can now check to see if Studer midnight has happened for midnight rollover capture
+            // Each time the following executes it looks at a transient. Only when it expires does an API call made on Studer for 5002
+            $is_studer_time_just_pass_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
+
+            if ( $is_studer_time_just_pass_midnight )
+            {
+              // for now we would like to just log the values to see if all works corretly
+              error_log("Studer CLock just passed midnight-SOC=: " . $soc_from_shelly_energy_readings->SOC_percentage_now);
+            }
           }
-          
         }
+        elseif ( $studer_api_call_failed && false === $it_is_still_dark )
+        {
+          // cannot trust this Studer reading, do not update
+          error_log($wp_user_name . ": " . "Studer API call failed");
+          return null;
+        }
+        elseif ( false === $studer_api_call_failed )
+        {
+          // Stder API call was successful so we use Studer readings object for our updates
+          $this->soc_updated_using_shelly_energy_readings = false;
+        } 
+
         //------------------------------- Battery VOltage Processing -----------------------------------
 
         // Load the voltage array that might have been pushed into transient space
@@ -1219,8 +1243,9 @@ class class_transindus_eco
         if (  ( $KWH_solar_today <= 0.01 )                                &&    // Solar has been reset to 0
               ( $KWH_load_today  <= 1 )                                   &&
               ( abs($SOC_percentage_previous - $SOC_percentage_now) > 4 ) &&    // if difference is small we don't care
-              ( $this->nowIsWithinTimeLimits("00:00", "00:59") || 
-                $this->nowIsWithinTimeLimits("23:00", "23:59:59") )          )    {
+              ( $this->nowIsWithinTimeLimits("00:00:00", "00:59:59") || 
+                $this->nowIsWithinTimeLimits("23:00:00", "23:59:59") )  )    
+        {
 
           // Since new day accounting has begun, update user meta for SOC at beginning of new day
           // This update only happens at beginning of day and also during battery float

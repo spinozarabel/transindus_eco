@@ -606,7 +606,7 @@ class class_transindus_eco
       // update_user_meta( $wp_user_ID, 'soc_percentage_now', $soc_percentage_now_computed_using_shelly );
 
       // log if verbose is set to true
-      $this_verbose ? error_log( "SOC after dark: " . $soc_update_from_studer_after_dark . 
+      $this->verbose ? error_log( "SOC after dark: " . $soc_update_from_studer_after_dark . 
                                   "%,  SOC NOW as computed using Shelly: " . 
                                   $soc_percentage_now_computed_using_shelly . " %") : false;
 

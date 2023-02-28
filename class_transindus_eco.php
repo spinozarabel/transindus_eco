@@ -740,6 +740,7 @@ class class_transindus_eco
 
 
     /**
+     *  @todo implement lagging and leading studer offset, at present only lagging is pmplemented
      *  @param int:$user_index
      *  @param string:$wp_user_name is the user name for current loop's user
      *  We check to see if Studer clock is just past midnight. This will be true only once in 24h.
@@ -767,7 +768,7 @@ class class_transindus_eco
 
         // if hours are 0 and offset adjusted minutes are 0 then we are just pass midnight per Studer clock
         // we added an additional offset just to be sure to account for any seconds offset
-        if( $h == 0 && ($m + $studer_time_offset_in_mins_lagging + 1) > 0 ) 
+        if( $h == 0 && ($m - $studer_time_offset_in_mins_lagging ) > 0 ) 
         {
           // We are just past midnight on Studer clock, so return true after setiimg the transient
           set_transient( $wp_user_name . '_' . 'is_studer_time_just_pass_midnight',  'yes', 2*60*60 );
@@ -1083,8 +1084,8 @@ class class_transindus_eco
 
         //---------------- Studer Midnight Rollover and SOC from Shelly readings after dark ------------------------------
 
-        if ( $it_is_still_dark )
-        {
+        if ( $it_is_still_dark ):
+        
           $check_if_soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
 
           if ( $check_if_soc_after_dark_happened )
@@ -1112,7 +1113,7 @@ class class_transindus_eco
               error_log("Studer CLock just passed midnight-SOC=: " . $soc_from_shelly_energy_readings->SOC_percentage_now);
             }
           }
-        }
+        endif;
         
         
         // It is not dark anymore check if Studer API call failed

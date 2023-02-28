@@ -1137,38 +1137,8 @@ class class_transindus_eco
         }
         
 
-        //------------------------------- Battery VOltage Processing -----------------------------------
-
-        // Load the voltage array that might have been pushed into transient space
-        $bv_arr_transient = get_transient( $wp_user_name . '_bv_avg_arr' );
-
-        if ( ! is_array($bv_arr_transient))
-        {
-          $bv_avg_arr = [];
-        }
-        else
-        {
-          $bv_avg_arr = $bv_arr_transient;
-        }
-        
-        // push the new voltage to the holding array
-        array_push($bv_avg_arr, $studer_readings_obj->battery_voltage_vdc);
-
-        // If the array has more than 3 elements then drop the earliest one
-        // We are averaging for only 3 minutes
-        if ( sizeof($bv_avg_arr) > 3 )  {   // drop the earliest reading
-            array_shift($bv_avg_arr);
-        }
-        // Write it to this object for access elsewhere easily
-        $this->bv_avg_arr = $bv_avg_arr;
-
-        // Setup transiet to keep previous state for averaging
-        set_transient( $wp_user_name . '_bv_avg_arr', $bv_avg_arr, 5*60 );
-
         // average the battery voltage over last 6 readings of about 6 minutes.
-        $battery_voltage_avg  = $this->get_battery_voltage_avg();
-
-        // -------------------------------------------------------------------------
+        $battery_voltage_avg  = $this->get_battery_voltage_avg( $wp_user_name, $studer_readings_obj->battery_voltage_vdc );
 
         // get the estimated solar power from calculations for a clear day
         $est_solar_kw         = $this->estimated_solar_power($user_index);
@@ -1213,9 +1183,9 @@ class class_transindus_eco
         $KWH_solar_percentage_today = round( $KWH_solar_today / $SOC_capacity_KWH * 100, 1);
 
         // Battery discharge today in terms of SOC capacity percventage
-        $KWH_batt_percent_discharged_today = round( $studer_readings_obj->KWH_batt_discharged_today / $SOC_capacity_KWH * 100, 1);
+        $KWH_batt_percent_discharged_today = round( (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07 / $SOC_capacity_KWH * 100, 1);
 
-        if (true)
+        if ( $this->verbose )
         {
 
             error_log("username: "             . $wp_user_name . ' Switch: ' . $shelly_switch_status . ' ' . 
@@ -1224,9 +1194,6 @@ class class_transindus_eco
             error_log("Psolar_calc: " . array_sum($est_solar_kw) . " Psolar_act: " . $psolar . " - Psurplus: " . 
                        $surplus . " KW - Is it a Cloudy Day?: " . $it_is_a_cloudy_day);
         
-            // error_log("Solar Units Today: "    . $KWH_solar_today                          . "KWH");
-            // error_log("Grid Units Today: "     . $KWH_grid_today                           . "KWH");
-            // error_log("Load Units Today: "     . $KWH_load_today                           . "KWH");
         }
 
         // get the SOC % from the previous reading from user meta
@@ -1234,9 +1201,6 @@ class class_transindus_eco
 
         // Net battery charge in KWH (discharge if minus)
         $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07;
-
-        $batt_disc_percentage_calc_from_load = (0.988 * $KWH_grid_today - $KWH_load_today) * 1.10;
-        $batt_disc_percentage_calc_from_load = round( $batt_disc_percentage_calc_from_load / $SOC_capacity_KWH * 100, 1);
 
         // Calculate in percentage of  installed battery capacity
         $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
@@ -1275,7 +1239,7 @@ class class_transindus_eco
         // update the object and user meta
         $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now;
 
-        if (true)
+        if ( $this->verbose )
         {
           error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . $KWH_batt_percent_discharged_today . 
                     " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC Now: " . $SOC_percentage_now . " %" );
@@ -2010,23 +1974,55 @@ class class_transindus_eco
 
     /**
      *  Takes the average of the battery values stored in the array, independent of its size
+     *  @preturn float:$battery_avg_voltage
      */
-    public function get_battery_voltage_avg()
+    public function get_battery_voltage_avg( string $wp_user_name, float $new_battery_voltage_reading ): ? float
     {
+        // Load the voltage array that might have been pushed into transient space
+        $bv_arr_transient = get_transient( $wp_user_name . '_' . 'bv_avg_arr' ); 
+
+        // If transient doesnt exist rebuild
+        if ( ! is_array($bv_arr_transient))
+        {
+          $bv_avg_arr = [];
+        }
+        else
+        {
+          // it exists so populate
+          $bv_avg_arr = $bv_arr_transient;
+        }
+        
+        // push the new voltage reading to the holding array
+        array_push( $bv_avg_arr, $new_battery_voltage_reading );
+
+        // If the array has more than 3 elements then drop the earliest one
+        // We are averaging for only 3 minutes
+        if ( sizeof($bv_avg_arr) > 3 )  {   // drop the earliest reading
+            array_shift($bv_avg_arr);
+        }
+        // Write it to this object for access elsewhere easily
+        $this->bv_avg_arr = $bv_avg_arr;
+
+        // Setup transiet to keep previous state for averaging
+        set_transient( $wp_user_name . '_' . 'bv_avg_arr', $bv_avg_arr, 5*60 );
+
+
         $count  = 0.00001;    // prevent division by 0 error
         $sum    = 0;
-        foreach ($this->bv_avg_arr as $key => $bv_reading)
+        foreach ($bv_avg_arr as $key => $bv_reading)
         {
            if ($bv_reading > 46.0)
            {
-              // average all values that are real
+              // average all values that are meaningful
               $sum    +=  $bv_reading;
               $count  +=  1;
            }
         }
         unset($bv_reading);
 
-        return ( round( $sum / $count, 2) );
+        $battery_avg_voltage = round( $sum / $count, 2);
+
+        return $battery_avg_voltage;
     }
 
     /**

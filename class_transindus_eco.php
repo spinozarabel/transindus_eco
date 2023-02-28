@@ -1113,17 +1113,16 @@ class class_transindus_eco
             }
           }
         }
-        elseif ( $studer_api_call_failed && false === $it_is_still_dark )
+        else
         {
-          // cannot trust this Studer reading, do not update
-          error_log($wp_user_name . ": " . "Studer API call failed");
-          return null;
+          // It is not dark anymore check if Studer API call failed
+          if ( $studer_api_call_failed )
+          {
+            // Studer API call did fail so exit for now
+            error_log($wp_user_name . ": " . "Studer API call failed");
+            return null;
+          }
         }
-        elseif ( false === $studer_api_call_failed )
-        {
-          // Stder API call was successful so we use Studer readings object for our updates
-          $this->soc_updated_using_shelly_energy_readings = false;
-        } 
 
         //------------------------------- Battery VOltage Processing -----------------------------------
 

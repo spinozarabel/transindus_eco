@@ -1095,7 +1095,7 @@ class class_transindus_eco
                                                                                                 $wp_user_ID, 
                                                                                                 $wp_user_name );
 
-            error_log("SOC update calculated by Shelly 4PM SOC= " . $soc_from_shelly_energy_readings->SOC_percentage_now);
+            $this->verbose ? error_log("SOC update calculated by Shelly 4PM SOC= " . $soc_from_shelly_energy_readings->SOC_percentage_now): false;
 
             if ( $soc_from_shelly_energy_readings )
             {
@@ -1116,7 +1116,7 @@ class class_transindus_eco
               if (  $soc_from_shelly_energy_readings->SOC_percentage_now  > 20    && 
                     $soc_from_shelly_energy_readings->SOC_percentage_now  < 100 )
               {
-                update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_previous);
+                update_user_meta( $wp_user_ID, 'soc_percentage', $soc_from_shelly_energy_readings->SOC_percentage_now );
               }
               else
               {

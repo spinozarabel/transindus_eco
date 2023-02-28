@@ -1086,9 +1086,9 @@ class class_transindus_eco
 
         if ( $it_is_still_dark ):
         
-          $check_if_soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
+          $soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
 
-          if ( $check_if_soc_after_dark_happened )
+          if ( $soc_after_dark_happened )
           {
             // it is dark AND soc capture after dark has happened so we can compute soc using Shelly readings
             $soc_from_shelly_energy_readings = $this->compute_soc_from_shelly_energy_readings(  $user_index, 

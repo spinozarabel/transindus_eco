@@ -1105,9 +1105,9 @@ class class_transindus_eco
             }
             // we can now check to see if Studer midnight has happened for midnight rollover capture
             // Each time the following executes it looks at a transient. Only when it expires does an API call made on Studer for 5002
-            $is_studer_time_just_pass_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
+            $studer_time_just_pass_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
 
-            if ( $is_studer_time_just_pass_midnight )
+            if ( $studer_time_just_pass_midnight )
             {
               // for now we would like to just log the values to see if all works corretly
               error_log("Studer CLock just passed midnight-SOC=: " . $soc_from_shelly_energy_readings->SOC_percentage_now);

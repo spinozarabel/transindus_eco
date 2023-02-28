@@ -1105,12 +1105,24 @@ class class_transindus_eco
             }
             // we can now check to see if Studer midnight has happened for midnight rollover capture
             // Each time the following executes it looks at a transient. Only when it expires does an API call made on Studer for 5002
-            $studer_time_just_pass_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
+            $studer_time_just_passed_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
 
-            if ( $studer_time_just_pass_midnight )
+            if ( $studer_time_just_passed_midnight )
             {
               // for now we would like to just log the values to see if all works corretly
               error_log("Studer CLock just passed midnight-SOC=: " . $soc_from_shelly_energy_readings->SOC_percentage_now);
+
+              // we can use this to update the user meta for SOC at beginning of new day
+              if (  $soc_from_shelly_energy_readings->SOC_percentage_now  > 20    && 
+                    $soc_from_shelly_energy_readings->SOC_percentage_now  < 100 )
+              {
+                update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_previous);
+              }
+              else
+              {
+                error_log("Did not Update user meta for midnight rollover from Shelly - Number was not between 100 and 20");
+              }
+              
             }
           }
         endif;
@@ -1249,12 +1261,12 @@ class class_transindus_eco
 
           // Since new day accounting has begun, update user meta for SOC at beginning of new day
           // This update only happens at beginning of day and also during battery float
-          update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_previous);
+          // update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_previous);
 
           error_log("SOC new day rollover activated: " . $SOC_percentage_previous  . " %");
 
           // since the battery nett charge for the new day is 0, SOC now is same as SOC previous
-          $SOC_percentage_now = $SOC_percentage_previous;
+          // $SOC_percentage_now = $SOC_percentage_previous;
         }
         
         // Update user meta so this becomes the previous value for next cycle
@@ -1267,7 +1279,7 @@ class class_transindus_eco
         {
           error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . $KWH_batt_percent_discharged_today . 
                     " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC Now: " . $SOC_percentage_now . " %" );
-          error_log('Battery Dis %: ' . $batt_disc_percentage_calc_from_load . ' %');
+          // error_log('Battery Dis %: ' . $batt_disc_percentage_calc_from_load . ' %');
         }
 
         // capture soc after dark using shelly 4 pm. Only happens once between 7-11 pm. 

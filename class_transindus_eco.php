@@ -1096,7 +1096,7 @@ class class_transindus_eco
 
             error_log("SOC update calculated by Shelly 4PM SOC= " . $soc_from_shelly_energy_readings->SOC_percentage_now);
 
-            if ( $studer_api_call_failed && $soc_from_shelly_energy_readings )
+            if ( $soc_from_shelly_energy_readings )
             {
               // we can use the shelly soc updates since our Studer API call has failed
               $this->soc_updated_using_shelly_energy_readings = true;
@@ -1113,16 +1113,16 @@ class class_transindus_eco
             }
           }
         }
-        else
+        
+        
+        // It is not dark anymore check if Studer API call failed
+        if ( $studer_api_call_failed )
         {
-          // It is not dark anymore check if Studer API call failed
-          if ( $studer_api_call_failed )
-          {
-            // Studer API call did fail so exit for now
-            error_log($wp_user_name . ": " . "Studer API call failed");
-            return null;
-          }
+          // Studer API call did fail so exit for now
+          error_log($wp_user_name . ": " . "Studer API call failed");
+          return null;
         }
+        
 
         //------------------------------- Battery VOltage Processing -----------------------------------
 

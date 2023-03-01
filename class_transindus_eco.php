@@ -483,7 +483,7 @@ class class_transindus_eco
       $wp_user_ID = $this->get_wp_user_from_user_index( $user_index )->ID;
 
       // ensure that the data below is current before coming here
-      $all_usermeta = $this->all_usermeta;
+      $all_usermeta = $this->all_usermeta ?? $this->get_all_usermeta( $wp_user_ID );
 
       $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['shelly_device_id_acin']   )  &&
                               ! empty( $config['accounts'][$user_index]['shelly_device_id_homepwr'] ) &&

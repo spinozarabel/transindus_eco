@@ -542,6 +542,7 @@ class class_transindus_eco
       $return_array['control_shelly']                   = $control_shelly;
       $return_array['shelly_switch_status']             = $shelly_switch_status;
       $return_array['shelly_api_device_status_voltage'] = $shelly_api_device_status_voltage;
+      $return_array['shelly_api_device_status_ON']      = $shelly_api_device_status_ON;
 
       $this->shelly_switch_acin_details = $return_array;
 
@@ -1037,6 +1038,7 @@ class class_transindus_eco
         $control_shelly                   = $shelly_switch_acin_details_obj['control_shelly'];
         $shelly_switch_status             = $shelly_switch_acin_details_obj['shelly_switch_status'];
         $shelly_api_device_status_voltage = $shelly_switch_acin_details_obj['shelly_api_device_status_voltage'];
+        $shelly_api_device_status_ON      = $shelly_switch_acin_details_obj['shelly_api_device_status_ON'];
 
         
         
@@ -1258,6 +1260,7 @@ class class_transindus_eco
         $studer_readings_obj->control_shelly                    = $control_shelly;
         $studer_readings_obj->shelly_switch_status              = $shelly_switch_status;
         $studer_readings_obj->shelly_api_device_status_voltage  = $shelly_api_device_status_voltage;
+        $studer_readings_obj->shelly_api_device_status_ON       = $shelly_api_device_status_ON;
         $studer_readings_obj->shelly_switch_acin_details_obj    = $shelly_switch_acin_details_obj;
 
         $studer_readings_obj->LVDS                              = $LVDS;

@@ -5,7 +5,7 @@
  *
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
- * Ver 2
+ * Ver 2.1
  *     Added Shelly 4 PM for energy readings to home. 
  *      During dark SOC updates can use this if Studer API calls fail
  * 
@@ -988,58 +988,59 @@ class class_transindus_eco
         $now_is_daytime       = $this->nowIsWithinTimeLimits("08:30", "16:30"); // changed from 17:30  on 7/28/22
         $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
 
-        // Get limits from user meta
-        // SOC percentage needed to trigger LVDS
-        $soc_percentage_lvds_setting            = get_user_meta($wp_user_ID, "soc_percentage_lvds_setting",  true) ?? 30;
+        { // Get limits from user meta as per settings
+          // SOC percentage needed to trigger LVDS
+          $soc_percentage_lvds_setting            = get_user_meta($wp_user_ID, "soc_percentage_lvds_setting",  true) ?? 30;
 
-        // SOH of battery currently. 
-        $soh_percentage_setting                 = get_user_meta($wp_user_ID, "soh_percentage_setting",  true) ?? 100;
+          // SOH of battery currently. 
+          $soh_percentage_setting                 = get_user_meta($wp_user_ID, "soh_percentage_setting",  true) ?? 100;
 
-        // Avg Battery Voltage lower threshold for LVDS triggers
-        $battery_voltage_avg_lvds_setting       = get_user_meta($wp_user_ID, "battery_voltage_avg_lvds_setting",  true) ?? 48.3;
+          // Avg Battery Voltage lower threshold for LVDS triggers
+          $battery_voltage_avg_lvds_setting       = get_user_meta($wp_user_ID, "battery_voltage_avg_lvds_setting",  true) ?? 48.3;
 
-        // RDBC active only if SOC is below this percentage level.
-        $soc_percentage_rdbc_setting            = get_user_meta($wp_user_ID, "soc_percentage_rdbc_setting",  true) ?? 80.0;
+          // RDBC active only if SOC is below this percentage level.
+          $soc_percentage_rdbc_setting            = get_user_meta($wp_user_ID, "soc_percentage_rdbc_setting",  true) ?? 80.0;
 
-        // Switch releases if SOC is above this level 
-        $soc_percentage_switch_release_setting  = get_user_meta($wp_user_ID, "soc_percentage_switch_release_setting",  true) ?? 95.0; 
+          // Switch releases if SOC is above this level 
+          $soc_percentage_switch_release_setting  = get_user_meta($wp_user_ID, "soc_percentage_switch_release_setting",  true) ?? 95.0; 
 
-        // SOC needs to be higher than this to allow switch release after RDBC
-        $min_soc_percentage_for_switch_release_after_rdbc 
-                                      = get_user_meta($wp_user_ID, "min_soc_percentage_for_switch_release_after_rdbc",  true) ?? 32;
+          // SOC needs to be higher than this to allow switch release after RDBC
+          $min_soc_percentage_for_switch_release_after_rdbc 
+                                        = get_user_meta($wp_user_ID, "min_soc_percentage_for_switch_release_after_rdbc",  true) ?? 32;
 
-        // min KW of Surplus Solar to release switch after RDBC
-        $min_solar_surplus_for_switch_release_after_rdbc 
-                                      = get_user_meta($wp_user_ID, "min_solar_surplus_for_switch_release_after_rdbc",  true) ?? 0.2; 
+          // min KW of Surplus Solar to release switch after RDBC
+          $min_solar_surplus_for_switch_release_after_rdbc 
+                                        = get_user_meta($wp_user_ID, "min_solar_surplus_for_switch_release_after_rdbc",  true) ?? 0.2; 
 
-        // battery float voltage setting. Only used for SOC clamp for 100%
-        $battery_voltage_avg_float_setting  = get_user_meta($wp_user_ID, "battery_voltage_avg_float_setting",  true) ?? 51.9; 
+          // battery float voltage setting. Only used for SOC clamp for 100%
+          $battery_voltage_avg_float_setting  = get_user_meta($wp_user_ID, "battery_voltage_avg_float_setting",  true) ?? 51.9; 
 
-        // Min VOltage at ACIN for RDBC to switch to GRID
-        $acin_min_voltage_for_rdbc          = get_user_meta($wp_user_ID, "acin_min_voltage_for_rdbc",  true) ?? 199;  
+          // Min VOltage at ACIN for RDBC to switch to GRID
+          $acin_min_voltage_for_rdbc          = get_user_meta($wp_user_ID, "acin_min_voltage_for_rdbc",  true) ?? 199;  
 
-        // Max voltage at ACIN for RDBC to switch to GRID
-        $acin_max_voltage_for_rdbc          = get_user_meta($wp_user_ID, "acin_max_voltage_for_rdbc",  true) ?? 241; 
+          // Max voltage at ACIN for RDBC to switch to GRID
+          $acin_max_voltage_for_rdbc          = get_user_meta($wp_user_ID, "acin_max_voltage_for_rdbc",  true) ?? 241; 
 
-        // KW of deficit after which RDBC activates to GRID. Usually a -ve number
-        $psolar_surplus_for_rdbc_setting    = get_user_meta($wp_user_ID, "psolar_surplus_for_rdbc_setting",  true) ?? -0.5;  
+          // KW of deficit after which RDBC activates to GRID. Usually a -ve number
+          $psolar_surplus_for_rdbc_setting    = get_user_meta($wp_user_ID, "psolar_surplus_for_rdbc_setting",  true) ?? -0.5;  
 
-        // Minimum Psolar before RDBC can be actiated
-        $psolar_min_for_rdbc_setting        = get_user_meta($wp_user_ID, "psolar_min_for_rdbc_setting",  true) ?? 0.3;  
+          // Minimum Psolar before RDBC can be actiated
+          $psolar_min_for_rdbc_setting        = get_user_meta($wp_user_ID, "psolar_min_for_rdbc_setting",  true) ?? 0.3;  
 
-        // get operation flags from user meta. Set it to false if not set
-        $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true) ?? false;
+          // get operation flags from user meta. Set it to false if not set
+          $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true) ?? false;
+        }
 
-        // --------------------- ACIN SWITCH sDetails  -------------------------------------------------------
+        { // --------------------- ACIN SWITCH sDetails  -------------------------------------------------------
 
-        $shelly_switch_acin_details_obj = $this->get_shelly_switch_acin_details( $user_index );
+          $shelly_switch_acin_details_obj = $this->get_shelly_switch_acin_details( $user_index );
 
-        $valid_shelly_config              = $shelly_switch_acin_details_obj['valid_shelly_config'];
-        $control_shelly                   = $shelly_switch_acin_details_obj['control_shelly'];
-        $shelly_switch_status             = $shelly_switch_acin_details_obj['shelly_switch_status'];
-        $shelly_api_device_status_voltage = $shelly_switch_acin_details_obj['shelly_api_device_status_voltage'];
-        $shelly_api_device_status_ON      = $shelly_switch_acin_details_obj['shelly_api_device_status_ON'];
-
+          $valid_shelly_config              = $shelly_switch_acin_details_obj['valid_shelly_config'];
+          $control_shelly                   = $shelly_switch_acin_details_obj['control_shelly'];
+          $shelly_switch_status             = $shelly_switch_acin_details_obj['shelly_switch_status'];
+          $shelly_api_device_status_voltage = $shelly_switch_acin_details_obj['shelly_api_device_status_voltage'];
+          $shelly_api_device_status_ON      = $shelly_switch_acin_details_obj['shelly_api_device_status_ON'];
+        }
         
         
 

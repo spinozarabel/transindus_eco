@@ -159,7 +159,7 @@ class class_transindus_eco
       $this->utc_offset = 5.5;
 
       // Get this user's usermeta into an array and set it as property the class
-      $this->get_all_usermeta( $wp_user_ID );
+      // $this->get_all_usermeta( $wp_user_ID );
 
       // ................................ CLoudiness management ---------------------------------------------->
 
@@ -955,7 +955,7 @@ class class_transindus_eco
                 // get all the readings for this user. This will write the data to a transient for quick retrieval
                 $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly );
               }
-              
+
             }
 
             // loop for all users

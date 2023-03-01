@@ -158,6 +158,11 @@ class class_transindus_eco
       $this->lon        = 77.49814;
       $this->utc_offset = 5.5;
 
+      // Get this user's usermeta into an array and set it as property the class
+      $this->get_all_usermeta( $wp_user_ID );
+
+      // ................................ CLoudiness management ---------------------------------------------->
+
       if ( $this->nowIsWithinTimeLimits("05:00", "06:00") )
       {   // Get the weather forecast if time is between 5 to 6 in the morning.
         $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
@@ -395,13 +400,12 @@ class class_transindus_eco
     /**
      * 
      */
-    public function get_all_usermeta( int $user_index , int $wp_user_ID ):array
+    public function get_all_usermeta( int $wp_user_ID ):array
     {
       $all_usermeta = [];
+
       // set default timezone to Asia Kolkata
       date_default_timezone_set("Asia/Kolkata");;
-
-      $config       = $this->get_config();
 
       $all_usermeta = array_map( function( $a ){ return $a[0]; }, get_user_meta( $wp_user_ID ) );
 
@@ -938,10 +942,12 @@ class class_transindus_eco
             {
               // we have a valid user
               // extract the control flag for the servo loop to pass to the servo routine
-              $do_shelly  = get_user_meta($wp_user_ID, "do_shelly", true) ?? false;
+              $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
+
+              $do_shelly  = $all_usermeta['do_shelly'];
 
               // extract the control flag to perform minutely updates
-              $do_minutely_updates  = get_user_meta($wp_user_ID, "do_minutely_updates", true) ?? false;
+              $do_minutely_updates  = $all_usermeta['do_minutely_updates'];
 
               // Check if the control flag for minutely updates is TRUE. If so get the readings
               if( $do_minutely_updates ) {
@@ -949,6 +955,7 @@ class class_transindus_eco
                 // get all the readings for this user. This will write the data to a transient for quick retrieval
                 $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly );
               }
+              
             }
 
             // loop for all users

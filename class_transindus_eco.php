@@ -483,7 +483,7 @@ class class_transindus_eco
       $wp_user_ID = $this->get_wp_user_from_user_index( $user_index )->ID;
 
       // ensure that the data below is current before coming here
-      $all_usermeta = $this->get_all_usermeta($user_index, $wp_user_ID);
+      $all_usermeta = $this->all_usermeta;
 
       $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['shelly_device_id_acin']   )  &&
                               ! empty( $config['accounts'][$user_index]['shelly_device_id_homepwr'] ) &&
@@ -1031,54 +1031,15 @@ class class_transindus_eco
 
         // --------------------- ACIN SWITCH sDetails  -------------------------------------------------------
 
-        if( $do_shelly && $valid_shelly_config) {  // Cotrol Shelly TRUE if usermeta AND valid config
+        $shelly_switch_acin_details_obj = $this->get_shelly_switch_acin_details( $user_index );
 
-            $control_shelly = true;
-        }
-        else {    // Cotrol Shelly FALSE if usermeta AND valid config FALSE
-          $control_shelly = false;
-        }
+        $valid_shelly_config              = $shelly_switch_acin_details_obj['valid_shelly_config'];
+        $control_shelly                   = $shelly_switch_acin_details_obj['control_shelly'];
+        $shelly_switch_status             = $shelly_switch_acin_details_obj['shelly_switch_status'];
+        $shelly_api_device_status_voltage = $shelly_switch_acin_details_obj['shelly_api_device_status_voltage'];
 
-        // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
-        if ( $valid_shelly_config ) 
-        {   //  get shelly device status ONLY if valid config for switch
-
-            $shelly_api_device_response = $this->get_shelly_device_status( $user_index );
-
-            if ( is_null($shelly_api_device_response) ) 
-            { // switch status is unknown
-
-                error_log("Shelly cloud not responding and or device is offline");
-
-                $shelly_api_device_status_ON = null;
-
-                $shelly_switch_status             = "OFFLINE";
-                $shelly_api_device_status_voltage = "NA";
-            }
-            else 
-            {  // Switch is ONLINE - Get its status and Voltage
-                
-                $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
-                $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
-
-                if ($shelly_api_device_status_ON)
-                    {
-                        $shelly_switch_status = "ON";
-                    }
-                else
-                    {
-                        $shelly_switch_status = "OFF";
-                    }
-            }
-        }
-        else 
-        {  // no valid configuration for shelly switch set variables for logging info
-
-            $shelly_api_device_status_ON = null;
-
-            $shelly_switch_status             = "Not Configured";
-            $shelly_api_device_status_voltage = "NA";    
-        }
+        
+        
 
         // get the smaller set of Studer readings
         $studer_readings_obj  = $this->get_studer_min_readings($user_index);
@@ -1303,6 +1264,7 @@ class class_transindus_eco
         $studer_readings_obj->sunset_switch_release             = $sunset_switch_release;
         $studer_readings_obj->switch_release_float_state        = $switch_release_float_state;
         $studer_readings_obj->control_shelly                    = $control_shelly;
+        $studer_readings_obj->shelly_switch_acin_details_obj    = $shelly_switch_acin_details_obj;
 
         $studer_readings_obj->cloudiness_average_percentage_weighted  = $cloudiness_average_percentage_weighted;
         $studer_readings_obj->est_solar_kw  = round( array_sum($est_solar_kw), 1);

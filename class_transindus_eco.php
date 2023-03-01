@@ -1084,8 +1084,8 @@ class class_transindus_eco
 
         //---------------- Studer Midnight Rollover and SOC from Shelly readings after dark ------------------------------
 
-        if ( $it_is_still_dark ):
-        
+        if ( $it_is_still_dark )
+        {
           $soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
 
           if ( $soc_after_dark_happened )
@@ -1125,7 +1125,7 @@ class class_transindus_eco
               
             }
           }
-        endif;
+        }
         
         
         // It is not dark anymore check if Studer API call failed

@@ -606,8 +606,8 @@ class class_transindus_eco
       // update_user_meta( $wp_user_ID, 'soc_percentage_now', $soc_percentage_now_computed_using_shelly );
 
       // log if verbose is set to true
-      $this->verbose ? error_log( "SOC after dark: " . $soc_update_from_studer_after_dark . 
-                                  "%,  SOC NOW as computed using Shelly: " . 
+      $this->verbose ? error_log( "SOC at dusk: " . $soc_update_from_studer_after_dark . 
+                                  "%,  SOC NOW using Shelly: " . 
                                   $soc_percentage_now_computed_using_shelly . " %") : false;
 
       $return_obj = new stdClass;
@@ -1150,12 +1150,12 @@ class class_transindus_eco
         $it_is_cloudy_at_the_moment = $psolar <= 0.5 * array_sum($est_solar_kw);
 
         // Solar Current into Battery Junction at present moment
-        $solar_pv_adc         = $studer_readings_obj->solar_pv_adc;
+        // $solar_pv_adc         = $studer_readings_obj->solar_pv_adc;
 
         // Inverter readings at present Instant
         $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;    // Inverter Output Power in KW
         $grid_input_vac       = $studer_readings_obj->grid_input_vac;         // Grid Input AC Voltage to Studer
-        $inverter_current_adc = $studer_readings_obj->inverter_current_adc;   // DC current into Inverter to convert to AC power
+        // $inverter_current_adc = $studer_readings_obj->inverter_current_adc;   // DC current into Inverter to convert to AC power
 
         // Surplus power from Solar after supplying the Load
         $surplus              = $psolar - $pout_inverter;
@@ -1214,25 +1214,6 @@ class class_transindus_eco
           $SOC_percentage_now = 25;
         }
 
-        // Check to see if new day accounting has begun. Check for reset of Solar and Load units reset to 0
-        // 
-        if (  ( $KWH_solar_today <= 0.01 )                                &&    // Solar has been reset to 0
-              ( $KWH_load_today  <= 1 )                                   &&
-              ( abs($SOC_percentage_previous - $SOC_percentage_now) > 4 ) &&    // if difference is small we don't care
-              ( $this->nowIsWithinTimeLimits("00:00:00", "00:59:59") || 
-                $this->nowIsWithinTimeLimits("23:00:00", "23:59:59") )  )    
-        {
-
-          // Since new day accounting has begun, update user meta for SOC at beginning of new day
-          // This update only happens at beginning of day and also during battery float
-          // update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_previous);
-
-          error_log("SOC new day rollover activated: " . $SOC_percentage_previous  . " %");
-
-          // since the battery nett charge for the new day is 0, SOC now is same as SOC previous
-          // $SOC_percentage_now = $SOC_percentage_previous;
-        }
-        
         // Update user meta so this becomes the previous value for next cycle
         update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
 

@@ -1255,17 +1255,17 @@ class class_transindus_eco
         $studer_readings_obj->battery_voltage_avg               = $battery_voltage_avg;
         $studer_readings_obj->now_is_daytime                    = $now_is_daytime;
         $studer_readings_obj->now_is_sunset                     = $now_is_sunset;
-        $studer_readings_obj->shelly_api_device_status_ON       = $shelly_api_device_status_ON;
+        $studer_readings_obj->control_shelly                    = $control_shelly;
+        $studer_readings_obj->shelly_switch_status              = $shelly_switch_status;
         $studer_readings_obj->shelly_api_device_status_voltage  = $shelly_api_device_status_voltage;
+        $studer_readings_obj->shelly_switch_acin_details_obj    = $shelly_switch_acin_details_obj;
 
         $studer_readings_obj->LVDS                              = $LVDS;
         $studer_readings_obj->reduce_daytime_battery_cycling    = $reduce_daytime_battery_cycling;
         $studer_readings_obj->switch_release                    = $switch_release;
         $studer_readings_obj->sunset_switch_release             = $sunset_switch_release;
         $studer_readings_obj->switch_release_float_state        = $switch_release_float_state;
-        $studer_readings_obj->control_shelly                    = $control_shelly;
-        $studer_readings_obj->shelly_switch_acin_details_obj    = $shelly_switch_acin_details_obj;
-
+        
         $studer_readings_obj->cloudiness_average_percentage_weighted  = $cloudiness_average_percentage_weighted;
         $studer_readings_obj->est_solar_kw  = round( array_sum($est_solar_kw), 1);
         

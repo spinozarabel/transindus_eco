@@ -1075,6 +1075,9 @@ class class_transindus_eco
                 $soc_from_shelly_energy_readings->shelly_api_device_status_ON       = $shelly_api_device_status_ON;
                 $soc_from_shelly_energy_readings->LVDS                              = $LVDS;
                 $soc_from_shelly_energy_readings->flag_soc_updated_using_shelly_energy_readings = true;
+
+                // the below flag is not relevant so we don't this to get triggered in the conditions checking
+                $switch_override = false;
               }
 
               // we can now check to see if Studer midnight has happened for midnight rollover capture

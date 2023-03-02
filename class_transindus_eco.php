@@ -622,6 +622,7 @@ class class_transindus_eco
       $return_obj->current_timestamp                 = $current_timestamp;
       $return_obj->soc_percentage_discharged         = $soc_percentage_discharged;
       $return_obj->energy_consumed_since_after_dark_update_kwh = $energy_consumed_since_after_dark_update_kwh;
+      $return_obj->pout_inverter_ac_kw               = round( $current_power_to_home_wh * 0.001, 2);
       
       return $return_obj;
     }
@@ -3558,8 +3559,8 @@ class class_transindus_eco
         // Initialize object to be returned
         $format_object  = new stdClass();
 
-        $psolar_kw              =   $studer_readings_obj->psolar_kw;
-        $solar_pv_adc           =   $studer_readings_obj->solar_pv_adc;
+        $psolar_kw              =   $studer_readings_obj->psolar_kw ?? 0;
+        $solar_pv_adc           =   $studer_readings_obj->solar_pv_adc ?? 0;
 
         $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
 

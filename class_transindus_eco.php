@@ -603,9 +603,6 @@ class class_transindus_eco
       // Change in SOC ( a decrease) from value captured just after dark to now based on energy consumed by home during dark
       $soc_percentage_now_computed_using_shelly  = $soc_update_from_studer_after_dark - $soc_percentage_discharged;
 
-      // set flag to true for update using Shelly energy readings method
-      $this->soc_updated_using_shelly_energy_readings = true;
-
       // since Studer reading is null lets updatethe soc using shelly computed value
       // no need to worry about clamp to 100 since value will only decrease never increase, no solar
       // update_user_meta( $wp_user_ID, 'soc_percentage_now', $soc_percentage_now_computed_using_shelly );
@@ -618,7 +615,7 @@ class class_transindus_eco
       $return_obj = new stdClass;
 
       $return_obj->SOC_percentage_previous           = $SOC_percentage_previous;
-      $return_obj->SOC_percentage_now                = $soc_percentage_now_computed_using_shelly;
+      $return_obj->SOC_percentage_now                = round( $soc_percentage_now_computed_using_shelly, 1 );
 
       $return_obj->current_energy_counter_wh         = $current_energy_counter_wh;
       $return_obj->current_power_to_home_wh          = $current_power_to_home_wh;

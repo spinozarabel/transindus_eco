@@ -1215,11 +1215,15 @@ class class_transindus_eco
                                   &&
                                 ( $shelly_switch_status == "OFF" );					  // The switch is OFF
 
+            $switch_override =  ( $shelly_switch_status                == "OFF" )  &&
+                                ( $studer_readings_obj->grid_input_vac >= 190   );
+
           }
 
           // update the object
           $studer_readings_obj->SOC_percentage_now  = $SOC_percentage_now;
           $studer_readings_obj->LVDS                = $LVDS;
+          $studer_readings_obj->switch_override     = $switch_override;
           $studer_readings_obj->flag_soc_updated_using_shelly_energy_readings = false;
 
           // capture soc after dark using shelly 4 pm. Only happens ONCE between 7-11 pm. 
@@ -1231,8 +1235,7 @@ class class_transindus_eco
           // AC input voltage is being sensed by Studer even though switch status is OFF meaning manual MCB before Studer is ON
           // In this case, since grid is manually switched ON there is nothing we can do
           
-          $switch_override =  ($shelly_switch_status                  == "OFF" )  &&
-                              ($studer_readings_obj->grid_input_vac   >= 190 );
+          
           
           
 

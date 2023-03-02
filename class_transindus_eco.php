@@ -1049,7 +1049,7 @@ class class_transindus_eco
             $soc_from_shelly_energy_readings = $this->compute_soc_from_shelly_energy_readings(  $user_index, 
                                                                                                 $wp_user_ID, 
                                                                                                 $wp_user_name );
-            $SOC_percentage_now = $soc_from_shelly_energy_readings->SOC_percentage_now;
+            $SOC_percentage_now = $soc_from_shelly_energy_readings->SOC_percentage_now; // rounded already to 1d
 
             if ( $SOC_percentage_now )
             {

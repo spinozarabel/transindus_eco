@@ -1406,8 +1406,10 @@ class class_transindus_eco
           {
               update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
           }
-
-        if (  $SOC_percentage_now > 100.0 || $battery_voltage_avg  >=  $battery_voltage_avg_float_setting )
+        
+        if ( ! $flag_soc_updated_using_shelly_energy_readings )
+        {
+          if (  $SOC_percentage_now > 100.0 || $battery_voltage_avg  >=  $battery_voltage_avg_float_setting )
           {
             // Since we know that the battery SOC is 100% use this knowledge along with
             // Energy data to recalibrate the soc_percentage user meta
@@ -1417,13 +1419,11 @@ class class_transindus_eco
 
             error_log("SOC 100% clamp activated: " . $SOC_percentage_beg_of_day_recal  . " %");
           }
-        
-        if ( ! $flag_soc_updated_using_shelly_energy_readings )
-        {
           return $studer_readings_obj;
         }
         else
         {
+          // no need to worry about 100% clamp during night time since battery will not charge unless Solar is there
           return $soc_from_shelly_energy_readings;
         }
     }

@@ -1232,8 +1232,8 @@ class class_transindus_eco
 
           // AC input voltage is being sensed by Studer even though switch status is OFF meaning manual MCB before Studer is ON
           // In this case, since grid is manually switched ON there is nothing we can do
-          $switch_override =  ($shelly_switch_status == "OFF")               &&
-                              ($studer_readings_obj->grid_input_vac >= 190);
+          $switch_override =  ($shelly_switch_status              == "OFF")  &&
+                              ($shelly_api_device_status_voltage  >= 190);
 
           
 

@@ -977,18 +977,15 @@ class class_transindus_eco
      */
     public function get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly)
     {
-        $valid_shelly_config  = ! empty( $this->config['accounts'][$user_index]['shelly_device_id']   ) &&
-                                ! empty( $this->config['accounts'][$user_index]['shelly_server_uri']  ) &&
-                                ! empty( $this->config['accounts'][$user_index]['shelly_auth_key']    );
+        { // Define boolean control variables for various time intervals
+          $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:00" );
 
-        // Is it dark now?
-        $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:00" );
+          // Boolean values for checking is present time is within defined time intervals
+          $now_is_daytime       = $this->nowIsWithinTimeLimits("08:30", "16:30"); // changed from 17:30  on 7/28/22
+          $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
+        }
 
-        // Boolean values for checking is present time is within defined time intervals
-        $now_is_daytime       = $this->nowIsWithinTimeLimits("08:30", "16:30"); // changed from 17:30  on 7/28/22
-        $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
-
-        { // Get limits from user meta as per settings
+        { // Get user meta for limits and controls
           // SOC percentage needed to trigger LVDS
           $soc_percentage_lvds_setting            = get_user_meta($wp_user_ID, "soc_percentage_lvds_setting",  true) ?? 30;
 
@@ -1031,7 +1028,7 @@ class class_transindus_eco
           $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true) ?? false;
         }
 
-        { // --------------------- ACIN SWITCH sDetails  -------------------------------------------------------
+        { // --------------------- ACIN SWITCH Details after making a Shelly API call -------------------
 
           $shelly_switch_acin_details_obj = $this->get_shelly_switch_acin_details( $user_index );
 
@@ -1042,21 +1039,17 @@ class class_transindus_eco
           $shelly_api_device_status_ON      = $shelly_switch_acin_details_obj['shelly_api_device_status_ON'];
         }
         
-        
+        { // get the Solar values using the Studer API call for user values and setermine if call vas valid
+          $studer_readings_obj  = $this->get_studer_min_readings($user_index);
 
-        // get the smaller set of Studer readings
-        $studer_readings_obj  = $this->get_studer_min_readings($user_index);
-
-        $studer_api_call_failed =   ( empty(  $studer_readings_obj )                          ||
-                                      empty(  $studer_readings_obj->battery_voltage_vdc )     ||
-                                      $studer_readings_obj->battery_voltage_vdc < 40          ||
-                                      empty(  $studer_readings_obj->pout_inverter_ac_kw ) );
-
-
-        //---------------- Studer Midnight Rollover and SOC from Shelly readings after dark ------------------------------
+          $studer_api_call_failed =   ( empty(  $studer_readings_obj )                          ||
+                                        empty(  $studer_readings_obj->battery_voltage_vdc )     ||
+                                        $studer_readings_obj->battery_voltage_vdc < 40          ||
+                                        empty(  $studer_readings_obj->pout_inverter_ac_kw ) );
+        }
 
         if ( $it_is_still_dark )
-        {
+        { //---------------- Studer Midnight Rollover and SOC from Shelly readings after dark ------------------------------
           $soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
 
           if ( $soc_after_dark_happened )
@@ -1098,104 +1091,102 @@ class class_transindus_eco
           }
         }
         
-        
-        // It is not dark anymore check if Studer API call failed
         if ( $studer_api_call_failed )
-        {
-          // Studer API call did fail so exit for now
+        { // It is not dark. If Studer API call failed Exit returning Null
           error_log($wp_user_name . ": " . "Studer API call failed");
           return null;
         }
         
+        {   // Studer SOC update calculations along with Battery Voltage Update
+          // average the battery voltage over last 3 readings
+          $battery_voltage_avg  = $this->get_battery_voltage_avg( $wp_user_name, $studer_readings_obj->battery_voltage_vdc );
 
-        // average the battery voltage over last 6 readings of about 6 minutes.
-        $battery_voltage_avg  = $this->get_battery_voltage_avg( $wp_user_name, $studer_readings_obj->battery_voltage_vdc );
+          // get the estimated solar power from calculations for a clear day
+          $est_solar_kw         = $this->estimated_solar_power($user_index);
 
-        // get the estimated solar power from calculations for a clear day
-        $est_solar_kw         = $this->estimated_solar_power($user_index);
+          // Solar power Now
+          $psolar               = $studer_readings_obj->psolar_kw;
 
-        // Solar power Now
-        $psolar               = $studer_readings_obj->psolar_kw;
+          // Check if it is cloudy AT THE MOMENT. Yes if solar is less than half of estimate
+          $it_is_cloudy_at_the_moment = $psolar <= 0.5 * array_sum($est_solar_kw);
 
-        // Check if it is cloudy AT THE MOMENT. Yes if solar is less than half of estimate
-        $it_is_cloudy_at_the_moment = $psolar <= 0.5 * array_sum($est_solar_kw);
+          // Solar Current into Battery Junction at present moment
+          // $solar_pv_adc         = $studer_readings_obj->solar_pv_adc;
 
-        // Solar Current into Battery Junction at present moment
-        // $solar_pv_adc         = $studer_readings_obj->solar_pv_adc;
+          // Inverter readings at present Instant
+          $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;    // Inverter Output Power in KW
+          $grid_input_vac       = $studer_readings_obj->grid_input_vac;         // Grid Input AC Voltage to Studer
+          // $inverter_current_adc = $studer_readings_obj->inverter_current_adc;   // DC current into Inverter to convert to AC power
 
-        // Inverter readings at present Instant
-        $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;    // Inverter Output Power in KW
-        $grid_input_vac       = $studer_readings_obj->grid_input_vac;         // Grid Input AC Voltage to Studer
-        // $inverter_current_adc = $studer_readings_obj->inverter_current_adc;   // DC current into Inverter to convert to AC power
+          // Surplus power from Solar after supplying the Load
+          $surplus              = $psolar - $pout_inverter;
 
-        // Surplus power from Solar after supplying the Load
-        $surplus              = $psolar - $pout_inverter;
+          $aux1_relay_state     = $studer_readings_obj->aux1_relay_state;
 
-        $aux1_relay_state     = $studer_readings_obj->aux1_relay_state;
+          // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
+          $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
 
-        // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
-        $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
+          // Weighted percentage cloudiness
+          $cloudiness_average_percentage_weighted = round($this->cloudiness_forecast->cloudiness_average_percentage_weighted, 0);
 
-        // Weighted percentage cloudiness
-        $cloudiness_average_percentage_weighted = round($this->cloudiness_forecast->cloudiness_average_percentage_weighted, 0);
+          // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only at beginning of day, once.
+          $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
 
-        // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only at beginning of day, once.
-        $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
+          // get the installed battery capacity in KWH from config
+          $SOC_capacity_KWH     = $this->config['accounts'][$user_index]['battery_capacity'];
 
-        // get the installed battery capacity in KWH from config
-        $SOC_capacity_KWH     = $this->config['accounts'][$user_index]['battery_capacity'];
+          // get the current Measurement values from the Stider Readings Object
+          $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;  // Net SOlar Units generated Today
+          $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;   // Net Grid Units consumed Today
+          $KWH_load_today       = $studer_readings_obj->KWH_load_today;   // Net Load units consumed Today
 
-        // get the current Measurement values from the Stider Readings Object
-        $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;  // Net SOlar Units generated Today
-        $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;   // Net Grid Units consumed Today
-        $KWH_load_today       = $studer_readings_obj->KWH_load_today;   // Net Load units consumed Today
+          // Units of Solar Energy converted to percentage of Battery Capacity Installed
+          $KWH_solar_percentage_today = round( $KWH_solar_today / $SOC_capacity_KWH * 100, 1);
 
-        // Units of Solar Energy converted to percentage of Battery Capacity Installed
-        $KWH_solar_percentage_today = round( $KWH_solar_today / $SOC_capacity_KWH * 100, 1);
+          // Battery discharge today in terms of SOC capacity percventage
+          $KWH_batt_percent_discharged_today = round( (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07 / $SOC_capacity_KWH * 100, 1);
 
-        // Battery discharge today in terms of SOC capacity percventage
-        $KWH_batt_percent_discharged_today = round( (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07 / $SOC_capacity_KWH * 100, 1);
+          if ( $this->verbose )
+          {
 
-        if ( $this->verbose )
-        {
+              error_log("username: "             . $wp_user_name . ' Switch: ' . $shelly_switch_status . ' ' . 
+                                                  $battery_voltage_avg . ' V, ' . $studer_readings_obj->battery_charge_adc . 'A ' .
+                                                  $shelly_api_device_status_voltage . ' VAC');
+              error_log("Psolar_calc: " . array_sum($est_solar_kw) . " Psolar_act: " . $psolar . " - Psurplus: " . 
+                        $surplus . " KW - Is it a Cloudy Day?: " . $it_is_a_cloudy_day);
+          
+          }
 
-            error_log("username: "             . $wp_user_name . ' Switch: ' . $shelly_switch_status . ' ' . 
-                                                 $battery_voltage_avg . ' V, ' . $studer_readings_obj->battery_charge_adc . 'A ' .
-                                                 $shelly_api_device_status_voltage . ' VAC');
-            error_log("Psolar_calc: " . array_sum($est_solar_kw) . " Psolar_act: " . $psolar . " - Psurplus: " . 
-                       $surplus . " KW - Is it a Cloudy Day?: " . $it_is_a_cloudy_day);
-        
-        }
+          // get the SOC % from the previous reading from user meta
+          $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true) ?? 50.0;
 
-        // get the SOC % from the previous reading from user meta
-        $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true) ?? 50.0;
+          // Net battery charge in KWH (discharge if minus)
+          $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07;
 
-        // Net battery charge in KWH (discharge if minus)
-        $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07;
+          // Calculate in percentage of  installed battery capacity
+          $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
 
-        // Calculate in percentage of  installed battery capacity
-        $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
+          //  Update SOC  number
+          $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
 
-        //  Update SOC  number
-        $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
+          // set a clamp if the update is bad
+          if ( $SOC_percentage_now < 25 ) {
+            error_log("SOC now bad update: " .  $SOC_percentage_now . " %");
+            $SOC_percentage_now = 25;
+          }
 
-        // set a clamp if the update is bad
-        if ( $SOC_percentage_now < 25 ) {
-          error_log("SOC now bad update: " .  $SOC_percentage_now . " %");
-          $SOC_percentage_now = 25;
-        }
+          // Update user meta so this becomes the previous value for next cycle
+          update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
 
-        // Update user meta so this becomes the previous value for next cycle
-        update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
+          // update the object and user meta
+          $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now;
 
-        // update the object and user meta
-        $studer_readings_obj->SOC_percentage_now = $SOC_percentage_now;
-
-        if ( $this->verbose )
-        {
-          error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . $KWH_batt_percent_discharged_today . 
-                    " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC Now: " . $SOC_percentage_now . " %" );
-          // error_log('Battery Dis %: ' . $batt_disc_percentage_calc_from_load . ' %');
+          if ( $this->verbose )
+          {
+            error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . $KWH_batt_percent_discharged_today . 
+                      " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC Now: " . $SOC_percentage_now . " %" );
+            // error_log('Battery Dis %: ' . $batt_disc_percentage_calc_from_load . ' %');
+          }
         }
 
         // capture soc after dark using shelly 4 pm. Only happens once between 7-11 pm. 
@@ -1203,75 +1194,77 @@ class class_transindus_eco
         
         
 
-        // define all the conditions for the SWITCH - CASE tree
+        {   // define all the conditions for the SWITCH - CASE tree
 
-        // AC input voltage is being sensed by Studer even though switch status is OFF meaning manual MCB before Studer is ON
-        // In this case, since grid is manually switched ON there is nothing we can do
-        $switch_override =  ($shelly_switch_status == "OFF")               &&
-                            ($studer_readings_obj->grid_input_vac >= 190);
+          // AC input voltage is being sensed by Studer even though switch status is OFF meaning manual MCB before Studer is ON
+          // In this case, since grid is manually switched ON there is nothing we can do
+          $switch_override =  ($shelly_switch_status == "OFF")               &&
+                              ($studer_readings_obj->grid_input_vac >= 190);
 
-        // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage     
-        $LVDS =             ( $battery_voltage_avg  <= $battery_voltage_avg_lvds_setting || 
-                              $SOC_percentage_now   <= $soc_percentage_lvds_setting           )  &&
-                            ( $shelly_switch_status == "OFF" );					  // The switch is OFF
+          // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage     
+          $LVDS =             ( $battery_voltage_avg  <= $battery_voltage_avg_lvds_setting || 
+                                $SOC_percentage_now   <= $soc_percentage_lvds_setting           )  &&
+                              ( $shelly_switch_status == "OFF" );					  // The switch is OFF
 
-        // Keep Grid Switch CLosed Untless Solar charges Battery to $soc_percentage_switch_release_setting - 5 or say 90%
-        // So between this and switch_release_float_state battery may cycle up and down by 5 points
-        // Ofcourse if the Psurplus is too much it will charge battery to 100% inspite of this.
-        // Obviously after sunset the battery will remain at 90% till sunrise the next day
-        $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
-                                      ( $keep_shelly_switch_closed_always == true )  &&
-                                      ( $SOC_percentage_now <= ($soc_percentage_switch_release_setting - 5) )	&&  // OR SOC reached 90%
-                                      ( $control_shelly == true );
+          // Keep Grid Switch CLosed Untless Solar charges Battery to $soc_percentage_switch_release_setting - 5 or say 90%
+          // So between this and switch_release_float_state battery may cycle up and down by 5 points
+          // Ofcourse if the Psurplus is too much it will charge battery to 100% inspite of this.
+          // Obviously after sunset the battery will remain at 90% till sunrise the next day
+          $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
+                                        ( $keep_shelly_switch_closed_always == true )  &&
+                                        ( $SOC_percentage_now <= ($soc_percentage_switch_release_setting - 5) )	&&  // OR SOC reached 90%
+                                        ( $control_shelly == true );
 
 
-        $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
-                                          ( $SOC_percentage_now <= $soc_percentage_rdbc_setting )	&&	// Battery NOT in FLOAT state
-                                          ( $shelly_api_device_status_voltage >= $acin_min_voltage_for_rdbc	)	&&	// ensure Grid AC is not too low
-                                          ( $shelly_api_device_status_voltage <= $acin_max_voltage_for_rdbc	)	&&	// ensure Grid AC is not too high
-                                          ( $now_is_daytime )                             &&   // Now is Daytime
-                                          ( $psolar  >= $psolar_min_for_rdbc_setting )    &&   // at least some solar generation
-                                          ( $surplus <= $psolar_surplus_for_rdbc_setting ) &&  // Solar Deficit is negative
-                                          ( $it_is_cloudy_at_the_moment )                 &&   // Only when it is cloudy
-                                          ( $control_shelly == true );                         // Control Flag is SET
-        // switch release typically after RDBC when Psurplus is positive.
-        $switch_release =  ( $SOC_percentage_now >= ( $soc_percentage_lvds_setting + 0.3 ) ) &&  // SOC ?= LBDS + offset
-                           ( $shelly_switch_status == "ON" )  														  &&  // Switch is ON now
-                           ( $surplus >= $min_solar_surplus_for_switch_release_after_rdbc ) &&  // Solar surplus is >= 0.2KW
-                           ( $keep_shelly_switch_closed_always == false )                   &&	// Emergency flag is False
-                           ( $control_shelly == true );                                         // Control Flag is SET                              
+          $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
+                                            ( $SOC_percentage_now <= $soc_percentage_rdbc_setting )	&&	// Battery NOT in FLOAT state
+                                            ( $shelly_api_device_status_voltage >= $acin_min_voltage_for_rdbc	)	&&	// ensure Grid AC is not too low
+                                            ( $shelly_api_device_status_voltage <= $acin_max_voltage_for_rdbc	)	&&	// ensure Grid AC is not too high
+                                            ( $now_is_daytime )                             &&   // Now is Daytime
+                                            ( $psolar  >= $psolar_min_for_rdbc_setting )    &&   // at least some solar generation
+                                            ( $surplus <= $psolar_surplus_for_rdbc_setting ) &&  // Solar Deficit is negative
+                                            ( $it_is_cloudy_at_the_moment )                 &&   // Only when it is cloudy
+                                            ( $control_shelly == true );                         // Control Flag is SET
+          // switch release typically after RDBC when Psurplus is positive.
+          $switch_release =  ( $SOC_percentage_now >= ( $soc_percentage_lvds_setting + 0.3 ) ) &&  // SOC ?= LBDS + offset
+                            ( $shelly_switch_status == "ON" )  														  &&  // Switch is ON now
+                            ( $surplus >= $min_solar_surplus_for_switch_release_after_rdbc ) &&  // Solar surplus is >= 0.2KW
+                            ( $keep_shelly_switch_closed_always == false )                   &&	// Emergency flag is False
+                            ( $control_shelly == true );                                         // Control Flag is SET                              
 
-        // In general we want home to be on Battery after sunset
-        $sunset_switch_release			=	( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
-                                      ( $shelly_switch_status == "ON" )               &&  // Switch is ON now
-                                      ( $now_is_sunset )                              &&  // around sunset
-                                      ( $control_shelly == true );
+          // In general we want home to be on Battery after sunset
+          $sunset_switch_release			=	( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
+                                        ( $shelly_switch_status == "ON" )               &&  // Switch is ON now
+                                        ( $now_is_sunset )                              &&  // around sunset
+                                        ( $control_shelly == true );
 
-        // This is needed when RDBC or always ON was triggered and Psolar is charging battery beyond 95%
-        // independent of keep_shelly_switch_closed_always flag status
-        $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
-                                      ( $SOC_percentage_now >= $soc_percentage_switch_release_setting )	&&  // OR SOC reached 95%
-                                      // ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
-                                      ( $control_shelly == true );                        // Control Flag is False
+          // This is needed when RDBC or always ON was triggered and Psolar is charging battery beyond 95%
+          // independent of keep_shelly_switch_closed_always flag status
+          $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
+                                        ( $SOC_percentage_now >= $soc_percentage_switch_release_setting )	&&  // OR SOC reached 95%
+                                        // ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
+                                        ( $control_shelly == true );                        // Control Flag is False
+        }
 
-        // write back new values to the readings object
-        $studer_readings_obj->battery_voltage_avg               = $battery_voltage_avg;
-        $studer_readings_obj->now_is_daytime                    = $now_is_daytime;
-        $studer_readings_obj->now_is_sunset                     = $now_is_sunset;
-        $studer_readings_obj->control_shelly                    = $control_shelly;
-        $studer_readings_obj->shelly_switch_status              = $shelly_switch_status;
-        $studer_readings_obj->shelly_api_device_status_voltage  = $shelly_api_device_status_voltage;
-        $studer_readings_obj->shelly_api_device_status_ON       = $shelly_api_device_status_ON;
-        $studer_readings_obj->shelly_switch_acin_details_obj    = $shelly_switch_acin_details_obj;
+        {   // write back new values to the readings object
+          $studer_readings_obj->battery_voltage_avg               = $battery_voltage_avg;
+          $studer_readings_obj->now_is_daytime                    = $now_is_daytime;
+          $studer_readings_obj->now_is_sunset                     = $now_is_sunset;
+          $studer_readings_obj->control_shelly                    = $control_shelly;
+          $studer_readings_obj->shelly_switch_status              = $shelly_switch_status;
+          $studer_readings_obj->shelly_api_device_status_voltage  = $shelly_api_device_status_voltage;
+          $studer_readings_obj->shelly_api_device_status_ON       = $shelly_api_device_status_ON;
+          $studer_readings_obj->shelly_switch_acin_details_obj    = $shelly_switch_acin_details_obj;
 
-        $studer_readings_obj->LVDS                              = $LVDS;
-        $studer_readings_obj->reduce_daytime_battery_cycling    = $reduce_daytime_battery_cycling;
-        $studer_readings_obj->switch_release                    = $switch_release;
-        $studer_readings_obj->sunset_switch_release             = $sunset_switch_release;
-        $studer_readings_obj->switch_release_float_state        = $switch_release_float_state;
-        
-        $studer_readings_obj->cloudiness_average_percentage_weighted  = $cloudiness_average_percentage_weighted;
-        $studer_readings_obj->est_solar_kw  = round( array_sum($est_solar_kw), 1);
+          $studer_readings_obj->LVDS                              = $LVDS;
+          $studer_readings_obj->reduce_daytime_battery_cycling    = $reduce_daytime_battery_cycling;
+          $studer_readings_obj->switch_release                    = $switch_release;
+          $studer_readings_obj->sunset_switch_release             = $sunset_switch_release;
+          $studer_readings_obj->switch_release_float_state        = $switch_release_float_state;
+          
+          $studer_readings_obj->cloudiness_average_percentage_weighted  = $cloudiness_average_percentage_weighted;
+          $studer_readings_obj->est_solar_kw  = round( array_sum($est_solar_kw), 1);
+        }
         
 
         switch(true)

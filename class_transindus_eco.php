@@ -986,6 +986,9 @@ class class_transindus_eco
           $flag_soc_updated_using_shelly_energy_readings = false;
         }
 
+        // get the estimated solar power from calculations for a clear day
+        $est_solar_kw         = $this->estimated_solar_power($user_index);
+
         { // Get user meta for limits and controls
           // SOC percentage needed to trigger LVDS
           $soc_percentage_lvds_setting            = get_user_meta($wp_user_ID, "soc_percentage_lvds_setting",  true) ?? 30;
@@ -1076,6 +1079,9 @@ class class_transindus_eco
                 $soc_from_shelly_energy_readings->LVDS                              = $LVDS;
                 $soc_from_shelly_energy_readings->flag_soc_updated_using_shelly_energy_readings = true;
 
+                $soc_from_shelly_energy_readings->psolar                            = 0;
+
+
                 // the below flag is not relevant so we don't this to get triggered in the conditions checking
                 $switch_override = false;
               }
@@ -1130,8 +1136,7 @@ class class_transindus_eco
             // average the battery voltage over last 3 readings
             $battery_voltage_avg  = $this->get_battery_voltage_avg( $wp_user_name, $studer_readings_obj->battery_voltage_vdc );
   
-            // get the estimated solar power from calculations for a clear day
-            $est_solar_kw         = $this->estimated_solar_power($user_index);
+            
   
             // Solar power Now
             $psolar               = $studer_readings_obj->psolar_kw;
@@ -1305,8 +1310,8 @@ class class_transindus_eco
         else
         {
           $soc_from_shelly_energy_readings->battery_voltage_avg = "NA";
-          $soc_from_shelly_energy_readings->est_solar_kw        = round( array_sum($est_solar_kw), 1);
-          $soc_from_shelly_energy_readings->cloudiness_average_percentage_weighted = $cloudiness_average_percentage_weighted;
+          $soc_from_shelly_energy_readings->est_solar_kw        = 0;
+          $soc_from_shelly_energy_readings->cloudiness_average_percentage_weighted = "NA";
           $battery_voltage_avg = "NA";    // for error log below
         }
         

@@ -328,7 +328,7 @@ class class_transindus_eco
     /**
      * 
      */
-    public function get_user_index_of_logged_in_user()
+    public function get_user_index_of_logged_in_user() : int
     {  // get my user index knowing my login name
 
         $current_user = wp_get_current_user();
@@ -349,7 +349,7 @@ class class_transindus_eco
     /**
      * 
      */
-    public function get_index_from_wp_user_ID($wp_user_ID)
+    public function get_index_from_wp_user_ID( int $wp_user_ID ) : int
     {
         $wp_user_object = get_user_by( 'id', $wp_user_ID);
 
@@ -381,7 +381,7 @@ class class_transindus_eco
     }
 
     /**
-     * 
+     *  add submenu page for testing various application API needed
      */
     public function add_my_menu()
     {
@@ -400,7 +400,7 @@ class class_transindus_eco
     /**
      * 
      */
-    public function get_all_usermeta( int $wp_user_ID ):array
+    public function get_all_usermeta( int $wp_user_ID ) : array
     {
       $all_usermeta = [];
 
@@ -469,7 +469,10 @@ class class_transindus_eco
 
 
     /**
-     *  @return array containing values from API call on Shelly 4PM including energies, ts, power, soc update
+     *  @param int:$user_index is the user of ineterst in the config array
+     *  @return array:$return_array containing values from API call on Shelly ACIN Transfer switch
+     *  Checks the validity of Shelly switch configuration required for program
+     *  Makes an API call on the Shelly ACIN switch and return the ststus such as State, Voltage, etc.
      */
     public function get_shelly_switch_acin_details( int $user_index) : array
     {
@@ -551,59 +554,110 @@ class class_transindus_eco
 
 
     /**
-     *  @param object:$return_obj has as properties values from API call on Shelly 4PM and calculations thereof
-     *  Update SOC using Shelly energy readings do not update usermeta for soc_percentage_now
-     *  The update only happens if SOC after dark baselining has happened and it is still dark now
-     *  This routine is typically called when the Studer API call fails and it is still dark.
-     *  The check to see if it is dark and if SOC capture after dark etc., should be done before this call
+     *  @param int:$user_index of user in the config array
+     *  @param int:$wp_user_ID of above user
+     *  @param string:$wp_user_name of above user
+     *  @param object:$return_obj has as properties, values from API call on Shelly 4PM and calculations thereof
+     * 
+     *  1. Calculate SOC making an API call for Shelly energy readings -  usermeta for soc_percentage_now not updated here
+     *  2. the update must happens if SOC after dark baselining has happened and it is still dark now
+     *  3 This routine is typically called when it is still dark and Solar is not present. Off grid operation is assumed
+     *  4. The check to see if it is dark and if SOC capture after dark etc., should be done before comin here
+     *  5. Shelly 4PM energy counter reset is checked for and baseline values (after dark values) updated just after any reset.
      */
     public function compute_soc_from_shelly_energy_readings( int $user_index, int $wp_user_ID, string $wp_user_name): ? object
     {
       // set default timezone to Asia Kolkata
-      date_default_timezone_set("Asia/Kolkata");;
+      date_default_timezone_set("Asia/Kolkata");
 
+      // The default value of boolean flag indicating if Shelly energy counter has reset due to Studer overload shutdown or OTA update
+      $shelly_energy_counter_has_reset =  false;
+
+      // read in the config array from the class property
       $config = $this->config;
+
+      // The main foreach loop should have triggered a refresh so just read the user meta array from class property
+      $all_usermeta = $this->all_usermeta ?? $this->get_all_usermeta( $wp_user_ID );
 
       // get the installed battery capacity in KWH from config
       $SOC_capacity_KWH                   = $config['accounts'][$user_index]['battery_capacity'];
 
       // This is the value of the SOC as updated by Studer API, captured just after dark
-      $soc_update_from_studer_after_dark  = get_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', true );
+      $soc_update_from_studer_after_dark  = $all_usermeta[ 'soc_update_from_studer_after_dark' ];
 
       // This is the Shelly energy counter at the moment of SOC capture just after dark
-      $shelly_energy_counter_after_dark   = get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', true );
+      $shelly_energy_counter_after_dark   = $all_usermeta[ 'shelly_energy_counter_after_dark' ];
 
       // This is the tiestamp at the moent of SOC capture just after dark
-      $timestamp_soc_capture_after_dark   = get_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', true );
-
-      $soc_percentage_lvds_setting        = get_user_meta( $wp_user_ID, 'soc_percentage_lvds_setting', true );
+      $timestamp_soc_capture_after_dark   = $all_usermeta[ 'timestamp_soc_capture_after_dark' ];
 
       // Keep the SOC from previous update handy just in case
-      $SOC_percentage_previous            = get_user_meta( $wp_user_ID, 'soc_percentage_now', true );
-
-      // get a reading now from the Shelly energy counter
-      $current_energy_counter_wh  = $this->get_shelly_device_status_homepwr( $user_index )->energy_total_to_home_ts;
-      $current_power_to_home_wh   = $this->get_shelly_device_status_homepwr( $user_index )->power_total_to_home;
-      $current_timestamp          = $this->get_shelly_device_status_homepwr( $user_index )->minute_ts;
+      $SOC_percentage_previous            = $all_usermeta[ 'soc_percentage_now' ];
       
-      // total energy consumed in KWH from just after dark to now
-      $energy_consumed_since_after_dark_update_kwh = ( $current_energy_counter_wh - $shelly_energy_counter_after_dark ) * 0.001;
 
-      // if energy computed is less than or equal to 0 then return null
-      if ( $energy_consumed_since_after_dark_update_kwh <= 0.0 )
+      // API call to get a reading now from the Shelly 4PM device for energy, power, and timestamp
+      $shelly_homwpwr_obj = $this->get_shelly_device_status_homepwr( $user_index );
+
+      // exctract needed properties from Shelly homepower object
+      $current_energy_counter_wh  = $shelly_homwpwr_obj->energy_total_to_home_ts;
+      $current_power_to_home_wh   = $shelly_homwpwr_obj->power_total_to_home;
+      $current_timestamp          = $shelly_homwpwr_obj->minute_ts;
+
+      // get the previous cycle energy counter value. 1st time when not set yet set to current value
+      $previous_energy_counter_wh         = $all_usermeta[ 'shelly_energy_counter_now' ] ?? $current_energy_counter_wh;
+
+      // Check if energy counter has reset due to OTA update or power reset
+      if ( ( $current_energy_counter_wh - $previous_energy_counter_wh ) < 0 )
       {
-        $this->verbose ? error_log("Energy computed using Shelly is less than or equal to 0 - Error") : false;
-
-        return null;
+        // Yes the counter has reset. This flow does NOT happen often. The default value is false set at the beginning
+        $shelly_energy_counter_has_reset =  true;
       }
 
-      // assumes that grid power is not there. We will have to put in a Shelly to measure that
-      $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH *100, 1 ) * 1.07;
+      // Check if energy counter has reset due to OTA update or power reset
+      if ( $shelly_energy_counter_has_reset )
+      {
+        // Since the energy counter reset we need to add this to our previous energy counter value for correct curremt value
+        $modified_energy_counter_due_to_reset_wh = $previous_energy_counter_wh + $current_energy_counter_wh;
 
-      // Change in SOC ( a decrease) from value captured just after dark to now based on energy consumed by home during dark
-      $soc_percentage_now_computed_using_shelly  = $soc_update_from_studer_after_dark - $soc_percentage_discharged;
+        // Calculate the energy in KWH from now to the reference point  which is after dark if no shelly reset happened
+        $energy_consumed_since_after_dark_update_kwh = (  $modified_energy_counter_due_to_reset_wh - $shelly_energy_counter_after_dark ) * 0.001;
 
-      // since Studer reading is null lets updatethe soc using shelly computed value
+        // Energy in terms of percentage Battery SOC capacity discharged from battery. 107 is 1.07 for inverter loss * 100%
+        $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH * 107, 1);
+
+        // Change in SOC ( a decrease) from just after dark (reference) to now based on energy consumed only
+        $soc_percentage_now_computed_using_shelly  = $soc_update_from_studer_after_dark - $soc_percentage_discharged; 
+
+        // Since Energy counter has reset, values for after dark have to be reset to new values
+        update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $current_energy_counter_wh );
+
+        // update the user meta for the reference time stamp as current time stamp
+        update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $current_timestamp );
+
+        // since counter was reset we have to rebaseline all values to present readings including SOC after dark
+        update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_computed_using_shelly );
+
+        $this->verbose ? error_log("Shelly Energy Counter has reset due to Studer Power cycle or OTA update ") : false;
+        $this->verbose ? error_log("Shelly Energy Counter after dark value is reset to: " . $current_energy_counter_wh ) : false;
+        $this->verbose ? error_log("Shelly timestamp after dark has been reset to NOW: "  . $current_timestamp ) : false;
+        $this->verbose ? error_log("Shelly SOC after dark value has been reset to Curr: " . $soc_percentage_now_computed_using_shelly ) : false;
+      }
+      else    // This is the usual flow no Shelly 4PM reset has occured compute SOC
+      {
+        $energy_consumed_since_after_dark_update_kwh = ( $current_energy_counter_wh - $shelly_energy_counter_after_dark ) * 0.001;
+
+        // assumes that grid power is not there. We will have to put in a Shelly to measure that
+        $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH * 107, 1);
+
+        // Change in SOC ( a decrease) from value captured just after dark to now based on energy consumed by home during dark
+        $soc_percentage_now_computed_using_shelly  = $soc_update_from_studer_after_dark - $soc_percentage_discharged;
+      }
+
+      // finally we also update the current energy counter This is common to both branches of IF ELSE above
+      update_user_meta( $wp_user_ID, 'shelly_energy_counter_now', $current_energy_counter_wh );
+      
+
+      // since Studer reading is null lets update the soc using shelly computed value
       // no need to worry about clamp to 100 since value will only decrease never increase, no solar
       // update_user_meta( $wp_user_ID, 'soc_percentage_now', $soc_percentage_now_computed_using_shelly );
 
@@ -615,13 +669,19 @@ class class_transindus_eco
       $return_obj = new stdClass;
 
       $return_obj->SOC_percentage_previous           = $SOC_percentage_previous;
-      $return_obj->SOC_percentage_now                = round( $soc_percentage_now_computed_using_shelly, 1 );
+      $return_obj->SOC_percentage_now                = $soc_percentage_now_computed_using_shelly;
 
+      $return_obj->previous_energy_counter_wh        = $previous_energy_counter_wh;
       $return_obj->current_energy_counter_wh         = $current_energy_counter_wh;
       $return_obj->current_power_to_home_wh          = $current_power_to_home_wh;
       $return_obj->current_timestamp                 = $current_timestamp;
       $return_obj->soc_percentage_discharged         = $soc_percentage_discharged;
       $return_obj->energy_consumed_since_after_dark_update_kwh = $energy_consumed_since_after_dark_update_kwh;
+
+      $return_obj->shelly_energy_counter_has_reset = $shelly_energy_counter_has_reset;
+      $return_obj->modified_energy_counter_due_to_reset_wh = $modified_energy_counter_due_to_reset_wh ?? null;
+
+      // the variable name is due to compatibility with Studer values for display purposes. Power is calculated from Shelly 4PM
       $return_obj->pout_inverter_ac_kw               = round( $current_power_to_home_wh * 0.001, 2);
       
       return $return_obj;
@@ -629,6 +689,7 @@ class class_transindus_eco
 
 
     /**
+     *  @param int:$user_index of user in config array
      *  @return object:$shelly_device_data contains energy counter and its timestamp along with switch status object
      */
     public function get_shelly_device_status_homepwr(int $user_index): ?object
@@ -709,7 +770,9 @@ class class_transindus_eco
 
         // Make the API call to get the parameter value
         $studer_clock_unix_timestamp_with_utc_offset = $studer_api->get_parameter_value();
-        error_log( "studer_clock_unix_timestamp_with_utc_offset: " . $studer_clock_unix_timestamp_with_utc_offset );
+
+        $this->verbose ? error_log( "studer_clock_unix_timestamp_with_utc_offset: " . $studer_clock_unix_timestamp_with_utc_offset ): false;
+        
         // if the value is null due to a bad API response then do nothing and return
         if ( empty( $studer_clock_unix_timestamp_with_utc_offset )) return;
 
@@ -729,7 +792,7 @@ class class_transindus_eco
 
         set_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging',  
                         $studer_time_offset_in_mins_lagging, 
-                        24*60*60 );
+                        1*60*60 );
 
         $this->verbose ? error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins"): false;
       }
@@ -749,6 +812,8 @@ class class_transindus_eco
      *  We check to see if Studer clock is just past midnight. This will be true only once in 24h.
      *  Typically it happens close to Servers's midnight due to any offset in Studers clock.
      *  So we check in a window of 30mr on either side of server midnight.
+     *  Transient for Studer CLock offset expires every hour and gets recalculated by API call if needed.
+     *  So if Studer clock was adjusted during day it will be correctly acquired by API call
      */
     public function is_studer_time_just_pass_midnight( int $user_index, string $wp_user_name ): bool
     {
@@ -789,6 +854,7 @@ class class_transindus_eco
      *  @param int:$wp_user_ID
      *  @return bool:true if timestamp is witin last 12h of present server time
      *  Check if SOC capture after dark took place based on timestamp
+     *  No other check is made in the function
      */
     public function check_if_soc_after_dark_happened( int $user_index, string $wp_user_name, int $wp_user_ID ) :bool
     {
@@ -831,8 +897,6 @@ class class_transindus_eco
       }
       return false;
     }
-
-
 
 
     /**
@@ -938,11 +1002,13 @@ class class_transindus_eco
             $wp_user_ID   = $wp_user_obj->ID;
 
             if ( $wp_user_ID )
-            {
-              // we have a valid user
-              // extract the control flag for the servo loop to pass to the servo routine
+            {   // we have a valid user
+              
+              // Trigger an all usermeta get such that all routines called from this loop will have a valid updated usermeta
+              // The call also updates the all usermeta as a property of this object for access from anywahere in the class
               $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
 
+              // extract the control flag for the servo loop to pass to the servo routine
               $do_shelly  = $all_usermeta['do_shelly'];
 
               // extract the control flag to perform minutely updates
@@ -976,13 +1042,14 @@ class class_transindus_eco
     public function get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly)
     {
         { // Define boolean control variables for various time intervals
-          $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:00" );
+          $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59" ) || $this->nowIsWithinTimeLimits( "00:00", "07:00" );
 
           // Boolean values for checking is present time is within defined time intervals
           $now_is_daytime       = $this->nowIsWithinTimeLimits("08:30", "16:30"); // changed from 17:30  on 7/28/22
           $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
 
           // False implies that Studer readings are to be used for SOC update, true indicates Shelly based processing
+          // set default at the beginning to Studer updates of SOC
           $flag_soc_updated_using_shelly_energy_readings = false;
         }
 
@@ -1057,7 +1124,7 @@ class class_transindus_eco
 
             if ( $SOC_percentage_now )
             {
-              // we can use the shelly soc updates since our Studer API call has failed
+              // we can use the shelly soc updates since it is dark and SOC after dark reference has been captured
               $flag_soc_updated_using_shelly_energy_readings = true;
 
               // Update user meta so this becomes the previous value for next cycle
@@ -1113,7 +1180,7 @@ class class_transindus_eco
             // Therefore the flow below will happen and SOC after dark capture will now take place
             // This else was not needed but is used for clarity in documentation
           }
-        }
+        }   // end of if it is still dark
 
         if ( ! $flag_soc_updated_using_shelly_energy_readings )
         { // get the Solar values using the Studer API call for user values and setermine if call vas valid
@@ -2973,9 +3040,6 @@ class class_transindus_eco
       return $studer_readings_obj;
     }
 
-    
-
-
 
     /**
     ** This function returns an object that comprises data read form user's installtion
@@ -3270,22 +3334,7 @@ class class_transindus_eco
             $solar_arrow_class .= " fa-3x";
           break;
         }
-/*
-        switch(true)
-        {
-          case (abs($pout_inverter_ac_kw) < 1.0 ) :
-            $inverter_pout_arrow_class .= " fa-1x";
-          break;
 
-          case (abs($pout_inverter_ac_kw) < 2.0 ) :
-            $inverter_pout_arrow_class .= " fa-2x";
-          break;
-
-          case (abs($pout_inverter_ac_kw) >=2.0 ) :
-            $inverter_pout_arrow_class .= " fa-3x";
-          break;
-        }
-*/
         // conditional for Grid input arrow
         if ($transfer_relay_state)
         {
@@ -3407,44 +3456,44 @@ class class_transindus_eco
         // The error log time stamp was showing as UTC so I added the below statement
       date_default_timezone_set("Asia/Kolkata");
 
-          // Ensures nonce is correct for security
-          check_ajax_referer('my_solar_app_script');
+      // Ensures nonce is correct for security
+      check_ajax_referer('my_solar_app_script');
 
-          if ($_POST['data']) {   // extract data from POST sent by the Ajax Call and Sanitize
-              
-              $data = $_POST['data'];
+      if ($_POST['data']) {   // extract data from POST sent by the Ajax Call and Sanitize
+          
+          $data = $_POST['data'];
 
-              // get my user index knowing my login name
-              $wp_user_ID   = $data['wp_user_ID'];
+          // get my user index knowing my login name
+          $wp_user_ID   = $data['wp_user_ID'];
 
-              // sanitize the POST data
-              $wp_user_ID   = sanitize_text_field($wp_user_ID);
-          }
-
-          {    // get user_index based on user_name
-            $current_user = get_user_by('id', $wp_user_ID);
-            $wp_user_name = $current_user->user_login;
-            $user_index   = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ;
-
-            // error_log('from CRON Ajax Call: wp_user_ID:' . $wp_user_ID . ' user_index:'   . $user_index);
-          }
-
-          // get the transient related to this user ID that stores the latest Readings
-          $studer_readings_obj = get_transient( $wp_user_name . '_studer_readings_object' );
-
-          // error_log(print_r($studer_readings_obj, true));
-
-          if ($studer_readings_obj) {   // transient exists so we can send it
-              
-              $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj );
-
-              // send JSON encoded data to client browser AJAX call and then die
-              wp_send_json($format_object);
-          }
-          else {    // transient does not exist so send null
-            wp_send_json(null);
-          }
+          // sanitize the POST data
+          $wp_user_ID   = sanitize_text_field($wp_user_ID);
       }
+
+      {    // get user_index based on user_name
+        $current_user = get_user_by('id', $wp_user_ID);
+        $wp_user_name = $current_user->user_login;
+        $user_index   = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ;
+
+        // error_log('from CRON Ajax Call: wp_user_ID:' . $wp_user_ID . ' user_index:'   . $user_index);
+      }
+
+      // get the transient related to this user ID that stores the latest Readings
+      $studer_readings_obj = get_transient( $wp_user_name . '_studer_readings_object' );
+
+      // error_log(print_r($studer_readings_obj, true));
+
+      if ($studer_readings_obj) {   // transient exists so we can send it
+          
+          $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj );
+
+          // send JSON encoded data to client browser AJAX call and then die
+          wp_send_json($format_object);
+      }
+      else {    // transient does not exist so send null
+        wp_send_json(null);
+      }
+    }
 
 
 
@@ -3845,7 +3894,8 @@ class class_transindus_eco
      *
      * @return string Formatted interval string.
      */
-    public function format_interval(DateInterval $interval) {
+    public function format_interval(DateInterval $interval) 
+    {
       $result = "";
       if ($interval->y) { $result .= $interval->format("%y years "); }
       if ($interval->m) { $result .= $interval->format("%m months "); }

@@ -53,6 +53,8 @@ class class_transindus_eco
   public $valid_shelly_config;
   public $do_soc_cal_now_arr;
 
+  public $all_usermeta;
+
   // This flag is true when SOC update in cron loop is done using Shelly readings and not studer readings
   // This can only happen when it is dark and when SOC after dark capture are both true
   public $soc_updated_using_shelly_energy_readings;

@@ -600,16 +600,21 @@ class class_transindus_eco
       // API call to get a reading now from the Shelly 4PM device for energy, power, and timestamp
       $shelly_homwpwr_obj = $this->get_shelly_device_status_homepwr( $user_index );
 
+      if ( empty( $shelly_homwpwr_obj ) )
+      {   // API call returned an empty object
+        return null;
+      }
+
       // exctract needed properties from Shelly homepower object
       $current_energy_counter_wh  = $shelly_homwpwr_obj->energy_total_to_home_ts;
       $current_power_to_home_wh   = $shelly_homwpwr_obj->power_total_to_home;
       $current_timestamp          = $shelly_homwpwr_obj->minute_ts;
 
       // get the previous cycle energy counter value. 1st time when not set yet set to current value
-      $previous_energy_counter_wh         = $all_usermeta[ 'shelly_energy_counter_now' ] ?? $current_energy_counter_wh;
+      $previous_energy_counter_wh         = $all_usermeta[ 'shelly_energy_counter_now' ] ?? 0;
 
-      // Check if energy counter has reset due to OTA update or power reset
-      if ( ( $current_energy_counter_wh - $previous_energy_counter_wh ) < 0 )
+      // Check if energy counter has reset due to OTA update or power reset. The counter monoticity will break
+      if ( ( $current_energy_counter_wh - $previous_energy_counter_wh ) < -1 )
       {
         // Yes the counter has reset. This flow does NOT happen often. The default value is false set at the beginning
         $shelly_energy_counter_has_reset =  true;
@@ -639,10 +644,12 @@ class class_transindus_eco
         // since counter was reset we have to rebaseline all values to present readings including SOC after dark
         update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_computed_using_shelly );
 
-        $this->verbose ? error_log("Shelly Energy Counter has reset due to Studer Power cycle or OTA update ") : false;
-        $this->verbose ? error_log("Shelly Energy Counter after dark value is reset to: " . $current_energy_counter_wh ) : false;
-        $this->verbose ? error_log("Shelly timestamp after dark has been reset to NOW: "  . $current_timestamp ) : false;
-        $this->verbose ? error_log("Shelly SOC after dark value has been reset to Curr: " . $soc_percentage_now_computed_using_shelly ) : false;
+        $this->verbose ? error_log("Shelly Energy Counter has reset due to Studer Power cycle or OTA update ")            : false;
+        $this->verbose ? error_log("Shelly Energy Counter after dark - value before rest: " . $previous_energy_counter_wh ) : false;
+        $this->verbose ? error_log("Shelly Energy Counter after dark - value is reset to: " . $current_energy_counter_wh )  : false;
+        $this->verbose ? error_log("Shelly timestamp after dark has been reset to NOW: "    . $current_timestamp )          : false;
+        $this->verbose ? error_log("Shelly SOC after dark - value before rest: "            . $soc_update_from_studer_after_dark )        : false;
+        $this->verbose ? error_log("Shelly SOC after dark value has been reset to Curr: "   . $soc_percentage_now_computed_using_shelly ) : false;
       }
       else    // This is the usual flow no Shelly 4PM reset has occured compute SOC
       {
@@ -658,9 +665,7 @@ class class_transindus_eco
       // finally we also update the current energy counter This is common to both branches of IF ELSE above
       update_user_meta( $wp_user_ID, 'shelly_energy_counter_now', $current_energy_counter_wh );
       
-
-      // since Studer reading is null lets update the soc using shelly computed value
-      // no need to worry about clamp to 100 since value will only decrease never increase, no solar
+      // no need to worry about SOC clamp to 100 since value will only decrease never increase, no solar
       // update_user_meta( $wp_user_ID, 'soc_percentage_now', $soc_percentage_now_computed_using_shelly );
 
       // log if verbose is set to true
@@ -709,7 +714,7 @@ class class_transindus_eco
         $shelly_api_device_response = $shelly_api->get_shelly_device_status();
 
         // check to make sure that it exists. If null API call was fruitless
-        if ( empty( $shelly_api_device_response ) )
+        if ( empty( $shelly_api_device_response ) || empty( $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->total ) )
         {
           $this->verbose ? error_log("Shelly Homepwr switch API call failed"): false;
 
@@ -880,7 +885,7 @@ class class_transindus_eco
         return false;
       }
 
-      // we have a non-emty timestamp. To check if it is valid.
+      // we have a non-emtpy timestamp. To check if it is valid.
       // It is valid if the timestamp is after 6:55 PM and is within the last 12h
       $now = new DateTime();
 
@@ -1114,6 +1119,7 @@ class class_transindus_eco
         
         if ( $it_is_still_dark )
         { //---------------- Studer Midnight Rollover and SOC from Shelly readings after dark ------------------------------
+          // gets the timestamp from transient / user meta to check if time interval from now to timestamp is < 12h
           $soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
 
           if ( $soc_after_dark_happened )
@@ -1122,6 +1128,13 @@ class class_transindus_eco
             $soc_from_shelly_energy_readings = $this->compute_soc_from_shelly_energy_readings(  $user_index, 
                                                                                                 $wp_user_ID, 
                                                                                                 $wp_user_name );
+
+            if ( empty( $soc_from_shelly_energy_readings ) )
+            {
+              error_log($wp_user_name . ": " . "Shelly PRO 4PM energy meter API call failed. No SOC update nor Grid Switch Control");
+              return null;
+            }
+
             $SOC_percentage_now = $soc_from_shelly_energy_readings->SOC_percentage_now; // rounded already to 1d
 
             if ( $SOC_percentage_now )

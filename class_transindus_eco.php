@@ -55,6 +55,8 @@ class class_transindus_eco
 
   public $all_usermeta;
 
+  public $twelve_cron_5s_cycles_completed;
+
   // This flag is true when SOC update in cron loop is done using Shelly readings and not studer readings
   // This can only happen when it is dark and when SOC after dark capture are both true
   public $soc_updated_using_shelly_energy_readings;
@@ -614,13 +616,16 @@ class class_transindus_eco
       $previous_energy_counter_wh         = $all_usermeta[ 'shelly_energy_counter_now' ] ?? 0;
 
       // Check if energy counter has reset due to OTA update or power reset. The counter monoticity will break
-      if ( ( $current_energy_counter_wh - $previous_energy_counter_wh ) < -1 )
+      if ( ( $current_energy_counter_wh - $previous_energy_counter_wh ) < -1  // counter must have rooled over
+                                       &&  
+           ( $current_energy_counter_wh < $shelly_energy_counter_after_dark ) // SOC after dark happened before roll over
+        )
       {
         // Yes the counter has reset. This flow does NOT happen often. The default value is false set at the beginning
         $shelly_energy_counter_has_reset =  true;
       }
 
-      // Check if energy counter has reset due to OTA update or power reset
+      // Check if energy counter has reset due to OTA update or power reset AND SOC after dark happened before the reset
       if ( $shelly_energy_counter_has_reset )
       {
         // Since the energy counter reset we need to add this to our previous energy counter value for correct curremt value
@@ -645,11 +650,11 @@ class class_transindus_eco
         update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_computed_using_shelly );
 
         $this->verbose ? error_log("Shelly Energy Counter has reset due to Studer Power cycle or OTA update ")            : false;
-        $this->verbose ? error_log("Shelly Energy Counter after dark - value before rest: " . $previous_energy_counter_wh ) : false;
-        $this->verbose ? error_log("Shelly Energy Counter after dark - value is reset to: " . $current_energy_counter_wh )  : false;
-        $this->verbose ? error_log("Shelly timestamp after dark has been reset to NOW: "    . $current_timestamp )          : false;
-        $this->verbose ? error_log("Shelly SOC after dark - value before rest: "            . $soc_update_from_studer_after_dark )        : false;
-        $this->verbose ? error_log("Shelly SOC after dark value has been reset to Curr: "   . $soc_percentage_now_computed_using_shelly ) : false;
+        $this->verbose ? error_log("Shelly Energy Counter after dark - value before reset: " . $previous_energy_counter_wh ) : false;
+        $this->verbose ? error_log("Shelly Energy Counter after dark - value is reset to: "  . $current_energy_counter_wh )  : false;
+        $this->verbose ? error_log("Shelly timestamp after dark has been reset to NOW: "     . $current_timestamp )          : false;
+        $this->verbose ? error_log("Shelly SOC after dark - value before reset: "            . $soc_update_from_studer_after_dark )        : false;
+        $this->verbose ? error_log("Shelly SOC after dark value has been reset to Curr: "    . $soc_percentage_now_computed_using_shelly ) : false;
       }
       else    // This is the usual flow no Shelly 4PM reset has occured compute SOC
       {
@@ -694,6 +699,54 @@ class class_transindus_eco
       return $return_obj;
     }
 
+    /**
+     *  @param int:$user_index index of user in config array
+     *  @return object:$batter_measurements_object contains the measurements of the battery using the Shelly UNI device
+     *  
+     *  The current is measured using a hall effect sensor. The sensor output voltage is rread by the ADC in the shelly UNI
+     *  The transducer function is: V(A) = (Vout - 2.5)/0.065 for a 65mV/V aronund 2.5V in either direction
+     */
+    public function get_shelly_device_status_battery( int $user_index ): ? object
+    {
+        // set default timezone to Asia Kolkata
+        date_default_timezone_set("Asia/Kolkata");
+
+        // Make an API call on the Shelly UNI device
+        $config = $this->config;
+
+        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_battery'];
+
+        $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+
+        // this is $curl_response.
+        $shelly_api_device_response = $shelly_api->get_shelly_device_status();
+
+        // check to make sure that it exists. If null API call was fruitless
+        if ( empty( $shelly_api_device_response ) || empty( $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->total ) )
+        {
+          $this->verbose ? error_log("Shelly Battery Measurement API call failed"): false;
+
+          return null;
+        }
+
+        $transducer_voltage = $shelly_api_device_response->adcs[0]->voltage;
+
+        // calculate the current using the 65mV/A formula around 2.5V
+        $delta_voltage = $transducer_voltage - 2.5;
+
+        $battery_current_1_3 = $delta_voltage / 0.065;  // battery current of 1/3 cells, in Amps DC
+
+        $battery_current = 3.0 * $battery_current_1_3;
+
+        $battery_measurements_object = new stdClass;
+
+        $battery_measurements_object->current = $battery_current;
+        $battery_measurements_object->timestamp = $shelly_api_device_response->adcs[0]->voltage;
+
+        return $battery_measurements_object;
+    }
 
     /**
      *  @param int:$user_index of user in config array
@@ -737,6 +790,12 @@ class class_transindus_eco
 
         $energy_total_to_home_ts = $energy_channel_0_ts + $energy_channel_1_ts + $energy_channel_2_ts + $energy_channel_3_ts;
 
+        $current_total_home =  $shelly_api_device_response->data->device_status->{"switch:0"}->current;
+        $current_total_home += $shelly_api_device_response->data->device_status->{"switch:1"}->current;
+        $current_total_home += $shelly_api_device_response->data->device_status->{"switch:2"}->current;
+        $current_total_home += $shelly_api_device_response->data->device_status->{"switch:3"}->current;
+
+
         // Unix minute time stamp for the power and energy readings
         $minute_ts = $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->minute_ts;
 
@@ -746,7 +805,8 @@ class class_transindus_eco
         $energy_obj->power_total_to_home      = $power_total_to_home;
         $energy_obj->energy_total_to_home_ts  = $energy_total_to_home_ts;
         $energy_obj->minute_ts                = $minute_ts;
-
+        $energy_obj->current_total_home       = $current_total_home;
+        $energy_obj->voltage_home             = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
 
         return $energy_obj;
     }
@@ -986,6 +1046,44 @@ class class_transindus_eco
       return false;
     }
 
+    /**
+     *  Each time the function is called increment the cron 5s counter modulo 12. 
+     */
+    public function count_5s_cron_cycles_modulo_12():bool
+    {
+        $this->twelve_cron_5s_cycles_completed = false;
+
+        // We need to keep track of the count each time we land here. The CRON interval is nominally 5s
+        // We need a counter to count to 1 minute
+        $count_cron_5sec = get_transient( 'count_cron_5sec' );
+        
+        if ( false === $count_cron_5sec )
+        {
+            // this is 1st time or transient somehow got deleted or expired
+            $count_cron_5sec = 1;
+
+            // set transient with the above value for 60s
+            set_transient( 'count_cron_5sec', $count_cron_5sec, 60 );
+        }
+        else
+        {
+            // increment the counter by 1
+            $count_cron_5sec += get_transient( 'count_cron_5sec' );
+
+            if ( $count_cron_5sec >= 12 ) 
+            {
+                // the counter overflows past 1 minute so roll sback to 1 or 5sec
+                $count_cron_5sec = 1;
+
+                $this->twelve_cron_5s_cycles_completed = true;
+            }
+
+            // set a new transient value either incremented or rolled over value
+            set_transient( 'count_cron_5sec', $count_cron_5sec, 60 );
+        }
+
+        return $this->twelve_cron_5s_cycles_completed;
+    }
 
 
     /**
@@ -996,7 +1094,11 @@ class class_transindus_eco
      *  A data object is created and stored as a transient to be accessed by an AJAX request running asynchronously to the CRON
      */
     public function shellystuder_cron_exec()
-    {                        // Loop over all of the eligible users
+    {   
+        // increment counter each time and signal when 12 cycles have completed - counter is modulo 12
+        // $this->count_5s_cron_cycles_modulo_12();
+
+        // Loop over all of the eligible users
         foreach ($this->config['accounts'] as $user_index => $account)
         {
             $wp_user_name = $account['wp_user_name'];
@@ -1033,7 +1135,7 @@ class class_transindus_eco
             // loop for all users
         }
 
-        return true;
+      return true;
     }
 
 
@@ -1198,7 +1300,7 @@ class class_transindus_eco
         }   // end of if it is still dark
 
         if ( ! $flag_soc_updated_using_shelly_energy_readings )
-        { // get the Solar values using the Studer API call for user values and setermine if call vas valid
+        { // Make a Studer API call only if 12 cron cycles has completed AND Shelly has NOT been used for SOC update
           $studer_readings_obj  = $this->get_studer_min_readings($user_index);
 
           $studer_api_call_failed =   ( empty(  $studer_readings_obj )                          ||

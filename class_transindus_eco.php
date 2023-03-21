@@ -616,7 +616,7 @@ class class_transindus_eco
       $previous_energy_counter_wh         = $all_usermeta[ 'shelly_energy_counter_now' ] ?? 0;
 
       // Check if energy counter has reset due to OTA update or power reset. The counter monoticity will break
-      if ( ( $current_energy_counter_wh - $previous_energy_counter_wh ) < -1  // counter must have rooled over
+      if ( ( $current_energy_counter_wh < $previous_energy_counter_wh )       // counter must have reset
                                        &&  
            ( $current_energy_counter_wh < $shelly_energy_counter_after_dark ) // SOC after dark happened before roll over
         )
@@ -638,23 +638,30 @@ class class_transindus_eco
         $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH * 107, 1);
 
         // Change in SOC ( a decrease) from just after dark (reference) to now based on energy consumed only
-        $soc_percentage_now_computed_using_shelly  = $soc_update_from_studer_after_dark - $soc_percentage_discharged; 
+        $soc_percentage_now_computed_using_shelly  = $soc_update_from_studer_after_dark - $soc_percentage_discharged;
+        
+        if ( $soc_percentage_now_computed_using_shelly >= 20 && $soc_percentage_now_computed_using_shelly <= 100 )
+        {
+          // Since Energy counter has reset, values for after dark have to be reset to new values
+          update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $current_energy_counter_wh );
 
-        // Since Energy counter has reset, values for after dark have to be reset to new values
-        update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $current_energy_counter_wh );
+          // update the user meta for the reference time stamp as current time stamp
+          update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $current_timestamp );
 
-        // update the user meta for the reference time stamp as current time stamp
-        update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $current_timestamp );
+          // since counter was reset we have to rebaseline all values to present readings including SOC after dark
+          update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_computed_using_shelly );
 
-        // since counter was reset we have to rebaseline all values to present readings including SOC after dark
-        update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_computed_using_shelly );
-
-        $this->verbose ? error_log("Shelly Energy Counter has reset due to Studer Power cycle or OTA update ")            : false;
-        $this->verbose ? error_log("Shelly Energy Counter after dark - value before reset: " . $previous_energy_counter_wh ) : false;
-        $this->verbose ? error_log("Shelly Energy Counter after dark - value is reset to: "  . $current_energy_counter_wh )  : false;
-        $this->verbose ? error_log("Shelly timestamp after dark has been reset to NOW: "     . $current_timestamp )          : false;
-        $this->verbose ? error_log("Shelly SOC after dark - value before reset: "            . $soc_update_from_studer_after_dark )        : false;
-        $this->verbose ? error_log("Shelly SOC after dark value has been reset to Curr: "    . $soc_percentage_now_computed_using_shelly ) : false;
+          $this->verbose ? error_log("Shelly Energy Counter has reset due to Studer Power cycle or OTA update ")            : false;
+          $this->verbose ? error_log("Shelly Energy Counter after dark - value before reset: " . $previous_energy_counter_wh ) : false;
+          $this->verbose ? error_log("Shelly Energy Counter after dark - value is reset to: "  . $current_energy_counter_wh )  : false;
+          $this->verbose ? error_log("Shelly timestamp after dark has been reset to NOW: "     . $current_timestamp )          : false;
+          $this->verbose ? error_log("Shelly SOC after dark - value before reset: "            . $soc_update_from_studer_after_dark )        : false;
+          $this->verbose ? error_log("Shelly SOC after dark value has been reset to Curr: "    . $soc_percentage_now_computed_using_shelly ) : false;
+        }
+        else 
+        {
+          $this->verbose ? error_log("Shelly SOC after dark value has NOT been reset due to bad SOC: "    . $soc_percentage_now_computed_using_shelly ) : false;
+        }
       }
       else    // This is the usual flow no Shelly 4PM reset has occured compute SOC
       {

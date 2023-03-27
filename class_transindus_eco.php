@@ -1269,8 +1269,8 @@ class class_transindus_eco
           $shelly_api_device_status_ON      = $shelly_switch_acin_details_obj['shelly_api_device_status_ON'];
         }
         
-        if ( $it_is_still_dark )
-        { //---------------- Studer Midnight Rollover and SOC from Shelly readings after dark ------------------------------
+        if ( $it_is_still_dark ):
+          //---------------- Studer Midnight Rollover and SOC from Shelly readings after dark ------------------------------
           // gets the timestamp from transient / user meta to check if time interval from now to timestamp is < 12h
           $soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
 
@@ -1347,10 +1347,10 @@ class class_transindus_eco
             // Therefore the flow below will happen and SOC after dark capture will now take place
             // This else was not needed but is used for clarity in documentation
           }
-        }   // end of if it is still dark
+        endif;
 
-        if ( ! $flag_soc_updated_using_shelly_energy_readings )
-        { // Make a Studer API call only if 12 cron cycles has completed AND Shelly has NOT been used for SOC update
+        if ( ! $flag_soc_updated_using_shelly_energy_readings ):
+          // Make a Studer API call only if 12 cron cycles has completed AND Shelly has NOT been used for SOC update
           $studer_readings_obj  = $this->get_studer_min_readings($user_index);
 
           $studer_api_call_failed =   ( empty(  $studer_readings_obj )                          ||
@@ -1470,7 +1470,7 @@ class class_transindus_eco
 
           // capture soc after dark using shelly 4 pm. Only happens ONCE between 7-11 pm. 
           $this->capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index );
-        }   // end all processes that are specific only to Studer API call
+        endif;
         
         {   // define all the conditions for the SWITCH - CASE tree that are independent of battery voltage
 

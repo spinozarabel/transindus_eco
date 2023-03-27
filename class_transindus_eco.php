@@ -708,15 +708,21 @@ class class_transindus_eco
 
     /**
      *  @param int:$user_index index of user in config array
+     *  @param int:$wp_user_ID is the WP user ID
      *  @return object:$batter_measurements_object contains the measurements of the battery using the Shelly UNI device
      *  
      *  The current is measured using a hall effect sensor. The sensor output voltage is rread by the ADC in the shelly UNI
      *  The transducer function is: V(A) = (Vout - 2.5)/0.065 for a 65mV/V aronund 2.5V in either direction
+     *  Trapezoidal rule is used to calculate Area
+     *  Current measurements are used to update user meta to serve as previous measurements for next cycle
      */
-    public function get_shelly_device_status_battery( int $user_index ): ? object
+    public function get_shelly_device_status_battery( int $user_index, int $wp_user_ID ): ? object
     {
         // set default timezone to Asia Kolkata
         date_default_timezone_set("Asia/Kolkata");
+
+        // initialize the object to be returned
+        $battery_measurements_object = new stdClass;
 
         // Make an API call on the Shelly UNI device
         $config = $this->config;
@@ -725,32 +731,69 @@ class class_transindus_eco
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
         $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_battery'];
 
+        // BAttery capacity AH for one unit of the battery. Ex: 100 AH for a unit with 3 units of 300 AH
+        $battery_capacity_ah = $config['accounts'][$user_index]['battery_capacity_ah'];
+
         $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
 
         // this is $curl_response.
         $shelly_api_device_response = $shelly_api->get_shelly_device_status();
 
         // check to make sure that it exists. If null API call was fruitless
-        if ( empty( $shelly_api_device_response ) || empty( $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->total ) )
+        if ( empty( $shelly_api_device_response ) )
         {
           $this->verbose ? error_log("Shelly Battery Measurement API call failed"): false;
 
           return null;
         }
 
-        $transducer_voltage = $shelly_api_device_response->adcs[0]->voltage;
+        // If you get here, you have a valid API response from the Shelly UNI
+        $adc_voltage_shelly = $shelly_api_device_response->data->device_status->adcs[0]->voltage;  // measure the ADC voltage
 
-        // calculate the current using the 65mV/A formula around 2.5V
-        $delta_voltage = $transducer_voltage - 2.5;
+        // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
+        $delta_voltage = $adc_voltage_shelly - 2.5;
 
-        $battery_current_1_3 = $delta_voltage / 0.065;  // battery current of 1/3 cells, in Amps DC
+        // convention here is that battery discharge current is positive
+        $battery_amps_1_of_3 = $delta_voltage / 0.065;  // battery current of 1/3 cells, in Amps DC
 
-        $battery_current = 3.0 * $battery_current_1_3;
+        $battery_amps = 1.0 * $battery_amps_1_of_3; // considering only 1 cell for convenience since AH = 100 serves also as percent
 
-        $battery_measurements_object = new stdClass;
+        // get the unix time stamp when measurement was made
+        $timestamp = $shelly_api_device_response->data->device_status->unixtime;
 
-        $battery_measurements_object->current = $battery_current;
-        $battery_measurements_object->timestamp = $shelly_api_device_response->adcs[0]->voltage;
+        // get the previous reading's timestamp
+        $previous_timestamp     = get_user_meta( $wp_user_ID, 'timestamp_battery_last_measurement', true ) ?? $timestamp;
+        $previous_battery_amps  = get_user_meta( $wp_user_ID, 'amps_battery_last_measurement', true ) ?? $battery_amps;
+
+        $prev_datetime_obj = new DateTime();
+        $prev_datetime_obj->setTimeStamp($previous_timestamp);
+
+        $now = new DateTime();
+        $now->setTimeStamp($timestamp);
+
+        // find out the time interval between the last timestamp and the present one in seconds
+        $diff = $now->diff( $prev_datetime_obj );
+
+        $hours_between_measurement = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 ) / 3600;
+
+        // AH of battery discharge - Convention is that discharge AH is considered positive
+        // use trapezoidal rule for integration
+        $battery_ah_discharged = 0.5 * ( $previous_battery_amps + $battery_amps ) * $hours_between_measurement;
+
+        // all calculations on one unit of battery since measurements are only on one unit
+        $soc_ah_discharged_percent = $battery_ah_discharged / $battery_capacity_ah * 100;
+
+        $battery_measurements_object->battery_amps              = $battery_amps;
+        $battery_measurements_object->timestamp                 = $timestamp;
+        $battery_measurements_object->previous_timestamp        = $previous_timestamp;
+        $battery_measurements_object->battery_ah_discharged     = $battery_ah_discharged;
+        $battery_measurements_object->hours_between_measurement = $hours_between_measurement;
+        $battery_measurements_object->previous_battery_amps     = $previous_battery_amps;
+        $battery_measurements_object->soc_ah_discharged_percent = $soc_ah_discharged_percent;
+
+        // update user meta with new measurement for next cycle of integration
+        update_user_meta( $wp_user_ID, 'timestamp_battery_last_measurement',  $timestamp    );
+        update_user_meta( $wp_user_ID, 'amps_battery_last_measurement',       $battery_amps );
 
         return $battery_measurements_object;
     }
@@ -2542,6 +2585,7 @@ class class_transindus_eco
                 <input type="submit" name="button" 	value="get_shelly_device_status_homepwr"/>
                 <input type="submit" name="button" 	value="check_if_soc_after_dark_happened"/>
                 <input type="submit" name="button" 	value="get_studer_clock_offset"/>
+                <input type="submit" name="button" 	value="get_shelly_device_status_battery"/>
             </form>
 
 
@@ -2670,6 +2714,20 @@ class class_transindus_eco
               $studer_time_offset_in_mins_lagging = $this->get_studer_clock_offset( $config_index );
 
               print( "Studer time offset in mins lagging = " . $studer_time_offset_in_mins_lagging);
+              
+            break;
+
+            case "get_shelly_device_status_battery":
+
+              $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
+
+              $battery_measurement_object = $this->get_shelly_device_status_battery( $config_index, $wp_user_ID );
+
+              print( "ADC voltage (V): " .                                $battery_measurement_object->voltage . PHP_EOL );
+              print( " Battery Current (A): " .                           $battery_measurement_object->battery_amps . PHP_EOL);
+              print( " Time interval (H: " .                              $battery_measurement_object->hours_between_measurement . PHP_EOL);
+              print( " Battery (AH) discharge since last measurement: " . $battery_measurement_object->battery_ah_discharged .PHP_EOL);
+              print( " Battery (%SOC-AH) discharge since last measurement: " . $battery_measurement_object->soc_ah_discharged_percent . PHP_EOL);
               
             break;
 

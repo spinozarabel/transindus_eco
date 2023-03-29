@@ -1359,118 +1359,141 @@ class class_transindus_eco
                                         empty(  $studer_readings_obj->pout_inverter_ac_kw ) );
 
           if ( $studer_api_call_failed )
-          { // It is not dark. If Studer API call failed, Exit returning Null
+          { // It is not dark. If Studer API call failed, use BMS API call data to compute SOC
+            error_log($wp_user_name . ": " . "Studer API call failed");
+          }
+          else
+          {   // Studer API call is Valid - SOC update using Studer values along with Battery Voltage Updat
+            { // SOC update using Studer values along with Battery Voltage Update
+              // average the battery voltage over last 3 readings
+              $battery_voltage_avg  = $this->get_battery_voltage_avg( $wp_user_name, $studer_readings_obj->battery_voltage_vdc );
+    
+              // Solar power Now
+              $psolar               = $studer_readings_obj->psolar_kw;
+    
+              // Check if it is cloudy AT THE MOMENT. Yes if solar is less than half of estimate
+              $it_is_cloudy_at_the_moment = $psolar <= 0.5 * array_sum($est_solar_kw);
+    
+              // Solar Current into Battery Junction at present moment
+              $solar_pv_adc         = $studer_readings_obj->solar_pv_adc;
+    
+              // Inverter readings at present Instant
+              $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;    // Inverter Output Power in KW
+              $grid_input_vac       = $studer_readings_obj->grid_input_vac;         // Grid voltage measured by studer
+              $inverter_current_adc = $studer_readings_obj->inverter_current_adc;   // DC current into Inverter to convert to AC power
+    
+              // Surplus power KW from Solar after supplying the Load
+              $surplus              = $psolar - $pout_inverter;
+    
+              // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
+              $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
+    
+              // Weighted percentage cloudiness
+              $cloudiness_average_percentage_weighted = round($this->cloudiness_forecast->cloudiness_average_percentage_weighted, 0);
+    
+              // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only at 00:00:00 once.
+              $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true);
+    
+              // get the installed battery capacity in KWH from config
+              $SOC_capacity_KWH     = $this->config['accounts'][$user_index]['battery_capacity'];
+    
+              // get the Energy values for current day from the Studer Readings Object
+              $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;  // Net SOlar Units generated Today
+              $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;   // Net Grid Units consumed Today
+              $KWH_load_today       = $studer_readings_obj->KWH_load_today;   // Net Load units consumed Today
+    
+              // Units of Solar Energy converted to percentage of Battery Capacity Installed
+              $KWH_solar_percentage_today = round( $KWH_solar_today / $SOC_capacity_KWH * 100, 1);
+    
+              // Battery discharge today in terms of SOC capacity percventage
+              $KWH_batt_percent_discharged_today = round( (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07 / $SOC_capacity_KWH * 100, 1);
+    
+              if ( $this->verbose )
+              {
+    
+                  error_log("username: "             . $wp_user_name . ' Switch: ' . $shelly_switch_status . ' ' . 
+                                                      $battery_voltage_avg . ' V, ' . $studer_readings_obj->battery_charge_adc . 'A ' .
+                                                      $shelly_api_device_status_voltage . ' VAC');
+                  error_log("Psolar_calc: " . array_sum($est_solar_kw) . " Psolar_act: " . $psolar . " - Psurplus: " . 
+                            $surplus . " KW - Is it a Cloudy Day?: " . $it_is_a_cloudy_day);
+              
+              }
+    
+              // get the SOC % from the previous reading from user meta
+              $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true);
+    
+              // Net battery charge in KWH (discharge if minus)
+              $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07;
+    
+              // Calculate in percentage of  installed battery capacity
+              $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
+    
+              //  Update SOC  number
+              $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
+    
+              // set a clamp if the update is bad
+              if ( $SOC_percentage_now < 25 ) 
+              {
+                error_log("SOC now bad update: " .  $SOC_percentage_now . " % so set to 25% ");
+                $SOC_percentage_now = 25;
+              }
+    
+              // Update user meta so this becomes the previous value for next cycle
+              update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
+    
+              if ( $this->verbose )
+              {
+                error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . abs($KWH_batt_percent_discharged_today) . 
+                          " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC Now: " . $SOC_percentage_now . " %" );
+              }
+            }
 
-            error_log($wp_user_name . ": " . "Studer API call failed. No SOC update nor Grid Switch Control");
+            { // set conditions using Values from Studer API call
+              // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage     
+              $LVDS =             ( $battery_voltage_avg  <= $battery_voltage_avg_lvds_setting || 
+                                    $SOC_percentage_now   <= $soc_percentage_lvds_setting           )  
+                                    &&
+                                  ( $shelly_switch_status == "OFF" );					  // The switch is OFF
+  
+              $switch_override =  ( $shelly_switch_status                == "OFF" )  &&
+                                  ( $studer_readings_obj->grid_input_vac >= 190   );
+  
+            }
 
-            return null;
+            { // update the Studer Measurments object
+              $studer_readings_obj->SOC_percentage_now  = $SOC_percentage_now;
+              $studer_readings_obj->LVDS                = $LVDS;
+              $studer_readings_obj->switch_override     = $switch_override;
+              $studer_readings_obj->flag_soc_updated_using_shelly_energy_readings = false;
+            }
           }
 
-          {   // Studer SOC update calculations along with Battery Voltage Update
-            // average the battery voltage over last 3 readings
-            $battery_voltage_avg  = $this->get_battery_voltage_avg( $wp_user_name, $studer_readings_obj->battery_voltage_vdc );
-  
-            
-  
-            // Solar power Now
-            $psolar               = $studer_readings_obj->psolar_kw;
-  
-            // Check if it is cloudy AT THE MOMENT. Yes if solar is less than half of estimate
-            $it_is_cloudy_at_the_moment = $psolar <= 0.5 * array_sum($est_solar_kw);
-  
-            // Solar Current into Battery Junction at present moment
-            // $solar_pv_adc         = $studer_readings_obj->solar_pv_adc;
-  
-            // Inverter readings at present Instant
-            $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;    // Inverter Output Power in KW
-            $grid_input_vac       = $studer_readings_obj->grid_input_vac;         // Grid Input AC Voltage to Studer
-            // $inverter_current_adc = $studer_readings_obj->inverter_current_adc;   // DC current into Inverter to convert to AC power
-  
-            // Surplus power from Solar after supplying the Load
-            $surplus              = $psolar - $pout_inverter;
-  
-            // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
-            $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
-  
-            // Weighted percentage cloudiness
-            $cloudiness_average_percentage_weighted = round($this->cloudiness_forecast->cloudiness_average_percentage_weighted, 0);
-  
-            // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only at beginning of day, once.
-            $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
-  
-            // get the installed battery capacity in KWH from config
-            $SOC_capacity_KWH     = $this->config['accounts'][$user_index]['battery_capacity'];
-  
-            // get the current Measurement values from the Stider Readings Object
-            $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;  // Net SOlar Units generated Today
-            $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;   // Net Grid Units consumed Today
-            $KWH_load_today       = $studer_readings_obj->KWH_load_today;   // Net Load units consumed Today
-  
-            // Units of Solar Energy converted to percentage of Battery Capacity Installed
-            $KWH_solar_percentage_today = round( $KWH_solar_today / $SOC_capacity_KWH * 100, 1);
-  
-            // Battery discharge today in terms of SOC capacity percventage
-            $KWH_batt_percent_discharged_today = round( (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07 / $SOC_capacity_KWH * 100, 1);
-  
-            if ( $this->verbose )
-            {
-  
-                error_log("username: "             . $wp_user_name . ' Switch: ' . $shelly_switch_status . ' ' . 
-                                                    $battery_voltage_avg . ' V, ' . $studer_readings_obj->battery_charge_adc . 'A ' .
-                                                    $shelly_api_device_status_voltage . ' VAC');
-                error_log("Psolar_calc: " . array_sum($est_solar_kw) . " Psolar_act: " . $psolar . " - Psurplus: " . 
-                          $surplus . " KW - Is it a Cloudy Day?: " . $it_is_a_cloudy_day);
-            
-            }
-  
-            // get the SOC % from the previous reading from user meta
-            $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true) ?? 50.0;
-  
-            // Net battery charge in KWH (discharge if minus)
-            $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07;
-  
-            // Calculate in percentage of  installed battery capacity
-            $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
-  
-            //  Update SOC  number
-            $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
-  
-            // set a clamp if the update is bad
-            if ( $SOC_percentage_now < 25 ) {
-              error_log("SOC now bad update: " .  $SOC_percentage_now . " %");
-              $SOC_percentage_now = 25;
-            }
-  
-            // Update user meta so this becomes the previous value for next cycle
-            update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
-  
-            if ( $this->verbose )
-            {
-              error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . abs($KWH_batt_percent_discharged_today) . 
-                        " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC Now: " . $SOC_percentage_now . " %" );
-            }
-          }
-          {
-            // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage     
-            $LVDS =             ( $battery_voltage_avg  <= $battery_voltage_avg_lvds_setting || 
-                                  $SOC_percentage_now   <= $soc_percentage_lvds_setting           )  
-                                  &&
-                                ( $shelly_switch_status == "OFF" );					  // The switch is OFF
+          
 
-            $switch_override =  ( $shelly_switch_status                == "OFF" )  &&
-                                ( $studer_readings_obj->grid_input_vac >= 190   );
-
-          }
-
-          // update the object
-          $studer_readings_obj->SOC_percentage_now  = $SOC_percentage_now;
-          $studer_readings_obj->LVDS                = $LVDS;
-          $studer_readings_obj->switch_override     = $switch_override;
-          $studer_readings_obj->flag_soc_updated_using_shelly_energy_readings = false;
+          
 
           // capture soc after dark using shelly 4 pm. Only happens ONCE between 7-11 pm. 
           $this->capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index );
         endif;
+
+        { // take readings of the BMS using the Shelly UNI
+          $battery_measurements_object = $this->get_shelly_device_status_battery( $user_index, $wp_user_ID);
+
+          // get the SOC value from the previous cycle using the transient value
+          $soc_previous_bms = get_transietnt( 'soc_now_using_bms' );
+
+          if ( false === $soc_previous_bms )
+          {
+            // the 1st time, the transient will not exist so we start from the value using other methods
+            // get the SOC % from the previous reading from user meta
+            $soc_previous_bms = get_user_meta($wp_user_ID, "soc_percentage_now",  true);
+          }
+          
+          $soc_now_bms = $soc_previous_bms - $battery_measurements_object->soc_ah_discharged_percent;
+
+          // Update the transient
+          set_transient( 'soc_now_using_bms', $soc_now_bms, 3*60 );
+        }
         
         {   // define all the conditions for the SWITCH - CASE tree that are independent of battery voltage
 
@@ -1661,6 +1684,9 @@ class class_transindus_eco
             $SOC_percentage_beg_of_day_recal = 100 - $SOC_batt_charge_net_percent_today;
 
             update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
+
+            // also set the transient for BMS SOC to be 100
+            set_transient( 'soc_now_using_bms', 100, 3*60 );
 
             error_log("SOC 100% clamp activated: " . $SOC_percentage_beg_of_day_recal  . " %");
           }

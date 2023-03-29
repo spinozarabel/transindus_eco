@@ -783,6 +783,7 @@ class class_transindus_eco
         // all calculations on one unit of battery since measurements are only on one unit
         $soc_ah_discharged_percent = $battery_ah_discharged / $battery_capacity_ah * 100;
 
+        $battery_measurements_object->voltage                   = $adc_voltage_shelly;
         $battery_measurements_object->battery_amps              = $battery_amps;
         $battery_measurements_object->timestamp                 = $timestamp;
         $battery_measurements_object->previous_timestamp        = $previous_timestamp;

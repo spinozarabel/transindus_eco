@@ -659,6 +659,10 @@ class class_transindus_eco
         else
         {
           // Counter did not reset so ACIN switch must have been ON. So keep the SOC the same as what it was
+          $energy_consumed_since_after_dark_update_kwh = ( $current_energy_counter_wh - $shelly_energy_counter_after_dark ) * 0.001;
+
+          $soc_percentage_discharged = 0; // set value to not get a ,notice due to undefined variable in returned object
+          
           $soc_percentage_now_computed_using_shelly = $SOC_percentage_previous;
 
           $this->verbose ? error_log( "Shelly SOC not updated since ACIN switch was ON and kept at previous value of: "

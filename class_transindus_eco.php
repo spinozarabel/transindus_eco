@@ -573,7 +573,7 @@ class class_transindus_eco
     public function compute_soc_from_shelly_energy_readings(  int     $user_index, 
                                                               int     $wp_user_ID, 
                                                               string  $wp_user_name,
-                                                              mixed   $ACIN_switch_ON ) : ? object
+                                                                      $ACIN_switch_ON ) : ? object
     {
       // set default timezone to Asia Kolkata
       date_default_timezone_set("Asia/Kolkata");

@@ -627,9 +627,9 @@ class class_transindus_eco
 
       // Check if energy counter has reset due to OTA update or power reset. The counter monoticity will break
       // we add 1 to previous values just in case the numbers are close together and trigger condition falsely
-      if ( ( $current_energy_counter_wh < ( $previous_energy_counter_wh + 1 ) )       // counter must have reset
+      if ( ( $current_energy_counter_wh > ( $previous_energy_counter_wh + 1 ) )       // counter must have reset
                                        &&  
-           ( $current_energy_counter_wh < ( $shelly_energy_counter_after_dark + 1 ) ) // SOC after dark happened before roll over
+           ( $current_energy_counter_wh > ( $shelly_energy_counter_after_dark + 1 ) ) // SOC after dark happened before roll over
         )
       {
         // Yes the counter has reset. This flow does NOT happen often. The default value is false set at the beginning

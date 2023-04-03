@@ -670,7 +670,7 @@ class class_transindus_eco
 
           $soc_percentage_discharged = 0; // set value to not get a ,notice due to undefined variable in returned object
           
-          $soc_percentage_now_computed_using_shelly = $SOC_percentage_previous;
+          $soc_percentage_now_computed_using_shelly  = $soc_update_from_studer_after_dark - $soc_percentage_discharged;
 
           $this->verbose ? error_log( "Shelly SOC not updated since ACIN switch was ON and kept at previous value of: "
                                       . $soc_percentage_now_computed_using_shelly ) : false;
@@ -2458,7 +2458,7 @@ class class_transindus_eco
             </th>';
 
 
-        foreach ($$config['accounts'] as $user_index => $account)
+        foreach ($config['accounts'] as $user_index => $account)
         {
           $home = $account['home'];
           $output .=
@@ -2469,7 +2469,7 @@ class class_transindus_eco
         $output .=
         '</tr>';
         // Now we need to get all of the parameters of interest for each of the users and display them
-        foreach ($$config['accounts'] as $user_index => $account)
+        foreach ($config['accounts'] as $user_index => $account)
         {
           $wp_user_name = $account['wp_user_name'];
 

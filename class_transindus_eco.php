@@ -581,6 +581,12 @@ class class_transindus_eco
       // The default value of boolean flag indicating if Shelly energy counter has reset due to Studer overload shutdown or OTA update
       $shelly_energy_counter_has_reset =  false;
 
+      // set the flag to see if OSC discharge rate needs to be calculated. This is between 10PM and 5AM
+      $check_for_soc_rate_bool = $this->nowIsWithinTimeLimits( "20:00", "midnight tomorrow" ) || $this->nowIsWithinTimeLimits( "midnight today", "05:00" );
+
+      //  default value of  ACIN switch due to soc at 6am prediction
+      $turn_on_acin_switch_soc6am_low = false;
+
       // read in the config array from the class property
       $config = $this->config;
 
@@ -620,9 +626,10 @@ class class_transindus_eco
       $previous_energy_counter_wh         = $all_usermeta[ 'shelly_energy_counter_now' ] ?? 0;
 
       // Check if energy counter has reset due to OTA update or power reset. The counter monoticity will break
-      if ( ( $current_energy_counter_wh < $previous_energy_counter_wh )       // counter must have reset
+      // we add 1 to previous values just in case the numbers are close together and trigger condition falsely
+      if ( ( $current_energy_counter_wh < ( $previous_energy_counter_wh + 1 ) )       // counter must have reset
                                        &&  
-           ( $current_energy_counter_wh < $shelly_energy_counter_after_dark ) // SOC after dark happened before roll over
+           ( $current_energy_counter_wh < ( $shelly_energy_counter_after_dark + 1 ) ) // SOC after dark happened before roll over
         )
       {
         // Yes the counter has reset. This flow does NOT happen often. The default value is false set at the beginning
@@ -711,6 +718,60 @@ class class_transindus_eco
 
       $return_obj = new stdClass;
 
+      // do the check only between 10PM and 5AM
+      if ( $check_for_soc_rate_bool )
+      { // Predict the SOC at 6AM based on current values
+        
+        // how many elapsed minutes from Past reference timestamp given to now. Positive minutes if timestamp is in past
+        $delta_minutes_from_reference_time = abs( $this->minutes_from_reference_to_now( $timestamp_soc_capture_after_dark ) );
+
+        $soc_decrease_rate_per_min = ( $soc_update_from_studer_after_dark - $soc_percentage_now_computed_using_shelly ) / $delta_minutes_from_reference_time;
+
+        // get the value of the previous value of soc discharge rate from transient if it exists
+        $soc_decrease_rate_per_min_previous = get_transient( 'soc_decrease_rate_per_min' );
+
+        if (false === $soc_decrease_rate_per_min_previous)
+        {
+          // transient does not exist so we set this value to current value
+          $soc_decrease_rate_per_min_previous = $soc_decrease_rate_per_min;
+        }
+      
+        
+        if ( $soc_decrease_rate_per_min > 0.0 )
+        {
+          // lets average the SOC decrease rate
+          $soc_decrease_rate_per_min_avg = ( $soc_decrease_rate_per_min_previous + $soc_decrease_rate_per_min ) * 0.5;
+        }
+        else
+        {
+          // no change from previous rate since new rate is 0 as maybe the ACIN switch was ON
+          $soc_decrease_rate_per_min_avg = $soc_decrease_rate_per_min_previous;
+        }
+
+        set_transient( 'soc_decrease_rate_per_min', $soc_decrease_rate_per_min_avg, 5*60 ); // duration of 5 mins
+
+        // how many minutes from now to 6AM. We will only do thiss if now is between 10PM to 5AM. Expect positive number of minutes
+        $minutes_now_to_6am = $this->minutes_now_to_future('06:00');
+
+        $soc_predicted_at_6am = $soc_percentage_now_computed_using_shelly - abs( $soc_decrease_rate_per_min_avg * $minutes_now_to_6am );
+
+        if ( $soc_predicted_at_6am <= 40 )
+        {
+          $turn_on_acin_switch_soc6am_low = true;
+        }
+
+        $return_obj->turn_on_acin_switch_soc6am_low    = $turn_on_acin_switch_soc6am_low;
+        $return_obj->soc_predicted_at_6am              = $soc_predicted_at_6am;
+        $return_obj->minutes_now_to_6am                = $minutes_now_to_6am;
+        $return_obj->soc_decrease_rate_per_min_avg     = $soc_decrease_rate_per_min_avg;
+        $return_obj->delta_minutes_from_reference_time = $delta_minutes_from_reference_time;
+
+        $this->verbose ? error_log( "SOC predicted for 0600: "  . $soc_predicted_at_6am . " %"): false;
+        $this->verbose ? error_log( "Minutes NOW to 0600: "     . $minutes_now_to_6am . " mins"): false;
+        $this->verbose ? error_log( "delta_minutes_from_reference_time: "     . $delta_minutes_from_reference_time . " mins"): false;
+        $this->verbose ? error_log( "soc_decrease_rate_per_min_avg: "     . $soc_decrease_rate_per_min_avg . " points per min"): false;
+      }
+
       $return_obj->SOC_percentage_previous           = $SOC_percentage_previous;
       $return_obj->SOC_percentage_now                = $soc_percentage_now_computed_using_shelly;
 
@@ -729,6 +790,68 @@ class class_transindus_eco
       
       return $return_obj;
     }
+
+    /**
+     *  @param string:$future_time is in the typical format of hh:mm:ss
+     *  @return int:$minutes_now_to_future is the number of minutes from now to future time passed in
+     */
+    public function minutes_now_to_future( $future_time ) : float
+    {
+      date_default_timezone_set("Asia/Kolkata");
+
+      $now = new DateTime();
+
+      if ( $this->nowIsWithinTimeLimits( '00:00', $future_time ) )
+      {
+        $future_datetime_object = new DateTime($future_time);
+
+        // we are past midnight so we just calulcate mins from now to future time
+        // form interval object between now and  time stamp under investigation
+        $diff = $now->diff( $future_datetime_object );
+
+        $minutes_now_to_future = $diff->s / 60  + $diff->i  + $diff->h *60;
+
+        return $minutes_now_to_future;
+      }
+      else
+      {
+        // we are not past midnight of today so future time is past 23:59:59 into tomorrow
+        $future_datetime_object = new DateTime( "tomorrow " . $future_time );
+
+        $diff = $now->diff( $future_datetime_object );
+
+        $minutes_now_to_future = $diff->s / 60  + $diff->i  + $diff->h * 60 + $diff->d * 24 * 60;
+
+        return $minutes_now_to_future;
+      }
+
+    }
+
+
+    /**
+     *  @param int:$timestamp is the timestamp of event past
+     *  @return int:$elapsed_time_mins is the elapsed time from the reference timestamp to NOW
+     */
+    public function minutes_from_reference_to_now( int $timestamp ) : float
+    {
+      date_default_timezone_set("Asia/Kolkata");
+
+      $now = new DateTime();
+
+      $reference_datetime_obj = new DateTime();
+
+      // This should be in the past
+      $reference_datetime_obj->setTimeStamp( $timestamp );
+
+      // form interval object between now and  time stamp under investigation
+      $diff = $now->diff( $reference_datetime_obj );
+
+      // Get the elapsed time in minutes
+      $elapsed_time_mins = $diff->s / 60  + $diff->i  + $diff->h *60;
+
+      return $elapsed_time_mins;
+    }
+
 
     /**
      *  @param int:$user_index index of user in config array

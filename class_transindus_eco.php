@@ -47,6 +47,7 @@ class class_transindus_eco
   public $config;
 
   public $bv_avg_arr;
+  public $load_kw_avg_arr;
   public $psolar_avg_arr;
   public $pload_avg;
   public $count_for_averaging;
@@ -623,16 +624,14 @@ class class_transindus_eco
       $current_energy_counter_wh  = $shelly_homwpwr_obj->energy_total_to_home_ts;
       $current_power_to_home_wh   = $shelly_homwpwr_obj->power_total_to_home;
       $current_timestamp          = $shelly_homwpwr_obj->minute_ts;
+      $current_power_to_home_kw   = $current_power_to_home_wh * 0.001;
 
       // get the previous cycle energy counter value. 1st time when not set yet set to current value
       $previous_energy_counter_wh         = $all_usermeta[ 'shelly_energy_counter_now' ] ?? 0;
 
       // Check if energy counter has reset due to OTA update or power reset. The counter monoticity will break
       // we add 1 to previous values just in case the numbers are close together and trigger condition falsely
-      if ( ( $current_energy_counter_wh < ( $previous_energy_counter_wh + 0.1 ) )       // counter must have reset
-                                       &&  
-           ( $current_energy_counter_wh < ( $shelly_energy_counter_after_dark + 0.1 ) ) // SOC after dark happened before roll over
-        )
+      if ( ( $current_energy_counter_wh + 0.1 ) < ( $shelly_energy_counter_after_dark + 0.1 ) ) // SOC after dark happened before roll over
       {
         // Yes the counter has reset. This flow does NOT happen often. The default value is false set at the beginning
         $shelly_energy_counter_has_reset =  true;
@@ -722,40 +721,27 @@ class class_transindus_eco
 
       // do the check only between 10PM and 5AM
       if ( $check_for_soc_rate_bool )
-      { // Predict the SOC at 6AM based on current values
-        
-        // how many elapsed minutes from Past reference timestamp given to now. Positive minutes if timestamp is in past
-        $delta_minutes_from_reference_time = abs( $this->minutes_from_reference_to_now( $timestamp_soc_capture_after_dark ) );
+      { // Predict the SOC at 6AM based on load averaged over last 10 readings
 
-        $soc_decrease_rate_per_min = ( $soc_update_from_studer_after_dark - $soc_percentage_now_computed_using_shelly ) / $delta_minutes_from_reference_time;
-
-        // get the value of the previous value of soc discharge rate from transient if it exists
-        $soc_decrease_rate_per_min_previous = get_transient( 'soc_decrease_rate_per_min' );
-
-        if (false === $soc_decrease_rate_per_min_previous)
-        {
-          // transient does not exist so we set this value to current value
-          $soc_decrease_rate_per_min_previous = $soc_decrease_rate_per_min;
-        }
-      
-        
-        if ( $soc_decrease_rate_per_min > 0.0 )
-        {
-          // lets average the SOC decrease rate
-          $soc_decrease_rate_per_min_avg = ( $soc_decrease_rate_per_min_previous + $soc_decrease_rate_per_min ) * 0.5;
-        }
-        else
-        {
-          // no change from previous rate since new rate is 0 as maybe the ACIN switch was ON
-          $soc_decrease_rate_per_min_avg = $soc_decrease_rate_per_min_previous;
-        }
-
-        set_transient( 'soc_decrease_rate_per_min', $soc_decrease_rate_per_min_avg, 5*60 ); // duration of 5 mins
+        $load_kw_avg = $this->get_load_average( $wp_user_name, $current_power_to_home_kw );
 
         // how many minutes from now to 6AM. We will only do thiss if now is between 10PM to 5AM. Expect positive number of minutes
         $minutes_now_to_6am = $this->minutes_now_to_future('06:00');
 
-        $soc_predicted_at_6am = $soc_percentage_now_computed_using_shelly - abs( $soc_decrease_rate_per_min_avg * $minutes_now_to_6am );
+        // Energy consumed in KWH by load during this time
+        $est_kwh_discharged_till_6am = $load_kw_avg * $minutes_now_to_6am / 60.0;
+
+        // estimated SOC% points discharged assuming usuaul conversion efficiency of 107%
+        $est_soc_percentage_discharged_till_6am = $est_kwh_discharged_till_6am / $SOC_capacity_KWH * 107;
+        
+        // how many elapsed minutes from Past reference timestamp given to now. Positive minutes if timestamp is in past
+        $delta_minutes_from_reference_time = abs( $this->minutes_from_reference_to_now( $timestamp_soc_capture_after_dark ) );
+
+        
+
+        
+
+        $soc_predicted_at_6am = $soc_percentage_now_computed_using_shelly - $est_soc_percentage_discharged_till_6am;
 
         if ( $soc_predicted_at_6am <= 40 )
         {
@@ -765,13 +751,14 @@ class class_transindus_eco
         $return_obj->turn_on_acin_switch_soc6am_low    = $turn_on_acin_switch_soc6am_low;
         $return_obj->soc_predicted_at_6am              = $soc_predicted_at_6am;
         $return_obj->minutes_now_to_6am                = $minutes_now_to_6am;
-        $return_obj->soc_decrease_rate_per_min_avg     = $soc_decrease_rate_per_min_avg;
+        $return_obj->load_kw_avg                       = $load_kw_avg;
         $return_obj->delta_minutes_from_reference_time = $delta_minutes_from_reference_time;
 
         $this->verbose ? error_log( "SOC predicted for 0600: "  . $soc_predicted_at_6am . " %"): false;
         $this->verbose ? error_log( "Minutes NOW to 0600: "     . $minutes_now_to_6am . " mins"): false;
         $this->verbose ? error_log( "delta_minutes_from_reference_time: "     . $delta_minutes_from_reference_time . " mins"): false;
-        $this->verbose ? error_log( "soc_decrease_rate_per_min_avg: "     . $soc_decrease_rate_per_min_avg . " points per min"): false;
+        $this->verbose ? error_log( "load_kw_avg: "     . $load_kw_avg . " KW"): false;
+        $this->verbose ? error_log( "Flag to turn-ON ACIN due to low Predicted SOC at 6AM: " . $turn_on_acin_switch_soc6am_low ): false;
       }
 
       $return_obj->SOC_percentage_previous           = $SOC_percentage_previous;
@@ -788,10 +775,64 @@ class class_transindus_eco
       $return_obj->modified_energy_counter_due_to_reset_wh = $modified_energy_counter_due_to_reset_wh ?? null;
 
       // the variable name is due to compatibility with Studer values for display purposes. Power is calculated from Shelly 4PM
-      $return_obj->pout_inverter_ac_kw               = round( $current_power_to_home_wh * 0.001, 2);
+      $return_obj->pout_inverter_ac_kw               = round( $current_power_to_home_kw, 2);
       
       return $return_obj;
     }
+
+
+    /**
+     * 
+     */
+    public function get_load_average( string $wp_user_name, float $new_load_kw_reading ): ? float
+    {
+      // Load the voltage array that might have been pushed into transient space
+      $load_kw_arr_transient = get_transient( $wp_user_name . '_' . 'load_kw_avg_arr' ); 
+
+      // If transient doesnt exist rebuild
+      if ( ! is_array($load_kw_arr_transient))
+      {
+        $load_kw_avg_arr = [];
+      }
+      else
+      {
+        // it exists so populate
+        $load_kw_avg_arr = $load_kw_arr_transient;
+      }
+      
+      // push the new voltage reading to the holding array
+      array_push( $load_kw_avg_arr, $new_load_kw_reading );
+
+      // If the array has more than 3 elements then drop the earliest one
+      // We are averaging for only 3 minutes
+      if ( sizeof($load_kw_avg_arr) > 10 )  
+      {   // drop the earliest reading
+          array_shift($load_kw_avg_arr);
+      }
+      // Write it to this object for access elsewhere easily
+      $this->load_kw_avg_arr = $load_kw_avg_arr;
+
+      // Setup transiet to keep previous state for averaging
+      set_transient( $wp_user_name . '_' . 'load_kw_avg_arr', $load_kw_avg_arr, 5*60 );
+
+      $count  = 0.00001;    // prevent division by 0 error
+      $sum    = 0;
+      foreach ($load_kw_avg_arr as $key => $value)
+      {
+         if ( $value > 0.010 )  // greater than 10W
+         {
+            // average all values that are meaningful
+            $sum    +=  $value;
+            $count  +=  1;
+         }
+      }
+      unset($value);
+
+      $load_kw_avg = round( $sum / $count, 2);
+
+      return $load_kw_avg;
+    }
+
 
     /**
      *  @param string:$future_time is in the typical format of hh:mm:ss

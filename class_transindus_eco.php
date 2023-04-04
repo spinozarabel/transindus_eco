@@ -5,9 +5,11 @@
  *
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
- * Ver 2.1
+ * Ver 2.2
+ *     Added Shelly EM and removed Shelly 1PM for ACIN control
  *     Added Shelly 4 PM for energy readings to home. 
  *      During dark SOC updates can use this if Studer API calls fail
+ *     
  * 
  *
  */
@@ -523,8 +525,8 @@ class class_transindus_eco
           }
           else {  // Switch is ONLINE - Get its status and Voltage
               
-              $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
-              $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
+              $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->relays[0]->ison;
+              $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->emeters[0]->voltage;
 
               if ($shelly_api_device_status_ON)
                   {
@@ -2912,7 +2914,7 @@ class class_transindus_eco
         $config = $this->config;
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id'];
+        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
 
         $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
 

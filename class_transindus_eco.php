@@ -584,11 +584,11 @@ class class_transindus_eco
       // The default value of boolean flag indicating if Shelly energy counter has reset due to Studer overload shutdown or OTA update
       $shelly_energy_counter_has_reset =  false;
 
-      // set the flag to see if OSC discharge rate needs to be calculated. This is between 10PM and 5AM
-      $check_for_soc_rate_bool = $this->nowIsWithinTimeLimits( "20:00", "midnight tomorrow" ) || $this->nowIsWithinTimeLimits( "midnight today", "05:00" );
-
       //  default value of  ACIN switch due to soc at 6am prediction
       $turn_on_acin_switch_soc6am_low = false;
+
+      // set the flag to see if OSC discharge rate needs to be calculated. This is between 10PM and 5AM
+      $check_for_soc_rate_bool = $this->nowIsWithinTimeLimits( "20:00", "midnight tomorrow" ) || $this->nowIsWithinTimeLimits( "midnight today", "05:00" );
 
       // read in the config array from the class property
       $config = $this->config;
@@ -599,17 +599,23 @@ class class_transindus_eco
       // get the installed battery capacity in KWH from config
       $SOC_capacity_KWH                   = $config['accounts'][$user_index]['battery_capacity'];
 
-      // This is the value of the SOC as updated by Studer API, captured just after dark
+      // This is the value of the SOC as updated by Studer API, captured just after dark.
+      // This reference gets reset each time there is a Shelly 4PM reset and or if ACIN switch is ON
       $soc_update_from_studer_after_dark  = $all_usermeta[ 'soc_update_from_studer_after_dark' ];
 
-      // This is the Shelly energy counter at the moment of SOC capture just after dark
-      $shelly_energy_counter_after_dark   = $all_usermeta[ 'shelly_energy_counter_after_dark' ];
+      // This is the Shelly energy counter at the moment of SOC capture just after dark or when reference reset
+      $tmp_shelly_energy_counter_after_dark   = $all_usermeta[ 'shelly_energy_counter_after_dark' ];
+      $shelly_energy_counter_after_dark       = (int) round( $tmp_shelly_energy_counter_after_dark, 0 );
 
-      // This is the tiestamp at the moent of SOC capture just after dark
+      // This is the tiestamp at the moent of SOC capture just after dark or when reference is reset
       $timestamp_soc_capture_after_dark   = $all_usermeta[ 'timestamp_soc_capture_after_dark' ];
 
       // Keep the SOC from previous update handy just in case
       $SOC_percentage_previous            = $all_usermeta[ 'soc_percentage_now' ];
+
+      // get the previous cycle energy counter value. 1st time when not set yet set to current value
+      $previous_energy_counter_wh_tmp = $all_usermeta[ 'shelly_energy_counter_now' ] ?? $current_energy_counter_wh;
+      $previous_energy_counter_wh     = (int) round($previous_energy_counter_wh_tmp, 0);
       
 
       // API call to get a reading now from the Shelly 4PM device for energy, power, and timestamp
@@ -621,101 +627,102 @@ class class_transindus_eco
       }
 
       // exctract needed properties from Shelly homepower object
-      $current_energy_counter_wh  = $shelly_homwpwr_obj->energy_total_to_home_ts;
+      $current_energy_counter_wh  = (int) round($shelly_homwpwr_obj->energy_total_to_home_ts, 0);
       $current_power_to_home_wh   = $shelly_homwpwr_obj->power_total_to_home;
       $current_timestamp          = $shelly_homwpwr_obj->minute_ts;
       $current_power_to_home_kw   = $current_power_to_home_wh * 0.001;
 
-      // get the previous cycle energy counter value. 1st time when not set yet set to current value
-      $previous_energy_counter_wh         = $all_usermeta[ 'shelly_energy_counter_now' ] ?? 0;
-
       // Check if energy counter has reset due to OTA update or power reset. The counter monoticity will break
       // we add 1 to previous values just in case the numbers are close together and trigger condition falsely
-      if ( ( $current_energy_counter_wh + 0.1 ) < ( $shelly_energy_counter_after_dark + 0.1 ) ) // SOC after dark happened before roll over
+      if ( ( $current_energy_counter_wh ) < ( $shelly_energy_counter_after_dark  ) ) // SOC after dark happened before roll over
       {
         // Yes the counter has reset. This flow does NOT happen often. The default value is false set at the beginning
         $shelly_energy_counter_has_reset =  true;
       }
 
-      // Check if energy counter has reset due OR the ACIN switch was ON
+      // Check if energy counter has reset OR the ACIN switch was ON. In both cases SOC after dark needs to be rest to current values
       // if the ACIN switch was ON then we want to keep the SOC the same since the Grid is supplying the HOME at night
       //                           but we still want to reset the after dark reference values continuously
       //                           till the switch is OFF again and when the SOC discharge happens and needs updating
-      if ( $shelly_energy_counter_has_reset || $ACIN_switch_ON )
-      {
-        if ( $shelly_energy_counter_has_reset )
-        {
-          // Since the energy counter reset we need to add this to our previous energy counter value for correct curremt value
-          $modified_energy_counter_due_to_reset_wh = $previous_energy_counter_wh + $current_energy_counter_wh;
-
-          // Calculate the energy in KWH from now to the reference point  which is after dark if no shelly reset happened
-          $energy_consumed_since_after_dark_update_kwh = (  $modified_energy_counter_due_to_reset_wh - $shelly_energy_counter_after_dark ) * 0.001;
-
-          // Energy in terms of percentage Battery SOC capacity discharged from battery. 107 is 1.07 for inverter loss * 100%
-          $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH * 107, 1);
-
-          // Change in SOC ( a decrease) from just after dark (reference) to now based on energy consumed only
-          $soc_percentage_now_computed_using_shelly  = $soc_update_from_studer_after_dark - $soc_percentage_discharged;
-
-          $this->verbose ? error_log("Shelly Energy Counter has reset due to Studer Power cycle or OTA update ")               : false;
-          $this->verbose ? error_log("Shelly Energy Counter after dark - value before reset: " . $previous_energy_counter_wh ) : false;
-          $this->verbose ? error_log("Shelly Energy Counter after dark - value is reset to: "  . $current_energy_counter_wh )  : false;
-          $this->verbose ? error_log("Shelly timestamp after dark has been reset to NOW: "     . $current_timestamp )          : false;
-          $this->verbose ? error_log("Shelly SOC after dark - value before reset: "            . $soc_update_from_studer_after_dark )        : false;
-          $this->verbose ? error_log("Shelly SOC after dark value has been reset to Curr: "    . $soc_percentage_now_computed_using_shelly ) : false;
-        }
-        else
-        {
-          // Counter did not reset so ACIN switch must have been ON. So keep the SOC the same as what it was
-          $energy_consumed_since_after_dark_update_kwh = ( $current_energy_counter_wh - $shelly_energy_counter_after_dark ) * 0.001;
-
-          $soc_percentage_discharged = 0; // set value to not get a ,notice due to undefined variable in returned object
-          
-          $soc_percentage_now_computed_using_shelly  = $soc_update_from_studer_after_dark - $soc_percentage_discharged;
-
-          $this->verbose ? error_log( "Shelly SOC not updated since ACIN switch was ON and kept at previous value of: "
-                                      . $soc_percentage_now_computed_using_shelly ) : false;
-          $this->verbose ? error_log("Shelly Energy Counter after dark - value is reset to: "  . $current_energy_counter_wh )  : false;
-          $this->verbose ? error_log("Shelly timestamp after dark has been reset to NOW: "     . $current_timestamp )          : false;
-        }
-
-        if ( $soc_percentage_now_computed_using_shelly >= 20 && $soc_percentage_now_computed_using_shelly <= 100 )
-        {
-          // Since Energy counter has reset OR ACIN switch was ON, values for after dark have to be reset to  present values
-          update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $current_energy_counter_wh );
-
-          // update the user meta for the reference time stamp as current time stamp
-          update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $current_timestamp );
-
-          // counter reset OR switch ON so we have to rebaseline all values to present readings including SOC after dark
-          update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_computed_using_shelly );
-        }
-        else 
-        {
-          $this->verbose ? error_log("Shelly SOC after dark value has NOT been reset due to bad SOC: "    . $soc_percentage_now_computed_using_shelly ) : false;
-        }
-      }
-      else    // This is the usual flow no Shelly 4PM reset has occured compute SOC
-      {
+      
+      if ( ! $shelly_energy_counter_has_reset && ! $ACIN_switch_ON )      // 0 0 state Most common flow
+      { // Update SOC usng counters. DO NOT reset SOC after dark values, they are still valid
         $energy_consumed_since_after_dark_update_kwh = ( $current_energy_counter_wh - $shelly_energy_counter_after_dark ) * 0.001;
 
-        // assumes that grid power is not there. We will have to put in a Shelly to measure that
         $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH * 107, 1);
 
         // Change in SOC ( a decrease) from value captured just after dark to now based on energy consumed by home during dark
+        $soc_percentage_now_computed_using_shelly  = round($soc_update_from_studer_after_dark - $soc_percentage_discharged, 1);
+    
+        // no need to worry about SOC clamp to 100 since value will only decrease never increase, no solar
+        // update_user_meta( $wp_user_ID, 'soc_percentage_now', $soc_percentage_now_computed_using_shelly );
+
+        // log if verbose is set to true
+        $this->verbose ? error_log( "SOC at dusk: " . $soc_update_from_studer_after_dark . 
+                                    "%,  SOC NOW using Shelly: " . 
+                                    $soc_percentage_now_computed_using_shelly . " %") : false;
+      }
+      elseif ( $shelly_energy_counter_has_reset && ! $ACIN_switch_ON )  // 1 0 state
+      {
+        // Compute updated SOC using modified counter and reset SOC after dark to current readings
+        // Since the energy counter reset we need to add this to our previous energy counter value for correct curremt value
+        $modified_energy_counter_due_to_reset_wh = $previous_energy_counter_wh + $current_energy_counter_wh;
+
+        // Calculate the energy in KWH from now to the reference point  which is after dark if no shelly reset happened
+        $energy_consumed_since_after_dark_update_kwh = (  $modified_energy_counter_due_to_reset_wh - $shelly_energy_counter_after_dark ) * 0.001;
+
+        // Energy in terms of percentage Battery SOC capacity discharged from battery. 107 is 1.07 for inverter loss * 100%
+        $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH * 107, 1);
+
+        // Change in SOC ( a decrease) from just after dark (reference) to now based on energy consumed only
         $soc_percentage_now_computed_using_shelly  = $soc_update_from_studer_after_dark - $soc_percentage_discharged;
+
+        // reset reference counter sto current value
+        update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $current_energy_counter_wh );
+        update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $current_timestamp );
+
+        if ( $soc_percentage_now_computed_using_shelly >= 20 && $soc_percentage_now_computed_using_shelly <= 100 )
+        {
+          // reset reference SOC to updated value calculated using modified counter due to reset
+          update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_computed_using_shelly );
+
+          $this->verbose ? error_log("Shelly SOC after dark value has been reset to Curr: "    . $soc_percentage_now_computed_using_shelly ) : false;
+        }
+        else 
+        {
+          $this->verbose ? error_log("Shelly SOC after dark value has NOT been reset due to bad SOC: " . $soc_percentage_now_computed_using_shelly ) : false;
+        }
+
+        $this->verbose ? error_log("Shelly Energy Counter has reset ")               : false;
+        $this->verbose ? error_log("Shelly Energy Counter after dark - value before reset: " . $previous_energy_counter_wh ) : false;
+        $this->verbose ? error_log("Shelly Energy Counter after dark - value is reset to: "  . $current_energy_counter_wh )  : false;
+        $this->verbose ? error_log("Shelly timestamp after dark has been reset to NOW: "     . $current_timestamp )          : false;
+        $this->verbose ? error_log("Shelly SOC after dark - value before reset: "            . $soc_update_from_studer_after_dark )        : false;
+        
+      }
+      elseif ( $ACIN_switch_ON )    // 0 1 or 1 1 states are same
+      {
+        // ACIN switch is ON so keep SOC same as previous cycle but reset SOC after dark values to current readings
+        $energy_consumed_since_after_dark_update_kwh = ( $current_energy_counter_wh - $shelly_energy_counter_after_dark ) * 0.001;
+
+        $soc_percentage_discharged = 0; // set value to not get a ,notice due to undefined variable in returned object
+        
+        $soc_percentage_now_computed_using_shelly  = $SOC_percentage_previous;
+
+        $this->verbose ? error_log( "Shelly SOC not updated since ACIN switch was ON and kept at previous value of: "
+                                    . $SOC_percentage_previous ) : false;
+
+        // reset reference counters to current values
+        update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $current_energy_counter_wh );
+        update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $current_timestamp );
+
+        // No SOC after dark reference update since unchanged
       }
 
-      // finally we also update the current energy counter This is common to both branches of IF ELSE above
+      // finally we also update the current energy counter This is common to all cases
       update_user_meta( $wp_user_ID, 'shelly_energy_counter_now', $current_energy_counter_wh );
       
       // no need to worry about SOC clamp to 100 since value will only decrease never increase, no solar
-      // update_user_meta( $wp_user_ID, 'soc_percentage_now', $soc_percentage_now_computed_using_shelly );
-
-      // log if verbose is set to true
-      $this->verbose ? error_log( "SOC at dusk: " . $soc_update_from_studer_after_dark . 
-                                  "%,  SOC NOW using Shelly: " . 
-                                  $soc_percentage_now_computed_using_shelly . " %") : false;
 
       $return_obj = new stdClass;
 
@@ -1238,7 +1245,7 @@ class class_transindus_eco
 
           set_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark, 4*60*60 );
           set_transient( $wp_user_name . '_' . 'shelly_energy_counter_after_dark',  $shelly_energy_counter_after_dark, 4*60*60 );
-          set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now, 12 * 60 * 60 );
+          set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now, 4 * 60 * 60 );
 
 
           update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_energy_counter_after_dark);
@@ -1258,7 +1265,7 @@ class class_transindus_eco
 
           if ( $check_if_soc_after_dark_happened )
           {
-            // Yes it all looks good, the timestamp is less than 12h old
+            // Yes it all looks good, the timestamp is less than 12h old compared with soc after dark capture timestamp
             return true;
           }
           else
@@ -1270,7 +1277,7 @@ class class_transindus_eco
 
           set_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark, 4*60*60 );
           set_transient( $wp_user_name . '_' . 'shelly_energy_counter_after_dark',  $shelly_energy_counter_after_dark, 4*60*60 );
-          set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now, 12 * 60 * 60 );
+          set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now, 4 * 60 * 60 );
 
 
           update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_energy_counter_after_dark);
@@ -1392,7 +1399,7 @@ class class_transindus_eco
     public function get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly)
     {
         { // Define boolean control variables for various time intervals
-          $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59" ) || $this->nowIsWithinTimeLimits( "00:00", "07:00" );
+          $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "07:00" );
 
           // Boolean values for checking is present time is within defined time intervals
           $now_is_daytime       = $this->nowIsWithinTimeLimits("08:30", "16:30"); // changed from 17:30  on 7/28/22

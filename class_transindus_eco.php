@@ -1178,10 +1178,12 @@ class class_transindus_eco
       // first check if SOC capture after dark has happened
       if (false === ($timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) )
       {
+        // if transient DOES NOT exist then read in value from user meta
         $timestamp_soc_capture_after_dark = get_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', true);
       }
       else
       {
+        // transient exists so get it from memory
         $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' );
       }
 
@@ -1206,10 +1208,12 @@ class class_transindus_eco
       $hours = $diff->h;
       $hours = $hours + ($diff->days*24);
 
-      if ( $hours < 12 )
+      if ( $hours < 5 )
       {
+        // SOC capture took place within the last 5 hours so VALID
         return true;
       }
+      // SOC capture took place more than 5h ago so SOC Capture DID NOT take place yet
       return false;
     }
 
@@ -1229,7 +1233,7 @@ class class_transindus_eco
 
       // check if it is after dark and before midnightdawn annd that the transient has not been set yet
       // The time window is large just in case Studer API fails repeatedly during this time.
-      if (  $this->nowIsWithinTimeLimits("19:00", "23:00")  ) 
+      if (  $this->nowIsWithinTimeLimits("18:55", "23:00")  ) 
       {
         // so it is dark. Has this capture already happened today? let's check
         // lets get the transient
@@ -1467,7 +1471,8 @@ class class_transindus_eco
           $shelly_api_device_status_ON      = $shelly_switch_acin_details_obj['shelly_api_device_status_ON'];
         }
         
-        if ( $it_is_still_dark ):
+        if ( $it_is_still_dark )
+        {
           //---------------- Studer Midnight Rollover and SOC from Shelly readings after dark ------------------------------
           // gets the timestamp from transient / user meta to check if time interval from now to timestamp is < 12h
           $soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
@@ -1546,7 +1551,12 @@ class class_transindus_eco
             // Therefore the flow below will happen and SOC after dark capture will now take place
             // This else was not needed but is used for clarity in documentation
           }
-        endif;
+        }
+        else
+        {
+          // iit is not dark now so delete the transient so force capture of SOC dusk reference later on
+          delete_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' );
+        }
 
         if ( ! $flag_soc_updated_using_shelly_energy_readings ):
           // Make a Studer API call only if 12 cron cycles has completed AND Shelly has NOT been used for SOC update

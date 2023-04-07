@@ -587,7 +587,7 @@ class class_transindus_eco
       //  default value of  ACIN switch due to soc at 6am prediction
       $turn_on_acin_switch_soc6am_low = false;
 
-      // set the flag to see if OSC discharge rate needs to be calculated. This is between 10PM and 5AM
+      // set the flag to see if OSC discharge rate needs to be calculated. This is between 8PM and 5AM
       $check_for_soc_rate_bool = $this->nowIsWithinTimeLimits( "20:00", "midnight tomorrow" ) || $this->nowIsWithinTimeLimits( "midnight today", "05:00" );
 
       // read in the config array from the class property
@@ -633,10 +633,10 @@ class class_transindus_eco
       $current_power_to_home_kw   = $current_power_to_home_wh * 0.001;
 
       // Check if energy counter has reset due to OTA update or power reset. The counter monoticity will break
-      // we add 1 to previous values just in case the numbers are close together and trigger condition falsely
+      // we add compare integers here not floats, see above for int conversion
       if ( ( $current_energy_counter_wh ) < ( $shelly_energy_counter_after_dark  ) ) // SOC after dark happened before roll over
       {
-        // Yes the counter has reset. This flow does NOT happen often. The default value is false set at the beginning
+        // Yes the counter has reset. This flow does NOT happen often. The Flag default value is false
         $shelly_energy_counter_has_reset =  true;
       }
 
@@ -661,6 +661,8 @@ class class_transindus_eco
         $this->verbose ? error_log( "SOC at dusk: " . $soc_update_from_studer_after_dark . 
                                     "%,  SOC NOW using Shelly: " . 
                                     $soc_percentage_now_computed_using_shelly . " %") : false;
+
+        // SOc usermeta is updated in calling routine and counter is updated commonly below
       }
       elseif ( $shelly_energy_counter_has_reset && ! $ACIN_switch_ON )  // 1 0 state
       {
@@ -1169,13 +1171,18 @@ class class_transindus_eco
      *  @param int:$wp_user_ID
      *  @return bool:true if timestamp is witin last 12h of present server time
      *  Check if SOC capture after dark took place based on timestamp
+     *  SOC capture can happen anytime between 7-11 PM. It is checked for till almost 7AM.
+     *  SO it needs to be valid from potentially 7PM to 7Am or almost 12h.
+     *  However, SOC reference can get reset upto 7AM. So it maybe valid upto 7PM the next day.
+     *  For above reason it is important to delete the transient after 7AM to force a SOC reference again the following 7PM.
+     *  This is done in the cron loop itself.
      *  No other check is made in the function
      */
     public function check_if_soc_after_dark_happened( int $user_index, string $wp_user_name, int $wp_user_ID ) :bool
     {
       date_default_timezone_set("Asia/Kolkata");
 
-      // first check if SOC capture after dark has happened
+      // Get the transient if it exists
       if (false === ($timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) )
       {
         // if transient DOES NOT exist then read in value from user meta
@@ -1183,7 +1190,7 @@ class class_transindus_eco
       }
       else
       {
-        // transient exists so get it from memory
+        // transient exists so get it
         $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' );
       }
 
@@ -1196,7 +1203,7 @@ class class_transindus_eco
       }
 
       // we have a non-emtpy timestamp. To check if it is valid.
-      // It is valid if the timestamp is after 6:55 PM and is within the last 12h
+      // It is valid if the timestamp is after 6:55 PM and is within the last 5h
       $now = new DateTime();
 
       $datetimeobj_from_timestamp = new DateTime();
@@ -1208,9 +1215,8 @@ class class_transindus_eco
       $hours = $diff->h;
       $hours = $hours + ($diff->days*24);
 
-      if ( $hours < 5 )
+      if ( $hours < 12 )
       {
-        // SOC capture took place within the last 5 hours so VALID
         return true;
       }
       // SOC capture took place more than 5h ago so SOC Capture DID NOT take place yet
@@ -1233,16 +1239,16 @@ class class_transindus_eco
 
       // check if it is after dark and before midnightdawn annd that the transient has not been set yet
       // The time window is large just in case Studer API fails repeatedly during this time.
-      if (  $this->nowIsWithinTimeLimits("18:55", "23:00")  ) 
+      if (  $this->nowIsWithinTimeLimits("18:55", "23:05")  ) 
       {
         // so it is dark. Has this capture already happened today? let's check
-        // lets get the transient
+        // lets get the transient. The 1st time this is tried in the evening it should be false, 2nd time onwards true
         if ( false === ( $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) 
                                                                 ||
                        empty(get_user_meta($wp_user_ID, 'timestamp_soc_capture_after_dark', true))
             )
         {
-          // transient has expired or doesn't exist, so Capture has NOT happend yet.
+          // transient has expired or doesn't exist, so SOC dark reference Capture has NOT happend yet.
           // Now read the Shelly Pro 4 PM energy meter for energy counter and imestamp
           $timestamp_soc_capture_after_dark = $this->get_shelly_device_status_homepwr( $user_index )->minute_ts;
           $shelly_energy_counter_after_dark = $this->get_shelly_device_status_homepwr( $user_index )->energy_total_to_home_ts;
@@ -1403,7 +1409,7 @@ class class_transindus_eco
     public function get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly)
     {
         { // Define boolean control variables for various time intervals
-          $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "07:00" );
+          $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
 
           // Boolean values for checking is present time is within defined time intervals
           $now_is_daytime       = $this->nowIsWithinTimeLimits("08:30", "16:30"); // changed from 17:30  on 7/28/22
@@ -1554,8 +1560,11 @@ class class_transindus_eco
         }
         else
         {
-          // iit is not dark now so delete the transient so force capture of SOC dusk reference later on
+          // it is not dark now so delete the transient to force capture of SOC dusk reference for next dark
           delete_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' );
+
+          // make the timestamp Jan 1 20000 so that elapsed time is >>>>>>>12h so will fail our test
+          update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', 946665000);
         }
 
         if ( ! $flag_soc_updated_using_shelly_energy_readings ):
@@ -1677,7 +1686,7 @@ class class_transindus_eco
           $studer_readings_obj->switch_override     = $switch_override;
           $studer_readings_obj->flag_soc_updated_using_shelly_energy_readings = false;
 
-          // capture soc after dark using shelly 4 pm. Only happens ONCE between 7-11 pm. 
+          // capture soc after dark using shelly 4 pm. Only happens ONCE between 18:55 and 23:00 hrs
           $this->capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index );
         endif;
         

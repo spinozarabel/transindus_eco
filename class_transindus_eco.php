@@ -746,10 +746,6 @@ class class_transindus_eco
         // how many elapsed minutes from Past reference timestamp given to now. Positive minutes if timestamp is in past
         $delta_minutes_from_reference_time = abs( $this->minutes_from_reference_to_now( $timestamp_soc_capture_after_dark ) );
 
-        
-
-        
-
         $soc_predicted_at_6am = $soc_percentage_now_computed_using_shelly - $est_soc_percentage_discharged_till_6am;
 
         if ( $soc_predicted_at_6am <= 40 )
@@ -812,9 +808,9 @@ class class_transindus_eco
       // push the new voltage reading to the holding array
       array_push( $load_kw_avg_arr, $new_load_kw_reading );
 
-      // If the array has more than 3 elements then drop the earliest one
-      // We are averaging for only 3 minutes
-      if ( sizeof($load_kw_avg_arr) > 10 )  
+      // If the array has more than 30 elements then drop the earliest one
+      // We are averaging for only 30 minutes
+      if ( sizeof($load_kw_avg_arr) > 30 )  
       {   // drop the earliest reading
           array_shift($load_kw_avg_arr);
       }
@@ -831,8 +827,8 @@ class class_transindus_eco
          if ( $value > 0.010 )  // greater than 10W
          {
             // average all values that are meaningful
-            $sum    +=  $value;
-            $count  +=  1;
+            $sum    +=  $value;   // accumulate
+            $count  +=  1;        // increase count by 1
          }
       }
       unset($value);

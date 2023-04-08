@@ -564,7 +564,7 @@ class class_transindus_eco
      *  @param int:$user_index of user in the config array
      *  @param int:$wp_user_ID of above user
      *  @param string:$wp_user_name of above user
-     *  @param mixed:$ACIN_switch_ON is mostly boolean true or false but can also be null if grid is OFF
+     *  @param string:$shelly_switch_status is 'ON' 'OFF' or 'OFFLINE'
      *  @param object:$return_obj has as properties, values from API call on Shelly 4PM and calculations thereof
      * 
      *  1. Calculate SOC making an API call for Shelly energy readings -  usermeta for soc_percentage_now not updated here
@@ -576,7 +576,7 @@ class class_transindus_eco
     public function compute_soc_from_shelly_energy_readings(  int     $user_index, 
                                                               int     $wp_user_ID, 
                                                               string  $wp_user_name,
-                                                                      $ACIN_switch_ON ) : ? object
+                                                              string  $shelly_switch_status ) : ? object
     {
       // set default timezone to Asia Kolkata
       date_default_timezone_set("Asia/Kolkata");
@@ -588,13 +588,13 @@ class class_transindus_eco
       $turn_on_acin_switch_soc6am_low = false;
 
       // set the flag to see if OSC discharge rate needs to be calculated. This is between 8PM and 5AM
-      $check_for_soc_rate_bool = $this->nowIsWithinTimeLimits( "20:00", "midnight tomorrow" ) || $this->nowIsWithinTimeLimits( "midnight today", "05:00" );
+      $check_for_soc_rate_bool = $this->nowIsWithinTimeLimits( "22:00", "midnight tomorrow" ) || $this->nowIsWithinTimeLimits( "midnight today", "05:00" );
 
       // read in the config array from the class property
       $config = $this->config;
 
       // The main foreach loop should have triggered a refresh so just read the user meta array from class property
-      $all_usermeta = $this->all_usermeta ?? $this->get_all_usermeta( $wp_user_ID );
+      $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
 
       // get the installed battery capacity in KWH from config
       $SOC_capacity_KWH                   = $config['accounts'][$user_index]['battery_capacity'];
@@ -603,15 +603,15 @@ class class_transindus_eco
       // This reference gets reset each time there is a Shelly 4PM reset and or if ACIN switch is ON
       $soc_update_from_studer_after_dark  = $all_usermeta[ 'soc_update_from_studer_after_dark' ];
 
-      // This is the Shelly energy counter at the moment of SOC capture just after dark or when reference reset
-      $tmp_shelly_energy_counter_after_dark   = $all_usermeta[ 'shelly_energy_counter_after_dark' ];
-      $shelly_energy_counter_after_dark       = (int) round( $tmp_shelly_energy_counter_after_dark, 0 );
-
       // This is the tiestamp at the moent of SOC capture just after dark or when reference is reset
       $timestamp_soc_capture_after_dark   = $all_usermeta[ 'timestamp_soc_capture_after_dark' ];
 
-      // Keep the SOC from previous update handy just in case
+      // Keep the SOC from previous update handy for when the SOC does not change due to ACIN swith ON status
       $SOC_percentage_previous            = $all_usermeta[ 'soc_percentage_now' ];
+
+      // This is the Shelly energy counter at the moment of SOC capture just after dark or when reference reset
+      $tmp_shelly_energy_counter_after_dark   = $all_usermeta[ 'shelly_energy_counter_after_dark' ];
+      $shelly_energy_counter_after_dark       = (int) round( $tmp_shelly_energy_counter_after_dark, 0 );
 
       // get the previous cycle energy counter value. 1st time when not set yet set to current value
       $previous_energy_counter_wh_tmp = $all_usermeta[ 'shelly_energy_counter_now' ] ?? $current_energy_counter_wh;
@@ -645,7 +645,7 @@ class class_transindus_eco
       //                           but we still want to reset the after dark reference values continuously
       //                           till the switch is OFF again and when the SOC discharge happens and needs updating
       
-      if ( ! $shelly_energy_counter_has_reset && ! $ACIN_switch_ON )      // 0 0 state Most common flow
+      if ( ! $shelly_energy_counter_has_reset && ! ($shelly_switch_status === 'ON' ) )      // 0 0 state Most common flow
       { // Update SOC usng counters. DO NOT reset SOC after dark values, they are still valid
         $energy_consumed_since_after_dark_update_kwh = ( $current_energy_counter_wh - $shelly_energy_counter_after_dark ) * 0.001;
 
@@ -664,7 +664,7 @@ class class_transindus_eco
 
         // SOc usermeta is updated in calling routine and counter is updated commonly below
       }
-      elseif ( $shelly_energy_counter_has_reset && ! $ACIN_switch_ON )  // 1 0 state
+      elseif ( $shelly_energy_counter_has_reset && ! ($shelly_switch_status === 'ON' ) )  // 1 0 state
       {
         // Compute updated SOC using modified counter and reset SOC after dark to current readings
         // Since the energy counter reset we need to add this to our previous energy counter value for correct curremt value
@@ -702,7 +702,7 @@ class class_transindus_eco
         $this->verbose ? error_log("Shelly SOC after dark - value before reset: "            . $soc_update_from_studer_after_dark )        : false;
         
       }
-      elseif ( $ACIN_switch_ON )    // 0 1 or 1 1 states are same
+      elseif ( $shelly_switch_status === 'ON' )    // 0 1 or 1 1 states are same
       {
         // ACIN switch is ON so keep SOC same as previous cycle but reset SOC after dark values to current readings
         $energy_consumed_since_after_dark_update_kwh = ( $current_energy_counter_wh - $shelly_energy_counter_after_dark ) * 0.001;
@@ -718,8 +718,13 @@ class class_transindus_eco
         update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $current_energy_counter_wh );
         update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $current_timestamp );
 
+        // reset reference SOC to SOC now 
+        update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_computed_using_shelly );
+
         // No SOC after dark reference update since unchanged
       }
+
+      // end of IF ELSEIF ELSE tree
 
       // finally we also update the current energy counter This is common to all cases
       update_user_meta( $wp_user_ID, 'shelly_energy_counter_now', $current_energy_counter_wh );
@@ -1485,7 +1490,7 @@ class class_transindus_eco
             $soc_from_shelly_energy_readings = $this->compute_soc_from_shelly_energy_readings(  $user_index, 
                                                                                                 $wp_user_ID, 
                                                                                                 $wp_user_name,
-                                                                                                $shelly_api_device_status_ON );
+                                                                                                $shelly_switch_status );
 
             if ( empty( $soc_from_shelly_energy_readings ) )
             {

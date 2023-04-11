@@ -158,7 +158,7 @@ class class_transindus_eco
       date_default_timezone_set("Asia/Kolkata");;
 
       // set the logging
-      $this->verbose = true;
+      $this->verbose = false;
 
       // lat and lon at Trans Indus from Google Maps
       $this->lat        = 12.83463;

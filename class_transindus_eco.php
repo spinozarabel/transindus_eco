@@ -568,10 +568,12 @@ class class_transindus_eco
      *  @param object:$return_obj has as properties, values from API call on Shelly 4PM and calculations thereof
      * 
      *  1. Calculate SOC making an API call for Shelly energy readings -  usermeta for soc_percentage_now not updated here
-     *  2. the update must happens if SOC after dark baselining has happened and it is still dark now
-     *  3 This routine is typically called when it is still dark and Solar is not present. Off grid operation is assumed
-     *  4. The check to see if it is dark and if SOC capture after dark etc., should be done before comin here
+     *  2. the update happens if SOC after dark baselining has happened and it is still dark now
+     *  3. The check to see if it is dark and if SOC capture after dark etc., should be done before comin here
+     *  4 This routine is typically called when it is still dark and Solar is not present
+     *  4. If GRID is ON then SOC is kept constant but SOC after dark reference is reset to current values
      *  5. Shelly 4PM energy counter reset is checked for and baseline values (after dark values) updated just after any reset.
+     *  6. SOC@6AM is estimated using averaged load values. If value is less than 40% a flag is set. No action is taken here on this
      */
     public function compute_soc_from_shelly_energy_readings(  int     $user_index, 
                                                               int     $wp_user_ID, 
@@ -688,18 +690,18 @@ class class_transindus_eco
           // reset reference SOC to updated value calculated using modified counter due to reset
           update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_computed_using_shelly );
 
-          $this->verbose ? error_log("Shelly SOC after dark value has been reset to Curr: "    . $soc_percentage_now_computed_using_shelly ) : false;
+          error_log("Shelly SOC after dark value has been reset to Curr: "    . $soc_percentage_now_computed_using_shelly );
         }
         else 
         {
-          $this->verbose ? error_log("Shelly SOC after dark value has NOT been reset due to bad SOC: " . $soc_percentage_now_computed_using_shelly ) : false;
+          error_log("Shelly SOC after dark value has NOT been reset due to bad SOC: " . $soc_percentage_now_computed_using_shelly );
         }
 
-        $this->verbose ? error_log("Shelly Energy Counter has reset ")               : false;
-        $this->verbose ? error_log("Shelly Energy Counter after dark - value before reset: " . $previous_energy_counter_wh ) : false;
-        $this->verbose ? error_log("Shelly Energy Counter after dark - value is reset to: "  . $current_energy_counter_wh )  : false;
-        $this->verbose ? error_log("Shelly timestamp after dark has been reset to NOW: "     . $current_timestamp )          : false;
-        $this->verbose ? error_log("Shelly SOC after dark - value before reset: "            . $soc_update_from_studer_after_dark )        : false;
+        error_log("Shelly Energy Counter has reset ");
+        error_log("Shelly Energy Counter after dark - value before reset: " . $previous_energy_counter_wh );
+        error_log("Shelly Energy Counter after dark - value is reset to: "  . $current_energy_counter_wh );
+        error_log("Shelly timestamp after dark has been reset to NOW: "     . $current_timestamp );
+        error_log("Shelly SOC after dark - value before reset: "            . $soc_update_from_studer_after_dark );
         
       }
       elseif ( $shelly_switch_status === 'ON' )    // 0 1 or 1 1 states are same
@@ -1418,7 +1420,7 @@ class class_transindus_eco
 
           // False implies that Studer readings are to be used for SOC update, true indicates Shelly based processing
           // set default at the beginning to Studer updates of SOC
-          $flag_soc_updated_using_shelly_energy_readings = false;
+          $soc_updated_using_shelly_energy_readings_bool = false;
         }
 
         // get the estimated solar power from calculations for a clear day
@@ -1493,17 +1495,18 @@ class class_transindus_eco
                                                                                                 $shelly_switch_status );
 
             if ( empty( $soc_from_shelly_energy_readings ) )
-            {
+            { // log and return null
               error_log($wp_user_name . ": " . "Shelly PRO 4PM energy meter API call failed. No SOC update nor Grid Switch Control");
               return null;
             }
 
+            // extract the updated SOC from the returned object from SHelly Readings
             $SOC_percentage_now = $soc_from_shelly_energy_readings->SOC_percentage_now; // rounded already to 1d
 
             if ( $SOC_percentage_now )
             {
               // we can use the shelly soc updates since it is dark and SOC after dark reference has been captured
-              $flag_soc_updated_using_shelly_energy_readings = true;
+              $soc_updated_using_shelly_energy_readings_bool = true;
 
               // Update user meta so this becomes the previous value for next cycle
               update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
@@ -1522,9 +1525,12 @@ class class_transindus_eco
                 $soc_from_shelly_energy_readings->shelly_api_device_status_voltage  = $shelly_api_device_status_voltage;
                 $soc_from_shelly_energy_readings->shelly_api_device_status_ON       = $shelly_api_device_status_ON;
                 $soc_from_shelly_energy_readings->LVDS                              = $LVDS;
-                $soc_from_shelly_energy_readings->flag_soc_updated_using_shelly_energy_readings = true;
+                $soc_from_shelly_energy_readings->soc_updated_using_shelly_energy_readings_bool = true;
 
                 $soc_from_shelly_energy_readings->psolar                            = 0;
+
+                // Psurplus is the -ve of Home Load since Solar is absent when dark
+                $soc_from_shelly_energy_readings->surplus                           = -1.0 * $soc_from_shelly_energy_readings->pout_inverter_ac_kw;
 
 
                 // the below flag is not relevant so we don't this to get triggered in the conditions checking
@@ -1559,19 +1565,19 @@ class class_transindus_eco
             // This else was not needed but is used for clarity in documentation
           }
         }
-        else
+        else  // it is not dark now so delete the transient to force capture of SOC dusk reference for next dark
         {
-          // it is not dark now so delete the transient to force capture of SOC dusk reference for next dark
           delete_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' );
 
           // make the timestamp Jan 1 20000 so that elapsed time is >>>>>>>12h so will fail our test
           update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', 946665000);
         }
 
-        if ( ! $flag_soc_updated_using_shelly_energy_readings ):
-          // Make a Studer API call only if 12 cron cycles has completed AND Shelly has NOT been used for SOC update
+        if ( ! $soc_updated_using_shelly_energy_readings_bool ):
+          // Make a Studer API call since it is not dark now and Shelly readings does not contain solar and battery data
           $studer_readings_obj  = $this->get_studer_min_readings($user_index);
 
+          // defined the condition for failure of the Studer API call
           $studer_api_call_failed =   ( empty(  $studer_readings_obj )                          ||
                                         empty(  $studer_readings_obj->battery_voltage_vdc )     ||
                                         $studer_readings_obj->battery_voltage_vdc < 40          ||
@@ -1585,11 +1591,9 @@ class class_transindus_eco
             return null;
           }
 
-          {   // Studer SOC update calculations along with Battery Voltage Update
+          { // Studer SOC update calculations along with Battery Voltage Update
             // average the battery voltage over last 3 readings
             $battery_voltage_avg  = $this->get_battery_voltage_avg( $wp_user_name, $studer_readings_obj->battery_voltage_vdc );
-  
-            
   
             // Solar power Now
             $psolar               = $studer_readings_obj->psolar_kw;
@@ -1685,7 +1689,7 @@ class class_transindus_eco
           $studer_readings_obj->SOC_percentage_now  = $SOC_percentage_now;
           $studer_readings_obj->LVDS                = $LVDS;
           $studer_readings_obj->switch_override     = $switch_override;
-          $studer_readings_obj->flag_soc_updated_using_shelly_energy_readings = false;
+          $studer_readings_obj->soc_updated_using_shelly_energy_readings_bool = false;
 
           // capture soc after dark using shelly 4 pm. Only happens ONCE between 18:55 and 23:00 hrs
           $this->capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index );
@@ -1740,7 +1744,7 @@ class class_transindus_eco
                                         ( $control_shelly == true );                        // Control Flag is False
         }
 
-        if ( ! $flag_soc_updated_using_shelly_energy_readings )
+        if ( ! $soc_updated_using_shelly_energy_readings_bool )
         {   // write back new values to the readings object
           $studer_readings_obj->battery_voltage_avg               = $battery_voltage_avg;
           $studer_readings_obj->now_is_daytime                    = $now_is_daytime;
@@ -1776,7 +1780,7 @@ class class_transindus_eco
             // so ignore attempting any control and skip this user
             case (  $switch_override ):
                   // ignore this state
-                  error_log("MCB Switch Override - NO ACTION)");
+                  $this->verbose ? error_log("MCB Switch Override - NO ACTION)") : false;
                   $cron_exit_condition = "Manual Switch Override";
             break;
 
@@ -1843,7 +1847,7 @@ class class_transindus_eco
 
             default:
                 
-                error_log("Exited via Case Default, NO ACTION TAKEN");
+                $this->verbose ? error_log("Exited via Case Default, NO ACTION TAKEN") : false;
                 $cron_exit_condition = "No Action";
             break;
 
@@ -1855,8 +1859,8 @@ class class_transindus_eco
                             'cron_exit_condition' => $cron_exit_condition ,
                           ];
 
-        // save the data in a transient indexed by the user name. Expiration is 5 minutes
-        if ( ! $flag_soc_updated_using_shelly_energy_readings )
+        // save the data in a transient indexed by the user name. Expiration is 5 minutes. Object depends on whether shelly or Studer
+        if ( ! $soc_updated_using_shelly_energy_readings_bool )
         {
           set_transient( $wp_user_name . '_' . 'studer_readings_object', $studer_readings_obj, 5*60 );
         }
@@ -1865,13 +1869,14 @@ class class_transindus_eco
           set_transient( $wp_user_name . '_' . 'soc_from_shelly_energy_readings', $soc_from_shelly_energy_readings, 5*60 );
         }
 
-        // Update the user meta with the CRON exit condition only fir definite ACtion not for no action
+        // Update the user meta with the CRON exit condition only for definite ACtion not for No Action
         if ($cron_exit_condition !== "No Action") 
           {
               update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ));
           }
         
-        if ( ! $flag_soc_updated_using_shelly_energy_readings )
+        // return object based on mode of update whetehr Studer or Shelly. If Studer, also apply 100% clamp
+        if ( ! $soc_updated_using_shelly_energy_readings_bool )
         {
           if (  $SOC_percentage_now > 100.0 || $battery_voltage_avg  >=  $battery_voltage_avg_float_setting )
           {

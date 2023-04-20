@@ -1859,7 +1859,7 @@ class class_transindus_eco
               $this->turn_on_off_shelly_switch($user_index, "on");
 
               error_log("Exited via Case 7 - Predicted SOC at 6AM below set limit - Grid Switched ON");
-              $cron_exit_condition = "LVDS SOC AT 6AM LOW, GRID Switched ON";
+              $cron_exit_condition = "SOC 6AM LOW-GRID ON";
 
             break;
 
@@ -1869,7 +1869,7 @@ class class_transindus_eco
               $this->turn_on_off_shelly_switch($user_index, "off");
 
               error_log("Exited via Case 8 - Predicted SOC at 6AM above set limit - Grid Switched OFF");
-              $cron_exit_condition = "LVDS SOC AT 6AM OK, GRID Switched OFF";
+              $cron_exit_condition = "SOC 6AM OK-GRID OFF";
 
             break;
 

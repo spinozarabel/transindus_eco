@@ -767,8 +767,6 @@ class class_transindus_eco
         $return_obj->minutes_now_to_6am                = $minutes_now_to_6am;
         $return_obj->load_kw_avg                       = $load_kw_avg;
 
-        $return_obj->check_for_soc_rate_bool           = $check_for_soc_rate_bool;
-
         $return_obj->delta_minutes_from_reference_time = $delta_minutes_from_reference_time;
 
         $this->verbose ? error_log( "SOC predicted for 0600: "  . $soc_predicted_at_6am . " %"): false;
@@ -778,6 +776,8 @@ class class_transindus_eco
         // $this->verbose ? error_log( "Flag to turn-ON ACIN due to low Predicted SOC at 6AM: " . $turn_on_acin_switch_soc6am_low ): false;
       }
 
+      $return_obj->check_for_soc_rate_bool           = $check_for_soc_rate_bool;
+      
       $return_obj->SOC_percentage_previous           = $SOC_percentage_previous;
       $return_obj->SOC_percentage_now                = $soc_percentage_now_computed_using_shelly;
 
@@ -822,7 +822,7 @@ class class_transindus_eco
 
       // If the array has more than 30 elements then drop the earliest one
       // We are averaging for only 30 minutes
-      if ( sizeof($load_kw_avg_arr) > 30 )  
+      if ( sizeof($load_kw_avg_arr) > 10 )  
       {   // drop the earliest reading
           array_shift($load_kw_avg_arr);
       }

@@ -4334,7 +4334,7 @@ class class_transindus_eco
         // get the interval object
         $interval_since_last_change = $now->diff($past);
         // format the interval for display
-        $formatted_interval = $this->format_interval_in_minutes($interval_since_last_change);
+        $formatted_interval = $this->format_interval($interval_since_last_change);
 
         /*
         $format_object->cron_exit_condition = '<span style="font-size: 18px;color: Blue; display:block; text-align: center;">' . 
@@ -4349,7 +4349,7 @@ class class_transindus_eco
                                                       '<strong>' . $SOC_percentage_now . ' %' . '</strong><br>' .
                                                   '</span>';
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' .
-                                                    $formatted_interval   . 'm ' . $saved_cron_exit_condition  .
+                                                    $formatted_interval   . ' ' . $saved_cron_exit_condition  .
                                               '</span>';
         return $format_object;
     }

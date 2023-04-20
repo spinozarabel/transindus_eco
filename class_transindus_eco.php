@@ -753,14 +753,16 @@ class class_transindus_eco
         // how many elapsed minutes from Past reference timestamp given to now. Positive minutes if timestamp is in past
         $delta_minutes_from_reference_time = abs( $this->minutes_from_reference_to_now( $timestamp_soc_capture_after_dark ) );
 
-        $soc_predicted_at_6am = $soc_percentage_now_computed_using_shelly - $est_soc_percentage_discharged_till_6am;
+        $soc_predicted_at_6am_raw = $soc_percentage_now_computed_using_shelly - $est_soc_percentage_discharged_till_6am;
 
+        $soc_predicted_at_6am = round( $soc_predicted_at_6am_raw , 1 );
+/*
         if ( $soc_predicted_at_6am <= 40 )
         {
           $turn_on_acin_switch_soc6am_low = true;
         }
-
-        $return_obj->turn_on_acin_switch_soc6am_low    = $turn_on_acin_switch_soc6am_low;
+*/
+//      $return_obj->turn_on_acin_switch_soc6am_low    = $turn_on_acin_switch_soc6am_low;
         $return_obj->soc_predicted_at_6am              = $soc_predicted_at_6am;
         $return_obj->minutes_now_to_6am                = $minutes_now_to_6am;
         $return_obj->load_kw_avg                       = $load_kw_avg;
@@ -770,7 +772,7 @@ class class_transindus_eco
         $this->verbose ? error_log( "Minutes NOW to 0600: "     . $minutes_now_to_6am . " mins"): false;
         $this->verbose ? error_log( "delta_minutes_from_reference_time: "     . $delta_minutes_from_reference_time . " mins"): false;
         $this->verbose ? error_log( "load_kw_avg: "     . $load_kw_avg . " KW"): false;
-        $this->verbose ? error_log( "Flag to turn-ON ACIN due to low Predicted SOC at 6AM: " . $turn_on_acin_switch_soc6am_low ): false;
+        // $this->verbose ? error_log( "Flag to turn-ON ACIN due to low Predicted SOC at 6AM: " . $turn_on_acin_switch_soc6am_low ): false;
       }
 
       $return_obj->SOC_percentage_previous           = $SOC_percentage_previous;
@@ -1515,8 +1517,33 @@ class class_transindus_eco
 
               // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage     
               $LVDS =             ( $SOC_percentage_now   <= $soc_percentage_lvds_setting )   // SOC is at or below threshold
-                            &&
+                                  &&
                                   ( $shelly_switch_status == "OFF" );					                // The Grid switch is OFF
+
+              // extract the soc predicted at 6am from the returned object
+              $soc_predicted_at_6am = $soc_from_shelly_energy_readings->soc_predicted_at_6am; // rounded already to 1d
+
+              // Calculate boolean flag to determine if GRID is to be ON depending on SOC predicted at 6AM
+              $LVDS_soc_6am_grid_on = ( $soc_predicted_at_6am   <= ( $soc_percentage_lvds_setting + 5.0 ) )   // predicted SOC at 6AM is below limit
+                                    &&
+                                      ( $shelly_switch_status == "OFF" )					                // The Grid switch is OFF
+                                    &&
+                                      ( $this->nowIsWithinTimeLimits( "22:00", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "05:30" ) )
+                                    &&
+                                      ( $control_shelly == true )
+                                    &&
+                                      ( ! $keep_shelly_switch_closed_always );
+
+              // Calculate boolean flag to determine if GRID is to be OFF depending on SOC predicted at 6AM
+              $LVDS_soc_6am_grid_off = ( $soc_predicted_at_6am  >  ( $soc_percentage_lvds_setting + 7.0 ) )   // 2 points for hysterysis prevent switch chatter
+                                    &&
+                                      ( $shelly_switch_status == "ON" )					                // The Grid switch is OFF
+                                    &&
+                                      ( $this->nowIsWithinTimeLimits( "22:00", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "05:30" ) )
+                                    &&
+                                      ( $control_shelly == true )
+                                    &&
+                                      ( ! $keep_shelly_switch_closed_always );
 
               { // prepare object for Transient
                 $soc_from_shelly_energy_readings->valid_shelly_config               = $valid_shelly_config;
@@ -1525,6 +1552,11 @@ class class_transindus_eco
                 $soc_from_shelly_energy_readings->shelly_api_device_status_voltage  = $shelly_api_device_status_voltage;
                 $soc_from_shelly_energy_readings->shelly_api_device_status_ON       = $shelly_api_device_status_ON;
                 $soc_from_shelly_energy_readings->LVDS                              = $LVDS;
+                $soc_from_shelly_energy_readings->LVDS_soc_6am_grid_on              = $LVDS_soc_6am_grid_on;
+                $soc_from_shelly_energy_readings->LVDS_soc_6am_grid_off             = $LVDS_soc_6am_grid_off;
+
+                $soc_from_shelly_energy_readings->soc_predicted_at_6am              = $soc_predicted_at_6am;
+
                 $soc_from_shelly_energy_readings->soc_updated_using_shelly_energy_readings_bool = true;
 
                 $soc_from_shelly_energy_readings->psolar                            = 0;
@@ -1674,7 +1706,7 @@ class class_transindus_eco
             }
           }
           {
-            // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage     
+            // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - or  battery voltage    
             $LVDS =             ( $battery_voltage_avg  <= $battery_voltage_avg_lvds_setting || 
                                   $SOC_percentage_now   <= $soc_percentage_lvds_setting           )  
                                   &&
@@ -1682,6 +1714,12 @@ class class_transindus_eco
 
             $switch_override =  ( $shelly_switch_status                == "OFF" )  &&
                                 ( $studer_readings_obj->grid_input_vac >= 190   );
+
+            // set the switch conditions to false since we are relying on the Studer readings, usually at daytime only.
+            // we don;t want these flags to cause any activity when Stder readings are relied upon
+            // These should be valid only for the case when the Shelly readings are used for update
+            $LVDS_soc_6am_grid_on   = false;
+            $LVDS_soc_6am_grid_off  = false;
 
           }
 
@@ -1813,6 +1851,26 @@ class class_transindus_eco
 
                 error_log("Exited via Case 4 - reduce daytime battery cycling - Grid Switched ON");
                 $cron_exit_condition = "RDBC-Grid ON";
+            break;
+
+            // <7> predicted SOC at 6AM below LVDS SOC limit + margin so turn GRID Switch ON
+            case ( $LVDS_soc_6am_grid_on ):
+
+              $this->turn_on_off_shelly_switch($user_index, "on");
+
+              error_log("Exited via Case 7 - Predicted SOC at 6AM below set limit - Grid Switched ON");
+              $cron_exit_condition = "LVDS SOC AT 6AM LOW, GRID Switched ON";
+
+            break;
+
+            // <8> predicted SOC at 6AM above LVDS SOC limit + margin so turn GRID Switch OFF
+            case ( $LVDS_soc_6am_grid_off ):
+
+              $this->turn_on_off_shelly_switch($user_index, "off");
+
+              error_log("Exited via Case 8 - Predicted SOC at 6AM above set limit - Grid Switched OFF");
+              $cron_exit_condition = "LVDS SOC AT 6AM OK, GRID Switched OFF";
+
             break;
 
 

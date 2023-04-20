@@ -777,7 +777,7 @@ class class_transindus_eco
       }
 
       $return_obj->check_for_soc_rate_bool           = $check_for_soc_rate_bool;
-      
+
       $return_obj->SOC_percentage_previous           = $SOC_percentage_previous;
       $return_obj->SOC_percentage_now                = $soc_percentage_now_computed_using_shelly;
 
@@ -1565,7 +1565,8 @@ class class_transindus_eco
                 $soc_from_shelly_energy_readings->psolar                            = 0;
 
                 // Psurplus is the -ve of Home Load since Solar is absent when dark
-                $soc_from_shelly_energy_readings->surplus                           = -1.0 * $soc_from_shelly_energy_readings->pout_inverter_ac_kw;
+                $surplus = -1.0 * $soc_from_shelly_energy_readings->pout_inverter_ac_kw;
+                $soc_from_shelly_energy_readings->surplus  = $surplus;
 
 
                 // the below flag is not relevant so we don't this to get triggered in the conditions checking

@@ -3953,8 +3953,17 @@ class class_transindus_eco
         // error_log('from CRON Ajax Call: wp_user_ID:' . $wp_user_ID . ' user_index:'   . $user_index);
       }
 
-      // get the transient related to this user ID that stores the latest Readings
-      $studer_readings_obj = get_transient( $wp_user_name . '_studer_readings_object' );
+      // get the transient related to this user ID that stores the latest Readingss - check if from Studer or Shelly
+      $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
+
+      if ( $it_is_still_dark )
+      {
+        $studer_readings_obj = get_transient( $wp_user_name . '_' . 'soc_from_shelly_energy_readings' );
+      }
+      else
+      {
+        $studer_readings_obj = get_transient( $wp_user_name . '_' . 'studer_readings_object' );
+      }
 
       // error_log(print_r($studer_readings_obj, true));
 

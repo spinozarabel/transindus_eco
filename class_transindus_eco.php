@@ -590,7 +590,7 @@ class class_transindus_eco
       $turn_on_acin_switch_soc6am_low = false;
 
       // set the flag to see if OSC discharge rate needs to be calculated. This is between 8PM and 5AM
-      $check_for_soc_rate_bool = $this->nowIsWithinTimeLimits( "22:00", "midnight tomorrow" ) || $this->nowIsWithinTimeLimits( "midnight today", "05:00" );
+      $check_for_soc_rate_bool = $this->nowIsWithinTimeLimits( "21:00", "midnight tomorrow" ) || $this->nowIsWithinTimeLimits( "midnight today", "05:00" );
 
       // read in the config array from the class property
       $config = $this->config;
@@ -766,6 +766,9 @@ class class_transindus_eco
         $return_obj->soc_predicted_at_6am              = $soc_predicted_at_6am;
         $return_obj->minutes_now_to_6am                = $minutes_now_to_6am;
         $return_obj->load_kw_avg                       = $load_kw_avg;
+
+        $return_obj->check_for_soc_rate_bool           = $check_for_soc_rate_bool;
+
         $return_obj->delta_minutes_from_reference_time = $delta_minutes_from_reference_time;
 
         $this->verbose ? error_log( "SOC predicted for 0600: "  . $soc_predicted_at_6am . " %"): false;
@@ -1528,7 +1531,7 @@ class class_transindus_eco
                                     &&
                                       ( $shelly_switch_status == "OFF" )					                // The Grid switch is OFF
                                     &&
-                                      ( $this->nowIsWithinTimeLimits( "22:00", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "05:30" ) )
+                                      ( $soc_from_shelly_energy_readings->check_for_soc_rate_bool ) // Check only during time this is valid
                                     &&
                                       ( $control_shelly == true )
                                     &&
@@ -1539,7 +1542,7 @@ class class_transindus_eco
                                     &&
                                       ( $shelly_switch_status == "ON" )					                // The Grid switch is OFF
                                     &&
-                                      ( $this->nowIsWithinTimeLimits( "22:00", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "05:30" ) )
+                                    ( $soc_from_shelly_energy_readings->check_for_soc_rate_bool )
                                     &&
                                       ( $control_shelly == true )
                                     &&

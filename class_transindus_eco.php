@@ -583,6 +583,14 @@ class class_transindus_eco
       // set default timezone to Asia Kolkata
       date_default_timezone_set("Asia/Kolkata");
 
+      // instantiate the return object
+      $return_obj = new stdClass;
+
+      // Initialize return object properties to defaults
+      $return_obj->soc_predicted_at_6am   = 50.0; // prevent GRID switching ON as default
+      $return_obj->minutes_now_to_6am     = 0.0;
+      $return_obj->load_kw_avg            = 0.0;
+
       // The default value of boolean flag indicating if Shelly energy counter has reset due to Studer overload shutdown or OTA update
       $shelly_energy_counter_has_reset =  false;
 
@@ -732,8 +740,6 @@ class class_transindus_eco
       update_user_meta( $wp_user_ID, 'shelly_energy_counter_now', $current_energy_counter_wh );
       
       // no need to worry about SOC clamp to 100 since value will only decrease never increase, no solar
-
-      $return_obj = new stdClass;
 
       // do the check only between 10PM and 5AM
       if ( $check_for_soc_rate_bool )
@@ -1526,27 +1532,42 @@ class class_transindus_eco
               // extract the soc predicted at 6am from the returned object
               $soc_predicted_at_6am = $soc_from_shelly_energy_readings->soc_predicted_at_6am; // rounded already to 1d
 
+              if ( false !== ( $timer_since_last_6am_switch_event_running = get_transient( 'timer_since_last_6am_switch_event' ) ) )
+              {
+                // transient exists. So 1h has not elapsed  since last switch event so set flag to true
+                $timer_since_last_6am_switch_event_running = true;
+              }
+              else
+              {
+                // Transient has expired or was never created in the 1st place. So set flag to be false
+                $timer_since_last_6am_switch_event_running = false;
+              }
+
               // Calculate boolean flag to determine if GRID is to be ON depending on SOC predicted at 6AM
-              $LVDS_soc_6am_grid_on = ( $soc_predicted_at_6am   <= ( $soc_percentage_lvds_setting + 5.0 ) )   // predicted SOC at 6AM is below limit
+              $LVDS_soc_6am_grid_on = ( $soc_predicted_at_6am   <= ( $soc_percentage_lvds_setting + 0.01 ) ) // below desired limit
                                     &&
-                                      ( $shelly_switch_status == "OFF" )					                // The Grid switch is OFF
+                                      ( $shelly_switch_status == "OFF" ) // The Grid switch is not already ON
                                     &&
-                                      ( $soc_from_shelly_energy_readings->check_for_soc_rate_bool ) // Check only during time this is valid
+                                      ( $soc_from_shelly_energy_readings->check_for_soc_rate_bool ) // Check only during valid time
                                     &&
-                                      ( $control_shelly == true )
+                                      ( $control_shelly == true )                                 // control flag must be true
                                     &&
-                                      ( ! $keep_shelly_switch_closed_always );
+                                      ( ! $keep_shelly_switch_closed_always )                     // overridden by keep on always flag
+                                    &&
+                                      ( ! $timer_since_last_6am_switch_event_running ); // prevents switch chatter - only once per hour
 
               // Calculate boolean flag to determine if GRID is to be OFF depending on SOC predicted at 6AM
-              $LVDS_soc_6am_grid_off = ( $soc_predicted_at_6am  >  ( $soc_percentage_lvds_setting + 7.0 ) )   // 2 points for hysterysis prevent switch chatter
+              $LVDS_soc_6am_grid_off = ( $soc_predicted_at_6am  >  ( $soc_percentage_lvds_setting + 7.01 ) )   // 7 points hysterisys to prevent switch chatter
                                     &&
-                                      ( $shelly_switch_status == "ON" )					                // The Grid switch is OFF
+                                      ( $shelly_switch_status == "ON" )	// The Grid switch is not already OFF
                                     &&
-                                    ( $soc_from_shelly_energy_readings->check_for_soc_rate_bool )
+                                    ( $soc_from_shelly_energy_readings->check_for_soc_rate_bool ) // check only during valid times
                                     &&
-                                      ( $control_shelly == true )
+                                      ( $control_shelly == true )                                 // servo flag must be set
                                     &&
-                                      ( ! $keep_shelly_switch_closed_always );
+                                      ( ! $keep_shelly_switch_closed_always )                    // overridden by always on flag
+                                    &&
+                                      ( ! $timer_since_last_6am_switch_event_running ); // prevents switch chatter - only once per hour
 
               { // prepare object for Transient
                 $soc_from_shelly_energy_readings->valid_shelly_config               = $valid_shelly_config;
@@ -1862,8 +1883,11 @@ class class_transindus_eco
 
               $this->turn_on_off_shelly_switch($user_index, "on");
 
-              error_log("Exited via Case 7 - Predicted SOC at 6AM below set limit - Grid Switched ON");
+              error_log("Exited via Case 7 - GRID Switched OFF - Predicted SOC at 6AM low at: " . $soc_predicted_at_6am );
               $cron_exit_condition = "SOC 6AM LOW-GRID ON";
+
+              // set a transient for 30m. This will be checked for before next switching event
+              set_transient( 'timer_since_last_6am_switch_event', 1, 30*60 );
 
             break;
 
@@ -1872,8 +1896,11 @@ class class_transindus_eco
 
               $this->turn_on_off_shelly_switch($user_index, "off");
 
-              error_log("Exited via Case 8 - Predicted SOC at 6AM above set limit - Grid Switched OFF");
+              error_log("Exited via Case 8 - GRID Switched OFF - Predicted SOC at 6AM OK, at: " . $soc_predicted_at_6am );
               $cron_exit_condition = "SOC 6AM OK-GRID OFF";
+
+              // set a transient for 30m. This will be checked for before next switching event
+              set_transient( 'timer_since_last_6am_switch_event', 1, 30*60 );
 
             break;
 

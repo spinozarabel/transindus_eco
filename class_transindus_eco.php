@@ -1557,7 +1557,7 @@ class class_transindus_eco
                                       ( ! $timer_since_last_6am_switch_event_running ); // prevents switch chatter - only once per hour
 
               // Calculate boolean flag to determine if GRID is to be OFF depending on SOC predicted at 6AM
-              $LVDS_soc_6am_grid_off = ( $soc_predicted_at_6am  >  ( $soc_percentage_lvds_setting + 7.01 ) )   // 7 points hysterisys to prevent switch chatter
+              $LVDS_soc_6am_grid_off = ( $soc_predicted_at_6am  >  ( $soc_percentage_lvds_setting + 5.01 ) )   // 5 points hysterisys to prevent switch chatter
                                     &&
                                       ( $shelly_switch_status == "ON" )	// The Grid switch is not already OFF
                                     &&
@@ -1567,7 +1567,9 @@ class class_transindus_eco
                                     &&
                                       ( ! $keep_shelly_switch_closed_always )                    // overridden by always on flag
                                     &&
-                                      ( ! $timer_since_last_6am_switch_event_running ); // prevents switch chatter - only once per hour
+                                      ( ! $timer_since_last_6am_switch_event_running ) // prevents switch chatter - only once per hour
+                                    &&
+                                      ( $SOC_percentage_now  >  ( $soc_percentage_lvds_setting + 0.3 ) ); // make sure SOC is not low
 
               { // prepare object for Transient
                 $soc_from_shelly_energy_readings->valid_shelly_config               = $valid_shelly_config;

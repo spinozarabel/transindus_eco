@@ -1667,6 +1667,17 @@ class class_transindus_eco
             return null;
           }
 
+          // Also make a Shelly 4PM measurement to get individual powers from each channel for granular display
+          $shelly_4pm_readings_object = $this->get_shelly_device_status_homepwr( $user_index );
+
+          // Load the Studer Object with properties from the Shelly 4PM object
+          $studer_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;
+          $studer_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;
+          $studer_readings_obj->power_to_ac_kw      = $shelly_4pm_readings_object->power_to_ac_kw;
+          $studer_readings_obj->power_to_pump_kw    = $shelly_4pm_readings_object->power_to_pump_kw;
+          $studer_readings_obj->power_total_to_home = $shelly_4pm_readings_object->power_total_to_home;
+          $studer_readings_obj->current_total_home  = $shelly_4pm_readings_object->current_total_home;
+
           { // Studer SOC update calculations along with Battery Voltage Update
             // average the battery voltage over last 3 readings
             $battery_voltage_avg  = $this->get_battery_voltage_avg( $wp_user_name, $studer_readings_obj->battery_voltage_vdc );

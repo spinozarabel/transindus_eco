@@ -2828,9 +2828,9 @@ class class_transindus_eco
                 <td id="pump_icon">'          . $format_object->pump_icon          . '</td>
             </tr>
             <tr>
-                <td id="power_to_home_kw">' . $studer_readings_obj->power_to_home_kw    . '</td>
-                <td id="power_to_ac_kw">'   . $studer_readings_obj->power_to_ac_kw      . '</td>
-                <td id="power_to_pump_kw">' . $studer_readings_obj->power_to_pump_kw    . '</td>
+                <td id="power_to_home_kw">' . $format_object->power_to_home_kw    . '</td>
+                <td id="power_to_ac_kw">'   . $format_object->power_to_ac_kw      . '</td>
+                <td id="power_to_pump_kw">' . $format_object->power_to_pump_kw    . '</td>
             </tr>
             
         </table>';
@@ -4402,6 +4402,18 @@ class class_transindus_eco
         $format_object->water_heater_icon =   '<span style="color: Black;">
                                                   <i class="fa-solid fa-3x fa-hot-tub-person"></i>
                                               </span>';
+
+        $format_object->power_to_home_kw = '<span style="font-size: 18px;color: Black;">
+                                                <strong>' . $studer_readings_obj->power_to_home_kw . ' KW</strong>
+                                            </span>';
+
+        $format_object->power_to_ac_kw = '<span style="font-size: 18px;color: Black;">
+                                                <strong>' . $studer_readings_obj->power_to_ac_kw . ' KW</strong>
+                                            </span>';
+
+        $format_object->power_to_pump_kw = '<span style="font-size: 18px;color: Black;">
+                                              <strong>' . $studer_readings_obj->power_to_pump_kw . ' KW</strong>
+                                          </span>';
 
         // Get Cron Exit COndition from User Meta and its time stamo
         $json_cron_exit_condition_user_meta = get_user_meta( $wp_user_ID, 'studer_readings_object', true );

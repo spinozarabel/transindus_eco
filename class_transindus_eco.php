@@ -799,6 +799,15 @@ class class_transindus_eco
 
       // the variable name is due to compatibility with Studer values for display purposes. Power is calculated from Shelly 4PM
       $return_obj->pout_inverter_ac_kw               = round( $current_power_to_home_kw, 2);
+
+      // power to main and Gadigappa's home from channels 2 and 3 of Shelly 4PM
+      $return_obj->power_to_home_kw = $shelly_homwpwr_obj->power_to_home_kw;
+
+      // power to ACs from channel 1 of Shelly 4PM
+      $return_obj->power_to_ac_kw   = $shelly_homwpwr_obj->power_to_ac_kw;
+
+      // power to pump in kw
+      $return_obj->power_to_pump_kw = $shelly_homwpwr_obj->power_to_pump_kw;
       
       return $return_obj;
     }

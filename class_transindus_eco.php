@@ -2820,6 +2820,22 @@ class class_transindus_eco
             
         </table>';
 
+        $output .= '
+        <table id="my-load-distribution-table">
+            <tr>
+                <td id="home_icon">'          . $format_object->home_icon          . '</td>
+                <td id="ac_icon">'            . $format_object->ac_icon            . '</td>
+                <td id="pump_icon">'          . $format_object->pump_icon          . '</td>
+            </tr>
+            <tr>
+                <td id="power_to_home_kw">' . $studer_readings_obj->power_to_home_kw    . '</td>
+                <td id="power_to_ac_kw">'   . $studer_readings_obj->power_to_ac_kw      . '</td>
+                <td id="power_to_pump_kw">' . $studer_readings_obj->power_to_pump_kw    . '</td>
+            </tr>
+            
+        </table>';
+
+
         $output .= '<div id="cron_exit_condition">'. $format_object->cron_exit_condition     . '</div>';
 
         return $output;
@@ -4369,6 +4385,23 @@ class class_transindus_eco
         $format_object->load_info        = $load_info;
         $format_object->load_arrow_icon  = $load_arrow_icon;
         $format_object->load_icon        = $load_icon;
+
+        // Get the icoms for the load breakout table such as AC, home, pump, etc.
+        $format_object->home_icon = '<span style="color: Black;">
+                                        <i class="fa-solid fa-3x fa-house"></i>
+                                      </span>';
+
+        $format_object->ac_icon   = '<span style="color: Black;">
+                                        <i class="fa-solid fa-3x fa-wind"></i>
+                                      </span>';
+
+        $format_object->pump_icon = '<span style="color: Black;">
+                                        <i class="fa-solid fa-3x fa-arrow-up-from-water-pump"></i>
+                                    </span>';
+
+        $format_object->water_heater_icon =   '<span style="color: Black;">
+                                                  <i class="fa-solid fa-3x fa-hot-tub-person"></i>
+                                              </span>';
 
         // Get Cron Exit COndition from User Meta and its time stamo
         $json_cron_exit_condition_user_meta = get_user_meta( $wp_user_ID, 'studer_readings_object', true );

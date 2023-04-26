@@ -1532,15 +1532,15 @@ class class_transindus_eco
               // extract the soc predicted at 6am from the returned object
               $soc_predicted_at_6am = $soc_from_shelly_energy_readings->soc_predicted_at_6am; // rounded already to 1d
 
-              if ( false !== ( $timer_since_last_6am_switch_event_running = get_transient( 'timer_since_last_6am_switch_event' ) ) )
+              if ( false === ( $timer_since_last_6am_switch_event_running = get_transient( 'timer_since_last_6am_switch_event' ) ) )
               {
-                // transient exists. So 1h has not elapsed  since last switch event so set flag to true
-                $timer_since_last_6am_switch_event_running = true;
+                // transient not there. So 1h has not expired or not even set in the 1st place. 
+                $timer_since_last_6am_switch_event_running = false; // This will enable the soc6am related switching if required
               }
               else
               {
-                // Transient has expired or was never created in the 1st place. So set flag to be false
-                $timer_since_last_6am_switch_event_running = false;
+                // Transient exists. Since expected value of transient is true set the variable to true
+                $timer_since_last_6am_switch_event_running = true;  // disable any soc6am switching till the timer runs out.
               }
 
               // Calculate boolean flag to determine if GRID is to be ON depending on SOC predicted at 6AM

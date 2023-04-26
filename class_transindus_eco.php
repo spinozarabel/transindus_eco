@@ -1044,6 +1044,10 @@ class class_transindus_eco
         $power_channel_2 = $shelly_api_device_response->data->device_status->{"switch:2"}->apower;
         $power_channel_3 = $shelly_api_device_response->data->device_status->{"switch:3"}->apower;
 
+        $power_to_home_kw = round( ( $power_channel_2 + $power_channel_3 ) * 0.001, 3 );
+        $power_to_ac_kw   = round( ( $power_channel_1 * 0.001 ), 3 );
+        $power_to_pump_kw = round( ( $power_channel_0 * 0.001 ), 3 );
+
         $power_total_to_home = $power_channel_0 + $power_channel_1 + $power_channel_2 + $power_channel_3;
 
         $energy_channel_0_ts = $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->total;
@@ -1067,6 +1071,10 @@ class class_transindus_eco
 
         // add these to returned object for later use in calling program
         $energy_obj->power_total_to_home      = $power_total_to_home;
+        $energy_obj->power_to_home_kw         = $power_to_home_kw;
+        $energy_obj->power_to_ac_kw           = $power_to_ac_kw;
+        $energy_obj->power_to_pump_kw         = $power_to_pump_kw;
+
         $energy_obj->energy_total_to_home_ts  = $energy_total_to_home_ts;
         $energy_obj->minute_ts                = $minute_ts;
         $energy_obj->current_total_home       = $current_total_home;

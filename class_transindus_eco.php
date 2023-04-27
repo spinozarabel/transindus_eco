@@ -4372,9 +4372,19 @@ class class_transindus_eco
         $format_object->battery_arrow_icon  = $battery_arrow_icon;
         $format_object->battery_info        = $battery_info;
 
-        $load_arrow_size = $this->get_arrow_size_based_on_power($pout_inverter_ac_kw);
+        // Shelly 4PM load breakout data
+        $power_total_to_home = $studer_readings_obj->power_total_to_home;
+        $power_total_to_home_kw = round( $power_total_to_home * 0.001, 3);
 
-        $load_info = '<span style="font-size: 18px;color: Black;"><strong>' . $pout_inverter_ac_kw . ' KW</strong></span>';
+        $power_to_home_kw = $studer_readings_obj->power_to_home_kw;
+        $power_to_ac_kw   = $studer_readings_obj->power_to_ac_kw;
+        $power_to_pump_kw = $studer_readings_obj->power_to_pump_kw;
+
+
+        // $load_arrow_size = $this->get_arrow_size_based_on_power($pout_inverter_ac_kw);
+        $load_arrow_size = $this->get_arrow_size_based_on_power($power_total_to_home_kw);
+
+        $load_info = '<span style="font-size: 18px;color: Black;"><strong>' . $power_total_to_home_kw . ' KW</strong></span>';
         $load_arrow_icon = '<i class="fa-solid' . $load_arrow_size . 'fa-arrow-right-long fa-rotate-by"
                                                                           style="--fa-rotate-angle: 45deg;">
                             </i>';
@@ -4386,10 +4396,6 @@ class class_transindus_eco
         $format_object->load_info        = $load_info;
         $format_object->load_arrow_icon  = $load_arrow_icon;
         $format_object->load_icon        = $load_icon;
-
-        $power_to_home_kw = $studer_readings_obj->power_to_home_kw;
-        $power_to_ac_kw   = $studer_readings_obj->power_to_ac_kw;
-        $power_to_pump_kw = $studer_readings_obj->power_to_pump_kw;
 
         If ( $power_to_ac_kw > 0.2 )
         {

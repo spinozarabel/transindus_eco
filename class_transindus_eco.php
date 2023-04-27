@@ -4374,7 +4374,7 @@ class class_transindus_eco
 
         // Shelly 4PM load breakout data
         $power_total_to_home = $studer_readings_obj->power_total_to_home;
-        $power_total_to_home_kw = round( $power_total_to_home * 0.001, 3);
+        $power_total_to_home_kw = round( $power_total_to_home * 0.001, 2);
 
         $power_to_home_kw = $studer_readings_obj->power_to_home_kw;
         $power_to_ac_kw   = $studer_readings_obj->power_to_ac_kw;

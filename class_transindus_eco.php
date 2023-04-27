@@ -4059,7 +4059,8 @@ class class_transindus_eco
 
 
     /**
-     * 
+     *  This AJAX handler server side function generates 5s data from measurements
+     *  The data is sent by AJAX to  client browser using the AJAX call.
      */
     public function ajax_my_solar_update_handler()     
     {   // service AJax Call
@@ -4386,21 +4387,44 @@ class class_transindus_eco
         $format_object->load_arrow_icon  = $load_arrow_icon;
         $format_object->load_icon        = $load_icon;
 
+        $power_to_home_kw = $studer_readings_obj->power_to_home_kw;
+        $power_to_ac_kw   = $studer_readings_obj->power_to_ac_kw;
+        $power_to_pump_kw = $studer_readings_obj->power_to_pump_kw;
+
+        If ( $power_to_ac_kw > 0.2 )
+        {
+          $ac_icon_color = 'red';
+        }
+        else
+        {
+          $ac_icon_color = 'black';
+        }
+
+        If ( $power_to_pump_kw > 0.1 )
+        {
+          $pump_icon_color = 'red';
+        }
+        else
+        {
+          $pump_icon_color = 'black';
+        }
+
+
         // Get the icoms for the load breakout table such as AC, home, pump, etc.
         $format_object->home_icon = '<span style="color: Black;">
-                                        <i class="fa-solid fa-3x fa-house"></i>
+                                        <i class="fa-solid fa-4x fa-house"></i>
                                       </span>';
 
-        $format_object->ac_icon   = '<span style="color: Black;">
-                                        <i class="fa-solid fa-3x fa-wind"></i>
+        $format_object->ac_icon   = '<span style="color: ' . $ac_icon_color . ';">
+                                        <i class="fa-solid fa-4x fa-wind"></i>
                                       </span>';
 
-        $format_object->pump_icon = '<span style="color: Black;">
-                                        <i class="fa-solid fa-3x fa-arrow-up-from-water-pump"></i>
+        $format_object->pump_icon = '<span style="color: ' . $pump_icon_color . '">
+                                        <i class="fa-solid fa-4x fa-arrow-up-from-water-pump"></i>
                                     </span>';
 
         $format_object->water_heater_icon =   '<span style="color: Black;">
-                                                  <i class="fa-solid fa-3x fa-hot-tub-person"></i>
+                                                  <i class="fa-solid fa-4x fa-hot-tub-person"></i>
                                               </span>';
 
         $format_object->power_to_home_kw = '<span style="font-size: 18px;color: Black;">

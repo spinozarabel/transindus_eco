@@ -4399,7 +4399,7 @@ class class_transindus_eco
 
         If ( $power_to_ac_kw > 0.2 )
         {
-          $ac_icon_color = 'red';
+          $ac_icon_color = 'blue';
         }
         else
         {
@@ -4408,7 +4408,7 @@ class class_transindus_eco
 
         If ( $power_to_pump_kw > 0.1 )
         {
-          $pump_icon_color = 'red';
+          $pump_icon_color = 'blue';
         }
         else
         {

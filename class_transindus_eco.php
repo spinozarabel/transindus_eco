@@ -4490,7 +4490,7 @@ class class_transindus_eco
                                                   $saved_cron_exit_condition  .
                                               '</span>';
         */
-        $format_object->soc_percentage_now_html = '<span style="font-size: 18px;color: Blue; display:block; text-align: center;">' . 
+        $format_object->soc_percentage_now_html = '<span style="font-size: 20px;color: Blue; display:block; text-align: center;">' . 
                                                       '<strong>' . $SOC_percentage_now . ' %' . '</strong><br>' .
                                                   '</span>';
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' .

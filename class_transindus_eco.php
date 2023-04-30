@@ -1040,7 +1040,7 @@ class class_transindus_eco
         $shelly_api_device_response = $shelly_api->get_shelly_device_status();
 
         // check to make sure that it exists. If null API call was fruitless
-        if ( empty( $shelly_api_device_response ) || empty( $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->total ) )
+        if ( empty( $shelly_api_device_response ) || empty( $shelly_api_device_response->data->device_status->{"switch:3"}->aenergy->total ) )
         {
           $this->verbose ? error_log("Shelly Homepwr switch API call failed"): false;
 
@@ -3143,7 +3143,7 @@ class class_transindus_eco
 
         // this is $curl_response
         $shelly_device_data = $shelly_api->turn_on_off_shelly_switch($desired_state);
-        
+
         sleep(1);
 
         return $shelly_device_data;

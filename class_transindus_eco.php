@@ -1905,7 +1905,7 @@ class class_transindus_eco
 
                 $this->turn_on_off_shelly_switch($user_index, "on");
 
-                error_log("Exited via Case 4 - reduce daytime battery cycling - Grid Switched ON");
+                error_log('Exited via Case 4 - reduce daytime battery cycling - Grid Switched ON - User Index: ' . $user_index );
                 $cron_exit_condition = "RDBC-Grid ON";
             break;
 
@@ -1967,7 +1967,7 @@ class class_transindus_eco
 
             default:
                 
-                $this->verbose ? error_log("Exited via Case Default, NO ACTION TAKEN") : false;
+                $this->verbose ? error_log('Exited via Case Default, NO ACTION TAKEN - User Index: ' . $user_index) : false;
                 $cron_exit_condition = "No Action";
             break;
 

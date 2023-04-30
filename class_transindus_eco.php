@@ -1389,6 +1389,7 @@ class class_transindus_eco
 
         // Loop over all of the eligible users
         $config = $this->get_config();
+
         foreach ($config['accounts'] as $user_index => $account)
         {
             $wp_user_name = $account['wp_user_name'];
@@ -3142,6 +3143,8 @@ class class_transindus_eco
 
         // this is $curl_response
         $shelly_device_data = $shelly_api->turn_on_off_shelly_switch($desired_state);
+        
+        sleep(1);
 
         return $shelly_device_data;
     }

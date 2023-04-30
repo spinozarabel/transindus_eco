@@ -1388,7 +1388,8 @@ class class_transindus_eco
         // $this->count_5s_cron_cycles_modulo_12();
 
         // Loop over all of the eligible users
-        foreach ($this->config['accounts'] as $user_index => $account)
+        $config = $this->get_config();
+        foreach ($config['accounts'] as $user_index => $account)
         {
             $wp_user_name = $account['wp_user_name'];
 

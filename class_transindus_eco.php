@@ -1884,7 +1884,7 @@ class class_transindus_eco
             //      AND control_shelly = TRUE. Note that a valid config and do_shelly user meta need to be TRUE.
             case ( $LVDS ):
 
-                $this->turn_on_off_shelly_switch($user_index, "on");
+                $response = $this->turn_on_off_shelly_switch($user_index, "on");
 
                 error_log("LVDS - Grid ON.  SOC: " . $SOC_percentage_now . " % and Vbatt(V): " . $battery_voltage_avg);
                 $cron_exit_condition = "Low SOC - Grid ON";
@@ -1904,7 +1904,7 @@ class class_transindus_eco
             // <4> Daytime, reduce battery cycling, turn SWITCH ON
             case ( $reduce_daytime_battery_cycling ):
 
-                $this->turn_on_off_shelly_switch($user_index, "on");
+              $response = $this->turn_on_off_shelly_switch($user_index, "on");
 
                 error_log('Exited via Case 4 - reduce daytime battery cycling - Grid Switched ON - User Index: ' . $user_index );
                 $cron_exit_condition = "RDBC-Grid ON";
@@ -1913,7 +1913,7 @@ class class_transindus_eco
             // <7> predicted SOC at 6AM below LVDS SOC limit + margin so turn GRID Switch ON
             case ( $LVDS_soc_6am_grid_on ):
 
-              $this->turn_on_off_shelly_switch($user_index, "on");
+              $response = $this->turn_on_off_shelly_switch($user_index, "on");
 
               error_log("Exited via Case 7 - GRID Switched OFF - Predicted SOC at 6AM low : " . $soc_predicted_at_6am );
               $cron_exit_condition = "SOC 6AM LOW-GRID ON";
@@ -1926,7 +1926,7 @@ class class_transindus_eco
             // <8> predicted SOC at 6AM above LVDS SOC limit + margin so turn GRID Switch OFF
             case ( $LVDS_soc_6am_grid_off ):
 
-              $this->turn_on_off_shelly_switch($user_index, "off");
+              $response = $this->turn_on_off_shelly_switch($user_index, "off");
 
               error_log("Exited via Case 8 - GRID Switched OFF - Predicted SOC at 6AM OK : " . $soc_predicted_at_6am );
               $cron_exit_condition = "SOC 6AM OK-GRID OFF";
@@ -1940,7 +1940,7 @@ class class_transindus_eco
             // <5> Release - Switch OFF for normal Studer operation
             case ( $switch_release ):
 
-                $this->turn_on_off_shelly_switch($user_index, "off");
+              $response = $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 5 - adequate Battery SOC, Grid Switched OFF");
                 $cron_exit_condition = "SOC ok-Grid Off";
@@ -1950,7 +1950,7 @@ class class_transindus_eco
             // <6> Turn switch OFF at 5:30 PM if emergency flag is False so that battery can supply load for the night
             case ( $sunset_switch_release ):
 
-                $this->turn_on_off_shelly_switch($user_index, "off");
+              $response = $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 6 - sunset, Grid switched OFF");
                 $cron_exit_condition = "Sunset-Grid Off";
@@ -1959,7 +1959,7 @@ class class_transindus_eco
 
             case ( $switch_release_float_state ):
 
-                $this->turn_on_off_shelly_switch($user_index, "off");
+              $response = $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 8 - Battery Float State, Grid switched OFF");
                 $cron_exit_condition = "SOC Float-Grid Off";

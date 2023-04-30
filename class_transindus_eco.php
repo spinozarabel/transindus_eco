@@ -1886,6 +1886,10 @@ class class_transindus_eco
             case ( $LVDS ):
 
                 $response = $this->turn_on_off_shelly_switch($user_index, "on");
+                sleep(1);
+
+                // get a fresh status
+                $shelly_api_device_response = $this->get_shelly_device_status($user_index);
 
                 error_log("LVDS - Grid ON.  SOC: " . $SOC_percentage_now . " % and Vbatt(V): " . $battery_voltage_avg);
                 $cron_exit_condition = "Low SOC - Grid ON";

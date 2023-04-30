@@ -37,6 +37,10 @@ class shelly_cloud_api
           "id"          => $this->shelly_device_id  ,
           "auth_key"    => $this->auth_key          ,
       );
+      if ($this->verbose)
+              {
+                  error_log( "This is the Shelly API params for turn-on-off " . print_r($params, true) );
+              }
 
       $headers  = [];
 

@@ -12,7 +12,7 @@ if (!defined( "ABSPATH" ) && !defined( "MOODLE_INTERNAL" ) )
 // class definition begins
 class shelly_cloud_api
 {
-    const VERBOSE     = true;
+    const VERBOSE     = false;
 
     public function __construct(string $auth_key, string $server_uri, string $shelly_device_id)
     {
@@ -37,10 +37,8 @@ class shelly_cloud_api
           "id"          => $this->shelly_device_id  ,
           "auth_key"    => $this->auth_key          ,
       );
-      if ($this->verbose)
-              {
-                  error_log( "This is the Shelly API params for turn-on-off " . print_r($params, true) );
-              }
+      
+        error_log( "This is the Shelly API params for turn-on-off " . print_r($params, true) );
 
       $headers  = [];
 

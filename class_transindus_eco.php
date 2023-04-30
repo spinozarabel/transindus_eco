@@ -526,7 +526,7 @@ class class_transindus_eco
           }
           else {  // Switch is ONLINE - Get its status and Voltage
               
-              $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->{'input:0'}->state;
+              $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->{'switch:0'}->output;
               $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{'switch:0'}->voltage;
 
               if ($shelly_api_device_status_ON)

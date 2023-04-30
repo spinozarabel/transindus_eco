@@ -2993,6 +2993,8 @@ class class_transindus_eco
                 // Get the Shelly device status whose id is listed in the config.
                 $shelly_api_device_response = $this->get_shelly_device_status($config_index);
                 $shelly_api_device_status_ON = $shelly_api_device_response->data->device_status;
+
+                print_r( $shelly_api_device_status_ON );
             break;
 
             case "turn_Shelly_Switch_ON":

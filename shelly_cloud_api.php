@@ -12,7 +12,7 @@ if (!defined( "ABSPATH" ) && !defined( "MOODLE_INTERNAL" ) )
 // class definition begins
 class shelly_cloud_api
 {
-    const VERBOSE     = false;
+    const VERBOSE     = true;
 
     public function __construct(string $auth_key, string $server_uri, string $shelly_device_id)
     {

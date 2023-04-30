@@ -3135,6 +3135,7 @@ class class_transindus_eco
     public function turn_on_off_shelly_switch($user_index, $desired_state)
     {
         $config = $this->get_config();
+        $user_index = 0;
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
         $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];

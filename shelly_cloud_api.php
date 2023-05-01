@@ -38,7 +38,7 @@ class shelly_cloud_api
           "auth_key"    => $this->auth_key          ,
       );
       
-        error_log( "This is the Shelly API params for turn-on-off " . print_r($params, true) );
+        //  error_log( "This is the Shelly API params for turn-on-off " . print_r($params, true) );
 
         
 
@@ -47,7 +47,7 @@ class shelly_cloud_api
 
       $endpoint = $this->server_uri . "/device/relay/control";
 
-      error_log( 'This is the Shelly API URI for turn-on-off:' . $endpoint );
+      // error_log( 'This is the Shelly API URI for turn-on-off:' . $endpoint );
 
       $curlResponse   = $this->postCurl($endpoint, $headers, $params);
 
@@ -127,8 +127,8 @@ class shelly_cloud_api
       curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
       curl_setopt($ch, CURLOPT_TIMEOUT, 10);
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-      // curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 1);
-      // curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 1);
+      curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
 
       $returnData = curl_exec($ch);
       $this->verbose ? error_log("curl response Shelly Device" . print_r($returnData,true)) : false;

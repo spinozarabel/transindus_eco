@@ -3149,6 +3149,7 @@ class class_transindus_eco
 
         // this is $curl_response
         $shelly_device_data = $shelly_api->turn_on_off_shelly_switch($desired_state);
+        error_log(print_r($shelly_device_data, true));
 
         sleep(1);
 

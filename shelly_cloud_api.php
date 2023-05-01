@@ -57,11 +57,9 @@ class shelly_cloud_api
           }
       else
           {
-              if ($this->verbose)
-              {
-                  error_log( "This is the response when turn ON_OFF of your Shelly device" . print_r($curlResponse, true) );
-              }
-              return null;
+                error_log( "This is the response when turn ON_OFF of your Shelly device" . print_r($curlResponse, true) );
+              
+                return null;
           }
     }
 

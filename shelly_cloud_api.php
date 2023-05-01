@@ -118,6 +118,8 @@ class shelly_cloud_api
       }
 
       $ch = curl_init();
+      curl_reset($ch);
+      
       curl_setopt($ch, CURLOPT_URL, $endpoint);
       curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
       curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded'));

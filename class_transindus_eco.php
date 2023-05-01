@@ -1886,10 +1886,6 @@ class class_transindus_eco
             case ( $LVDS ):
 
                 $response = $this->turn_on_off_shelly_switch($user_index, "on");
-                sleep(1);
-
-                // get a fresh status
-                $shelly_api_device_response = $this->get_shelly_device_status($user_index);
 
                 error_log("LVDS - Grid ON.  SOC: " . $SOC_percentage_now . " % and Vbatt(V): " . $battery_voltage_avg);
                 $cron_exit_condition = "Low SOC - Grid ON";
@@ -1911,7 +1907,7 @@ class class_transindus_eco
 
               $response = $this->turn_on_off_shelly_switch($user_index, "on");
 
-                error_log('Exited via Case 4 - reduce daytime battery cycling - Grid Switched ON - User Index: ' . $user_index );
+                error_log( 'Exited via Case 4 - reduce daytime battery cycling - Grid Switched ON' );
                 $cron_exit_condition = "RDBC-Grid ON";
             break;
 
@@ -1921,7 +1917,7 @@ class class_transindus_eco
               $response = $this->turn_on_off_shelly_switch($user_index, "on");
 
               error_log("Exited via Case 7 - GRID Switched OFF - Predicted SOC at 6AM low : " . $soc_predicted_at_6am );
-              $cron_exit_condition = "SOC 6AM LOW-GRID ON";
+              $cron_exit_condition = "SOC6AM LOW - GRID ON";
 
               // set a transient for 30m. This will be checked for before next switching event
               set_transient( 'timer_since_last_6am_switch_event', true, 30*60 );
@@ -1948,7 +1944,7 @@ class class_transindus_eco
               $response = $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 5 - adequate Battery SOC, Grid Switched OFF");
-                $cron_exit_condition = "SOC ok-Grid Off";
+                $cron_exit_condition = "SOC ok - Grid Off";
             break;
 
 
@@ -1973,7 +1969,7 @@ class class_transindus_eco
 
             default:
                 
-                $this->verbose ? error_log('Exited via Case Default, NO ACTION TAKEN - User Index: ' . $user_index) : false;
+                $this->verbose ? error_log('Exited via Case Default, NO ACTION TAKEN') : false;
                 $cron_exit_condition = "No Action";
             break;
 
@@ -3139,8 +3135,11 @@ class class_transindus_eco
      */
     public function turn_on_off_shelly_switch($user_index, $desired_state)
     {
+      // Shelly API has a max request rate of 1 per second. So we wait 1s just in case we made a Shelly API call before coming here
         sleep (1);
-        $config = $this->get_config();
+
+        // get the config array from the object properties
+        $config = $this->config;
 
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];

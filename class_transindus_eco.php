@@ -3139,6 +3139,7 @@ class class_transindus_eco
      */
     public function turn_on_off_shelly_switch($user_index, $desired_state)
     {
+        sleep (1);
         $config = $this->get_config();
 
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
@@ -3150,8 +3151,6 @@ class class_transindus_eco
         // this is $curl_response
         $shelly_device_data = $shelly_api->turn_on_off_shelly_switch($desired_state);
         error_log(print_r($shelly_device_data, true));
-
-        sleep(1);
 
         return $shelly_device_data;
     }

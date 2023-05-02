@@ -1089,6 +1089,12 @@ class class_transindus_eco
         $energy_obj->current_total_home       = $current_total_home;
         $energy_obj->voltage_home             = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
 
+        // set the state of the channel if OFF or ON. ON switch will be true and OFF will be false
+        $energy_obj->pump_switch_status_bool  = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+        $energy_obj->ac_switch_status_bool    = $shelly_api_device_response->data->device_status->{"switch:1"}->output;
+        $energy_obj->home_switch_status_bool  = $shelly_api_device_response->data->device_status->{"switch:2"}->output || 
+                                                $shelly_api_device_response->data->device_status->{"switch:3"}->output;
+
         return $energy_obj;
     }
 
@@ -1680,6 +1686,10 @@ class class_transindus_eco
           $studer_readings_obj->power_to_pump_kw    = $shelly_4pm_readings_object->power_to_pump_kw;
           $studer_readings_obj->power_total_to_home = $shelly_4pm_readings_object->power_total_to_home;
           $studer_readings_obj->current_total_home  = $shelly_4pm_readings_object->current_total_home;
+
+          $studer_readings_obj->pump_switch_status_bool = $shelly_4pm_readings_object->pump_switch_status_bool;
+          $studer_readings_obj->ac_switch_status_bool   = $shelly_4pm_readings_object->ac_switch_status_bool;
+          $studer_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
 
           { // Studer SOC update calculations along with Battery Voltage Update
             // average the battery voltage over last 3 readings
@@ -4391,6 +4401,10 @@ class class_transindus_eco
         $power_to_ac_kw   = $studer_readings_obj->power_to_ac_kw;
         $power_to_pump_kw = $studer_readings_obj->power_to_pump_kw;
 
+        $pump_switch_status_bool  = $studer_readings_obj->pump_switch_status_bool;
+        $ac_switch_status_bool    = $studer_readings_obj->ac_switch_status_bool;
+        $home_switch_status_bool  = $studer_readings_obj->home_switch_status_bool;
+
 
         // $load_arrow_size = $this->get_arrow_size_based_on_power($pout_inverter_ac_kw);
         $load_arrow_size = $this->get_arrow_size_based_on_power($power_total_to_home_kw);
@@ -4412,6 +4426,10 @@ class class_transindus_eco
         {
           $ac_icon_color = 'blue';
         }
+        elseif ( ! $ac_switch_status_bool )
+        {
+          $ac_icon_color = 'red';
+        }
         else
         {
           $ac_icon_color = 'black';
@@ -4420,6 +4438,10 @@ class class_transindus_eco
         If ( $power_to_pump_kw > 0.1 )
         {
           $pump_icon_color = 'blue';
+        }
+        elseif ( ! $pump_switch_status_bool )
+        {
+          $pump_icon_color = 'red';
         }
         else
         {

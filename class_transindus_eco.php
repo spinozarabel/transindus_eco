@@ -4150,7 +4150,24 @@ class class_transindus_eco
         // extract the do_shelly control flag as set in user meta
         $do_shelly  = get_user_meta($wp_user_ID, "do_shelly", true);
 
-        if ($toggleGridSwitch)  {   // User has requested to toggle the GRID ON/OFF Shelly Switch
+        if ($toggleGridSwitch)  
+        { // User has requested to toggle the GRID ON/OFF Shelly Switch
+          // the current interpretation is that this is the toggle for the keep_always_on flag
+          // Find the current status and just toggle the status
+          $current_state_keep_always_on =  get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true);
+
+          if ($current_state_keep_always_on == true)
+          {
+            update_user_meta( $wp_user_ID, 'keep_shelly_switch_closed_always', false);
+
+            error_log('Changed keep always ON flag from true-->false due to Ajax Request');
+          }
+          else {
+            update_user_meta( $wp_user_ID, 'keep_shelly_switch_closed_always', true);
+            error_log('Changed keep always ON flag from false-->true due to Ajax Request');
+          }
+          // Grid ON/OFF is determoned in the CRON loop as usual. 
+          return;
 
             // Get current status of switch
             $shelly_api_device_response   = $this->get_shelly_device_status($user_index);

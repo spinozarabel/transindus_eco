@@ -1460,6 +1460,8 @@ class class_transindus_eco
           $soc_updated_using_shelly_energy_readings_bool = false;
         }
 
+        $RDBC = false;    // permamantly disable RDBC mode
+
         // get the estimated solar power from calculations for a clear day
         $est_solar_kw         = $this->estimated_solar_power($user_index);
 
@@ -1828,6 +1830,7 @@ class class_transindus_eco
                                             ( $psolar  >= $psolar_min_for_rdbc_setting )    &&   // at least some solar generation
                                             ( $surplus <= $psolar_surplus_for_rdbc_setting ) &&  // Solar Deficit is negative
                                             ( $it_is_cloudy_at_the_moment )                 &&   // Only when it is cloudy
+                                            ( $RDBC == true )                               &&  // RDBC flag is ON
                                             ( $control_shelly == true );                         // Control Flag is SET
           // switch release typically after RDBC when Psurplus is positive.
           $switch_release =  ( $SOC_percentage_now >= ( $soc_percentage_lvds_setting + 0.3 ) ) &&  // SOC ?= LBDS + offset

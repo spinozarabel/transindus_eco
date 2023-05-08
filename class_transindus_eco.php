@@ -598,7 +598,7 @@ class class_transindus_eco
       $turn_on_acin_switch_soc6am_low = false;
 
       // set the flag to see if OSC discharge rate needs to be calculated. This is between 8PM and 5AM
-      $check_for_soc_rate_bool = $this->nowIsWithinTimeLimits( "21:00", "midnight tomorrow" ) || $this->nowIsWithinTimeLimits( "midnight today", "05:00" );
+      $check_for_soc_rate_bool = $this->nowIsWithinTimeLimits( "23:00", "midnight tomorrow" ) || $this->nowIsWithinTimeLimits( "midnight today", "05:00" );
 
       // read in the config array from the class property
       $config = $this->config;

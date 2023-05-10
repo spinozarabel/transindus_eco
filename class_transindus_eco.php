@@ -808,6 +808,18 @@ class class_transindus_eco
 
       // power to pump in kw
       $return_obj->power_to_pump_kw = $shelly_homwpwr_obj->power_to_pump_kw;
+
+      // pump switch status boolean
+      $return_obj->pump_switch_status_bool = $shelly_homwpwr_obj->pump_switch_status_bool;
+
+      // AC switch status boolean
+      $return_obj->ac_switch_status_bool = $shelly_homwpwr_obj->ac_switch_status_bool;
+
+      // Home switch status boolean
+      $return_obj->home_switch_status_bool = $shelly_homwpwr_obj->home_switch_status_bool;
+
+      // total power from Shelly 4PM
+      $return_obj->power_total_to_home_kw = $shelly_homwpwr_obj->power_total_to_home_kw;
       
       return $return_obj;
     }
@@ -1058,6 +1070,7 @@ class class_transindus_eco
         $power_to_pump_kw = round( ( $power_channel_0 * 0.001 ), 3 );
 
         $power_total_to_home = $power_channel_0 + $power_channel_1 + $power_channel_2 + $power_channel_3;
+        $power_total_to_home_kw = round( ( $power_total_to_home * 0.001 ), 3 );
 
         $energy_channel_0_ts = $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->total;
       
@@ -1079,6 +1092,7 @@ class class_transindus_eco
         $energy_obj = new stdClass;
 
         // add these to returned object for later use in calling program
+        $energy_obj->power_total_to_home_kw   = $power_total_to_home_kw;
         $energy_obj->power_total_to_home      = $power_total_to_home;
         $energy_obj->power_to_home_kw         = $power_to_home_kw;
         $energy_obj->power_to_ac_kw           = $power_to_ac_kw;
@@ -1585,7 +1599,7 @@ class class_transindus_eco
                                       ( ! $timer_since_last_6am_switch_event_running ); // only if allowed by timer after last switch event
 
               // Calculate boolean flag to determine if GRID is to be OFF depending on SOC predicted at 6AM
-              $LVDS_soc_6am_grid_off = ( $soc_predicted_at_6am  >  ( $soc_percentage_lvds_setting + 5.01 ) )   // 5 points hysterisys to prevent switch chatter
+              $LVDS_soc_6am_grid_off = ( $soc_predicted_at_6am  >  ( $soc_percentage_lvds_setting + 4.01 ) )   // 5 points hysterisys to prevent switch chatter
                                     &&
                                       ( $shelly_switch_status == "ON" )	// The Grid switch is not already OFF
                                     &&
@@ -1597,7 +1611,7 @@ class class_transindus_eco
                                     &&
                                       ( ! $timer_since_last_6am_switch_event_running ) // prevents switch chatter - only once per interval
                                     &&
-                                      ( $SOC_percentage_now  >  ( $soc_percentage_lvds_setting + 0.3 ) ); // make sure SOC is above limit
+                                      ( $SOC_percentage_now  >  ( $soc_percentage_lvds_setting + 0.3 ) ); // make sure SOC is above LVDS
 
               { // prepare object for Transient
                 $soc_from_shelly_energy_readings->valid_shelly_config               = $valid_shelly_config;
@@ -1687,6 +1701,7 @@ class class_transindus_eco
           $studer_readings_obj->power_to_ac_kw      = $shelly_4pm_readings_object->power_to_ac_kw;
           $studer_readings_obj->power_to_pump_kw    = $shelly_4pm_readings_object->power_to_pump_kw;
           $studer_readings_obj->power_total_to_home = $shelly_4pm_readings_object->power_total_to_home;
+          $studer_readings_obj->power_total_to_home_kw = $shelly_4pm_readings_object->power_total_to_home_kw;
           $studer_readings_obj->current_total_home  = $shelly_4pm_readings_object->current_total_home;
 
           $studer_readings_obj->pump_switch_status_bool = $shelly_4pm_readings_object->pump_switch_status_bool;
@@ -1834,10 +1849,10 @@ class class_transindus_eco
                                             ( $control_shelly == true );                         // Control Flag is SET
           // switch release typically after RDBC when Psurplus is positive.
           $switch_release =  ( $SOC_percentage_now >= ( $soc_percentage_lvds_setting + 0.3 ) ) &&  // SOC ?= LBDS + offset
-                            ( $shelly_switch_status == "ON" )  														  &&  // Switch is ON now
-                            ( $surplus >= $min_solar_surplus_for_switch_release_after_rdbc ) &&  // Solar surplus is >= 0.2KW
-                            ( $keep_shelly_switch_closed_always == false )                   &&	// Emergency flag is False
-                            ( $control_shelly == true );                                         // Control Flag is SET                              
+                             ( $shelly_switch_status == "ON" )  														  &&  // Switch is ON now
+                             ( $surplus >= $min_solar_surplus_for_switch_release_after_rdbc ) &&  // Solar surplus is >= 0.2KW
+                             ( $keep_shelly_switch_closed_always == false )                   &&	// Emergency flag is False
+                             ( $control_shelly == true );                                         // Control Flag is SET                              
 
           // In general we want home to be on Battery after sunset
           $sunset_switch_release			=	( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
@@ -4415,7 +4430,7 @@ class class_transindus_eco
 
         // Shelly 4PM load breakout data
         $power_total_to_home = $studer_readings_obj->power_total_to_home;
-        $power_total_to_home_kw = round( $power_total_to_home * 0.001, 2);
+        $power_total_to_home_kw = $studer_readings_obj->power_total_to_home_kw; // round( $power_total_to_home * 0.001, 2);
 
         $power_to_home_kw = $studer_readings_obj->power_to_home_kw;
         $power_to_ac_kw   = $studer_readings_obj->power_to_ac_kw;

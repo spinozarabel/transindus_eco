@@ -657,6 +657,9 @@ class class_transindus_eco
       // The main foreach loop should have triggered a refresh so just read the user meta array from class property
       $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
 
+      // get the energy consumed since midnight stored in user meta
+      $shelly_energy_counter_midnight     = $all_usermeta[ 'shelly_energy_counter_midnight' ];
+
       // get the installed battery capacity in KWH from config
       $SOC_capacity_KWH                   = $config['accounts'][$user_index]['battery_capacity'];
 
@@ -689,6 +692,24 @@ class class_transindus_eco
 
       // exctract needed properties from Shelly homepower object
       $current_energy_counter_wh  = (int) round($shelly_homwpwr_obj->energy_total_to_home_ts, 0);
+
+      if ( ( $current_energy_counter_wh - $previous_energy_counter_wh ) >= 0 )
+      {
+        // the counter has not reset so calculate the energy consumed since last measurement
+        $delta_increase_wh = $current_energy_counter_wh - $previous_energy_counter_wh;
+      }
+      else
+      {
+        // counter has reset so ignore the previous counter reading we lose a little bit of the reading
+        $delta_increase_wh = $current_energy_counter_wh;
+      }
+
+      // accumulate the energy from this cycle to accumulator
+      $shelly_energy_counter_midnight = $shelly_energy_counter_midnight + $delta_increase_wh;
+
+      // update the accumulator user meta for next cycle
+      update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', $shelly_energy_counter_midnight );
+
       $current_power_to_home_wh   = $shelly_homwpwr_obj->power_total_to_home;
       $current_timestamp          = $shelly_homwpwr_obj->minute_ts;
       $current_power_to_home_kw   = $current_power_to_home_wh * 0.001;

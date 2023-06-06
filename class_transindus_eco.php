@@ -559,6 +559,56 @@ class class_transindus_eco
       return $return_array;
     }
 
+    /**
+     * 
+     */
+    public function get_accumulated_wh_since_midnight(  $energy_total_to_home_ts, int $user_index, int $wp_user_ID )
+    {
+      // set default timezone to Asia Kolkata
+      date_default_timezone_set("Asia/Kolkata");
+
+      // read in the config array from the class property
+      $config = $this->config;
+
+      $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
+
+      // get the energy consumed since midnight stored in user meta
+      $shelly_energy_counter_midnight = $all_usermeta[ 'shelly_energy_counter_midnight' ];
+
+      // get the previous cycle energy counter value. 1st time when not set yet set to current value
+      $previous_energy_counter_wh_tmp = $all_usermeta[ 'shelly_energy_counter_now' ] ?? $current_energy_counter_wh;
+
+      $previous_energy_counter_wh     = (int) round( $previous_energy_counter_wh_tmp, 0 );
+
+      // this is passed in so just round it off
+      $current_energy_counter_wh      = (int) round( $energy_total_to_home_ts, 0 );
+
+      if ( ( $current_energy_counter_wh - $previous_energy_counter_wh ) >= 0 )
+      {
+        // the counter has not reset so calculate the energy consumed since last measurement
+        $delta_increase_wh = $current_energy_counter_wh - $previous_energy_counter_wh;
+      }
+      else
+      {
+        // counter has reset so ignore the previous counter reading we lose a little bit of the reading
+        $delta_increase_wh = $current_energy_counter_wh;
+      }
+
+      // accumulate the energy from this cycle to accumulator
+      $shelly_energy_counter_midnight = $shelly_energy_counter_midnight + $delta_increase_wh;
+
+      // update the accumulator user meta for next cycle
+      update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', $shelly_energy_counter_midnight );
+
+      // update the current energy counter with current reading for next cycle
+      update_user_meta( $wp_user_ID, 'shelly_energy_counter_now', $current_energy_counter_wh );
+
+      // return the energy consumed since midnight in WH
+      return $shelly_energy_counter_midnight;
+    }
+
+
+
 
     /**
      *  @param int:$user_index of user in the config array
@@ -1074,7 +1124,6 @@ class class_transindus_eco
         $power_total_to_home_kw = round( ( $power_total_to_home * 0.001 ), 3 );
 
         $energy_channel_0_ts = $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->total;
-      
         $energy_channel_1_ts = $shelly_api_device_response->data->device_status->{"switch:1"}->aenergy->total;
         $energy_channel_2_ts = $shelly_api_device_response->data->device_status->{"switch:2"}->aenergy->total;
         $energy_channel_3_ts = $shelly_api_device_response->data->device_status->{"switch:3"}->aenergy->total;
@@ -1634,7 +1683,6 @@ class class_transindus_eco
                 $surplus = -1.0 * $soc_from_shelly_energy_readings->pout_inverter_ac_kw;
                 $soc_from_shelly_energy_readings->surplus  = $surplus;
 
-
                 // the below flag is not relevant so we don't this to get triggered in the conditions checking
                 $switch_override = false;
               }
@@ -1647,6 +1695,9 @@ class class_transindus_eco
               {
                 // for now we would like to just log the values to see if all works corretly
                 error_log("Studer Clock just passed midnight-SOC=: " . $SOC_percentage_now);
+
+                // reset the energy since midnight counter to 0 to start accumulation of consumed load energy in WH
+                update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', 0 );
 
                 // we can use this to update the user meta for SOC at beginning of new day
                 if (  $SOC_percentage_now  > 20 && $SOC_percentage_now  < 100 )
@@ -1702,12 +1753,23 @@ class class_transindus_eco
           $studer_readings_obj->power_to_ac_kw      = $shelly_4pm_readings_object->power_to_ac_kw;
           $studer_readings_obj->power_to_pump_kw    = $shelly_4pm_readings_object->power_to_pump_kw;
           $studer_readings_obj->power_total_to_home = $shelly_4pm_readings_object->power_total_to_home;
-          $studer_readings_obj->power_total_to_home_kw = $shelly_4pm_readings_object->power_total_to_home_kw;
-          $studer_readings_obj->current_total_home  = $shelly_4pm_readings_object->current_total_home;
+          $studer_readings_obj->power_total_to_home_kw  = $shelly_4pm_readings_object->power_total_to_home_kw;
+          $studer_readings_obj->current_total_home      = $shelly_4pm_readings_object->current_total_home;
+          $studer_readings_obj->energy_total_to_home_ts = $shelly_4pm_readings_object->energy_total_to_home_ts;
 
           $studer_readings_obj->pump_switch_status_bool = $shelly_4pm_readings_object->pump_switch_status_bool;
           $studer_readings_obj->ac_switch_status_bool   = $shelly_4pm_readings_object->ac_switch_status_bool;
           $studer_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
+
+          // calculate the energy consumed since midnight using Shelly4PM as a backup.
+          $accumulated_wh_since_midnight = $this->get_accumulated_wh_since_midnight(  $shelly_4pm_readings_object->energy_total_to_home_ts, 
+                                                                                      $user_index, 
+                                                                                      $wp_user_ID );
+
+          $KWH_load_today_shelly = round( $accumulated_wh_since_midnight * 0.001, 3 );
+
+          $studer_readings_obj->KWH_load_today_shelly = $KWH_load_today_shelly;
+          
 
           { // Studer SOC update calculations along with Battery Voltage Update
             // average the battery voltage over last 3 readings
@@ -1761,6 +1823,8 @@ class class_transindus_eco
                                                     $shelly_api_device_status_voltage . ' VAC');
                 error_log("Psolar_calc: " . array_sum($est_solar_kw) . " Psolar_act: " . $psolar . " - Psurplus: " . 
                           $surplus . " KW - Is it a Cloudy Day?: " . $it_is_a_cloudy_day);
+
+                error_log("Load_KWH_today_Studer = " . $KWH_load_today . " KWH_load_Shelly = " . $KWH_load_today_shelly);
             
             }
   

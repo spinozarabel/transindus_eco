@@ -1605,14 +1605,14 @@ class class_transindus_eco
         }
         
         if ( $it_is_still_dark )
-        {
-          //---------------- Studer Midnight Rollover and SOC from Shelly readings after dark ------------------------------
-          // gets the timestamp from transient / user meta to check if time interval from now to timestamp is < 12h
+        {   //---------------- Studer Midnight Rollover and SOC from Shelly readings after dark
+            // gets the timestamp from transient / user meta to check if time interval from now to timestamp is < 12h
           $soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
 
           if ( $soc_after_dark_happened )
-          {
-            // it is dark AND soc capture after dark has happened so we can compute soc using Shelly readings
+          {   // it is dark AND soc capture after dark has happened so we can compute SOC using Shelly readings
+              // since it is dark, we don;t need Studer to calculate SOC as long as we can measure Home Energy consumption
+              // And also if ACIN switch is ON battery SOC remains conastant since Grid supplies Home and no charge/discharge
             $soc_from_shelly_energy_readings = $this->compute_soc_from_shelly_energy_readings(  $user_index, 
                                                                                                 $wp_user_ID, 
                                                                                                 $wp_user_name,
@@ -1642,17 +1642,17 @@ class class_transindus_eco
                                   &&
                                   ( $shelly_switch_status == "OFF" );					                // The Grid switch is OFF
 
-              // extract the soc predicted at 6am from the returned object
+              // extract the SOC predicted at 6am from the returned object
               $soc_predicted_at_6am = $soc_from_shelly_energy_readings->soc_predicted_at_6am; // rounded already to 1d
 
               if ( false === ( $timer_since_last_6am_switch_event_running = get_transient( 'timer_since_last_6am_switch_event' ) ) )
-              {
-                // transient not there. So 1h has not expired or not even set in the 1st place. 
+              { // transient not there. So 1h has not expired or not even set in the 1st place. 
+                
                 $timer_since_last_6am_switch_event_running = false; // This will enable the soc6am related switching if required
               }
               else
-              {
-                // Transient exists. Since expected value of transient is true set the variable to true
+              { // Transient exists. Since expected value of transient is true set the variable to true
+                
                 $timer_since_last_6am_switch_event_running = true;  // disable any soc6am switching till the timer runs out.
               }
 
@@ -1684,7 +1684,7 @@ class class_transindus_eco
                                     &&
                                       ( $SOC_percentage_now  >  ( $soc_percentage_lvds_setting + 0.3 ) ); // make sure SOC is above LVDS
 
-              { // prepare object for Transient
+              { // prepare object for Transient for updating screen readings
                 $soc_from_shelly_energy_readings->valid_shelly_config               = $valid_shelly_config;
                 $soc_from_shelly_energy_readings->control_shelly                    = $control_shelly;
                 $soc_from_shelly_energy_readings->shelly_switch_status              = $shelly_switch_status;
@@ -1747,8 +1747,8 @@ class class_transindus_eco
           update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', 946665000);
         }
 
-        if ( ! $soc_updated_using_shelly_energy_readings_bool ):
-          // Make a Studer API call since it is not dark now and Shelly readings does not contain solar and battery data
+        if ( ! $soc_updated_using_shelly_energy_readings_bool ): // Make a Studer API call, Shelly SOC update not used
+          
           $studer_readings_obj  = $this->get_studer_min_readings($user_index);
 
           // defined the condition for failure of the Studer API call

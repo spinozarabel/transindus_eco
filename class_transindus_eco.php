@@ -1867,20 +1867,50 @@ class class_transindus_eco
   
             //  Update SOC  number
             $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
-  
-            // set a clamp if the update is bad
-            if ( $SOC_percentage_now < 25 ) {
-              error_log("SOC now bad update: " .  $SOC_percentage_now . " %");
-              $SOC_percentage_now = 25;
+
+            {   // calculate SOC update based on Shelly readings as far as possible
+              $KWH_batt_charge_net_today_shelly  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $KWH_load_today_shelly) * 1.07;
+              
+              $SOC_batt_charge_net_percent_today_shelly = round( $KWH_batt_charge_net_today_shelly / $SOC_capacity_KWH * 100, 1);
+
+              $SOC_percentage_now_shelly = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_shelly;
             }
   
-            // Update user meta so this becomes the previous value for next cycle
-            update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
+            // Check if Stider computed SOC update is reasonable
+            if ( $SOC_percentage_now < 20 || $SOC_percentage_now > 110 ) 
+            {
+              error_log("SOC_Studer is a bad update: " .  $SOC_percentage_now . " %");
+
+              // SO Studer SOC value is bad. Lets check if the Shelly based SOC is reasonable
+              if ( $SOC_percentage_now_shelly > 20 && $SOC_percentage_now_shelly < 105 )
+              {   // Studer SOC update is bad but the Shelly updated SOC seems reasonable so lets use that
+                  // Update user meta so this becomes the previous value for next cycle
+                  update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now_shelly);
+              }
+              else
+              {   // Both SOC updates are bad
+                  error_log("SOC_Shelly is also a bad update: " .  $SOC_percentage_now_shelly . " %");
+
+                  error_log("Setting SOC to 5 points below the LVDS setting as a safety catch");
+
+                  // set a clamp for the SOC value at Min value -5 points
+                  update_user_meta( $wp_user_ID, 'soc_percentage_now', $soc_percentage_lvds_setting - 5 );
+              }
+            }
+            else
+            {   // Studer SOC update seems reasonable
+                // Update user meta so this becomes the previous value for next cycle
+                update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
+            }
+            
+            
+            
   
             if ( $this->verbose )
             {
               error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . abs($KWH_batt_percent_discharged_today) . 
-                        " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC Now: " . $SOC_percentage_now . " %" );
+                        " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC_Studer: " . 
+                        $SOC_percentage_now . " %, SOC_shelly:" . $SOC_percentage_now_shelly . " %");
             }
           }
           {

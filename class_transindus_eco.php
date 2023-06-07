@@ -1713,8 +1713,8 @@ class class_transindus_eco
               $studer_time_just_passed_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
 
               if ( $studer_time_just_passed_midnight )
-              {
-                // for now we would like to just log the values to see if all works corretly
+              { // reset the shelly load energy counter to 0. Capture SOC value for beginning of day
+              
                 error_log("Studer Clock just passed midnight-SOC=: " . $SOC_percentage_now);
 
                 // reset the energy since midnight counter to 0 to start accumulation of consumed load energy in WH
@@ -1768,28 +1768,35 @@ class class_transindus_eco
           // Also make a Shelly 4PM measurement to get individual powers from each channel for granular display
           $shelly_4pm_readings_object = $this->get_shelly_device_status_homepwr( $user_index );
 
-          // Load the Studer Object with properties from the Shelly 4PM object
-          $studer_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;
-          $studer_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;
-          $studer_readings_obj->power_to_ac_kw      = $shelly_4pm_readings_object->power_to_ac_kw;
-          $studer_readings_obj->power_to_pump_kw    = $shelly_4pm_readings_object->power_to_pump_kw;
-          $studer_readings_obj->power_total_to_home = $shelly_4pm_readings_object->power_total_to_home;
-          $studer_readings_obj->power_total_to_home_kw  = $shelly_4pm_readings_object->power_total_to_home_kw;
-          $studer_readings_obj->current_total_home      = $shelly_4pm_readings_object->current_total_home;
-          $studer_readings_obj->energy_total_to_home_ts = $shelly_4pm_readings_object->energy_total_to_home_ts;
+          if ( ! empty( $shelly_4pm_readings_object ) )
+          {   // there is a valid response from the Shelly 4PM switch device
+              // Load the Studer Object with properties from the Shelly 4PM object
+            $studer_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;
+            $studer_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;
+            $studer_readings_obj->power_to_ac_kw      = $shelly_4pm_readings_object->power_to_ac_kw;
+            $studer_readings_obj->power_to_pump_kw    = $shelly_4pm_readings_object->power_to_pump_kw;
+            $studer_readings_obj->power_total_to_home = $shelly_4pm_readings_object->power_total_to_home;
+            $studer_readings_obj->power_total_to_home_kw  = $shelly_4pm_readings_object->power_total_to_home_kw;
+            $studer_readings_obj->current_total_home      = $shelly_4pm_readings_object->current_total_home;
+            $studer_readings_obj->energy_total_to_home_ts = $shelly_4pm_readings_object->energy_total_to_home_ts;
 
-          $studer_readings_obj->pump_switch_status_bool = $shelly_4pm_readings_object->pump_switch_status_bool;
-          $studer_readings_obj->ac_switch_status_bool   = $shelly_4pm_readings_object->ac_switch_status_bool;
-          $studer_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
+            $studer_readings_obj->pump_switch_status_bool = $shelly_4pm_readings_object->pump_switch_status_bool;
+            $studer_readings_obj->ac_switch_status_bool   = $shelly_4pm_readings_object->ac_switch_status_bool;
+            $studer_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
 
-          // calculate the energy consumed since midnight using Shelly4PM as a backup.
-          $accumulated_wh_since_midnight = $this->get_accumulated_wh_since_midnight(  $shelly_4pm_readings_object->energy_total_to_home_ts, 
-                                                                                      $user_index, 
-                                                                                      $wp_user_ID );
+            // calculate the energy consumed since midnight using Shelly4PM as a backup.
+            $accumulated_wh_since_midnight = $this->get_accumulated_wh_since_midnight(  $shelly_4pm_readings_object->energy_total_to_home_ts, 
+                                                                                        $user_index, 
+                                                                                        $wp_user_ID );
 
-          $KWH_load_today_shelly = round( $accumulated_wh_since_midnight * 0.001, 3 );
+            $KWH_load_today_shelly = round( $accumulated_wh_since_midnight * 0.001, 3 );
 
-          $studer_readings_obj->KWH_load_today_shelly = $KWH_load_today_shelly;
+            $studer_readings_obj->KWH_load_today_shelly = $KWH_load_today_shelly;
+          }
+
+          
+
+          
           
 
           { // Studer SOC update calculations along with Battery Voltage Update

@@ -1798,11 +1798,11 @@ class class_transindus_eco
               error_log(" Shelly Midnight Counter reset due to bad reading using Studer Value");
 
               $value_in_wh = (int) round( $studer_readings_obj->KWH_load_today * 1000.0, 0);
-              
-              update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', $value_in_wh );
-            }
 
-            $KWH_load_today_shelly = $studer_readings_obj->KWH_load_today;
+              update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', $value_in_wh );
+
+              $KWH_load_today_shelly = $studer_readings_obj->KWH_load_today;
+            }
 
             $studer_readings_obj->KWH_load_today_shelly = $KWH_load_today_shelly;
           }

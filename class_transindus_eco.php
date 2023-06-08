@@ -1791,6 +1791,19 @@ class class_transindus_eco
 
             $KWH_load_today_shelly = round( $accumulated_wh_since_midnight * 0.001, 3 );
 
+            if ( abs( $studer_readings_obj->KWH_load_today - $KWH_load_today_shelly ) > 0.5 )
+            {
+              // value computed by shelly is way off. So we reset the baseline
+
+              error_log(" Shelly Midnight Counter reset due to bad reading using Studer Value");
+
+              $value_in_wh = (int) round( $studer_readings_obj->KWH_load_today * 1000.0, 0);
+              
+              update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', $value_in_wh );
+            }
+
+            $KWH_load_today_shelly = $studer_readings_obj->KWH_load_today;
+
             $studer_readings_obj->KWH_load_today_shelly = $KWH_load_today_shelly;
           }
 

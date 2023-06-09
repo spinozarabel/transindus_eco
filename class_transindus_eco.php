@@ -599,7 +599,7 @@ class class_transindus_eco
       // The assumption is that between any 2 readings the difference shouldnt be more. 
       // The only way the difference can be more is if the internet was down and readings get separated in time very long
       // That is not being handled currently
-      if ( $delta_increase_wh < 0 && $delta_increase_wh > 1000 )
+      if ( $delta_increase_wh < 0 || $delta_increase_wh > 500 )
       {
         error_log( "Delta Increase in shelly_energy_counter_midnight is Bad: " . $delta_increase_wh . "And was ignored");
         // we ignore this accumulation

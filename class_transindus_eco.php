@@ -1905,7 +1905,7 @@ class class_transindus_eco
             }
   
             // Check if Stider computed SOC update is reasonable
-            if ( $SOC_percentage_now < 20 || $SOC_percentage_now > 110 ) 
+            if ( $SOC_percentage_now < 20 || $SOC_percentage_now > 105 ) 
             {
               error_log("SOC_Studer is a bad update: " .  $SOC_percentage_now . " %");
 
@@ -1921,8 +1921,8 @@ class class_transindus_eco
 
                   error_log("Setting SOC to 5 points below the LVDS setting as a safety catch");
 
-                  // set a clamp for the SOC value at Min value -5 points
-                  update_user_meta( $wp_user_ID, 'soc_percentage_now', $soc_percentage_lvds_setting - 5 );
+                  // set a clamp for the SOC value at Min value -3 points
+                  update_user_meta( $wp_user_ID, 'soc_percentage_now', $soc_percentage_lvds_setting - 3 );
               }
             }
             else

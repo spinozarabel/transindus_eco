@@ -80,7 +80,7 @@ class class_transindus_eco
       }
       else
       {
-          $this->version = '2.0';
+          $this->version = '2.3';
       }
 
       $this->plugin_name = 'transindus_eco';
@@ -1544,9 +1544,15 @@ class class_transindus_eco
      * @param int:wp_user_ID
      * @param string:wp_user_name
      * @param bool:do_shelly
+     * @param bool:$make_studer_api_call default true
      * @return object:studer_readings_obj
+     * 
      */
-    public function get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly)
+    public function get_readings_and_servo_grid_switch( int $user_index, 
+                                                        int $wp_user_ID, 
+                                                        string $wp_user_name, 
+                                                        bool $do_shelly,
+                                                        bool $make_studer_api_call = true ) : ? object
     {
         { // Define boolean control variables for various time intervals
           $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
@@ -4307,10 +4313,15 @@ class class_transindus_eco
             $wp_user_name = $current_user->user_login;
             $user_index   = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ;
 
-            error_log("from Ajax Call: toggleGridSwitch Value: " . $toggleGridSwitch . 
-                                                  ' wp_user_ID:' . $wp_user_ID       . 
-                                            ' doShellyToggle:'   . $doShellyToggle   . 
-                                                ' user_index:'   . $user_index);
+            if ( $this->verbose)
+            {
+
+            
+              error_log("from Ajax Call: toggleGridSwitch Value: " . $toggleGridSwitch . 
+                                                    ' wp_user_ID:' . $wp_user_ID       . 
+                                              ' doShellyToggle:'   . $doShellyToggle   . 
+                                                  ' user_index:'   . $user_index);
+            }
         }
 
         // extract the do_shelly control flag as set in user meta
@@ -4334,6 +4345,8 @@ class class_transindus_eco
           }
           // Grid ON/OFF is determoned in the CRON loop as usual. 
           return;
+
+          // The code below is obsolete and will never execute
 
             // Get current status of switch
             $shelly_api_device_response   = $this->get_shelly_device_status($user_index);

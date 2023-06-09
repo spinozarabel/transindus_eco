@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
 // define a unique constant to check inside of config
 define('MyConst', TRUE);
 
-define('TRANSINDUS_ECO_VERSION', '2.0');
+define('TRANSINDUS_ECO_VERSION', '2.3');
 
 require_once(__DIR__."/class_transindus_eco.php");         // contains the main class
 

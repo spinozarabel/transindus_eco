@@ -517,7 +517,7 @@ class class_transindus_eco
 
           if ( is_null($shelly_api_device_response) ) { // switch status is unknown
 
-              error_log("Shelly cloud not responding and or device is offline");
+              error_log("Shelly Grid Switch API call failed - Grid power failure Assumed");
 
               $shelly_api_device_status_ON = null;
 

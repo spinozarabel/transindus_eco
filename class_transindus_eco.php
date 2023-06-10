@@ -3282,9 +3282,18 @@ class class_transindus_eco
               $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
 
               $battery_measurement_object = $this->get_shelly_device_status_battery( $config_index, $wp_user_ID );
+              $est_solar_kw = $this->estimated_solar_power($config_index);
 
-              print( "ADC voltage (V): " .                                $battery_measurement_object->voltage . PHP_EOL );
-              print( " Battery Current (A): " .                           $battery_measurement_object->battery_amps . PHP_EOL);
+              $east_facing_panel_est_kw = $est_solar_kw[1];
+              $west_facing_panel_est_kw = $est_solar_kw[0];
+
+              $ratio_west_total = array_sum( $est_solar_kw ) / $west_facing_panel_est_kw = $est_solar_kw[0];
+
+              $total_solar_current = round( $battery_measurement_object->battery_amps * $ratio_west_total, 1);
+
+              // print( "ADC voltage (V): " .                                $battery_measurement_object->voltage . PHP_EOL );
+              print( round($battery_measurement_object->battery_amps,1) . " " . PHP_EOL);
+              print( $total_solar_current . PHP_EOL);
               print( " Time interval (H: " .                              $battery_measurement_object->hours_between_measurement . PHP_EOL);
               print( " Battery (AH) discharge since last measurement: " . $battery_measurement_object->battery_ah_discharged .PHP_EOL);
               print( " Battery (%SOC-AH) discharge since last measurement: " . $battery_measurement_object->soc_ah_discharged_percent . PHP_EOL);

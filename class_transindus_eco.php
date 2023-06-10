@@ -3289,7 +3289,7 @@ class class_transindus_eco
 
               $ratio_west_total = array_sum( $est_solar_kw ) / $west_facing_panel_est_kw = $est_solar_kw[0];
 
-              $total_solar_current = 1.29 * round( $battery_measurement_object->battery_amps * $ratio_west_total, 1);
+              $total_solar_current = 1.25 * round( $battery_measurement_object->battery_amps * $ratio_west_total, 1);
 
               // print( "ADC voltage (V): " .                                $battery_measurement_object->voltage . PHP_EOL );
               print( round($battery_measurement_object->battery_amps,1) . " " . PHP_EOL);

@@ -1077,7 +1077,7 @@ class class_transindus_eco
         // convention here is that battery discharge current is positive
         $battery_amps_1_of_3 = $delta_voltage / 0.055;  // battery current of 1/3 cells, in Amps DC
 
-        $battery_amps = 1.0 * $battery_amps_1_of_3; // considering only 1 cell for convenience since AH = 100 serves also as percent
+        $battery_amps = 1.1 * $battery_amps_1_of_3; // considering only 1 cell for convenience since AH = 100 serves also as percent
 
         // get the unix time stamp when measurement was made
         $timestamp = $shelly_api_device_response->data->device_status->unixtime;

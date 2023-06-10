@@ -1075,7 +1075,7 @@ class class_transindus_eco
         $delta_voltage = $adc_voltage_shelly - 2.5;
 
         // convention here is that battery discharge current is positive
-        $battery_amps_1_of_3 = $delta_voltage / 0.065;  // battery current of 1/3 cells, in Amps DC
+        $battery_amps_1_of_3 = $delta_voltage / 0.055;  // battery current of 1/3 cells, in Amps DC
 
         $battery_amps = 1.0 * $battery_amps_1_of_3; // considering only 1 cell for convenience since AH = 100 serves also as percent
 
@@ -3289,7 +3289,7 @@ class class_transindus_eco
 
               $ratio_west_total = array_sum( $est_solar_kw ) / $west_facing_panel_est_kw = $est_solar_kw[0];
 
-              $total_solar_current = 1.25 * round( $battery_measurement_object->battery_amps * $ratio_west_total, 1);
+              $total_solar_current = 1.00 * round( $battery_measurement_object->battery_amps * $ratio_west_total, 1);
 
               // print( "ADC voltage (V): " .                                $battery_measurement_object->voltage . PHP_EOL );
               print( round($battery_measurement_object->battery_amps,1) . " " . PHP_EOL);

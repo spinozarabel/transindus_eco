@@ -3285,8 +3285,7 @@ class class_transindus_eco
 
               $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
 
-              do 
-              {
+              
                 $battery_measurement_object = $this->get_shelly_device_status_battery( $config_index, $wp_user_ID );
                 $est_solar_kw = $this->estimated_solar_power($config_index);
 
@@ -3306,11 +3305,7 @@ class class_transindus_eco
                 sleep (1);
 
                 $count += 1;
-                
-              } while ($count <= 30);
 
-              
-              
             break;
 
         }

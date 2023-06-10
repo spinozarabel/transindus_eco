@@ -3304,6 +3304,9 @@ class class_transindus_eco
                 print( " Battery (AH) discharge since last measurement: " . $battery_measurement_object->battery_ah_discharged .PHP_EOL);
                 print( " Battery (%SOC-AH) discharge since last measurement: " . $battery_measurement_object->soc_ah_discharged_percent . PHP_EOL);
                 sleep (1);
+
+                $count += 1;
+                
               } while ($count <= 30);
 
               

@@ -1098,14 +1098,11 @@ class class_transindus_eco
         // find out the time interval between the last timestamp and the present one in seconds
         $diff = $now->diff( $prev_datetime_obj );
 
-        $hours_between_measurement = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 ) / 3600;
+        $hours_between_measurement = round( ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 ) / 3600, 6);
 
         // AH of battery discharge - Convention is that discharge AH is considered positive
         // use trapezoidal rule for integration
         $solar_ah_accumulated_last_measurement = 0.5 * ( $previous_solar_amps + $solar_amps ) * $hours_between_measurement;
-
-        // all calculations on one unit of battery since measurements are only on one unit
-        $solar_ah_percent = $battery_ah_discharged / $battery_capacity_ah * 100;
 
         
         $battery_measurements_object->solar_amps_west_raw_measurement           = $solar_amps_west_raw_measurement;

@@ -1101,7 +1101,7 @@ class class_transindus_eco
         // find out the time interval between the last timestamp and the present one in seconds
         $diff = $now->diff( $prev_datetime_obj );
 
-        $hours_between_measurement = $diff->s + $diff->i * 60  + $diff->h * 60 * 60 / 3600;
+        $hours_between_measurement = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 ) / 3600;
 
         // AH of battery discharge - Convention is that discharge AH is considered positive
         // use trapezoidal rule for integration

@@ -1603,7 +1603,7 @@ class class_transindus_eco
           $total_to_west_panel_ratio = array_sum( $est_solar_kw ) / $est_solar_kw[0];
 
           // get a measurement of the solar current into battery junction from the panels
-          $shelly_solar_measurement_object = $this->get_shelly_device_status_battery( $config_index, $wp_user_ID, $total_to_west_panel_ratio );
+          $shelly_solar_measurement_object = $this->get_shelly_device_status_battery( $user_index, $wp_user_ID, $total_to_west_panel_ratio );
         }
         
 

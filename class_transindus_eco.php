@@ -1085,8 +1085,12 @@ class class_transindus_eco
         // get the unix time stamp when measurement was made
         $timestamp = $shelly_api_device_response->data->device_status->unixtime;
 
+        error_log('Current time stamp:' . $timestamp);
+
         // get the previous reading's timestamp
         $previous_timestamp     = get_user_meta( $wp_user_ID, 'timestamp_battery_last_measurement', true ) ?? $timestamp;
+        error_log('Previous time stamp:' . $previous_timestamp);
+
         $previous_solar_amps    = get_user_meta( $wp_user_ID, 'amps_battery_last_measurement', true ) ?? $solar_amps;
 
         $prev_datetime_obj = new DateTime();

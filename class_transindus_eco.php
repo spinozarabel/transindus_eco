@@ -1037,7 +1037,7 @@ class class_transindus_eco
      *  Trapezoidal rule is used to calculate Area
      *  Current measurements are used to update user meta to serve as previous measurements for next cycle
      */
-    public function get_shelly_device_status_battery( int $user_index, int $wp_user_ID ): ? object
+    public function get_shelly_device_status_battery( int $user_index, int $wp_user_ID, $ratio ): ? object
     {
         // set default timezone to Asia Kolkata
         date_default_timezone_set("Asia/Kolkata");
@@ -1075,16 +1075,19 @@ class class_transindus_eco
         $delta_voltage = $adc_voltage_shelly - 2.5;
 
         // convention here is that battery discharge current is positive
-        $battery_amps_1_of_3 = $delta_voltage / 0.065;  // battery current of 1/3 cells, in Amps DC
+        $solar_amps_west_raw_measurement = $delta_voltage / 0.065;  // battery current of 1/3 cells, in Amps DC
 
-        $battery_amps = 1.25 * $battery_amps_1_of_3; // considering only 1 cell for convenience since AH = 100 serves also as percent
+        $solar_amps = 1.25 * $solar_amps_west_raw_measurement; //  calibration factor between Studer Variotrack and our measurement
+
+        // multiply by factor for total from west facing only measurement using calculations
+        $solar_amps = $ratio * $solar_amps; // Since we only measure West facing panel, multiply by ratio passed in
 
         // get the unix time stamp when measurement was made
         $timestamp = $shelly_api_device_response->data->device_status->unixtime;
 
         // get the previous reading's timestamp
         $previous_timestamp     = get_user_meta( $wp_user_ID, 'timestamp_battery_last_measurement', true ) ?? $timestamp;
-        $previous_battery_amps  = get_user_meta( $wp_user_ID, 'amps_battery_last_measurement', true ) ?? $battery_amps;
+        $previous_solar_amps    = get_user_meta( $wp_user_ID, 'amps_battery_last_measurement', true ) ?? $solar_amps;
 
         $prev_datetime_obj = new DateTime();
         $prev_datetime_obj->setTimeStamp($previous_timestamp);
@@ -1099,23 +1102,28 @@ class class_transindus_eco
 
         // AH of battery discharge - Convention is that discharge AH is considered positive
         // use trapezoidal rule for integration
-        $battery_ah_discharged = 0.5 * ( $previous_battery_amps + $battery_amps ) * $hours_between_measurement;
+        $solar_ah_accumulated_last_measurement = 0.5 * ( $previous_solar_amps + $solar_amps ) * $hours_between_measurement;
 
         // all calculations on one unit of battery since measurements are only on one unit
-        $soc_ah_discharged_percent = $battery_ah_discharged / $battery_capacity_ah * 100;
+        $solar_ah_percent = $battery_ah_discharged / $battery_capacity_ah * 100;
+
+        
+        $battery_measurements_object->solar_amps_west_raw_measurement           = $solar_amps_west_raw_measurement;
+        $battery_measurements_object->solar_ah_accumulated_last_measurement     = $solar_ah_accumulated_last_measurement;
 
         $battery_measurements_object->voltage                   = $adc_voltage_shelly;
-        $battery_measurements_object->battery_amps              = $battery_amps;
+
+        $battery_measurements_object->solar_amps                = $solar_amps;
+
         $battery_measurements_object->timestamp                 = $timestamp;
         $battery_measurements_object->previous_timestamp        = $previous_timestamp;
-        $battery_measurements_object->battery_ah_discharged     = $battery_ah_discharged;
+        
         $battery_measurements_object->hours_between_measurement = $hours_between_measurement;
-        $battery_measurements_object->previous_battery_amps     = $previous_battery_amps;
-        $battery_measurements_object->soc_ah_discharged_percent = $soc_ah_discharged_percent;
+        $battery_measurements_object->previous_solar_amps       = $previous_solar_amps;
 
         // update user meta with new measurement for next cycle of integration
         update_user_meta( $wp_user_ID, 'timestamp_battery_last_measurement',  $timestamp    );
-        update_user_meta( $wp_user_ID, 'amps_battery_last_measurement',       $battery_amps );
+        update_user_meta( $wp_user_ID, 'amps_battery_last_measurement',       $solar_amps );
 
         return $battery_measurements_object;
     }
@@ -1387,8 +1395,18 @@ class class_transindus_eco
         {
           // transient has expired or doesn't exist, so SOC dark reference Capture has NOT happend yet.
           // Now read the Shelly Pro 4 PM energy meter for energy counter and imestamp
-          $timestamp_soc_capture_after_dark = $this->get_shelly_device_status_homepwr( $user_index )->minute_ts;
-          $shelly_energy_counter_after_dark = $this->get_shelly_device_status_homepwr( $user_index )->energy_total_to_home_ts;
+
+          $shelly_device_status_obj = $this->get_shelly_device_status_homepwr( $user_index );
+
+          if ( empty( $shelly_device_status_obj ) )
+          {
+            error_log( "Shelly API call to Home Power Shelly 4PM failed during cature soc after dark, did not happen");
+            return false;
+          }
+
+
+          $timestamp_soc_capture_after_dark = $shelly_device_status_obj->minute_ts;
+          $shelly_energy_counter_after_dark = $shelly_device_status_obj->energy_total_to_home_ts;
 
           set_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark, 4*60*60 );
           set_transient( $wp_user_name . '_' . 'shelly_energy_counter_after_dark',  $shelly_energy_counter_after_dark, 4*60*60 );
@@ -1419,8 +1437,17 @@ class class_transindus_eco
           {
             // looks like the transient was bad so lets redo the capture
             // Now read the Shelly Pro 4 PM energy meter for energy counter and imestamp
-          $timestamp_soc_capture_after_dark = $this->get_shelly_device_status_homepwr( $user_index )->minute_ts;
-          $shelly_energy_counter_after_dark = $this->get_shelly_device_status_homepwr( $user_index )->energy_total_to_home_ts;
+            $shelly_device_status_obj = $this->get_shelly_device_status_homepwr( $user_index );
+
+            if ( empty( $shelly_device_status_obj ) )
+            {
+              error_log( "Shelly API call to Home Power Shelly 4PM failed during cature soc after dark, did not happen");
+              return false;
+            }
+  
+  
+            $timestamp_soc_capture_after_dark = $shelly_device_status_obj->minute_ts;
+            $shelly_energy_counter_after_dark = $shelly_device_status_obj->energy_total_to_home_ts;
 
           set_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark, 4*60*60 );
           set_transient( $wp_user_name . '_' . 'shelly_energy_counter_after_dark',  $shelly_energy_counter_after_dark, 4*60*60 );
@@ -1568,8 +1595,17 @@ class class_transindus_eco
 
         $RDBC = false;    // permamantly disable RDBC mode
 
-        // get the estimated solar power from calculations for a clear day
-        $est_solar_kw         = $this->estimated_solar_power($user_index);
+        {
+          // get the estimated solar power from calculations for a clear day
+          $est_solar_kw         = $this->estimated_solar_power($user_index);
+
+          // from the above get the ratio of power or current of total to that of the West facing only
+          $total_to_west_panel_ratio = array_sum( $est_solar_kw ) / $est_solar_kw[0];
+
+          // get a measurement of the solar current into battery junction from the panels
+          $shelly_solar_measurement_object = $this->get_shelly_device_status_battery( $config_index, $wp_user_ID, $total_to_west_panel_ratio );
+        }
+        
 
         { // Get user meta for limits and controls
           // SOC percentage needed to trigger LVDS
@@ -1623,6 +1659,9 @@ class class_transindus_eco
           $shelly_switch_status             = $shelly_switch_acin_details_obj['shelly_switch_status'];
           $shelly_api_device_status_voltage = $shelly_switch_acin_details_obj['shelly_api_device_status_voltage'];
           $shelly_api_device_status_ON      = $shelly_switch_acin_details_obj['shelly_api_device_status_ON'];
+
+          // wait for 1s for shelly rate limit issue before next possible shelly API call
+          // sleep(1);
         }
         
         if ( $it_is_still_dark )
@@ -1786,7 +1825,11 @@ class class_transindus_eco
             return null;
           }
 
+          // Now make a Shelly API call on the Solar current monitoring device
+
+
           // Also make a Shelly 4PM measurement to get individual powers from each channel for granular display
+          // sleep(1); // Shelly rate limit issue
           $shelly_4pm_readings_object = $this->get_shelly_device_status_homepwr( $user_index );
 
           if ( ! empty( $shelly_4pm_readings_object ) )
@@ -3286,25 +3329,21 @@ class class_transindus_eco
               $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
 
               
-                $battery_measurement_object = $this->get_shelly_device_status_battery( $config_index, $wp_user_ID );
+                
                 $est_solar_kw = $this->estimated_solar_power($config_index);
 
-                $east_facing_panel_est_kw = $est_solar_kw[1];
-                $west_facing_panel_est_kw = $est_solar_kw[0];
+                $ratio_west_total = array_sum( $est_solar_kw ) / $est_solar_kw[0];
 
-                $ratio_west_total = array_sum( $est_solar_kw ) / $west_facing_panel_est_kw = $est_solar_kw[0];
+                $solar_measurement_object = $this->get_shelly_device_status_battery( $config_index, $wp_user_ID, $ratio_west_total );
 
-                $total_solar_current = 1.00 * round( $battery_measurement_object->battery_amps * $ratio_west_total, 1);
+                $total_solar_current = 1.00 * round( $solar_measurement_object->solar_amps, 1);
 
                 // print( "ADC voltage (V): " .                                $battery_measurement_object->voltage . PHP_EOL );
-                print( round($battery_measurement_object->battery_amps,1) . " " . PHP_EOL);
+                print( round($solar_measurement_object->solar_amps_west_raw_measurement, 1) . " " . PHP_EOL);
                 print( $total_solar_current . PHP_EOL);
-                print( " Time interval (H: " .                              $battery_measurement_object->hours_between_measurement . PHP_EOL);
-                print( " Battery (AH) discharge since last measurement: " . $battery_measurement_object->battery_ah_discharged .PHP_EOL);
-                print( " Battery (%SOC-AH) discharge since last measurement: " . $battery_measurement_object->soc_ah_discharged_percent . PHP_EOL);
-                sleep (1);
-
-                $count += 1;
+                print( " Time interval (H: " .                              $solar_measurement_object->hours_between_measurement . PHP_EOL);
+                print( " Solar (AH) accumulated since last measurement: " . $solar_measurement_object->solar_ah_accumulated_last_measurement .PHP_EOL);
+                
 
             break;
 

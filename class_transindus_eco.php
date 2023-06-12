@@ -3349,7 +3349,7 @@ class class_transindus_eco
                 
                 $est_solar_kw = $this->estimated_solar_power($config_index);
 
-                $ratio_west_total = array_sum( $est_solar_kw ) / $est_solar_kw[0];
+                $ratio_west_total = array_sum( $est_solar_kw ) / $est_solar_kw[1];
 
                 $solar_measurement_object = $this->get_shelly_device_status_battery( $config_index, $wp_user_ID, $ratio_west_total );
 

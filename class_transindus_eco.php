@@ -1970,6 +1970,8 @@ class class_transindus_eco
 
               $SOC_percentage_now_bmc = $SOC_percentage_previous_shelly_bm + ( $batt_charge_ah_accumulated_last_measurement / 300 * 100);
 
+              $SOC_percentage_now_bmc = round( $SOC_percentage_now_bmc, 1);
+              
               if ( abs($batt_charge_ah_accumulated_last_measurement / 300 * 100) < 5 )
               {
                 // we may have a reasonable update since change is less than 3%

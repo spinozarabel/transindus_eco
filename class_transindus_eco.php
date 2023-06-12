@@ -1965,7 +1965,7 @@ class class_transindus_eco
                                                                 $shelly_solar_measurement_object->hours_between_measurement) / 49.0;
 
               // only thing missing is the Grid power, that we will account soon using our Shelly grid power measurement
-              $batt_charge_ah_accumulated_last_measurement =  $solar_ah_accumulated_last_measurement + 
+              $batt_charge_ah_accumulated_last_measurement =  $solar_ah_accumulated_last_measurement - 
                                                               $load_ah_accumulated_last_measurement;
 
               $SOC_percentage_now_bmc = $SOC_percentage_previous_shelly_bm + ( $batt_charge_ah_accumulated_last_measurement / 300 * 100);

@@ -1982,7 +1982,7 @@ class class_transindus_eco
                 error_log("Bad SOC_shelly_BM_update Did nou todate user meta: " .  $batt_charge_ah_accumulated_last_measurement / 300 * 100 . " %");
               }
 
-              error_log("SOC_shelly_BM_update: " .  $SOC_percentage_now_bmc . " %");
+              error_log("SOC_shelly_BM: " .  $SOC_percentage_now_bmc . " %");
             }
 
             

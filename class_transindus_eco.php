@@ -1821,10 +1821,10 @@ class class_transindus_eco
             $est_solar_kw = $this->estimated_solar_power($user_index);
   
             // from the above get the ratio of power or current of total to that of the West facing only
-            if ( $est_solar_kw[1] > 0 )
+            if ( $est_solar_kw[0] > 0 )
             {
               // avoid division of 0
-              $total_to_west_panel_ratio = array_sum( $est_solar_kw ) / $est_solar_kw[1];
+              $total_to_west_panel_ratio = array_sum( $est_solar_kw ) / $est_solar_kw[0];
                if ( $total_to_west_panel_ratio > 20 )
                {
                 // clamp the ratio for good measure

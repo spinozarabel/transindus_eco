@@ -1075,7 +1075,7 @@ class class_transindus_eco
         $delta_voltage = $adc_voltage_shelly - 2.5;
 
         // convention here is that battery discharge current is positive
-        $solar_amps_west_raw_measurement = $delta_voltage / 0.065;  // battery current of 1/3 cells, in Amps DC
+        $solar_amps_west_raw_measurement = $delta_voltage / 0.055;  // battery current of 1/3 cells, in Amps DC
 
         // $solar_amps =  * $solar_amps_west_raw_measurement; //  calibration factor between Studer Variotrack and our measurement
 

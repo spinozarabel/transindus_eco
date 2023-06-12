@@ -1818,11 +1818,20 @@ class class_transindus_eco
           // Now make a Shelly API call on the Solar current monitoring device
           {
             // get the estimated solar power from calculations for a clear day
-            $est_solar_kw         = $this->estimated_solar_power($user_index);
+            $est_solar_kw = $this->estimated_solar_power($user_index);
   
             // from the above get the ratio of power or current of total to that of the West facing only
-            $total_to_west_panel_ratio = array_sum( $est_solar_kw ) / $est_solar_kw[1];
-  
+            if ( $est_solar_kw[1] > 0 )
+            {
+              // avoid division of 0
+              $total_to_west_panel_ratio = array_sum( $est_solar_kw ) / $est_solar_kw[1];
+               if ( $total_to_west_panel_ratio > 20 )
+               {
+                // clamp the ratio for good measure
+                $total_to_west_panel_ratio = 20;
+               }
+            }
+            
             // get a measurement of the solar current into battery junction from the panels
             $shelly_solar_measurement_object = $this->get_shelly_device_status_battery( $user_index, $wp_user_ID, $total_to_west_panel_ratio );
           }
@@ -1898,9 +1907,14 @@ class class_transindus_eco
   
             // Weighted percentage cloudiness
             $cloudiness_average_percentage_weighted = round($this->cloudiness_forecast->cloudiness_average_percentage_weighted, 0);
+
+            // get the SOC % from the previous reading from user meta
+            $SOC_percentage_previous            = get_user_meta($wp_user_ID, "soc_percentage_now",  true);
+
+            $SOC_percentage_previous_shelly_bm  = get_user_meta($wp_user_ID, "soc_percentage_now_calculated_using_shelly_bm",  true) ?? $SOC_percentage_previous;
   
             // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only at beginning of day, once.
-            $SOC_percentage_beg_of_day       = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
+            $SOC_percentage_beg_of_day          = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
   
             // get the installed battery capacity in KWH from config
             $SOC_capacity_KWH     = $this->config['accounts'][$user_index]['battery_capacity'];
@@ -1929,8 +1943,7 @@ class class_transindus_eco
             
             }
   
-            // get the SOC % from the previous reading from user meta
-            $SOC_percentage_previous = get_user_meta($wp_user_ID, "soc_percentage_now",  true) ?? 50.0;
+            
   
             // Net battery charge in KWH (discharge if minus)
             $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07;
@@ -1941,28 +1954,40 @@ class class_transindus_eco
             //  Update SOC  number
             $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
 
-            // Get the AH accumulated from Total Solar energy input at battery junction as reference
-            // we use the same 0.96 efficiency factor as for studer calculations
-            $solar_ah_accumulated_last_measurement = 0.96 * $shelly_solar_measurement_object->solar_ah_accumulated_last_measurement;
-            error_log("Solar_AH_accumulated_last_meas: " .  $solar_ah_accumulated_last_measurement . " AH");
+            { // calculate non-studer based SOC during daytime using SHelly UNI for Solar, Shelly 4PM for load and Shelly EM for Grid
+              // Get the AH accumulated from Total Solar energy input at battery junction as reference
+              // we use the same 0.96 efficiency factor as for studer calculations
+              $solar_ah_accumulated_last_measurement = 0.96 * $shelly_solar_measurement_object->solar_ah_accumulated_last_measurement;
 
-            // Load AH referred to the battery is got by dividing the delta load WH by the battery voltage of 49V
-            // The factor of 1.07 accounts for the inverter efficiency
-            $load_ah_accumulated_last_measurement = 1.07 * (  $shelly_4pm_readings_object->power_total_to_home *  
-                                                              $shelly_solar_measurement_object->hours_between_measurement) / 49.0;
-            error_log("Load_AH_accumulated_last_meas: " .  $load_ah_accumulated_last_measurement . " AH");
+              // Load AH referred to the battery is got by dividing the delta load WH by the battery voltage of 49V
+              // The factor of 1.07 accounts for the inverter efficiency
+              $load_ah_accumulated_last_measurement = 1.07 * (  $shelly_4pm_readings_object->power_total_to_home *  
+                                                                $shelly_solar_measurement_object->hours_between_measurement) / 49.0;
 
-            // only thing missing is the Grid power, that we will account soon using our Shelly grid power measurement
-            $batt_charge_ah_accumulated_last_measurement =  $solar_ah_accumulated_last_measurement + 
-                                                            $load_ah_accumulated_last_measurement;
+              // only thing missing is the Grid power, that we will account soon using our Shelly grid power measurement
+              $batt_charge_ah_accumulated_last_measurement =  $solar_ah_accumulated_last_measurement + 
+                                                              $load_ah_accumulated_last_measurement;
 
-            $SOC_percentage_now_bmc = $SOC_percentage_previous + ( $batt_charge_ah_accumulated_last_measurement / 300 * 100);
+              $SOC_percentage_now_bmc = $SOC_percentage_previous_shelly_bm + ( $batt_charge_ah_accumulated_last_measurement / 300 * 100);
 
-            error_log("batt_charge_ah_accumulated_last_measurement: " .  $batt_charge_ah_accumulated_last_measurement / 300 * 100 . " %");
+              if ( abs($batt_charge_ah_accumulated_last_measurement / 300 * 100) < 3 )
+              {
+                // we may have a reasonable update since change is less than 3%
+                // lets update the user meta for updated SOC
+                update_user_meta( $wp_user_ID, 'soc_percentage_now_calculated_using_shelly_bm', $SOC_percentage_now_bmc);
+              }
+              else
+              {
+                // bad update so did not update user meta
+                error_log("Bad SOC_shelly_BM_update Did nou todate user meta: " .  $batt_charge_ah_accumulated_last_measurement / 300 * 100 . " %");
+              }
 
-            error_log("SOC_shelly_BM_update: " .  $SOC_percentage_now_bmc . " %");
+              error_log("SOC_shelly_BM_update: " .  $SOC_percentage_now_bmc . " %");
+            }
 
-            {   // calculate SOC update based on Shelly readings as far as possible
+            
+
+            {   // calculate SOC update using Load KWH calculated using Shelly 4PM, not Studer. Occassionally This is bad for Studer
               $KWH_batt_charge_net_today_shelly  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $KWH_load_today_shelly) * 1.07;
               
               $SOC_batt_charge_net_percent_today_shelly = round( $KWH_batt_charge_net_today_shelly / $SOC_capacity_KWH * 100, 1);
@@ -2000,7 +2025,7 @@ class class_transindus_eco
             
             
   
-            if ( $this->verbose )
+            if ( true )
             {
               error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . abs($KWH_batt_percent_discharged_today) . 
                         " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC_Studer: " . 

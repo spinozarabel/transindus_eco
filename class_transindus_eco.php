@@ -1970,7 +1970,7 @@ class class_transindus_eco
 
               $SOC_percentage_now_bmc = $SOC_percentage_previous_shelly_bm + ( $batt_charge_ah_accumulated_last_measurement / 300 * 100);
 
-              if ( abs($batt_charge_ah_accumulated_last_measurement / 300 * 100) < 3 )
+              if ( abs($batt_charge_ah_accumulated_last_measurement / 300 * 100) < 5 )
               {
                 // we may have a reasonable update since change is less than 3%
                 // lets update the user meta for updated SOC

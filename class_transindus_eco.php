@@ -1077,10 +1077,12 @@ class class_transindus_eco
         // convention here is that battery discharge current is positive
         $solar_amps_west_raw_measurement = $delta_voltage / 0.065;  // battery current of 1/3 cells, in Amps DC
 
-        $solar_amps = 1.25 * $solar_amps_west_raw_measurement; //  calibration factor between Studer Variotrack and our measurement
+        // $solar_amps =  * $solar_amps_west_raw_measurement; //  calibration factor between Studer Variotrack and our measurement
 
         // multiply by factor for total from west facing only measurement using calculations
-        $solar_amps = $ratio * $solar_amps; // Since we only measure West facing panel, multiply by ratio passed in
+        $solar_amps = $ratio * $solar_amps_west_raw_measurement; // Since we only measure West facing panel, multiply by ratio passed in
+
+        error_log("Raw: $solar_amps_west_raw_measurement, Ratio: $ratio, SolarAmps: $solar_amps");
 
         // get the unix time stamp when measurement was made
         $now = new DateTime();

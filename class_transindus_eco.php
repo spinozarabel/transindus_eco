@@ -1942,7 +1942,7 @@ class class_transindus_eco
             // Get the AH accumulated from Total Solar energy input at battery junction as reference
             // we use the same 0.96 efficiency factor as for studer calculations
             $solar_ah_accumulated_last_measurement = 0.96 * $shelly_solar_measurement_object->solar_ah_accumulated_last_measurement;
-            error_log("Solar_AH_accumulated_last_meas: " .  $SOC_percentage_now_bmc . " AH");
+            error_log("Solar_AH_accumulated_last_meas: " .  $solar_ah_accumulated_last_measurement . " AH");
 
             // Load AH referred to the battery is got by dividing the delta load WH by the battery voltage of 49V
             // The factor of 1.07 accounts for the inverter efficiency

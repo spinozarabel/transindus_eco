@@ -1080,7 +1080,7 @@ class class_transindus_eco
         // $solar_amps =  * $solar_amps_west_raw_measurement; //  calibration factor between Studer Variotrack and our measurement
 
         // multiply by factor for total from west facing only measurement using calculations
-        $solar_amps = 1.1 * $ratio * $solar_amps_west_raw_measurement; // Since we only measure West facing panel, multiply by ratio passed in
+        $solar_amps = $ratio * $solar_amps_west_raw_measurement; // Since we only measure West facing panel, multiply by ratio passed in
 
         error_log("Raw: $solar_amps_west_raw_measurement, Ratio: $ratio, SolarAmps: $solar_amps");
 

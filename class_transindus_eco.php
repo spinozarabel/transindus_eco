@@ -1956,7 +1956,7 @@ class class_transindus_eco
 
             $SOC_percentage_now_bmc = $SOC_percentage_previous + ( $batt_charge_ah_accumulated_last_measurement / 300 * 100);
 
-            error_log("batt_charge_ah_accumulated_last_measurement: " .  $$batt_charge_ah_accumulated_last_measurement / 300 * 100 . " %");
+            error_log("batt_charge_ah_accumulated_last_measurement: " .  $batt_charge_ah_accumulated_last_measurement / 300 * 100 . " %");
 
             error_log("SOC_shelly_BM_update: " .  $SOC_percentage_now_bmc . " %");
 

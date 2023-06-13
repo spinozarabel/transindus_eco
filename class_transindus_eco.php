@@ -1597,47 +1597,53 @@ class class_transindus_eco
 
         $RDBC = false;    // permamantly disable RDBC mode 
 
+        // get the user meta, all of it as an array for fast retrieval rtahr than 1 by 1 as done before
+        $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
+
         { // Get user meta for limits and controls
           // SOC percentage needed to trigger LVDS
-          $soc_percentage_lvds_setting            = get_user_meta($wp_user_ID, "soc_percentage_lvds_setting",  true) ?? 30;
+          $soc_percentage_lvds_setting            = $all_usermeta['soc_percentage_lvds_setting']  ?? 30;
 
           // SOH of battery currently. 
-          $soh_percentage_setting                 = get_user_meta($wp_user_ID, "soh_percentage_setting",  true) ?? 100;
+          $soh_percentage_setting                 = $all_usermeta['soh_percentage_setting']       ?? 100;
 
           // Avg Battery Voltage lower threshold for LVDS triggers
-          $battery_voltage_avg_lvds_setting       = get_user_meta($wp_user_ID, "battery_voltage_avg_lvds_setting",  true) ?? 48.3;
+          $battery_voltage_avg_lvds_setting       = $all_usermeta['battery_voltage_avg_lvds_setting']  ?? 48.3;
 
           // RDBC active only if SOC is below this percentage level.
-          $soc_percentage_rdbc_setting            = get_user_meta($wp_user_ID, "soc_percentage_rdbc_setting",  true) ?? 80.0;
+          $soc_percentage_rdbc_setting            = $all_usermeta['soc_percentage_rdbc_setting']  ?? 80.0;
 
           // Switch releases if SOC is above this level 
-          $soc_percentage_switch_release_setting  = get_user_meta($wp_user_ID, "soc_percentage_switch_release_setting",  true) ?? 95.0; 
+          $soc_percentage_switch_release_setting  = $all_usermeta['soc_percentage_switch_release_setting']  ?? 95.0; 
 
           // SOC needs to be higher than this to allow switch release after RDBC
           $min_soc_percentage_for_switch_release_after_rdbc 
-                                        = get_user_meta($wp_user_ID, "min_soc_percentage_for_switch_release_after_rdbc",  true) ?? 32;
+                                                  = $all_usermeta['min_soc_percentage_for_switch_release_after_rdbc'] ?? 32;
 
           // min KW of Surplus Solar to release switch after RDBC
           $min_solar_surplus_for_switch_release_after_rdbc 
-                                        = get_user_meta($wp_user_ID, "min_solar_surplus_for_switch_release_after_rdbc",  true) ?? 0.2; 
+                                                  = $all_usermeta['min_solar_surplus_for_switch_release_after_rdbc'] ?? 0.2;
 
           // battery float voltage setting. Only used for SOC clamp for 100%
-          $battery_voltage_avg_float_setting  = get_user_meta($wp_user_ID, "battery_voltage_avg_float_setting",  true) ?? 51.9; 
+          $battery_voltage_avg_float_setting      = $all_usermeta['battery_voltage_avg_float_setting'] ?? 51.9; 
 
           // Min VOltage at ACIN for RDBC to switch to GRID
-          $acin_min_voltage_for_rdbc          = get_user_meta($wp_user_ID, "acin_min_voltage_for_rdbc",  true) ?? 199;  
+          $acin_min_voltage_for_rdbc              = $all_usermeta['acin_min_voltage_for_rdbc'] ?? 199;  
 
           // Max voltage at ACIN for RDBC to switch to GRID
-          $acin_max_voltage_for_rdbc          = get_user_meta($wp_user_ID, "acin_max_voltage_for_rdbc",  true) ?? 241; 
+          $acin_max_voltage_for_rdbc              = $all_usermeta['acin_max_voltage_for_rdbc'] ?? 241; 
 
           // KW of deficit after which RDBC activates to GRID. Usually a -ve number
-          $psolar_surplus_for_rdbc_setting    = get_user_meta($wp_user_ID, "psolar_surplus_for_rdbc_setting",  true) ?? -0.5;  
+          $psolar_surplus_for_rdbc_setting        = $all_usermeta['psolar_surplus_for_rdbc_setting'] ?? -0.5;  
 
           // Minimum Psolar before RDBC can be actiated
-          $psolar_min_for_rdbc_setting        = get_user_meta($wp_user_ID, "psolar_min_for_rdbc_setting",  true) ?? 0.3;  
+          $psolar_min_for_rdbc_setting            = $all_usermeta['psolar_min_for_rdbc_setting'] ?? 0.3;  
 
           // get operation flags from user meta. Set it to false if not set
-          $keep_shelly_switch_closed_always = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true) ?? false;
+          $keep_shelly_switch_closed_always       = $all_usermeta['keep_shelly_switch_closed_always'] ?? false;
+
+          // get the installed battery capacity in KWH from config
+          $SOC_capacity_KWH = $this->config['accounts'][$user_index]['battery_capacity'];
         }
 
         { // --------------------- ACIN SWITCH Details after making a Shelly API call -------------------
@@ -1915,9 +1921,6 @@ class class_transindus_eco
   
             // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only at beginning of day, once.
             $SOC_percentage_beg_of_day          = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
-  
-            // get the installed battery capacity in KWH from config
-            $SOC_capacity_KWH     = $this->config['accounts'][$user_index]['battery_capacity'];
   
             // get the current Measurement values from the Stider Readings Object
             $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;  // Net SOlar Units generated Today

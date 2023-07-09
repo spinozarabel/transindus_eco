@@ -420,58 +420,6 @@ class class_transindus_eco
       $this->all_usermeta = $all_usermeta;
 
       return $all_usermeta;
-
-      /*
-
-      // SOC percentage needed to trigger LVDS
-      $usermeta['soc_percentage_lvds_setting']            = get_user_meta($wp_user_ID, "soc_percentage_lvds_setting",  true) ?? 30;
-
-      // SOH of battery currently. 
-      $usermeta['soh_percentage_setting']                 = get_user_meta($wp_user_ID, "soh_percentage_setting",  true) ?? 100;
-
-      // Avg Battery Voltage lower threshold for LVDS triggers
-      $usermeta['battery_voltage_avg_lvds_setting']       = get_user_meta($wp_user_ID, "battery_voltage_avg_lvds_setting",  true) ?? 48.3;
-
-      // RDBC active only if SOC is below this percentage level.
-      $usermeta['soc_percentage_rdbc_setting']            = get_user_meta($wp_user_ID, "soc_percentage_rdbc_setting",  true) ?? 80.0;
-
-      // Switch releases if SOC is above this level 
-      $usermeta['soc_percentage_switch_release_setting']  = get_user_meta($wp_user_ID, "soc_percentage_switch_release_setting",  true) ?? 95.0;
-
-      // SOC needs to be higher than this to allow switch release after RDBC
-      $usermeta['min_soc_percentage_for_switch_release_after_rdbc'] 
-                                                          = get_user_meta($wp_user_ID, "min_soc_percentage_for_switch_release_after_rdbc",  true) ?? 32;
-      
-      // min KW of Surplus Solar to release switch after RDBC
-      $usermeta['min_solar_surplus_for_switch_release_after_rdbc'] 
-                                                          = get_user_meta($wp_user_ID, "min_solar_surplus_for_switch_release_after_rdbc",  true) ?? 0.2;
-
-      // battery float voltage setting. Only used for SOC clamp for 100%
-      $usermeta['battery_voltage_avg_float_setting']      = get_user_meta($wp_user_ID, "battery_voltage_avg_float_setting",  true) ?? 51.9;
-
-      // Min VOltage at ACIN for RDBC to switch to GRID
-      $usermeta['acin_min_voltage_for_rdbc']              = get_user_meta($wp_user_ID, "acin_min_voltage_for_rdbc",  true) ?? 199;
-
-      // Max voltage at ACIN for RDBC to switch to GRID
-      $usermeta['acin_max_voltage_for_rdbc']              = get_user_meta($wp_user_ID, "acin_max_voltage_for_rdbc",  true) ?? 241; 
-
-      // KW of deficit after which RDBC activates to GRID. Usually a -ve number
-      $usermeta['psolar_surplus_for_rdbc_setting']        = get_user_meta($wp_user_ID, "psolar_surplus_for_rdbc_setting",  true) ?? -0.5;  
-
-      // Minimum Psolar before RDBC can be actiated
-      $usermeta['psolar_min_for_rdbc_setting']            = get_user_meta($wp_user_ID, "psolar_min_for_rdbc_setting",  true) ?? 0.3;  
-
-      // get operation flags from user meta. Set it to false if not set
-      $usermeta['keep_shelly_switch_closed_always']       = get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true) ?? false;
-
-      // get the user meta that stores the SOC capture calculated from Studer API just after dark
-      $usermeta['soc_update_from_studer_after_dark']      = get_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', true);
-
-      $usermeta['shelly_energy_counter_after_dark']       = get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', true);
-
-      $usermeta['timestamp_soc_capture_after_dark']       = get_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', true);
-
-      */
     }
 
 
@@ -498,14 +446,15 @@ class class_transindus_eco
       $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['shelly_device_id_acin']   )  &&
                               ! empty( $config['accounts'][$user_index]['shelly_device_id_homepwr'] ) &&
                               ! empty( $config['accounts'][$user_index]['shelly_server_uri']  )       &&
-                              ! empty( $config['accounts'][$user_index]['shelly_auth_key']    );
+                              ! empty( $config['accounts'][$user_index]['shelly_auth_key']    )       &&
+                                $all_usermeta['do_shelly'];
     
-      if( $all_usermeta['do_shelly'] && $valid_shelly_config) 
+      if ( $valid_shelly_config ) 
       {  // Cotrol Shelly TRUE if usermeta AND valid config
-
         $control_shelly = true;
       }
-      else {    // Cotrol Shelly FALSE if usermeta AND valid config FALSE
+      else 
+      {    // Cotrol Shelly FALSE if usermeta AND valid config FALSE
         $control_shelly = false;
       }
 
@@ -515,7 +464,8 @@ class class_transindus_eco
 
           $shelly_api_device_response = $this->get_shelly_device_status_acin( $user_index );
 
-          if ( is_null($shelly_api_device_response) ) { // switch status is unknown
+          if ( is_null($shelly_api_device_response) ) 
+          { // switch status is unknown
 
               error_log("Shelly Grid Switch API call failed - Grid power failure Assumed");
 
@@ -524,19 +474,20 @@ class class_transindus_eco
               $shelly_switch_status             = "OFFLINE";
               $shelly_api_device_status_voltage = "NA";
           }
-          else {  // Switch is ONLINE - Get its status and Voltage
+          else 
+          {  // Switch is ONLINE - Get its status and Voltage
               
               $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->{'switch:0'}->output;
               $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{'switch:0'}->voltage;
 
               if ($shelly_api_device_status_ON)
-                  {
-                      $shelly_switch_status = "ON";
-                  }
+              {
+                  $shelly_switch_status = "ON";
+              }
               else
-                  {
-                      $shelly_switch_status = "OFF";
-                  }
+              {
+                  $shelly_switch_status = "OFF";
+              }
           }
       }
       else 

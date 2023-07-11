@@ -2045,9 +2045,9 @@ class class_transindus_eco
   
             if ( true )
             {
-              error_log("S%: " . $KWH_solar_percentage_today . " Dis.%: " . abs($KWH_batt_percent_discharged_today) . 
+              error_log("S%: " . $KWH_solar_percentage_today .  
                         " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC_Studer: " . 
-                        $SOC_percentage_now . " %, SOC_shelly:" . $SOC_percentage_now_shelly . " %");
+                        $SOC_percentage_now . " %, SOC_shelly:" . $SOC_percentage_now_shelly4pm . " %");
             }
           }
           {   // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - or  battery voltage    

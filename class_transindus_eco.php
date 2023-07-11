@@ -1877,7 +1877,7 @@ class class_transindus_eco
             // This also updates the solar AH accumulated since midnight in the user meta
             $shelly_solar_measurement_object = $this->get_shelly_device_status_battery( $user_index, $wp_user_name, $wp_user_ID, $total_to_west_panel_ratio );
 
-            $solar_kwh_since_midnight = round( 49.0 / 1000 * $shelly_solar_measurement_object->solar_accumulated_ah_since_midnight, 3 );
+            $solar_kwh_since_midnight = round( 49.8 / 1000 * $shelly_solar_measurement_object->solar_accumulated_ah_since_midnight, 3 );
           }
 
           { // Also make a Shelly 4PM measurement to get individual powers from each channel for granular display

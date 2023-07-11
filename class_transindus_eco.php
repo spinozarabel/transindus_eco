@@ -1024,7 +1024,7 @@ class class_transindus_eco
         $adc_voltage_shelly = $shelly_api_device_response->data->device_status->adcs[0]->voltage;  // measure the ADC voltage
 
         // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
-        $delta_voltage = $adc_voltage_shelly - 2.6;
+        $delta_voltage = $adc_voltage_shelly - 2.5;
 
         // convention here is that battery discharge current is positive
         $solar_amps_west_raw_measurement = round( $delta_voltage / 0.055, 1 );

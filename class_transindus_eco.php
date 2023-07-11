@@ -1862,6 +1862,8 @@ class class_transindus_eco
             $est_solar_total_kw = $est_solar_obj->est_solar_total_kw;
 
             $total_to_west_panel_ratio = $est_solar_obj->total_to_west_panel_ratio;
+
+            $est_solar_kw_arr = $est_solar_obj->est_solar_kw_arr;
             
             // get a measurement of the solar current into battery junction from the panels
             // This also updates the solar AH accumulated since midnight in the user meta
@@ -1987,7 +1989,7 @@ class class_transindus_eco
               update_user_meta( $wp_user_ID, 'soc_percentage_now_calculated_using_shelly_bm', $soc_percentage_now_shelly);
             }
 
-            if ( $this->verbose )
+            if ( true )
             {
   
                 error_log("username: " . $wp_user_name . ' Switch: ' . $shelly_switch_status . ' ' . 
@@ -2045,8 +2047,7 @@ class class_transindus_eco
   
             if ( true )
             {
-              error_log("S%: " . $KWH_solar_percentage_today .  
-                        " SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC_Studer: " . 
+              error_log(" SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC_Studer: " . 
                         $SOC_percentage_now . " %, SOC_shelly:" . $SOC_percentage_now_shelly4pm . " %");
             }
           }

@@ -1193,7 +1193,10 @@ class class_transindus_eco
       {
         error_log("Shelly EM Grid Energy API call failed");
 
-        return null;
+        // since no grid get value from user meta
+        $returned_obj->grid_wh_since_midnight   = get_user_meta( $wp_user_ID, 'grid_wh_since_midnight', true);
+
+        return $returned_obj;
       }
 
       // present energy counter reading
@@ -1845,15 +1848,20 @@ class class_transindus_eco
                                         empty(  $studer_readings_obj->pout_inverter_ac_kw ) );
 
           if ( $studer_api_call_failed )
-          { // It is not dark. If Studer API call failed, Exit returning Null
-
-            error_log($wp_user_name . ": " . "Studer API call failed. No SOC update nor Grid Switch Control");
+          { // log error message
+            error_log($wp_user_name . ": " . "Studer API call failed");
 
             return null;
           }
 
-          // Studer Call was successful
-          // However we also make ALl the Shelly calls to also calculate Shelly based SOC update
+          { // get the SOCs % from the previous reading from user meta. This is needed for Studer and Shelly SOC updates
+            $SOC_percentage_previous            = get_user_meta($wp_user_ID, "soc_percentage_now",  true);
+
+            $SOC_percentage_previous_shelly_bm  = get_user_meta($wp_user_ID, "soc_percentage_now_calculated_using_shelly_bm",  true) ?? $SOC_percentage_previous;
+
+            // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only at beginning of day, once.
+            $SOC_percentage_beg_of_day          = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
+          }
           
           { // Now make a Shelly API call on the Solar current monitoring device
             // get the estimated solar power object from calculations for a clear day
@@ -1948,14 +1956,6 @@ class class_transindus_eco
   
             // Weighted percentage cloudiness
             $cloudiness_average_percentage_weighted = round($this->cloudiness_forecast->cloudiness_average_percentage_weighted, 0);
-
-            // get the SOC % from the previous reading from user meta
-            $SOC_percentage_previous            = get_user_meta($wp_user_ID, "soc_percentage_now",  true);
-
-            $SOC_percentage_previous_shelly_bm  = get_user_meta($wp_user_ID, "soc_percentage_now_calculated_using_shelly_bm",  true) ?? $SOC_percentage_previous;
-  
-            // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only at beginning of day, once.
-            $SOC_percentage_beg_of_day          = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
   
             // get the current Measurement values from the Stider Readings Object
             $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;  // Net SOlar Units generated Today

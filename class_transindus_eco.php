@@ -2145,7 +2145,7 @@ class class_transindus_eco
           $studer_readings_obj->switch_release_float_state        = $switch_release_float_state;
           
           $studer_readings_obj->cloudiness_average_percentage_weighted  = $cloudiness_average_percentage_weighted;
-          $studer_readings_obj->est_solar_kw  = round( array_sum($est_solar_kw), 1);
+          $studer_readings_obj->est_solar_kw_arr  = round( array_sum($est_solar_kw_arr), 1);
         }
         else
         {

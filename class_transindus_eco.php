@@ -2045,7 +2045,7 @@ class class_transindus_eco
             
             
   
-            if ( true )
+            if ( false )
             {
               error_log(" SOC_0: " . $SOC_percentage_beg_of_day . "%, SOC_Studer: " . 
                         $SOC_percentage_now . " %, SOC_shelly:" . $SOC_percentage_now_shelly4pm . " %");

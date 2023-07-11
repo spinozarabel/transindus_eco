@@ -1026,8 +1026,8 @@ class class_transindus_eco
         // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
         $delta_voltage = $adc_voltage_shelly - 2.5;
 
-        // convention here is that battery discharge current is positive
-        $solar_amps_west_raw_measurement = round( $delta_voltage / 0.055, 1 );
+        // convention here is that battery discharge current is positive. 10% is adjustment based on comparison
+        $solar_amps_west_raw_measurement = round( 1.1 * $delta_voltage / 0.055, 1 );
 
         // multiply by factor for total from west facing only measurement using calculations
         $solar_amps = round( $total_to_west_panel_ratio * $solar_amps_west_raw_measurement, 1 );

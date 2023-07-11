@@ -1200,7 +1200,7 @@ class class_transindus_eco
       $present_grid_wh_reading = (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0);
 
       // get the energy counter value set at midnight. Assumes that this is an integer
-      $grid_wh_counter_midnight = get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true);
+      $grid_wh_counter_midnight = get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true) ?? 25000;
 
       // subtract the 2 integer counter readings to get the accumulated WH since midnight
       $grid_wh_since_midnight = $present_grid_wh_reading - $grid_wh_counter_midnight;

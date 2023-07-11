@@ -1928,7 +1928,7 @@ class class_transindus_eco
             $psolar               = $studer_readings_obj->psolar_kw;
   
             // Check if it is cloudy AT THE MOMENT. Yes if solar is less than half of estimate
-            $it_is_cloudy_at_the_moment = $psolar <= 0.5 * array_sum($est_solar_kw);
+            $it_is_cloudy_at_the_moment = $psolar <= 0.5 * array_sum($est_solar_kw_arr);
   
             // Solar Current into Battery Junction at present moment
             // $solar_pv_adc         = $studer_readings_obj->solar_pv_adc;

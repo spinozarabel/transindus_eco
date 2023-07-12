@@ -3441,7 +3441,7 @@ class class_transindus_eco
         if ( $this->nowIsWithinTimeLimits( '06:00', '12:00' ) )
         {
           // west Panel Solar Amps is lower than East Panel
-          $west_panel_est_kw = max( $est_solar_kw_arr ); 
+          $west_panel_est_kw = min( $est_solar_kw_arr ); 
         }
         else 
         {

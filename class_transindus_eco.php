@@ -1027,7 +1027,7 @@ class class_transindus_eco
         $delta_voltage = $adc_voltage_shelly - 2.5;
 
         // convention here is that battery discharge current is positive. 10% is adjustment based on comparison
-        $solar_amps_west_raw_measurement = round( 1.1 * $delta_voltage / 0.055, 1 );
+        $solar_amps_west_raw_measurement = round( $delta_voltage / 0.065, 1 );
 
         // multiply by factor for total from west facing only measurement using calculations
         $solar_amps = round( $total_to_west_panel_ratio * $solar_amps_west_raw_measurement, 1 );
@@ -1179,6 +1179,8 @@ class class_transindus_eco
       $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_acin'];
 
+      $previous_grid_wh_since_midnight = (int) round(get_user_meta( $wp_user_ID, 'grid_wh_since_midnight', true), 0);
+
       $returned_obj = new stdClass;
 
       $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
@@ -1189,36 +1191,40 @@ class class_transindus_eco
       // check to make sure that it exists. If null API call was fruitless
       if (  empty( $shelly_api_device_response ) || 
             empty( $shelly_api_device_response->data->device_status->emeters[0]->total ) ||
-            $shelly_api_device_response->data->device_status->emeters[0]->is_valid !== true )
+            $shelly_api_device_response->data->device_status->emeters[0]->is_valid !== true || 
+            (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0) <= 0
+          )
       {
         error_log("Shelly EM Grid Energy API call failed");
 
         // since no grid get value from user meta
-        $returned_obj->grid_wh_since_midnight   = get_user_meta( $wp_user_ID, 'grid_wh_since_midnight', true);
+        $returned_obj->grid_wh_since_midnight = $previous_grid_wh_since_midnight;
 
         return $returned_obj;
       }
 
-      // present energy counter reading
+      // Shelly API call was successfull and we have useful data
       $present_grid_wh_reading = (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0);
 
       // get the energy counter value set at midnight. Assumes that this is an integer
-      $grid_wh_counter_midnight = get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true) ?? 25000;
+      $grid_wh_counter_midnight = (int) round(get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true), 0);
 
       // subtract the 2 integer counter readings to get the accumulated WH since midnight
       $grid_wh_since_midnight = $present_grid_wh_reading - $grid_wh_counter_midnight;
 
-      if ( $grid_wh_since_midnight >= 0 )
+      if ( $grid_wh_since_midnight >  0 )
       {
         // the value is positive so counter did not reset due to software update etc.
-        $returned_obj->grid_wh_since_midnight   = $grid_wh_since_midnight;
+        $returned_obj->grid_wh_since_midnight = $grid_wh_since_midnight;
 
         update_user_meta( $wp_user_ID, 'grid_wh_since_midnight', $grid_wh_since_midnight);
       }
       else 
       {
         // in calling routine check for this and only use value if not null
-        $returned_obj->grid_wh_since_midnight   = get_user_meta( $wp_user_ID, 'grid_wh_since_midnight', true);
+        $returned_obj->grid_wh_since_midnight   = $previous_value_since_midnight;
+
+        error_log("Shelly EM Grid Energy API call reading:  $present_grid_wh_reading, was not valid, no update");
       }
 
       $returned_obj->present_grid_wh_reading  = $present_grid_wh_reading;

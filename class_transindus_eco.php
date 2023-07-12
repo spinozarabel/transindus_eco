@@ -989,7 +989,7 @@ class class_transindus_eco
      *  Trapezoidal rule is used to calculate Area
      *  Current measurements are used to update user meta for accumulated SOlar AH since Studer Midnight
      */
-    public function get_shelly_device_status_battery( int $user_index, string $wp_user_name, int $wp_user_ID, $total_to_west_panel_ratio ): ? object
+    public function get_shelly_solar_measurement( int $user_index, string $wp_user_name, int $wp_user_ID, $total_to_west_panel_ratio ): ? object
     {
         // set default timezone to Asia Kolkata
         date_default_timezone_set("Asia/Kolkata");
@@ -1881,7 +1881,7 @@ class class_transindus_eco
             
             // get a measurement of the solar current into battery junction from the panels
             // This also updates the solar AH accumulated since midnight in the user meta
-            $shelly_solar_measurement_object = $this->get_shelly_device_status_battery( $user_index, $wp_user_name, $wp_user_ID, $total_to_west_panel_ratio );
+            $shelly_solar_measurement_object = $this->get_shelly_solar_measurement( $user_index, $wp_user_name, $wp_user_ID, $total_to_west_panel_ratio );
 
             $solar_kwh_since_midnight = round( 49.8 / 1000 * $shelly_solar_measurement_object->solar_accumulated_ah_since_midnight, 3 );
           }
@@ -3252,7 +3252,7 @@ class class_transindus_eco
                 <input type="submit" name="button" 	value="get_shelly_device_status_homepwr"/>
                 <input type="submit" name="button" 	value="check_if_soc_after_dark_happened"/>
                 <input type="submit" name="button" 	value="get_studer_clock_offset"/>
-                <input type="submit" name="button" 	value="get_shelly_device_status_battery"/>
+                <input type="submit" name="button" 	value="get_shelly_solar_measurement"/>
             </form>
 
 
@@ -3386,7 +3386,7 @@ class class_transindus_eco
               
             break;
 
-            case "get_shelly_device_status_battery":
+            case "get_shelly_solar_measurement":
 
               $count = 1;
 
@@ -3400,7 +3400,7 @@ class class_transindus_eco
 
                 $ratio_west_total = array_sum( $est_solar_kw ) / $est_solar_kw[1];
 
-                $solar_measurement_object = $this->get_shelly_device_status_battery( $config_index, $wp_user_name, $wp_user_ID, $ratio_west_total );
+                $solar_measurement_object = $this->get_shelly_solar_measurement( $config_index, $wp_user_name, $wp_user_ID, $ratio_west_total );
 
                 $total_solar_current = 1.00 * round( $solar_measurement_object->solar_amps, 1);
 

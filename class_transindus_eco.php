@@ -1885,7 +1885,7 @@ class class_transindus_eco
             $shelly_readings_obj->solar_amps  = $shelly_solar_measurement_object->solar_amps;
             $shelly_readings_obj->solar_amps_west_raw_measurement  = $shelly_solar_measurement_object->solar_amps_west_raw_measurement;
             
-            $psolar = round( 49.8 * $shelly_readings_obj->solar_amps,3);
+            $psolar = round( 0.001 * 49.8 * $shelly_readings_obj->solar_amps,1);
             $shelly_readings_obj->psolar = $psolar;
             
           }

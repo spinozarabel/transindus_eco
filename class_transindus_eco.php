@@ -1876,7 +1876,7 @@ class class_transindus_eco
             // This also updates the solar AH accumulated since midnight in the user meta
             $shelly_solar_measurement_object = $this->get_shelly_solar_measurement( $user_index, $wp_user_name, $wp_user_ID, $total_to_west_panel_ratio );
 
-            $solar_kwh_since_midnight = round( 49.8 / 1000 * $shelly_solar_measurement_object->solar_accumulated_ah_since_midnight, 3 );
+            $solar_kwh_since_midnight = round( 49.8 *0.001 * $shelly_solar_measurement_object->solar_accumulated_ah_since_midnight, 3 );
 
             $shelly_readings_obj->est_solar_total_kw        = $est_solar_total_kw;
             $shelly_readings_obj->est_solar_kw_arr          = $est_solar_kw_arr;
@@ -1885,7 +1885,7 @@ class class_transindus_eco
             $shelly_readings_obj->solar_amps  = $shelly_solar_measurement_object->solar_amps;
             $shelly_readings_obj->solar_amps_west_raw_measurement  = $shelly_solar_measurement_object->solar_amps_west_raw_measurement;
             
-            $psolar = round( 0.001 * 49.8 * $shelly_readings_obj->solar_amps,1);
+            $psolar = round( 0.001 * 49.8 * $shelly_readings_obj->solar_amps, 3);
             $shelly_readings_obj->psolar = $psolar;
             
           }
@@ -1980,7 +1980,7 @@ class class_transindus_eco
             update_user_meta( $wp_user_ID, 'soc_percentage_now_calculated_using_shelly_bm', $soc_percentage_now_shelly);
 
             // Surplus power from Solar after supplying the Load as measured by Shelly devices
-            $surplus              = $shelly_readings_obj->psolar - $shelly_4pm_readings_object->power_total_to_home;
+            $surplus              = $shelly_readings_obj->psolar - $shelly_4pm_readings_object->power_total_to_home_kw;
 
             $shelly_readings_obj->surplus  = $surplus;
             $shelly_readings_obj->SOC_percentage_now  = $soc_percentage_now_shelly;

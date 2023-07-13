@@ -1884,7 +1884,10 @@ class class_transindus_eco
             $shelly_readings_obj->solar_kwh_since_midnight  = $solar_kwh_since_midnight;
             $shelly_readings_obj->solar_amps  = $shelly_solar_measurement_object->solar_amps;
             $shelly_readings_obj->solar_amps_west_raw_measurement  = $shelly_solar_measurement_object->solar_amps_west_raw_measurement;
-            $shelly_readings_obj->psolar = round( 49.8 * $shelly_readings_obj->solar_amps,3);
+            
+            $psolar = round( 49.8 * $shelly_readings_obj->solar_amps,3);
+            $shelly_readings_obj->psolar = $psolar;
+            
           }
 
           { // Also make a Shelly 4PM measurement to get individual powers from each channel for granular display

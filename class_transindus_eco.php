@@ -2324,6 +2324,8 @@ class class_transindus_eco
 
         }   // end witch statement
 
+        error_log($cron_exit_condition);
+
         $now = new DateTime();
 
         $array_for_json = [ 'unixdatetime'        => $now->getTimestamp() ,

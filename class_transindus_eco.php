@@ -1195,9 +1195,9 @@ class class_transindus_eco
             (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0) <= 0
           )
       {
-        error_log("Shelly EM Grid Energy API call failed");
+        $this->verbose ? error_log("Shelly EM Grid Energy API call failed"): false;
 
-        // since no grid get value from user meta
+        // since no grid get value from user meta. Also readings will not change since grid is absent :-)
         $returned_obj->grid_wh_since_midnight = $previous_grid_wh_since_midnight;
 
         return $returned_obj;

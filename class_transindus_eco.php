@@ -1850,15 +1850,22 @@ class class_transindus_eco
         if ( ! $soc_updated_using_shelly_energy_readings_bool )
         {   // Studer API call only when NOT dark or to capture SOC after dark
           
-          $studer_readings_obj  = $this->get_studer_min_readings($user_index);
+          if ( $make_studer_api_call )
+          {   // make call only if flag enabled
+            $studer_readings_obj  = $this->get_studer_min_readings($user_index);
 
-          // defined the condition for failure of the Studer API call
-          $studer_api_call_failed =   ( empty(  $studer_readings_obj )                          ||
-                                        empty(  $studer_readings_obj->battery_voltage_vdc )     ||
-                                        $studer_readings_obj->battery_voltage_vdc < 40          ||
-                                        empty(  $studer_readings_obj->pout_inverter_ac_kw )     ||
-                                        $make_studer_api_call === false );
-
+            // defined the condition for failure of the Studer API call
+            $studer_api_call_failed =   ( empty(  $studer_readings_obj )                          ||
+                                          empty(  $studer_readings_obj->battery_voltage_vdc )     ||
+                                          $studer_readings_obj->battery_voltage_vdc < 40          ||
+                                          empty(  $studer_readings_obj->pout_inverter_ac_kw ) );
+          }
+          else
+          {
+            // as flag is not enabled set api failed flag to true
+            $studer_api_call_failed = true;
+          }
+          
           // instantiate object to hold all of non-studer Shelly based readings info
           $shelly_readings_obj = new stdClass;
 

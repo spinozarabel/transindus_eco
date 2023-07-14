@@ -1880,11 +1880,11 @@ class class_transindus_eco
             // This is because our solar power measurements are not as accurate as STuder's so we use that when available
             if ( ! $studer_api_call_failed )
             {
-              $WH_solar_today_studer = round($studer_readings_obj->KWH_solar_today * 1000, 0);
+              $AH_solar_today_studer = round($studer_readings_obj->KWH_solar_today * 1000 / 49.8, 0);
 
-              update_user_meta( $wp_user_ID, 'solar_accumulated_ah_since_midnight', $WH_solar_today_studer);
+              update_user_meta( $wp_user_ID, 'solar_accumulated_ah_since_midnight', $AH_solar_today_studer);
             }
-            
+
             // get a measurement of the solar current into battery junction from the panels
             // This also updates the solar AH accumulated since midnight in the user meta
             $shelly_solar_measurement_object = $this->get_shelly_solar_measurement( $user_index, $wp_user_name, $wp_user_ID, $total_to_west_panel_ratio );

@@ -2095,6 +2095,9 @@ class class_transindus_eco
                                     $SOC_percentage_now   <= $soc_percentage_lvds_setting           )  
                                     &&
                                   ( $shelly_switch_status == "OFF" );					  // The switch is OFF
+
+              $switch_override =  ( $shelly_switch_status                == "OFF" )  &&
+                                  ( $studer_readings_obj->grid_input_vac >= 190   );
   
               // set the switch conditions to false since we are relying on the Studer readings, usually at daytime only.
               // we don;t want these flags to cause any activity when Stder readings are relied upon
@@ -2118,6 +2121,14 @@ class class_transindus_eco
 
             // LVDS already defined above for Shelly measure values
             $LVDS = $shelly_readings_obj->LVDS;
+
+            // set this flag to false since we have no way of accessing Studer's Grid measurement.
+            // This flag is only valid when Studer's API call is successful.
+            $switch_override = false;
+
+            // set these flags to false since this is daytime. In anycase this is not even implemented at night anymore
+            $LVDS_soc_6am_grid_on   = false;
+            $LVDS_soc_6am_grid_off  = false;
 
             if ( true )
             {   // log measurements
@@ -2144,6 +2155,8 @@ class class_transindus_eco
           // So between this and switch_release_float_state battery may cycle up and down by 5 points
           // Ofcourse if the Psurplus is too much it will charge battery to 100% inspite of this.
           // Obviously after sunset the battery will remain at 90% till sunrise the next day
+          
+
           $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
                                         ( $keep_shelly_switch_closed_always == true )  &&
                                         ( $SOC_percentage_now <= ($soc_percentage_switch_release_setting - 5) )	&&  // OR SOC reached 90%

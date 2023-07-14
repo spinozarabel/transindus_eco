@@ -1871,6 +1871,9 @@ class class_transindus_eco
             $total_to_west_panel_ratio = $est_solar_obj->total_to_west_panel_ratio;
 
             $est_solar_kw_arr = $est_solar_obj->est_solar_kw_arr;
+
+            // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
+            $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
             
             // get a measurement of the solar current into battery junction from the panels
             // This also updates the solar AH accumulated since midnight in the user meta
@@ -2017,9 +2020,6 @@ class class_transindus_eco
   
             // Surplus power from Solar after supplying the Load
             $surplus              = $psolar - $pout_inverter;
-  
-            // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
-            $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
   
             // Weighted percentage cloudiness
             $cloudiness_average_percentage_weighted = round($this->cloudiness_forecast->cloudiness_average_percentage_weighted, 0);

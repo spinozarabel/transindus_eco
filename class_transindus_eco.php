@@ -3556,7 +3556,7 @@ class class_transindus_eco
         else 
         {
           // it is afternoon and West panel has maximum solar power
-          $west_panel_est_kw = max( $est_solar_kw_arr ) / 1.3;
+          $west_panel_est_kw = max( $est_solar_kw_arr ) / 1.2;
         }
 
         if ( $west_panel_est_kw > 0 )

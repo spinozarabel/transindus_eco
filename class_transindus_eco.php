@@ -1874,6 +1874,16 @@ class class_transindus_eco
 
             // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
             $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
+
+            // If Studer API call was successful update SOlar accumulated since midnight with STuder value as more accurate
+            // This way when STuder API call fails, updates to SOlar accumulated even if not accurate still improves overall accuracy
+            // This is because our solar power measurements are not as accurate as STuder's so we use that when available
+            if ( ! $studer_api_call_failed )
+            {
+              $WH_solar_today_studer = round($studer_readings_obj->KWH_solar_today * 1000, 0);
+
+              update_user_meta( $wp_user_ID, 'solar_accumulated_ah_since_midnight', $WH_solar_today_studer);
+            }
             
             // get a measurement of the solar current into battery junction from the panels
             // This also updates the solar AH accumulated since midnight in the user meta

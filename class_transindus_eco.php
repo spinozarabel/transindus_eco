@@ -1578,6 +1578,14 @@ class class_transindus_eco
 
                 // get all the readings for this user. This will write the data to a transient for quick retrieval
                 $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly, true );
+
+                for ($i = 1; $i <= 3; $i++) 
+                {
+                  sleep(5);
+                  $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly, false );
+                }
+                
+
               }
 
             }
@@ -1848,7 +1856,8 @@ class class_transindus_eco
           $studer_api_call_failed =   ( empty(  $studer_readings_obj )                          ||
                                         empty(  $studer_readings_obj->battery_voltage_vdc )     ||
                                         $studer_readings_obj->battery_voltage_vdc < 40          ||
-                                        empty(  $studer_readings_obj->pout_inverter_ac_kw ) );
+                                        empty(  $studer_readings_obj->pout_inverter_ac_kw )     ||
+                                        $make_studer_api_call === false );
 
           // instantiate object to hold all of non-studer Shelly based readings info
           $shelly_readings_obj = new stdClass;
@@ -1883,6 +1892,10 @@ class class_transindus_eco
               $AH_solar_today_studer = round($studer_readings_obj->KWH_solar_today * 1000 / 49.8, 0);
 
               update_user_meta( $wp_user_ID, 'solar_accumulated_ah_since_midnight', $AH_solar_today_studer);
+            }
+            else
+            {   // create a new stdclass object since Studer object not created due to api call fail
+              $studer_readings_obj = new stdclass;
             }
 
             // get a measurement of the solar current into battery junction from the panels

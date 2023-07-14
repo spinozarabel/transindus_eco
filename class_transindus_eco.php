@@ -1579,7 +1579,7 @@ class class_transindus_eco
                 // get all the readings for this user. This will write the data to a transient for quick retrieval
                 $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly, true );
 
-                for ($i = 1; $i <= 3; $i++) 
+                for ($i = 1; $i <= 5; $i++) 
                 {
                   sleep(5);
                   $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly, false );

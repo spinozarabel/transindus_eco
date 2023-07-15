@@ -1227,6 +1227,8 @@ class class_transindus_eco
         error_log("Shelly EM Grid Energy API call reading:  $present_grid_wh_reading, was not valid, no update");
       }
 
+      $grid_kw_shelly_em = round( 0.001 * $shelly_api_device_response->data->device_status->emeters[0]->power, 3 );
+      $returned_obj->grid_kw_shelly_em        = $grid_kw_shelly_em;
       $returned_obj->present_grid_wh_reading  = $present_grid_wh_reading;
 
       return $returned_obj;
@@ -1793,6 +1795,8 @@ class class_transindus_eco
                 $switch_override = false;
               }
 
+              $soc_update_method = "shelly_after_dark";
+
               // we can now check to see if Studer midnight has happened for midnight rollover capture
               // Each time the following executes it looks at a transient. Only when it expires does an API call made on Studer for 5002
               $studer_time_just_passed_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
@@ -1902,6 +1906,7 @@ class class_transindus_eco
             }
             else
             {   // create a new stdclass object since Studer object not created due to api call fail
+                // we still need this for legacy purposes even though STuder API call failed
               $studer_readings_obj = new stdclass;
             }
 
@@ -1909,17 +1914,20 @@ class class_transindus_eco
             // This also updates the solar AH accumulated since midnight in the user meta
             $shelly_solar_measurement_object = $this->get_shelly_solar_measurement( $user_index, $wp_user_name, $wp_user_ID, $total_to_west_panel_ratio );
 
-            $solar_kwh_since_midnight = round( 49.8 *0.001 * $shelly_solar_measurement_object->solar_accumulated_ah_since_midnight, 3 );
+            $solar_kwh_since_midnight = round( 49.8 * 0.001 * $shelly_solar_measurement_object->solar_accumulated_ah_since_midnight, 3 );
 
             $shelly_readings_obj->est_solar_total_kw        = $est_solar_total_kw;
             $shelly_readings_obj->est_solar_kw_arr          = $est_solar_kw_arr;
             $shelly_readings_obj->total_to_west_panel_ratio = $total_to_west_panel_ratio;
             $shelly_readings_obj->solar_kwh_since_midnight  = $solar_kwh_since_midnight;
-            $shelly_readings_obj->solar_amps  = $shelly_solar_measurement_object->solar_amps;
+            $shelly_readings_obj->solar_amps                = $shelly_solar_measurement_object->solar_amps;
             $shelly_readings_obj->solar_amps_west_raw_measurement  = $shelly_solar_measurement_object->solar_amps_west_raw_measurement;
             
             $psolar = round( 0.001 * 49.8 * $shelly_readings_obj->solar_amps, 3);
             $shelly_readings_obj->psolar = $psolar;
+
+            $shelly_readings_obj->psolar_kw     = $psolar;                                          // Solar power in KW
+            $shelly_readings_obj->solar_pv_adc  = $shelly_solar_measurement_object->solar_amps;     // Solar DC Amps
             
           }
 
@@ -1988,6 +1996,8 @@ class class_transindus_eco
                 $shelly_readings_obj->ac_switch_status_bool   = $shelly_4pm_readings_object->ac_switch_status_bool;
                 // Status of all switches supplying Home ( 2 lines)
                 $shelly_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
+
+                $shelly_readings_obj->pout_inverter_ac_kw = $KWH_load_today_shelly;
             }
           }
 
@@ -1999,6 +2009,8 @@ class class_transindus_eco
             $grid_kwh_since_midnight = round( $grid_wh_since_midnight / 1000.0, 3 );
 
             $shelly_readings_obj->grid_kwh_since_midnight  = $grid_kwh_since_midnight;
+
+            $shelly_readings_obj->grid_kw_shelly_em = $shelly_em_readings_object->grid_kw_shelly_em;
           }
 
           { // calculate non-studer based SOC during daytime using Shelly device measurements
@@ -2037,6 +2049,8 @@ class class_transindus_eco
           {   // Studer SOC update calculations only if API call was successful. If needed capture SOC after dark
               // average the battery voltage over last 3 readings
             $battery_voltage_avg  = $this->get_battery_voltage_avg( $wp_user_name, $studer_readings_obj->battery_voltage_vdc );
+
+            set_transient( $wp_user_name . '_' . 'battery_voltage_avg', $battery_voltage_avg, 60 * 60 );
   
             // Solar power Now
             $psolar               = $studer_readings_obj->psolar_kw;
@@ -2138,6 +2152,8 @@ class class_transindus_eco
               // These should be valid only for the case when the Shelly readings are used for update
               $LVDS_soc_6am_grid_on   = false;
               $LVDS_soc_6am_grid_off  = false;
+
+              $soc_update_method = "studer";
   
             }
 
@@ -2164,16 +2180,19 @@ class class_transindus_eco
             $LVDS_soc_6am_grid_on   = false;
             $LVDS_soc_6am_grid_off  = false;
 
+            $soc_update_method = "shelly_daytime";
+
             if ( $this->verbose )
             {   // log measurements
-              error_log( $wp_user_name . ": " . "Studer API call failed or disabled - SOC updates using Shelly EM, 4PM and Uni" );
+              error_log( $wp_user_name . ": " . "SOC updates using Shelly EM, 4PM and Uni, Daytime" );
 
               /*
               error_log("username: " . $wp_user_name . ' Switch: ' . $shelly_switch_status . ' ' . 
                                          $shelly_api_device_status_voltage . ' VAC');
               */
                 
-              error_log("Load KWH= "    . $KWH_load_today_shelly     . 
+              error_log("Grid Switch: " . $shelly_switch_status      .
+                        "Load KWH= "    . $KWH_load_today_shelly     . 
                         " Grid KWH= "   . $grid_kwh_since_midnight   . 
                         " Solar KWH= "  . $solar_kwh_since_midnight  .
                         " SOC %= "      . $soc_percentage_now_shelly);
@@ -2262,13 +2281,24 @@ class class_transindus_eco
         elseif ( ! $soc_updated_using_shelly_energy_readings_bool && $studer_api_call_failed )
         {   // write back to shelly_readings_obj object
           $note_exit = "Shelly Day";
-          $shelly_readings_obj->battery_voltage_avg  = 'NA';
+
+          $shelly_readings_obj->battery_voltage_avg  = get_transient( $wp_user_name . '_' . 'battery_voltage_avg' ) ?? 49.8;
 
           $shelly_readings_obj->control_shelly                    = $control_shelly;
           $shelly_readings_obj->shelly_switch_status              = $shelly_switch_status;
           $shelly_readings_obj->shelly_api_device_status_voltage  = $shelly_api_device_status_voltage;
           $shelly_readings_obj->shelly_api_device_status_ON       = $shelly_api_device_status_ON;
           $shelly_readings_obj->shelly_switch_acin_details_arr    = $shelly_switch_acin_details_arr;
+
+          $pbattery_kw =  $psolar * 0.96 + ( 0.988 * $shelly_em_readings_object->grid_kw_shelly_em 
+                                              - $shelly_4pm_readings_object->power_total_to_home_kw
+                                            ) * 1.07 ;
+          $battery_charge_adc = round( $pbattery_kw * 1000 / 49.8, 1);
+
+          $shelly_readings_obj->battery_charge_adc = $battery_charge_adc;
+          $shelly_readings_obj->pbattery_kw = $pbattery_kw;
+          $shelly_readings_obj->grid_pin_ac_kw = $shelly_em_readings_object->grid_kw_shelly_em;
+          $shelly_readings_obj->grid_input_vac = $shelly_api_device_status_voltage;
         }
         
 
@@ -2423,6 +2453,8 @@ class class_transindus_eco
           return $shelly_readings_obj;
         }
 
+        // set transient. This will be read in by prepare data to load appropriate transient object
+        set_transient( $wp_user_name . '_' . 'soc_update_method', $soc_update_method, 5*60 );
     }
 
 
@@ -3561,11 +3593,13 @@ class class_transindus_eco
         if ( $this->nowIsWithinTimeLimits( '06:00', '12:00' ) )
         {
           // west Panel Solar Amps is lower than East Panel
-          $west_panel_est_kw = min( $est_solar_kw_arr ); 
+          // reduce by factor of 1.2 based on AM measurements
+          $west_panel_est_kw = min( $est_solar_kw_arr ) * 1.2;
         }
         else 
         {
           // it is afternoon and West panel has maximum solar power
+          // increase by factor of 1.2 in PM based on comparison with Studer measurements
           $west_panel_est_kw = max( $est_solar_kw_arr ) / 1.2;
         }
 
@@ -4494,16 +4528,22 @@ class class_transindus_eco
         // error_log('from CRON Ajax Call: wp_user_ID:' . $wp_user_ID . ' user_index:'   . $user_index);
       }
 
+      $soc_update_method = get_transient( $wp_user_name . '_' . 'soc_update_method' );
+
       // get the transient related to this user ID that stores the latest Readingss - check if from Studer or Shelly
       $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
 
-      if ( $it_is_still_dark )
+      if ( $soc_update_method === "shelly_after_dark" )
       {
         $studer_readings_obj = get_transient( $wp_user_name . '_' . 'soc_from_shelly_energy_readings' );
       }
-      else
+      elseif ( $soc_update_method === "studer" )
       {
         $studer_readings_obj = get_transient( $wp_user_name . '_' . 'studer_readings_object' );
+      }
+      elseif ( $soc_update_method === "shelly_daytime" )
+      {
+        $studer_readings_obj = get_transient( $wp_user_name . '_' . 'shelly_readings_object' );
       }
 
       // error_log(print_r($studer_readings_obj, true));
@@ -4674,8 +4714,8 @@ class class_transindus_eco
 
         $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
 
-    
-        $battery_voltage_vdc    =   round( $studer_readings_obj->battery_voltage_vdc, 1);
+        // changed to avg July 15 2023 was battery_voltage_vdc before that
+        $battery_voltage_vdc    =   round( $studer_readings_obj->battery_voltage_avg, 1);
 
         // Positive is charging and negative is discharging
         $battery_charge_adc     =   $studer_readings_obj->battery_charge_adc;

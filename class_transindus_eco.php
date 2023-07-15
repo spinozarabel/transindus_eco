@@ -4543,7 +4543,7 @@ class class_transindus_eco
       }
       elseif ( $soc_update_method === "shelly_daytime" )
       {
-        $studer_readings_obj = get_transient( $wp_user_name . '_' . 'shelly_readings_object' );
+        $studer_readings_obj = get_transient( $wp_user_name . '_' . 'shelly_readings_obj' );
       }
 
       // error_log(print_r($studer_readings_obj, true));

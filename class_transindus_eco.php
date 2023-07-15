@@ -2333,7 +2333,7 @@ class class_transindus_eco
                 $response = $this->turn_on_off_shelly_switch($user_index, "on");
 
                 error_log("LVDS - Grid ON.  SOC: " . $SOC_percentage_now . " % and Vbatt(V): " . $battery_voltage_avg);
-                $cron_exit_condition = "Low SOC - Grid ON " . $note_exit;
+                $cron_exit_condition = "Low SOC - Grid ON ";
             break;
 
 
@@ -2343,7 +2343,7 @@ class class_transindus_eco
                 $this->turn_on_off_shelly_switch($user_index, "on");
 
                 error_log("Exited via Case 3 - keep switch closed always - Grid Switched ON");
-                $cron_exit_condition = "Grid ON always";
+                $cron_exit_condition = "Grid ON always ";
             break;
 
 
@@ -2353,7 +2353,7 @@ class class_transindus_eco
               $response = $this->turn_on_off_shelly_switch($user_index, "on");
 
                 error_log( 'Exited via Case 4 - reduce daytime battery cycling - Grid Switched ON' );
-                $cron_exit_condition = "RDBC-Grid ON";
+                $cron_exit_condition = "RDBC-Grid ON" ;
             break;
 
             // <7> predicted SOC at 6AM below LVDS SOC limit + margin so turn GRID Switch ON
@@ -2362,7 +2362,7 @@ class class_transindus_eco
               $response = $this->turn_on_off_shelly_switch($user_index, "on");
 
               error_log("Exited via Case 7 - GRID Switched OFF - Predicted SOC at 6AM low : " . $soc_predicted_at_6am );
-              $cron_exit_condition = "SOC6AM LOW - GRID ON";
+              $cron_exit_condition = "SOC6AM LOW - GRID ON ";
 
               // set a transient for 30m. This will be checked for before next switching event
               set_transient( 'timer_since_last_6am_switch_event', true, 30*60 );
@@ -2375,7 +2375,7 @@ class class_transindus_eco
               $response = $this->turn_on_off_shelly_switch($user_index, "off");
 
               error_log("Exited via Case 8 - GRID Switched OFF - Predicted SOC at 6AM OK : " . $soc_predicted_at_6am );
-              $cron_exit_condition = "SOC 6AM OK-GRID OFF";
+              $cron_exit_condition = "SOC 6AM OK-GRID OFF ";
 
               // set a transient for 30m. This will be checked for before next switching event
               set_transient( 'timer_since_last_6am_switch_event', true, 30*60 );
@@ -2389,7 +2389,7 @@ class class_transindus_eco
               $response = $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 5 - adequate Battery SOC, Grid Switched OFF");
-                $cron_exit_condition = "SOC ok - Grid Off " . $note_exit;
+                $cron_exit_condition = "SOC ok - Grid Off ";
             break;
 
 
@@ -2399,7 +2399,7 @@ class class_transindus_eco
               $response = $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 6 - sunset, Grid switched OFF");
-                $cron_exit_condition = "Sunset-Grid Off";
+                $cron_exit_condition = "Sunset-Grid Off ";
             break;
 
 
@@ -2408,14 +2408,14 @@ class class_transindus_eco
               $response = $this->turn_on_off_shelly_switch($user_index, "off");
 
                 error_log("Exited via Case 8 - Battery Float State, Grid switched OFF");
-                $cron_exit_condition = "SOC Float-Grid Off " . $note_exit;
+                $cron_exit_condition = "SOC Float-Grid Off ";
             break;
 
 
             default:
                 
                 $this->verbose ? error_log('Exited via Case Default, NO ACTION TAKEN') : false;
-                $cron_exit_condition = "No Action";
+                $cron_exit_condition = "No Action ";
                 
             break;
 
@@ -2432,7 +2432,7 @@ class class_transindus_eco
 
         // save the data in a transient indexed by the user name. Expiration is 5 minutes. Object depends on whether shelly or Studer
         // Update the user meta with the CRON exit condition only for definite ACtion not for No Action
-        if ($cron_exit_condition !== "No Action") 
+        if ($cron_exit_condition !== "No Action ") 
           {
               update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ) );
           }
@@ -4718,6 +4718,8 @@ class class_transindus_eco
     {
         $config         = $this->config;
 
+        $soc_update_method = get_transient( $wp_user_name . '_' . 'soc_update_method' );
+
         // Initialize object to be returned
         $format_object  = new stdClass();
 
@@ -5046,7 +5048,7 @@ class class_transindus_eco
                                                       '<strong>' . $SOC_percentage_now . ' %' . '</strong><br>' .
                                                   '</span>';
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' .
-                                                    $formatted_interval   . ' ' . $saved_cron_exit_condition  .
+                                                    $formatted_interval   . ' ' . $saved_cron_exit_condition  . $soc_update_method .
                                               '</span>';
         return $format_object;
     }

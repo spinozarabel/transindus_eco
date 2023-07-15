@@ -1915,6 +1915,12 @@ class class_transindus_eco
             // This also updates the solar AH accumulated since midnight in the user meta
             $shelly_solar_measurement_object = $this->get_shelly_solar_measurement( $user_index, $wp_user_name, $wp_user_ID, $total_to_west_panel_ratio );
 
+            if ( empty( $shelly_solar_measurement_object ) )
+            {
+              error_log("Shelly UNI Solar Measurement API call failed - No SOC update or Switch control ");
+              return null;
+            }
+
             $solar_kwh_since_midnight = round( 49.8 * 0.001 * $shelly_solar_measurement_object->solar_accumulated_ah_since_midnight, 3 );
 
             $shelly_readings_obj->est_solar_total_kw        = $est_solar_total_kw;
@@ -1999,6 +2005,11 @@ class class_transindus_eco
                 $shelly_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
 
                 $shelly_readings_obj->pout_inverter_ac_kw = $KWH_load_today_shelly;
+            }
+            else 
+            {
+              error_log(" Shelly Pro 4 PM Home Load measurement API call failed - no SOC update");
+              return null;
             }
           }
 
@@ -2171,7 +2182,7 @@ class class_transindus_eco
             $SOC_percentage_now = $soc_percentage_now_shelly;
 
             // LVDS already defined above for Shelly measure values
-            $LVDS = false; // $shelly_readings_obj->LVDS;
+            $LVDS = $shelly_readings_obj->LVDS;
 
             // set this flag to false since we have no way of accessing Studer's Grid measurement.
             // This flag is only valid when Studer's API call is successful.
@@ -4526,7 +4537,7 @@ class class_transindus_eco
         $wp_user_name = $current_user->user_login;
         $user_index   = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ;
 
-        error_log('from CRON Ajax Call: wp_user_ID:' . $wp_user_ID . ' user_index:'   . $user_index);
+        // error_log('from CRON Ajax Call: wp_user_ID:' . $wp_user_ID . ' user_index:'   . $user_index);
       }
 
       $soc_update_method = get_transient( $wp_user_name . '_' . 'soc_update_method' );

@@ -1199,6 +1199,7 @@ class class_transindus_eco
 
         // since no grid get value from user meta. Also readings will not change since grid is absent :-)
         $returned_obj->grid_wh_since_midnight = $previous_grid_wh_since_midnight;
+        $returned_obj->grid_kw_shelly_em = 0;
 
         return $returned_obj;
       }

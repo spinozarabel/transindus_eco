@@ -4531,7 +4531,7 @@ class class_transindus_eco
       $soc_update_method = get_transient( $wp_user_name . '_' . 'soc_update_method' );
 
       // get the transient related to this user ID that stores the latest Readingss - check if from Studer or Shelly
-      $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
+      // $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
 
       if ( $soc_update_method === "shelly_after_dark" )
       {

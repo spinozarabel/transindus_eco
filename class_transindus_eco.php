@@ -4525,7 +4525,7 @@ class class_transindus_eco
         $wp_user_name = $current_user->user_login;
         $user_index   = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ;
 
-        // error_log('from CRON Ajax Call: wp_user_ID:' . $wp_user_ID . ' user_index:'   . $user_index);
+        error_log('from CRON Ajax Call: wp_user_ID:' . $wp_user_ID . ' user_index:'   . $user_index);
       }
 
       $soc_update_method = get_transient( $wp_user_name . '_' . 'soc_update_method' );

@@ -4721,7 +4721,7 @@ class class_transindus_eco
         // Initialize object to be returned
         $format_object  = new stdClass();
 
-        $psolar_kw              =   $studer_readings_obj->psolar_kw ?? 0;
+        $psolar_kw              =   round($studer_readings_obj->psolar_kw, 2) ?? 0;
         $solar_pv_adc           =   $studer_readings_obj->solar_pv_adc ?? 0;
 
         $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
@@ -4732,7 +4732,7 @@ class class_transindus_eco
         // Positive is charging and negative is discharging
         $battery_charge_adc     =   $studer_readings_obj->battery_charge_adc;
 
-        $pbattery_kw            = $studer_readings_obj->pbattery_kw;
+        $pbattery_kw            = abs(round($studer_readings_obj->pbattery_kw, 2));
 
         $grid_pin_ac_kw         =   $studer_readings_obj->grid_pin_ac_kw;
         $grid_input_vac         =   $studer_readings_obj->grid_input_vac;

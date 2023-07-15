@@ -2410,6 +2410,9 @@ class class_transindus_eco
 
         }   // end witch statement
 
+        // set transient. This will be read in by prepare data to load appropriate transient object
+        set_transient( $wp_user_name . '_' . 'soc_update_method', $soc_update_method, 5*60 );
+
         $now = new DateTime();
 
         $array_for_json = [ 'unixdatetime'        => $now->getTimestamp() ,
@@ -2453,9 +2456,6 @@ class class_transindus_eco
           // no need to worry about 100% clamp during night time since battery will not charge unless Solar is there
           return $shelly_readings_obj;
         }
-
-        // set transient. This will be read in by prepare data to load appropriate transient object
-        set_transient( $wp_user_name . '_' . 'soc_update_method', $soc_update_method, 5*60 );
     }
 
 

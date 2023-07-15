@@ -1728,7 +1728,7 @@ class class_transindus_eco
               // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage     
               $LVDS =             ( $SOC_percentage_now   <= $soc_percentage_lvds_setting )   // SOC is at or below threshold
                                   &&
-                                  ( $shelly_switch_status == "OFF" );					                // The Grid switch is OFF
+                                  ( $shelly_switch_status == "OFF" ) && false;					                // The Grid switch is OFF
 
               // extract the SOC predicted at 6am from the returned object
               $soc_predicted_at_6am = $soc_from_shelly_energy_readings->soc_predicted_at_6am; // rounded already to 1d

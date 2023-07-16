@@ -3610,13 +3610,13 @@ class class_transindus_eco
         {
           // west Panel Solar Amps is lower than East Panel
           // reduce by factor of 1.2 based on AM measurements
-          $west_panel_est_kw = min( $est_solar_kw_arr ) * 1.3;
+          $west_panel_est_kw = min( $est_solar_kw_arr ) * 1.0;
         }
         else 
         {
           // it is afternoon and West panel has maximum solar power
           // increase by factor of 1.2 in PM based on comparison with Studer measurements
-          $west_panel_est_kw = max( $est_solar_kw_arr ) / 1.2;
+          $west_panel_est_kw = max( $est_solar_kw_arr ) / 1.0;
         }
 
         if ( $west_panel_est_kw > 0 )

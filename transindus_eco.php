@@ -23,6 +23,7 @@ $transindus_eco           = new class_transindus_eco();
 
 $user_readings_array = [];
   
+// Action to execute WPCRON scheduled task
 add_action ( 'shellystuder_task_hook', [$transindus_eco, 'shellystuder_cron_exec'] );
 
 // wait for all plugins to be loaded before initializing our code

@@ -1024,10 +1024,10 @@ class class_transindus_eco
         $adc_voltage_shelly = $shelly_api_device_response->data->device_status->adcs[0]->voltage;  // measure the ADC voltage
 
         // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
-        $delta_voltage = $adc_voltage_shelly - 2.5;
+        $delta_voltage = $adc_voltage_shelly - 2.6;
 
         // convention here is that battery discharge current is positive. 10% is adjustment based on comparison
-        $solar_amps_west_raw_measurement = round( $delta_voltage / 0.065, 1 );
+        $solar_amps_west_raw_measurement = round( $delta_voltage / 0.055, 1 );
 
         // multiply by factor for total from west facing only measurement using calculations
         $solar_amps = round( $total_to_west_panel_ratio * $solar_amps_west_raw_measurement, 1 );
@@ -1579,12 +1579,14 @@ class class_transindus_eco
               // Check if the control flag for minutely updates is TRUE. If so get the readings
               if( $do_minutely_updates ) {
 
-                // get all the readings for this user. This will write the data to a transient for quick retrieval
+                // get all the readings for this user. Enable Studer measurements
                 $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly, true );
 
                 for ($i = 1; $i <= 5; $i++) 
                 {
                   sleep(5);
+
+                  // disable Studer measurements. These will complete and end the script.
                   $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly, false );
                 }
                 
@@ -1627,7 +1629,7 @@ class class_transindus_eco
 
           // False implies that Studer readings are to be used for SOC update, true indicates Shelly based processing
           // set default at the beginning to Studer updates of SOC
-          $soc_updated_using_shelly_energy_readings_bool = false;
+          $soc_updated_using_shelly_after_dark_bool = false;
         }
 
         $RDBC = false;    // permamantly disable RDBC mode 
@@ -1718,7 +1720,7 @@ class class_transindus_eco
             if ( $SOC_percentage_now )
             {
               // we can use the shelly soc updates since it is dark and SOC after dark reference has been captured
-              $soc_updated_using_shelly_energy_readings_bool = true;
+              $soc_updated_using_shelly_after_dark_bool = true;
 
               // Update user meta so this becomes the previous value for next cycle
               update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
@@ -1784,7 +1786,7 @@ class class_transindus_eco
 
                 $soc_from_shelly_energy_readings->soc_predicted_at_6am              = $soc_predicted_at_6am;
 
-                $soc_from_shelly_energy_readings->soc_updated_using_shelly_energy_readings_bool = true;
+                $soc_from_shelly_energy_readings->soc_updated_using_shelly_after_dark_bool = true;
 
                 $soc_from_shelly_energy_readings->psolar                            = 0;
 
@@ -1852,7 +1854,7 @@ class class_transindus_eco
         }
 
         // check to ensure that SOC shelly update was not done and if so make a Studer API call
-        if ( ! $soc_updated_using_shelly_energy_readings_bool )
+        if ( ! $soc_updated_using_shelly_after_dark_bool )
         {   // Studer API call only when NOT dark or to capture SOC after dark
           
           if ( $make_studer_api_call )
@@ -2172,7 +2174,7 @@ class class_transindus_eco
             // update the object
             $studer_readings_obj->SOC_percentage_now  = $SOC_percentage_now;
             $studer_readings_obj->LVDS                = $LVDS;
-            $studer_readings_obj->soc_updated_using_shelly_energy_readings_bool = false;
+            $studer_readings_obj->soc_updated_using_shelly_after_dark_bool = false;
 
             // capture soc after dark using shelly 4 pm. Only happens ONCE between 18:55 and 23:00 hrs
             $this->capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index );
@@ -2212,7 +2214,7 @@ class class_transindus_eco
 
           } // end else of studer_api_failed = true
 
-        }   // endif of soc_updated_using_shelly_energy_readings_bool = false
+        }   // endif of soc_updated_using_shelly_after_dark_bool = false
         
         {   // define all the conditions for the SWITCH - CASE tree except for LVDS that is done individually
             // note that $SOC_percentage_now needs to be defined properly depending on path taken
@@ -2261,7 +2263,7 @@ class class_transindus_eco
                                         ( $control_shelly == true );                        // Control Flag is False
         }
 
-        if ( ! $soc_updated_using_shelly_energy_readings_bool && ! $studer_api_call_failed )
+        if ( ! $soc_updated_using_shelly_after_dark_bool && ! $studer_api_call_failed )
         {   // write back new values to the studer_readings_obj
           $studer_readings_obj->battery_voltage_avg               = $battery_voltage_avg;
           $studer_readings_obj->now_is_daytime                    = $now_is_daytime;
@@ -2282,7 +2284,7 @@ class class_transindus_eco
 
           $note_exit = "Studer";
         }
-        elseif ( $soc_updated_using_shelly_energy_readings_bool )
+        elseif ( $soc_updated_using_shelly_after_dark_bool )
         {   // writeback to soc_from_shelly_energy_readings object
           $soc_from_shelly_energy_readings->battery_voltage_avg = "NA";
           $soc_from_shelly_energy_readings->est_solar_kw        = 0;
@@ -2290,7 +2292,7 @@ class class_transindus_eco
 
           $note_exit = "Shelly Night";
         }
-        elseif ( ! $soc_updated_using_shelly_energy_readings_bool && $studer_api_call_failed )
+        elseif ( ! $soc_updated_using_shelly_after_dark_bool && $studer_api_call_failed )
         {   // write back to shelly_readings_obj object
           $note_exit = "Shelly Day";
 
@@ -2438,7 +2440,7 @@ class class_transindus_eco
           }
         
         // return object based on mode of update whetehr Studer or Shelly. If Studer, also apply 100% clamp
-        if ( ! $soc_updated_using_shelly_energy_readings_bool && ! $studer_api_call_failed )
+        if ( ! $soc_updated_using_shelly_after_dark_bool && ! $studer_api_call_failed )
         {  // SOC is updated by Studer
           set_transient( $wp_user_name . '_' . 'studer_readings_object', $studer_readings_obj, 5*60 );
 
@@ -2454,16 +2456,18 @@ class class_transindus_eco
           }
           return $studer_readings_obj;
         }
-        elseif ( $soc_updated_using_shelly_energy_readings_bool )
+        elseif ( $soc_updated_using_shelly_after_dark_bool )
         { // SOC updates from Shelly after Dark measurements
           set_transient( $wp_user_name . '_' . 'soc_from_shelly_energy_readings', $soc_from_shelly_energy_readings, 5*60 );
 
           // no need to worry about 100% clamp during night time since battery will not charge unless Solar is there
           return $soc_from_shelly_energy_readings;
         }
-        elseif ( ! $soc_updated_using_shelly_energy_readings_bool && $studer_api_call_failed )
-        { // SOC updates from Shelly after Dark measurements
+        elseif ( ! $soc_updated_using_shelly_after_dark_bool && $studer_api_call_failed )
+        { // SOC updates from Shelly Uni, Shelly EM and Shelly Pro day time measurements
+
           set_transient( $wp_user_name . '_' . 'shelly_readings_obj', $shelly_readings_obj, 5*60 );
+
           // no need to worry about 100% clamp during night time since battery will not charge unless Solar is there
           return $shelly_readings_obj;
         }
@@ -3606,7 +3610,7 @@ class class_transindus_eco
         {
           // west Panel Solar Amps is lower than East Panel
           // reduce by factor of 1.2 based on AM measurements
-          $west_panel_est_kw = min( $est_solar_kw_arr ) * 1.2;
+          $west_panel_est_kw = min( $est_solar_kw_arr ) * 1.3;
         }
         else 
         {

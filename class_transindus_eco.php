@@ -2184,7 +2184,7 @@ class class_transindus_eco
             $SOC_percentage_now = $soc_percentage_now_shelly;
 
             // LVDS already defined above for Shelly measure values
-            $LVDS = $shelly_readings_obj->LVDS;
+            $LVDS = false; // $shelly_readings_obj->LVDS;
 
             // set this flag to false since we have no way of accessing Studer's Grid measurement.
             // This flag is only valid when Studer's API call is successful.

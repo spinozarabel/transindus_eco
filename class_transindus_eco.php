@@ -3627,6 +3627,8 @@ class class_transindus_eco
           $total_to_west_panel_ratio = $est_solar_obj->est_solar_total_kw / $west_panel_est_kw;
         }
 
+        if ( $total_to_west_panel_ratio > 2 ) $total_to_west_panel_ratio = 2;
+
         $est_solar_obj->total_to_west_panel_ratio =  $total_to_west_panel_ratio;
 
         return $est_solar_obj;

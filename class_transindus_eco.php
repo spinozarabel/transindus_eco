@@ -1200,6 +1200,7 @@ class class_transindus_eco
         // since no grid get value from user meta. Also readings will not change since grid is absent :-)
         $returned_obj->grid_wh_since_midnight = $previous_grid_wh_since_midnight;
         $returned_obj->grid_kw_shelly_em = 0;
+        $returned_obj->grid_voltage_em = 0;
 
         return $returned_obj;
       }
@@ -1209,6 +1210,8 @@ class class_transindus_eco
 
       // get the energy counter value set at midnight. Assumes that this is an integer
       $grid_wh_counter_midnight = (int) round(get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true), 0);
+
+      $returned_obj->grid_voltage_em = round($shelly_api_device_response->data->device_status->emeters[0]->voltage, 0);;
 
       // subtract the 2 integer counter readings to get the accumulated WH since midnight
       $grid_wh_since_midnight = $present_grid_wh_reading - $grid_wh_counter_midnight;
@@ -1681,6 +1684,15 @@ class class_transindus_eco
 
           // get the installed battery capacity in KWH from config
           $SOC_capacity_KWH = $this->config['accounts'][$user_index]['battery_capacity'];
+
+          // get webpshr subscriber id for this user
+          $webpushr_subscriber_id = $all_usermeta['webpushr_subscriber_id'];
+
+          // Webpushr NPush otifications API Key
+          $webpushrKey            = $this->config['accounts'][$user_index]['webpushrKey'];
+
+          // Webpushr Token
+          $webpushrAuthToken      = $this->config['accounts'][$user_index]['webpushrAuthToken'];
         }
 
         { // --------------------- ACIN SWITCH Details after making a Shelly API call -------------------
@@ -2025,6 +2037,9 @@ class class_transindus_eco
             $shelly_readings_obj->grid_kwh_since_midnight  = $grid_kwh_since_midnight;
 
             $shelly_readings_obj->grid_kw_shelly_em = $shelly_em_readings_object->grid_kw_shelly_em;
+
+            // Grid AC voltage measured by Shelly EM
+            $shelly_readings_obj->grid_voltage_em = $shelly_em_readings_object->grid_voltage_em;
           }
 
           { // calculate non-studer based SOC during daytime using Shelly device measurements
@@ -2077,7 +2092,7 @@ class class_transindus_eco
   
             // Inverter readings at present Instant
             $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;    // Inverter Output Power in KW
-            $grid_input_vac       = $studer_readings_obj->grid_input_vac;         // Grid Input AC Voltage to Studer
+            $grid_input_vac       = $studer_readings_obj->grid_input_vac;         // Grid Input AC Voltage measured by STuder
             // $inverter_current_adc = $studer_readings_obj->inverter_current_adc;   // DC current into Inverter to convert to AC power
   
             // Surplus power from Solar after supplying the Load
@@ -2336,6 +2351,10 @@ class class_transindus_eco
 
                 error_log("LVDS - Grid ON.  SOC: " . $SOC_percentage_now . " % and Vbatt(V): " . $battery_voltage_avg);
                 $cron_exit_condition = "Low SOC - Grid ON ";
+                $notification_title = "LVDS";
+                $notification_message = "LVDS Grid ON SOC " . $SOC_percentage_now . "%";
+                $this->send_webpushr_notification($notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                  $webpushrKey, $webpushrAuthToken);
             break;
 
 
@@ -2392,6 +2411,11 @@ class class_transindus_eco
 
                 error_log("Exited via Case 5 - adequate Battery SOC, Grid Switched OFF");
                 $cron_exit_condition = "SOC ok - Grid Off ";
+
+                $notification_title = "SOC OK Grid Off";
+                $notification_message = "SOC " . $SOC_percentage_now . "%";
+                $this->send_webpushr_notification($notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                  $webpushrKey, $webpushrAuthToken);
             break;
 
 
@@ -2473,6 +2497,57 @@ class class_transindus_eco
         }
     }
 
+
+
+
+    /**
+     * 
+     */
+    public function send_webpushr_notification( $notification_title, $notificaion_message, $webpushr_subscriber_id, 
+                                            $webpushrKey, $webpushrAuthToken )
+    {
+      $end_point = 'https://api.webpushr.com/v1/notification/send/sid';
+
+      $http_header = array( 
+          "Content-Type"      => "Application/Json", 
+          "webpushrKey"       => $webpushrKey, 
+          "webpushrAuthToken" => $webpushrAuthToken
+      );
+
+      $req_data = array(
+          'title' 		  => $notification_title,         //required
+          'message' 		=> $notificaion_message,        //required
+          'target_url'	=> 'https://www.webpushr.com',  //required
+          'sid'         => $subscriber_id,              //required
+          'auto_hide'	  => 0,                           //optional message displayed till user reads it
+          'expire_push'	=> '5m',                        //optional if user not online message expires after this time
+        //following parameters are optional
+        //'name'		=> 'Test campaign',
+        //'icon'		=> 'https://cdn.webpushr.com/siteassets/wSxoND3TTb.png',
+        //'image'		=> 'https://cdn.webpushr.com/siteassets/aRB18p3VAZ.jpeg',
+        //'auto_hide'	=> 1,
+        //'expire_push'	=> '5m',
+        //'send_at'		=> '2022-01-04 11:01 +5:30',
+        //'action_buttons'=> array(	
+            //array('title'=> 'Demo', 'url' => 'https://www.webpushr.com/demo'),
+            //array('title'=> 'Rates', 'url' => 'https://www.webpushr.com/pricing')
+        //)
+      );
+
+      $ch = curl_init();
+      curl_setopt($ch, CURLOPT_HTTPHEADER, $http_header);
+      curl_setopt($ch, CURLOPT_URL, $end_point );
+      curl_setopt($ch, CURLOPT_POST, 1);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($req_data) );
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+      $response = curl_exec($ch);
+
+      if ( $response->status != "success" )
+      {
+        error_log( $response );
+      }
+    }
 
 
     /**

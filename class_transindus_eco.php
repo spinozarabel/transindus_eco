@@ -2507,9 +2507,9 @@ class class_transindus_eco
       $end_point = 'https://api.webpushr.com/v1/notification/send/sid';
 
       $http_header = array( 
-          "Content-Type"      => "Application/Json", 
-          "webpushrKey"       => $webpushrKey, 
-          "webpushrAuthToken" => $webpushrAuthToken
+          "Content-Type: Application/Json", 
+          "webpushrKey: $webpushrKey", 
+          "webpushrAuthToken: $webpushrAuthToken"
       );
 
       $req_data = array(

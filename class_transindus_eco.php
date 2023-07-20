@@ -1580,7 +1580,8 @@ class class_transindus_eco
               $do_minutely_updates  = $all_usermeta['do_minutely_updates'];
 
               // Check if the control flag for minutely updates is TRUE. If so get the readings
-              if( $do_minutely_updates ) {
+              if( $do_minutely_updates ) 
+              {
 
                 // get all the readings for this user. Enable Studer measurements
                 $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly, true );
@@ -1592,10 +1593,7 @@ class class_transindus_eco
                   // disable Studer measurements. These will complete and end the script.
                   $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly, false );
                 }
-                
-
               }
-
             }
 
             // loop for all users
@@ -2546,6 +2544,7 @@ class class_transindus_eco
       if ( $response->status != "success" )
       {
         error_log( $response );
+        error_log(print_r($http_header, true));
       }
     }
 

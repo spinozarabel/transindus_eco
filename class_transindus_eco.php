@@ -2516,7 +2516,7 @@ class class_transindus_eco
           'title' 		  => $notification_title,         //required
           'message' 		=> $notificaion_message,        //required
           'target_url'	=> 'https://www.webpushr.com',  //required
-          'sid'         => $subscriber_id,              //required
+          'sid'         => $webpushr_subscriber_id,     //required
           'auto_hide'	  => 0,                           //optional message displayed till user reads it
           'expire_push'	=> '5m',                        //optional if user not online message expires after this time
         //following parameters are optional

@@ -2356,13 +2356,18 @@ class class_transindus_eco
             break;
 
 
-            // <3> If switch is OPEN and the keep shelly closed always is TRUE then close the switch
+            // <3> If switch is OFF, Grid is present and the keep shelly closed always is TRUE then close the switch
             case ( $keep_switch_closed_always ):
 
                 $this->turn_on_off_shelly_switch($user_index, "on");
 
                 error_log("Exited via Case 3 - keep switch closed always - Grid Switched ON");
                 $cron_exit_condition = "Grid ON always ";
+
+                $notification_title = "KSCA - Switch ON";
+                $notification_message = "SOC " . $SOC_percentage_now . "%";
+                $this->send_webpushr_notification($notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                  $webpushrKey, $webpushrAuthToken);
             break;
 
 
@@ -2433,6 +2438,11 @@ class class_transindus_eco
 
                 error_log("Exited via Case 8 - Battery Float State, Grid switched OFF");
                 $cron_exit_condition = "SOC Float-Grid Off ";
+
+                $notification_title = "KSCA Float Switch OFF";
+                $notification_message = "SOC " . $SOC_percentage_now . "%";
+                $this->send_webpushr_notification($notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                  $webpushrKey, $webpushrAuthToken);
             break;
 
 

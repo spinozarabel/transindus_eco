@@ -4835,7 +4835,7 @@ class class_transindus_eco
         $shelly_api_device_status_ON      = $studer_readings_obj->shelly_api_device_status_ON;
 
         // This is the AC voltage of switch:0 of Shelly 4PM
-        $shelly_api_device_status_voltage = $studer_readings_obj->svoltage_home;
+        $shelly_api_device_status_voltage = $studer_readings_obj->shelly_api_device_status_voltage;
 
         $SOC_percentage_now = $studer_readings_obj->SOC_percentage_now;
 

@@ -2513,12 +2513,12 @@ class class_transindus_eco
       );
 
       $req_data = array(
-          'title' 		  => $notification_title,         //required
-          'message' 		=> $notificaion_message,        //required
-          'target_url'	=> 'https://www.webpushr.com',  //required
-          'sid'         => $webpushr_subscriber_id,     //required
-          'auto_hide'	  => 0,                           //optional message displayed till user reads it
-          'expire_push'	=> '5m',                        //optional if user not online message expires after this time
+          'title' 		  => $notification_title,             //required
+          'message' 		=> $notificaion_message,            //required
+          'target_url'	=> 'https://avasarala.in/mysolar',  //required
+          'sid'         => $webpushr_subscriber_id,         //required
+          'auto_hide'	  => 0,                               //optional message displayed till user reads it
+          'expire_push'	=> '5m',                            //optional if user not online message expires after this time
         //following parameters are optional
         //'name'		=> 'Test campaign',
         //'icon'		=> 'https://cdn.webpushr.com/siteassets/wSxoND3TTb.png',

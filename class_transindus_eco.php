@@ -1155,7 +1155,7 @@ class class_transindus_eco
         $energy_obj->energy_total_to_home_ts  = $energy_total_to_home_ts;
         $energy_obj->minute_ts                = $minute_ts;
         $energy_obj->current_total_home       = $current_total_home;
-        $energy_obj->voltage_home             = $shelly_api_device_response->data->device_status->{"switch:0"}->voltage;
+        $energy_obj->voltage_home             = $shelly_api_device_response->data->device_status->{"switch:3"}->voltage;
 
         // set the state of the channel if OFF or ON. ON switch will be true and OFF will be false
         $energy_obj->pump_switch_status_bool  = $shelly_api_device_response->data->device_status->{"switch:0"}->output;

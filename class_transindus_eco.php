@@ -1968,6 +1968,7 @@ class class_transindus_eco
                 $studer_readings_obj->pump_switch_status_bool = $shelly_4pm_readings_object->pump_switch_status_bool;
                 $studer_readings_obj->ac_switch_status_bool   = $shelly_4pm_readings_object->ac_switch_status_bool;
                 $studer_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
+                $studer_readings_obj->voltage_home            = $shelly_4pm_readings_object->voltage_home;
 
                 // calculate the energy consumed since midnight using Shelly4PM
                 $accumulated_wh_since_midnight = $this->get_accumulated_wh_since_midnight(  $shelly_4pm_readings_object->energy_total_to_home_ts, 
@@ -2017,6 +2018,8 @@ class class_transindus_eco
                 $shelly_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
 
                 $shelly_readings_obj->pout_inverter_ac_kw = $KWH_load_today_shelly;
+
+                $shelly_readings_obj->voltage_home            = $shelly_4pm_readings_object->voltage_home;
             }
             else 
             {
@@ -4830,7 +4833,9 @@ class class_transindus_eco
         $grid_input_vac         =   $studer_readings_obj->grid_input_vac;
 
         $shelly_api_device_status_ON      = $studer_readings_obj->shelly_api_device_status_ON;
-        $shelly_api_device_status_voltage = $studer_readings_obj->shelly_api_device_status_voltage;
+
+        // This is the AC voltage of switch:0 of Shelly 4PM
+        $shelly_api_device_status_voltage = $studer_readings_obj->svoltage_home;
 
         $SOC_percentage_now = $studer_readings_obj->SOC_percentage_now;
 

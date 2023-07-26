@@ -2222,7 +2222,7 @@ class class_transindus_eco
               */
                 
               error_log("Grid Switch: " . $shelly_switch_status      .
-                        "Load KWH= "    . $KWH_load_today_shelly     . 
+                        " Load KWH= "    . $KWH_load_today_shelly     . 
                         " Grid KWH= "   . $grid_kwh_since_midnight   . 
                         " Solar KWH= "  . $solar_kwh_since_midnight  .
                         " SOC %= "      . $soc_percentage_now_shelly);
@@ -2263,7 +2263,8 @@ class class_transindus_eco
                              ( $shelly_switch_status == "ON" )  														  &&  // Switch is ON now
                              ( $surplus >= $min_solar_surplus_for_switch_release_after_rdbc ) &&  // Solar surplus is >= 0.2KW
                              ( $keep_shelly_switch_closed_always == false )                   &&	// Emergency flag is False
-                             ( $control_shelly == true );                                         // Control Flag is SET                              
+                             ( $control_shelly == true )                                      &&
+                             ( $soc_update_method === "studer");                                  // only for studer updated value                            
 
           // In general we want home to be on Battery after sunset
           $sunset_switch_release			=	( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
@@ -2273,10 +2274,11 @@ class class_transindus_eco
 
           // This is needed when RDBC or always ON was triggered and Psolar is charging battery beyond 95%
           // independent of keep_shelly_switch_closed_always flag status
-          $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							&&  // Switch is ON now
+          $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							  &&  // Switch is ON now
                                         ( $SOC_percentage_now >= $soc_percentage_switch_release_setting )	&&  // OR SOC reached 95%
                                         // ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
-                                        ( $control_shelly == true );                        // Control Flag is False
+                                        ( $control_shelly == true )                        &&
+                                        ( $soc_update_method === "studer");                    // only for studer updated values
         }
 
         if ( ! $soc_updated_using_shelly_after_dark_bool && ! $studer_api_call_failed )

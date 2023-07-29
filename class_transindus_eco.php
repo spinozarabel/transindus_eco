@@ -1784,7 +1784,11 @@ class class_transindus_eco
                                     &&
                                       ( $SOC_percentage_now  >  ( $soc_percentage_lvds_setting + 0.3 ) ); // make sure SOC is above LVDS
 
+              // make an API call on the water heater to get its data object
+              $shelly_water_heater_data = $this->get_shelly_device_status_water_heater( $user_index );
+
               { // prepare object for Transient for updating screen readings
+                $soc_from_shelly_energy_readings->shelly_water_heater_data          = $shelly_water_heater_data;
                 $soc_from_shelly_energy_readings->valid_shelly_config               = $valid_shelly_config;
                 $soc_from_shelly_energy_readings->control_shelly                    = $control_shelly;
                 $soc_from_shelly_energy_readings->shelly_switch_status              = $shelly_switch_status;
@@ -1882,6 +1886,9 @@ class class_transindus_eco
             // as flag is not enabled set api failed flag to true
             $studer_api_call_failed = true;
           }
+
+          // make an API call on the water heater to get its data object
+          $shelly_water_heater_data = $this->get_shelly_device_status_water_heater( $user_index );
           
           // instantiate object to hold all of non-studer Shelly based readings info
           $shelly_readings_obj = new stdClass;
@@ -1947,6 +1954,8 @@ class class_transindus_eco
 
             $shelly_readings_obj->psolar_kw     = $psolar;                                          // Solar power in KW
             $shelly_readings_obj->solar_pv_adc  = $shelly_solar_measurement_object->solar_amps;     // Solar DC Amps
+
+            $shelly_readings_obj->shelly_water_heater_data  = $shelly_water_heater_data;            // water heater data object
             
           }
 
@@ -2245,7 +2254,8 @@ class class_transindus_eco
           $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
                                         ( $keep_shelly_switch_closed_always == true )  &&
                                         ( $SOC_percentage_now <= ($soc_percentage_switch_release_setting - 5) )	&&  // OR SOC reached 90%
-                                        ( $control_shelly == true );
+                                        ( $control_shelly == true )                    &&
+                                        ( $soc_update_method === "studer");
 
 
           $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
@@ -2299,6 +2309,8 @@ class class_transindus_eco
           
           $studer_readings_obj->cloudiness_average_percentage_weighted  = $cloudiness_average_percentage_weighted;
           $studer_readings_obj->est_solar_kw_arr  = round( array_sum($est_solar_kw_arr), 1);
+
+          $studer_readings_obj->shelly_water_heater_data          = $shelly_water_heater_data;
 
           $note_exit = "Studer";
         }
@@ -3371,12 +3383,12 @@ class class_transindus_eco
         $output .= '
         <table id="my-load-distribution-table">
             <tr>
-                <td id="home_icon">'          . $format_object->home_icon          . '</td>
+                <td id="water_heater_icon">'  . $format_object->water_heater_icon  . '</td>
                 <td id="ac_icon">'            . $format_object->ac_icon            . '</td>
                 <td id="pump_icon">'          . $format_object->pump_icon          . '</td>
             </tr>
             <tr>
-                <td id="power_to_home_kw">' . $format_object->power_to_home_kw    . '</td>
+                <td id="shelly_water_heater_kw">' . $format_object->shelly_water_heater_kw    . '</td>
                 <td id="power_to_ac_kw">'   . $format_object->power_to_ac_kw      . '</td>
                 <td id="power_to_pump_kw">' . $format_object->power_to_pump_kw    . '</td>
             </tr>
@@ -3764,7 +3776,7 @@ class class_transindus_eco
         return $shelly_device_data;
     }
 
-    public function get_shelly_device_status_acin(int $user_index): ?object
+    public function get_shelly_device_status_acin(int $user_index): ? object
     {
         // get API and device ID from config based on user index
         $config = $this->config;
@@ -3778,6 +3790,60 @@ class class_transindus_eco
         $shelly_device_data = $shelly_api->get_shelly_device_status();
 
         return $shelly_device_data;
+    }
+
+
+    public function get_shelly_device_status_water_heater(int $user_index): ? object
+    {
+      // get API and device ID from config based on user index
+      $config = $this->config;
+      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_water_heater'];
+
+      $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+
+      // this is $curl_response.
+      $shelly_api_device_response = $shelly_api->get_shelly_device_status();
+
+      if ( is_null($shelly_api_device_response) ) 
+          { // switch status is unknown
+
+              error_log("Shelly Water Heater Switch API call failed - Reason unknown");
+
+              $shelly_api_device_status_ON = null;
+
+              $shelly_switch_status             = "OFFLINE";
+              $shelly_api_device_status_voltage = "NA";
+          }
+          else 
+          {  // Switch is ONLINE - Get its status, VOltage, and Power
+              // switch ON is true OFF is false boolean variable
+              $shelly_water_heater_status         = $shelly_api_device_response->data->device_status->{'switch:0'}->output;
+              
+
+              if ($shelly_water_heater_status)
+              {
+                  $shelly_water_heater_status_ON      = "ON";
+                  $shelly_water_heater_voltage        = $shelly_api_device_response->data->device_status->{'switch:0'}->voltage;
+                  $shelly_water_heater_current        = $shelly_api_device_response->data->device_status->{'switch:0'}->current;
+                  $shelly_water_heater_w              = $shelly_api_device_response->data->device_status->{'switch:0'}->apower;
+                  $shelly_water_heater_kw             = round( $shelly_water_heater_w * 0.001, 2);
+              }
+              else
+              {
+                  $shelly_water_heater_status_ON      = "OFF";
+                  $shelly_water_heater_current        = 0;
+                  $shelly_water_heater_kw             = 0;
+              }
+          }
+
+          $shelly_water_heater_data->shelly_water_heater_status     = $shelly_water_heater_status;
+          $shelly_water_heater_data->shelly_water_heater_status_ON  = $shelly_water_heater_status_ON;
+          $shelly_water_heater_data->shelly_water_heater_kw         = $shelly_water_heater_kw;
+          $shelly_water_heater_data->shelly_water_heater_current    = $shelly_water_heater_current;
+
+      return $shelly_water_heater_data;
     }
 
     /**
@@ -4818,6 +4884,12 @@ class class_transindus_eco
         // Initialize object to be returned
         $format_object  = new stdClass();
 
+        // extract and process Shelly 1PM switch water heater data
+        $shelly_water_heater_data     = $studer_readings_obj->shelly_water_heater_data;     // data object
+        $shelly_water_heater_kw       = $shelly_water_heater_data->shelly_water_heater_kw;
+        $shelly_water_heater_status   = $shelly_water_heater_data->shelly_water_heater_status;  // boolean variable
+        $shelly_water_heater_current  = $shelly_water_heater_data->shelly_water_heater_current; // in Amps
+
         $psolar_kw              =   round($studer_readings_obj->psolar_kw, 2) ?? 0;
         $solar_pv_adc           =   $studer_readings_obj->solar_pv_adc ?? 0;
 
@@ -5066,6 +5138,20 @@ class class_transindus_eco
           $pump_icon_color = 'black';
         }
 
+        // Water Heater Icon color determination tree
+        If ( $shelly_water_heater_kw > 0.1 )
+        {
+          $water_heater_icon_color = 'blue';
+        }
+        elseif ( ! $shelly_water_heater_status )
+        {
+          $water_heater_icon_color = 'red';
+        }
+        else
+        {
+          $water_heater_icon_color = 'black';
+        }
+
 
         // Get the icoms for the load breakout table such as AC, home, pump, etc.
         $format_object->home_icon = '<span style="color: Black;">
@@ -5080,7 +5166,7 @@ class class_transindus_eco
                                         <i class="fa-solid fa-2x fa-arrow-up-from-water-pump"></i>
                                     </span>';
 
-        $format_object->water_heater_icon =   '<span style="color: Black;">
+        $format_object->water_heater_icon =   '<span style="color: ' . $water_heater_icon_color . '">
                                                   <i class="fa-solid fa-2x fa-hot-tub-person"></i>
                                               </span>';
 
@@ -5095,6 +5181,10 @@ class class_transindus_eco
         $format_object->power_to_pump_kw = '<span style="font-size: 18px;color: Black;">
                                               <strong>' . $studer_readings_obj->power_to_pump_kw . ' KW</strong>
                                           </span>';
+
+        $format_object->shelly_water_heater_kw = '<span style="font-size: 18px;color: Black;">
+                                                    <strong>' . $shelly_water_heater_kw . ' KW</strong>
+                                                  </span>';
 
         // Get Cron Exit COndition from User Meta and its time stamo
         $json_cron_exit_condition_user_meta = get_user_meta( $wp_user_ID, 'studer_readings_object', true );

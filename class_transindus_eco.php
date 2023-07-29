@@ -2366,25 +2366,43 @@ class class_transindus_eco
 
                 error_log("LVDS - Grid ON.  SOC: " . $SOC_percentage_now . " % and Vbatt(V): " . $battery_voltage_avg);
                 $cron_exit_condition = "Low SOC - Grid ON ";
-                $notification_title = "LVDS";
-                $notification_message = "LVDS Grid ON SOC " . $SOC_percentage_now . "%";
-                $this->send_webpushr_notification($notification_title, $notification_message, $webpushr_subscriber_id, 
-                                                  $webpushrKey, $webpushrAuthToken);
+
+                if ( $response->isok )
+                {
+                  $notification_title = "LVDS";
+                  $notification_message = "LVDS Grid ON SOC " . $SOC_percentage_now . "%";
+                  $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                      $webpushrKey, $webpushrAuthToken  );
+                }
+                else 
+                {
+                  error_log("Grid Switch ON/OFF problem: " . print_r($response, true) );
+                }
+                
             break;
 
 
             // <3> If switch is OFF, Grid is present and the keep shelly closed always is TRUE then close the switch
             case ( $keep_switch_closed_always ):
 
-                $this->turn_on_off_shelly_switch($user_index, "on", 'shelly_device_id_acin');
+                $response = $this->turn_on_off_shelly_switch($user_index, "on", 'shelly_device_id_acin');
 
                 error_log("Exited via Case 3 - keep switch closed always - Grid Switched ON");
                 $cron_exit_condition = "Grid ON always ";
 
-                $notification_title = "KSCA - Switch ON";
-                $notification_message = "SOC " . $SOC_percentage_now . "%";
-                $this->send_webpushr_notification($notification_title, $notification_message, $webpushr_subscriber_id, 
-                                                  $webpushrKey, $webpushrAuthToken);
+                if ( $response->isok )
+                {
+                  $notification_title = "KSCA - Switch ON";
+                  $notification_message = "SOC " . $SOC_percentage_now . "%";
+                  $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                      $webpushrKey, $webpushrAuthToken  );
+                }
+                else 
+                {
+                  error_log("Grid Switch ON/OFF problem: " . print_r($response, true) );
+                }
+
+                
             break;
 
 
@@ -2427,39 +2445,68 @@ class class_transindus_eco
             // <5> Release - Switch OFF for normal Studer operation
             case ( $switch_release ):
 
-              $response = $this->turn_on_off_shelly_switch($user_index, "off", 'shelly_device_id_acin');
+                $response = $this->turn_on_off_shelly_switch($user_index, "off", 'shelly_device_id_acin');
 
                 error_log("Exited via Case 5 - adequate Battery SOC, Grid Switched OFF");
                 $cron_exit_condition = "SOC ok - Grid Off ";
 
-                $notification_title = "SOC OK Grid Off";
-                $notification_message = "SOC " . $SOC_percentage_now . "%";
-                $this->send_webpushr_notification($notification_title, $notification_message, $webpushr_subscriber_id, 
-                                                  $webpushrKey, $webpushrAuthToken);
+                if ( $response->isok )
+                {
+                  $notification_title = "SOC OK Grid Off";
+                  $notification_message = "SOC " . $SOC_percentage_now . "%";
+                  $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                      $webpushrKey, $webpushrAuthToken  );
+                }
+                else 
+                {
+                  error_log("Grid Switch ON/OFF problem: " . print_r($response, true) );
+                }
+                
             break;
 
 
             // <6> Turn switch OFF at 5:30 PM if emergency flag is False so that battery can supply load for the night
             case ( $sunset_switch_release ):
 
-              $response = $this->turn_on_off_shelly_switch($user_index, "off", 'shelly_device_id_acin');
+                $response = $this->turn_on_off_shelly_switch($user_index, "off", 'shelly_device_id_acin');
 
                 error_log("Exited via Case 6 - sunset, Grid switched OFF");
                 $cron_exit_condition = "Sunset-Grid Off ";
+
+                if ( $response->isok )
+                {
+                  $notification_title = "Sunset-Grid Off";
+                  $notification_message = "SOC " . $SOC_percentage_now . "%";
+                  $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                      $webpushrKey, $webpushrAuthToken  );
+                }
+                else 
+                {
+                  error_log("Grid Switch ON/OFF problem: " . print_r($response, true) );
+                }
+
             break;
 
 
             case ( $switch_release_float_state ):
 
-              $response = $this->turn_on_off_shelly_switch($user_index, "off", 'shelly_device_id_acin');
+                $response = $this->turn_on_off_shelly_switch($user_index, "off", 'shelly_device_id_acin');
 
                 error_log("Exited via Case 8 - Battery Float State, Grid switched OFF");
                 $cron_exit_condition = "SOC Float-Grid Off ";
 
-                $notification_title = "KSCA Float Switch OFF";
-                $notification_message = "SOC " . $SOC_percentage_now . "%";
-                $this->send_webpushr_notification($notification_title, $notification_message, $webpushr_subscriber_id, 
-                                                  $webpushrKey, $webpushrAuthToken);
+                if ( $response->isok )
+                {
+                  $notification_title = "KSCA Float Switch OFF";
+                  $notification_message = "SOC " . $SOC_percentage_now . "%";
+                  $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                      $webpushrKey, $webpushrAuthToken  );
+                }
+                else 
+                {
+                  error_log("Grid Switch ON/OFF problem: " . print_r($response, true) );
+                }
+                
             break;
 
 
@@ -3741,9 +3788,9 @@ class class_transindus_eco
      *  @param int:$user_index
      *  @param string:$desired_state can be either 'on' or 'off' to turn on the switch to ON or OFF respectively
      *  @param string:$shelly_switch_name is the name of the switch used to index its shelly_device_id in the config array
-     *  @return bool:$shelly_device_data->isok is the boolean response from the shelly device
+     *  @return object:$shelly_device_data is the curl response stdclass object from Shelly device
      */
-    public function turn_on_off_shelly_switch( int $user_index, string $desired_state, $shelly_switch_name = 'shelly_device_id_acin' ) : bool
+    public function turn_on_off_shelly_switch( int $user_index, string $desired_state, $shelly_switch_name = 'shelly_device_id_acin' ) : ? object
     {
       // Shelly API has a max request rate of 1 per second. So we wait 1s just in case we made a Shelly API call before coming here
         sleep (2);
@@ -3764,7 +3811,7 @@ class class_transindus_eco
         $shelly_device_data = $shelly_api->turn_on_off_shelly_switch( $desired_state );
 
         // True if API call was successful, False if not.
-        return $shelly_device_data->isok;
+        return $shelly_device_data;
     }
 
     public function get_shelly_device_status(int $user_index): ?object

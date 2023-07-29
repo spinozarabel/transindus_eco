@@ -3838,6 +3838,7 @@ class class_transindus_eco
               }
           }
 
+          $shelly_water_heater_data =  new stdclass;
           $shelly_water_heater_data->shelly_water_heater_status     = $shelly_water_heater_status;
           $shelly_water_heater_data->shelly_water_heater_status_ON  = $shelly_water_heater_status_ON;
           $shelly_water_heater_data->shelly_water_heater_kw         = $shelly_water_heater_kw;

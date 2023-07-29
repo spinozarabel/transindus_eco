@@ -2567,11 +2567,12 @@ class class_transindus_eco
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
       $response = curl_exec($ch);
+      $response_json = json_decode( $response );
 
-      if ( $response->status != "success" )
+      if ( $response_json->status != "success" )
       {
+        error_log( 'webpushr notification failed, see returned contents below');
         error_log( $response );
-        error_log(print_r($http_header, true));
       }
     }
 
@@ -3742,7 +3743,7 @@ class class_transindus_eco
     public function turn_on_off_shelly_switch($user_index, $desired_state)
     {
       // Shelly API has a max request rate of 1 per second. So we wait 1s just in case we made a Shelly API call before coming here
-        sleep (1);
+        sleep (2);
 
         // get the config array from the object properties
         $config = $this->config;
@@ -3755,6 +3756,7 @@ class class_transindus_eco
 
         // this is $curl_response
         $shelly_device_data = $shelly_api->turn_on_off_shelly_switch($desired_state);
+
         error_log(print_r($shelly_device_data, true));
 
         return $shelly_device_data;

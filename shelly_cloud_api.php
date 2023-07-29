@@ -57,7 +57,7 @@ class shelly_cloud_api
           }
       else
           {
-                error_log( "This is the response when turn ON_OFF of your Shelly device" . print_r($curlResponse, true) );
+                error_log( "This is the response when turn ON_OFF of your Shelly device ID: $this->shelly_device_id " . print_r($curlResponse, true) );
               
                 return null;
           }

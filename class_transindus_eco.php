@@ -2362,7 +2362,7 @@ class class_transindus_eco
             //      AND control_shelly = TRUE. Note that a valid config and do_shelly user meta need to be TRUE.
             case ( $LVDS ):
 
-                $response = $this->turn_on_off_shelly_switch($user_index, "on");
+                $response = $this->turn_on_off_shelly_switch($user_index, "on", 'shelly_device_id_acin');
 
                 error_log("LVDS - Grid ON.  SOC: " . $SOC_percentage_now . " % and Vbatt(V): " . $battery_voltage_avg);
                 $cron_exit_condition = "Low SOC - Grid ON ";
@@ -2376,7 +2376,7 @@ class class_transindus_eco
             // <3> If switch is OFF, Grid is present and the keep shelly closed always is TRUE then close the switch
             case ( $keep_switch_closed_always ):
 
-                $this->turn_on_off_shelly_switch($user_index, "on");
+                $this->turn_on_off_shelly_switch($user_index, "on", 'shelly_device_id_acin');
 
                 error_log("Exited via Case 3 - keep switch closed always - Grid Switched ON");
                 $cron_exit_condition = "Grid ON always ";
@@ -2391,7 +2391,7 @@ class class_transindus_eco
             // <4> Daytime, reduce battery cycling, turn SWITCH ON
             case ( $reduce_daytime_battery_cycling ):
 
-              $response = $this->turn_on_off_shelly_switch($user_index, "on");
+              $response = $this->turn_on_off_shelly_switch($user_index, "on", 'shelly_device_id_acin');
 
                 error_log( 'Exited via Case 4 - reduce daytime battery cycling - Grid Switched ON' );
                 $cron_exit_condition = "RDBC-Grid ON" ;
@@ -2400,7 +2400,7 @@ class class_transindus_eco
             // <7> predicted SOC at 6AM below LVDS SOC limit + margin so turn GRID Switch ON
             case ( $LVDS_soc_6am_grid_on ):
 
-              $response = $this->turn_on_off_shelly_switch($user_index, "on");
+              $response = $this->turn_on_off_shelly_switch($user_index, "on", 'shelly_device_id_acin');
 
               error_log("Exited via Case 7 - GRID Switched OFF - Predicted SOC at 6AM low : " . $soc_predicted_at_6am );
               $cron_exit_condition = "SOC6AM LOW - GRID ON ";
@@ -2413,7 +2413,7 @@ class class_transindus_eco
             // <8> predicted SOC at 6AM above LVDS SOC limit + margin so turn GRID Switch OFF
             case ( $LVDS_soc_6am_grid_off ):
 
-              $response = $this->turn_on_off_shelly_switch($user_index, "off");
+              $response = $this->turn_on_off_shelly_switch($user_index, "off", 'shelly_device_id_acin');
 
               error_log("Exited via Case 8 - GRID Switched OFF - Predicted SOC at 6AM OK : " . $soc_predicted_at_6am );
               $cron_exit_condition = "SOC 6AM OK-GRID OFF ";
@@ -2427,7 +2427,7 @@ class class_transindus_eco
             // <5> Release - Switch OFF for normal Studer operation
             case ( $switch_release ):
 
-              $response = $this->turn_on_off_shelly_switch($user_index, "off");
+              $response = $this->turn_on_off_shelly_switch($user_index, "off", 'shelly_device_id_acin');
 
                 error_log("Exited via Case 5 - adequate Battery SOC, Grid Switched OFF");
                 $cron_exit_condition = "SOC ok - Grid Off ";
@@ -2442,7 +2442,7 @@ class class_transindus_eco
             // <6> Turn switch OFF at 5:30 PM if emergency flag is False so that battery can supply load for the night
             case ( $sunset_switch_release ):
 
-              $response = $this->turn_on_off_shelly_switch($user_index, "off");
+              $response = $this->turn_on_off_shelly_switch($user_index, "off", 'shelly_device_id_acin');
 
                 error_log("Exited via Case 6 - sunset, Grid switched OFF");
                 $cron_exit_condition = "Sunset-Grid Off ";
@@ -2451,7 +2451,7 @@ class class_transindus_eco
 
             case ( $switch_release_float_state ):
 
-              $response = $this->turn_on_off_shelly_switch($user_index, "off");
+              $response = $this->turn_on_off_shelly_switch($user_index, "off", 'shelly_device_id_acin');
 
                 error_log("Exited via Case 8 - Battery Float State, Grid switched OFF");
                 $cron_exit_condition = "SOC Float-Grid Off ";
@@ -3738,9 +3738,12 @@ class class_transindus_eco
 
 
     /**
-     *
+     *  @param int:$user_index
+     *  @param string:$desired_state can be either 'on' or 'off' to turn on the switch to ON or OFF respectively
+     *  @param string:$shelly_switch_name is the name of the switch used to index its shelly_device_id in the config array
+     *  @return bool:$shelly_device_data->isok is the boolean response from the shelly device
      */
-    public function turn_on_off_shelly_switch($user_index, $desired_state)
+    public function turn_on_off_shelly_switch( int $user_index, string $desired_state, $shelly_switch_name = 'shelly_device_id_acin' ) : bool
     {
       // Shelly API has a max request rate of 1 per second. So we wait 1s just in case we made a Shelly API call before coming here
         sleep (2);
@@ -3750,16 +3753,18 @@ class class_transindus_eco
 
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
+
+        // this is the device ID using index that is passed in defaults to 'shelly_device_id_acin'
+        // other shelly 1PM names are: 'shelly_device_id_water_heater'
+        $shelly_device_id   = $config['accounts'][$user_index][$shelly_switch_name];
 
         $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
 
         // this is $curl_response
-        $shelly_device_data = $shelly_api->turn_on_off_shelly_switch($desired_state);
+        $shelly_device_data = $shelly_api->turn_on_off_shelly_switch( $desired_state );
 
-        error_log(print_r($shelly_device_data, true));
-
-        return $shelly_device_data;
+        // True if API call was successful, False if not.
+        return $shelly_device_data->isok;
     }
 
     public function get_shelly_device_status(int $user_index): ?object

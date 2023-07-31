@@ -1179,6 +1179,7 @@ class class_transindus_eco
       $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_acin'];
 
+      // get value accumulated till midnight upto previous API call
       $previous_grid_wh_since_midnight = (int) round(get_user_meta( $wp_user_ID, 'grid_wh_since_midnight', true), 0);
 
       $returned_obj = new stdClass;
@@ -1216,7 +1217,7 @@ class class_transindus_eco
       // subtract the 2 integer counter readings to get the accumulated WH since midnight
       $grid_wh_since_midnight = $present_grid_wh_reading - $grid_wh_counter_midnight;
 
-      if ( $grid_wh_since_midnight >  0 )
+      if ( $grid_wh_since_midnight >=  0 )
       {
         // the value is positive so counter did not reset due to software update etc.
         $returned_obj->grid_wh_since_midnight = $grid_wh_since_midnight;
@@ -1225,10 +1226,8 @@ class class_transindus_eco
       }
       else 
       {
-        // in calling routine check for this and only use value if not null
-        $returned_obj->grid_wh_since_midnight   = $previous_value_since_midnight;
-
-        error_log("Shelly EM Grid Energy API call reading:  $present_grid_wh_reading, was not valid, no update");
+        // value must be negative so cannot be possible set it to 0
+        $returned_obj->grid_wh_since_midnight   = 0;
       }
 
       $grid_kw_shelly_em = round( 0.001 * $shelly_api_device_response->data->device_status->emeters[0]->power, 3 );

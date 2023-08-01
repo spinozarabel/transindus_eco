@@ -2548,6 +2548,11 @@ class class_transindus_eco
             update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 
             error_log("SOC 100% clamp activated: " . $SOC_percentage_beg_of_day_recal  . " %");
+
+            // also make the load kwh today, equal between shelly and studer.
+            $WH_load_today_studer = (int) round($KWH_load_today * 1000, 0);
+            update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', $WH_load_today_studer);
+            
           }
           return $studer_readings_obj;
         }

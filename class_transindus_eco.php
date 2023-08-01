@@ -2229,8 +2229,8 @@ class class_transindus_eco
                                          $shelly_api_device_status_voltage . ' VAC');
               */
                 
-              error_log("Grid Switch: " . $shelly_switch_status      .
-                        " Load KWH= "    . $KWH_load_today_shelly     . 
+              error_log("Grid Switch: " . $shelly_switch_status      .  " Grid VOltage: " . $shelly_api_device_status_voltage . 
+                        " Load KWH= "   . $KWH_load_today_shelly     . 
                         " Grid KWH= "   . $grid_kwh_since_midnight   . 
                         " Solar KWH= "  . $solar_kwh_since_midnight  .
                         " SOC %= "      . $soc_percentage_now_shelly);

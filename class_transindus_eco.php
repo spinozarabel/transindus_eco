@@ -2132,6 +2132,8 @@ class class_transindus_eco
                                          $shelly_api_device_status_voltage . ' VAC');
                 */
 
+                error_log("Grid Voltage (Shelly EM): $shelly_em_readings_object->grid_voltage_em");
+
                 error_log("Load_KWH_today_Studer = " . $KWH_load_today . " KWH_load_Shelly = " . $KWH_load_today_shelly);
 
                 error_log("Grid KWH Studer Today: $KWH_grid_today, Grid KWH Shelly Today: $grid_kwh_since_midnight");
@@ -2229,7 +2231,7 @@ class class_transindus_eco
                                          $shelly_api_device_status_voltage . ' VAC');
               */
                 
-              error_log("Grid Switch: " . $shelly_switch_status      .  " Grid VOltage: " . $shelly_api_device_status_voltage . 
+              error_log("Grid Switch: " . $shelly_switch_status      .  " VOltage: " . $shelly_api_device_status_voltage . 
                         " Load KWH= "   . $KWH_load_today_shelly     . 
                         " Grid KWH= "   . $grid_kwh_since_midnight   . 
                         " Solar KWH= "  . $solar_kwh_since_midnight  .

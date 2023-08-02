@@ -2121,7 +2121,7 @@ class class_transindus_eco
             // Calculate in percentage of  installed battery capacity
             $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
   
-            //  Update SOC  number
+            //  Update SOC  number 
             $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
 
             if ( $this->verbose )

@@ -142,6 +142,11 @@ jQuery(document).ready(function($) {
             $('#power_to_ac_kw').html( data.power_to_ac_kw);
             $('#power_to_pump_kw').html( data.power_to_pump_kw);
 
+            // update the water heater, AC, and pump icons based on latest Ajax call
+            $('#water_heater_icon').html( data.water_heater_icon);
+            $('#ac_icon').html( data.ac_icon);
+            $('#pump_icon').html( data.pump_icon);
+
         }
 
     };

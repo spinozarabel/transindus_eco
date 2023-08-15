@@ -1936,7 +1936,7 @@ class class_transindus_eco
             if ( empty( $shelly_solar_measurement_object ) )
             {
               error_log("Shelly UNI Solar Measurement API call failed - No SOC update or Switch control ");
-              return null;
+              // return null;
             }
 
             $solar_kwh_since_midnight = round( 49.8 * 0.001 * $shelly_solar_measurement_object->solar_accumulated_ah_since_midnight, 3 );

@@ -1180,7 +1180,7 @@ class class_transindus_eco
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_acin'];
 
       // get value accumulated till midnight upto previous API call
-      $previous_grid_wh_since_midnight = (int) round(get_user_meta( $wp_user_ID, 'grid_wh_since_midnight', true), 0);
+      $previous_grid_wh_since_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_since_midnight', true), 0);
 
       $returned_obj = new stdClass;
 

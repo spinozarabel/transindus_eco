@@ -1064,7 +1064,7 @@ class class_transindus_eco
         $solar_ah_this_measurement = 0.5 * ( $previous_solar_amps + $solar_amps ) * $hours_between_measurement;
 
         // get accumulated value till last measurement
-        $solar_accumulated_ah_since_midnight = get_user_meta( $wp_user_ID, 'solar_accumulated_ah_since_midnight', true) ?? 0;
+        $solar_accumulated_ah_since_midnight = (float) get_user_meta( $wp_user_ID, 'solar_accumulated_ah_since_midnight', true) ?? 0;
 
         // accumulate  present measurement
         $solar_accumulated_ah_since_midnight += $solar_ah_this_measurement;
@@ -4962,7 +4962,7 @@ class class_transindus_eco
         $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
 
         // changed to avg July 15 2023 was battery_voltage_vdc before that
-        $battery_voltage_vdc    =   round( $studer_readings_obj->battery_voltage_avg, 1);
+        $battery_voltage_vdc    =   round( (float) $studer_readings_obj->battery_voltage_avg, 1);
 
         // Positive is charging and negative is discharging
         $battery_charge_adc     =   $studer_readings_obj->battery_charge_adc;

@@ -1032,7 +1032,8 @@ class class_transindus_eco
         // multiply by factor for total from west facing only measurement using calculations
         $solar_amps = round( $total_to_west_panel_ratio * $solar_amps_west_raw_measurement, 1 );
 
-        error_log("Raw: $solar_amps_west_raw_measurement, Ratio: $total_to_west_panel_ratio, SolarAmps: $solar_amps");
+        $this->verbose ? error_log("Raw: $solar_amps_west_raw_measurement, Ratio: $total_to_west_panel_ratio, 
+                                    SolarAmps: $solar_amps") : false;
 
         // get the unix time stamp when measurement was made
         $now = new DateTime();

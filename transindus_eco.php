@@ -1,12 +1,12 @@
 <?php
 /**
-*Plugin Name: Trans Indus Studer WebApp
+*Plugin Name: Avasarala Electrical WebApp
 *Plugin URI:
-*Description: Trans Indus Web Application to display STuder Settings
+*Description: Solar and Electrical App for Avasarala
 *Version: 2022062300
 *Author: Madhu Avasarala
-*Author URI: http://sritoni.org
-*Text Domain: transindus_eco
+*Author URI: http://avasarala.in
+*Text Domain: avasarala.in
 *Domain Path:
 */
 defined( 'ABSPATH' ) or die( 'No script kiddies please!' );

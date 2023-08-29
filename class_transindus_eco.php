@@ -2499,6 +2499,11 @@ class class_transindus_eco
 
                 $response = $this->turn_on_off_shelly_switch($user_index, "off", 'shelly_device_id_acin');
 
+                if ( $keep_shelly_switch_closed_always ) 
+                {
+                  update_user_meta( $wp_user_ID, 'keep_shelly_switch_closed_always' , false);
+                }
+
                 error_log("Exited via Case 8 - Battery Float State, Grid switched OFF");
                 $cron_exit_condition = "SOC Float-Grid Off ";
 

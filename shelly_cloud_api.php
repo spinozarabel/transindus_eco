@@ -14,14 +14,15 @@ class shelly_cloud_api
 {
     const VERBOSE     = false;
 
-    public function __construct(string $auth_key, string $server_uri, string $shelly_device_id)
+    public function __construct(string $auth_key, string $server_uri, string $shelly_device_id, int $channel = 0)
     {
       $this->verbose  = self::VERBOSE;
 
-      $this->auth_key		      = $auth_key;    // Auth key to access account
-	  $this->server_uri	          = $server_uri;  // The server uri can be obtained 
-                                              // on the same page where the authorization key is generated
+      $this->auth_key		      = $auth_key;        // Auth key to access account
+	    $this->server_uri	          = $server_uri;  // The server uri can be obtained 
+                                                  // on the same page where the authorization key is generated
       $this->shelly_device_id     = $shelly_device_id;
+      $this->channel              = $channel;     // channel of interest. Defaults to 0 if not specified
     }       // end construct function
 
     /**
@@ -32,7 +33,7 @@ class shelly_cloud_api
        // parameters for query string
       $params     = array
       (
-          "channel"     => 0,
+          "channel"     => $this->channel           ,
           'turn'        => $desired_state           ,
           "id"          => $this->shelly_device_id  ,
           "auth_key"    => $this->auth_key          ,

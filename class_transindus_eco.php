@@ -657,7 +657,7 @@ class class_transindus_eco
       }
 
       // Also check and control pump ON duration
-      $this->control_pump_on_duration( $user_index, $shelly_homwpwr_obj);
+      $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_homwpwr_obj);
 
       // exctract needed properties from Shelly homepower object
       $current_energy_counter_wh  = (int) round($shelly_homwpwr_obj->energy_total_to_home_ts, 0);
@@ -1644,13 +1644,25 @@ class class_transindus_eco
     /**
      * 
      */
-    public function control_pump_on_duration( int $user_index, object $shelly_4pm_readings_object )
+    public function control_pump_on_duration( int $wp_user_ID, int $user_index, object $shelly_4pm_readings_object )
     {
       if (empty($shelly_4pm_readings_object))
       {
         // pad data passed in do nothing
         return null;
       }
+
+      // get the user meta, all of it as an array for fast retrieval rtahr than 1 by 1 as done before
+      $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
+
+      // get webpshr subscriber id for this user
+      $webpushr_subscriber_id = $all_usermeta['webpushr_subscriber_id'];
+
+      // Webpushr NPush otifications API Key
+      $webpushrKey            = $this->config['accounts'][$user_index]['webpushrKey'];
+
+      // Webpushr Token
+      $webpushrAuthToken      = $this->config['accounts'][$user_index]['webpushrAuthToken'];
 
       // set property in case pump was off so that this doesnt give a php notice otherwise
       $shelly_4pm_readings_object->pump_ON_duration_secs = 0;
@@ -1725,6 +1737,11 @@ class class_transindus_eco
 
             error_log("Pump turned OFF after duration of: $pump_ON_duration_secs Seconds");
 
+            $notification_title = "Pump Overflow OFF";
+            $notification_message = "Pump OFF prevent Overflow";
+            $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                $webpushrKey, $webpushrAuthToken  );
+
             // pump is not ON anymore
             set_transient( 'pump_alreay_ON', false, 12 * 3600 );
 
@@ -1758,6 +1775,11 @@ class class_transindus_eco
             $this->turn_pump_on_off( $user_index, 'on' );
 
             error_log("Pump turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF");
+
+            $notification_title = "Pump Pwr Back";
+            $notification_message = "Pump Power back ON";
+            $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                $webpushrKey, $webpushrAuthToken  );
           }
 
           return true;
@@ -2132,7 +2154,7 @@ class class_transindus_eco
             {   // there is a valid response from the Shelly 4PM switch device
                 
                 // Also check and control pump ON duration
-                $this->control_pump_on_duration( $user_index, $shelly_4pm_readings_object);
+                $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object);
 
                 // Load the Studer Object with properties from the Shelly 4PM object
                 $studer_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;

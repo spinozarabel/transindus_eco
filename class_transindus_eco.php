@@ -1652,6 +1652,9 @@ class class_transindus_eco
         return null;
       }
 
+      // set property in case pump was off so that this doesnt give a php notice otherwise
+      $shelly_4pm_readings_object->pump_ON_duration_secs = 0;
+
       // set default timezone
       date_default_timezone_set("Asia/Kolkata");
 

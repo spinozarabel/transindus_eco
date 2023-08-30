@@ -1644,7 +1644,7 @@ class class_transindus_eco
     /**
      * 
      */
-    public function control_pump_on_duration( int $user_index, object $shelly_4pm_readings_object ) : ? bool
+    public function control_pump_on_duration( int $user_index, object $shelly_4pm_readings_object )
     {
       if (empty($shelly_4pm_readings_object))
       {

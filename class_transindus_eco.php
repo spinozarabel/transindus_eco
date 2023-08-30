@@ -1723,6 +1723,8 @@ class class_transindus_eco
             // turn shelly power for pump OFF and update transients
             $this->turn_pump_on_off( $user_index, 'off' );
 
+            error_log("Pump turned OFF after duration of: $pump_ON_duration_secs Seconds");
+
             // pump is not ON anymore
             set_transient( 'pump_alreay_ON', false, 12 * 3600 );
 
@@ -1754,6 +1756,8 @@ class class_transindus_eco
           {
             // turn the shelly 4PM pump control back ON after 2m
             $this->turn_pump_on_off( $user_index, 'on' );
+
+            error_log("Pump turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF");
           }
 
           return true;

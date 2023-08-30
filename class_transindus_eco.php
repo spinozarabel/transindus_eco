@@ -1750,9 +1750,9 @@ class class_transindus_eco
 
           $pump_OFF_duration_secs = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 );
 
-          if ( $pump_OFF_duration_secs >= 7200 )
+          if ( $pump_OFF_duration_secs >= 1800 )
           {
-            // turn the shelly 4PM pump control back ON
+            // turn the shelly 4PM pump control back ON after 30m
             $this->turn_pump_on_off( $user_index, 'on' );
           }
 

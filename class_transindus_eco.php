@@ -1718,13 +1718,13 @@ class class_transindus_eco
           if ( $pump_ON_duration_secs > 2700 )
           {
             // turn shelly power for pump OFF and update transients
-            // $this->turn_pump_on_off( $user_index, 'off' );
+            $this->turn_pump_on_off( $user_index, 'off' );
 
             // pump is not ON anymore
-            // set_transient( 'pump_alreay_ON', false, 12 * 3600 );
+            set_transient( 'pump_alreay_ON', false, 12 * 3600 );
 
             // set pump STOP time as curreny time stamp
-            // set_transient( 'timestamp_pump_OFF',  $timestamp,   12 * 60 * 60 );
+            set_transient( 'timestamp_pump_OFF',  $timestamp,   12 * 60 * 60 );
           }
 
           // we return true since we turned pump power OFF

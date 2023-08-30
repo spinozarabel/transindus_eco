@@ -656,6 +656,9 @@ class class_transindus_eco
         return null;
       }
 
+      // Also check and control pump ON duration
+      $this->control_pump_on_duration( $user_index, $shelly_homwpwr_obj);
+
       // exctract needed properties from Shelly homepower object
       $current_energy_counter_wh  = (int) round($shelly_homwpwr_obj->energy_total_to_home_ts, 0);
 
@@ -858,6 +861,9 @@ class class_transindus_eco
 
       // total power from Shelly 4PM
       $return_obj->power_total_to_home_kw = $shelly_homwpwr_obj->power_total_to_home_kw;
+
+      // pump duration time
+      $return_obj->pump_ON_duration_secs = $shelly_homwpwr_obj->pump_ON_duration_secs;
       
       return $return_obj;
     }
@@ -1604,6 +1610,154 @@ class class_transindus_eco
     }
 
 
+    /**
+     * 
+     */
+    public function turn_pump_on_off( int $user_index, string $desired_state, $shelly_switch_name = 'shelly_device_id_homepwr' ) : ? object
+    {
+      // Shelly API has a max request rate of 1 per second. So we wait 1s just in case we made a Shelly API call before coming here
+        sleep (2);
+
+        // get the config array from the object properties
+        $config = $this->config;
+
+        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+
+        // this is the device ID using index that is passed in defaults to 'shelly_device_id_acin'
+        // other shelly 1PM names are: 'shelly_device_id_water_heater'
+        $shelly_device_id   = $config['accounts'][$user_index][$shelly_switch_name];
+
+        // set the channel of the switch that the pump is on
+        $channel_pump       = 0;
+
+        $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id, $channel_pump);
+
+        // this is $curl_response. Pump is on channel 0 which is default argument assumed in the called function
+        $shelly_device_data = $shelly_api->turn_on_off_shelly_switch( $desired_state );
+
+        // True if API call was successful, False if not.
+        return $shelly_device_data;
+    }
+    
+
+    /**
+     * 
+     */
+    public function control_pump_on_duration( int $user_index, object $shelly_4pm_readings_object ) : ? bool
+    {
+      if (empty($shelly_4pm_readings_object))
+      {
+        // pad data passed in do nothing
+        return null;
+      }
+
+      // set default timezone
+      date_default_timezone_set("Asia/Kolkata");
+
+      // check if pump is ON now from the 4pm readings object. It is ON if status is ON and power is greater than 400W
+      $pump_is_on_now =                   $shelly_4pm_readings_object->pump_switch_status_bool              && 
+                          ( (int) round(  $shelly_4pm_readings_object->power_to_pump_kw * 1000, 0 ) > 400 );
+
+      // check if required transients exist
+      if ( false === ( $pump_alreay_ON = get_transient( 'pump_alreay_ON' ) ) )
+      {
+        // the transient does NOT exist so lets initialize the transients valid for 12 hours
+        // This happens rarely, when transients get wiped out or 1st time code is run
+        set_transient( 'pump_alreay_ON', false, 12 * 3600 );
+
+        // lets also initialize the pump start time to now since this is the 1st time ever
+        $now = new DateTime();
+        $timestamp = $now->getTimestamp();
+
+        // set pump start time as curreny time stamp
+        set_transient( 'timestamp_pump_ON_start',  $timestamp,  12 * 60 * 60 );
+        set_transient( 'timestamp_pump_OFF',  $timestamp,  12 * 60 * 60 );
+
+        return null;
+      }
+      else
+      {
+        // the transient exists. So if pump is currently ON but was not on before set the flag
+        if ( $pump_is_on_now && ! $pump_alreay_ON )
+        {
+          $pump_alreay_ON = true;
+          
+          // update the transient so next check will work
+          set_transient( 'pump_alreay_ON', true, 12 * 3600 );
+          
+          // capture pump ON start time as now
+          // get the unix time stamp when measurement was made
+          $now = new DateTime();
+          $timestamp = $now->getTimestamp();
+
+          // set pump start time as curreny time stamp
+          set_transient( 'timestamp_pump_ON_start',  $timestamp,   12 * 3600);
+
+          return null;
+        }
+        elseif ( $pump_is_on_now && $pump_alreay_ON )
+        {
+          // calculate pump ON duration time. If greater than 45 minutes switch power to pump OFF
+          $now = new DateTime();
+          $timestamp = $now->getTimestamp();
+
+          $previous_timestamp = get_transient(  'timestamp_pump_ON_start' );
+          $prev_datetime_obj = new DateTime();
+          $prev_datetime_obj->setTimeStamp($previous_timestamp);
+
+          // find out the time interval between the start timestamp and the present one in seconds
+          $diff = $now->diff( $prev_datetime_obj );
+
+          $pump_ON_duration_secs = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 );
+
+          // Write the duration time as property of the object
+          $shelly_4pm_readings_object->pump_ON_duration_secs = $pump_ON_duration_secs;
+          
+          // if pump ON duration is more than 45m then switch the pump power OFF in Shelly 4PM channel 0
+          if ( $pump_ON_duration_secs > 2700 )
+          {
+            // turn shelly power for pump OFF and update transients
+            // $this->turn_pump_on_off( $user_index, 'off' );
+
+            // pump is not ON anymore
+            // set_transient( 'pump_alreay_ON', false, 12 * 3600 );
+
+            // set pump STOP time as curreny time stamp
+            // set_transient( 'timestamp_pump_OFF',  $timestamp,   12 * 60 * 60 );
+          }
+
+          // we return true since we turned pump power OFF
+          return false;
+        }
+        elseif ( ! $shelly_4pm_readings_object->pump_switch_status_bool ) 
+        {
+          // Shelly pump control is OFF because pump was ON for too long and we probably switched it off
+          // check to see if the duration after switch off was greater than 2h. If so turn the shelly control back ON
+          // so that when the tank sensor empty can retrigger pump
+          $now = new DateTime();
+          $timestamp = $now->getTimestamp();
+
+          $previous_timestamp = get_transient(  'timestamp_pump_OFF' );
+          $prev_datetime_obj = new DateTime();
+          $prev_datetime_obj->setTimeStamp($previous_timestamp);
+
+          // find out the time interval between the last timestamp and the present one in seconds
+          $diff = $now->diff( $prev_datetime_obj );
+
+          $pump_OFF_duration_secs = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 );
+
+          if ( $pump_OFF_duration_secs >= 7200 )
+          {
+            // turn the shelly 4PM pump control back ON
+            $this->turn_pump_on_off( $user_index, 'on' );
+          }
+
+          return true;
+        }
+      }
+    }
+
 
     /**
      * Gets all readings from Shelly and Studer and servo's AC IN shelly switch based on conditions
@@ -1969,6 +2123,10 @@ class class_transindus_eco
 
             if ( ! empty( $shelly_4pm_readings_object ) )
             {   // there is a valid response from the Shelly 4PM switch device
+                
+                // Also check and control pump ON duration
+                $this->control_pump_on_duration( $user_index, $shelly_4pm_readings_object);
+
                 // Load the Studer Object with properties from the Shelly 4PM object
                 $studer_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;
                 $studer_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;
@@ -1983,6 +2141,8 @@ class class_transindus_eco
                 $studer_readings_obj->ac_switch_status_bool   = $shelly_4pm_readings_object->ac_switch_status_bool;
                 $studer_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
                 $studer_readings_obj->voltage_home            = $shelly_4pm_readings_object->voltage_home;
+
+                $studer_readings_obj->pump_ON_duration_secs   = $shelly_4pm_readings_object->pump_ON_duration_secs;
 
                 // calculate the energy consumed since midnight using Shelly4PM
                 $accumulated_wh_since_midnight = $this->get_accumulated_wh_since_midnight(  $shelly_4pm_readings_object->energy_total_to_home_ts, 
@@ -2034,6 +2194,8 @@ class class_transindus_eco
                 $shelly_readings_obj->pout_inverter_ac_kw = $KWH_load_today_shelly;
 
                 $shelly_readings_obj->voltage_home            = $shelly_4pm_readings_object->voltage_home;
+
+                $shelly_readings_obj->pump_ON_duration_secs   = $shelly_4pm_readings_object->pump_ON_duration_secs;
             }
             else 
             {
@@ -5163,6 +5325,8 @@ class class_transindus_eco
         $power_to_ac_kw   = $studer_readings_obj->power_to_ac_kw;
         $power_to_pump_kw = $studer_readings_obj->power_to_pump_kw;
 
+        $pump_ON_duration_mins = (int) round( $studer_readings_obj->pump_ON_duration_secs / 60, 0);
+
         $pump_switch_status_bool  = $studer_readings_obj->pump_switch_status_bool;
         $ac_switch_status_bool    = $studer_readings_obj->ac_switch_status_bool;
         $home_switch_status_bool  = $studer_readings_obj->home_switch_status_bool;
@@ -5251,7 +5415,7 @@ class class_transindus_eco
                                             </span>';
 
         $format_object->power_to_pump_kw = '<span style="font-size: 18px;color: Black;">
-                                              <strong>' . $studer_readings_obj->power_to_pump_kw . ' KW</strong>
+                                              <strong>' . $pump_ON_duration_mins . ' mins</strong>
                                           </span>';
 
         $format_object->shelly_water_heater_kw = '<span style="font-size: 18px;color: Black;">

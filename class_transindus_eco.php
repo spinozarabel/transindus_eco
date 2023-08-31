@@ -1730,7 +1730,7 @@ class class_transindus_eco
           $shelly_4pm_readings_object->pump_ON_duration_secs = $pump_ON_duration_secs;
           
           // if pump ON duration is more than 50m then switch the pump power OFF in Shelly 4PM channel 0
-          if ( $pump_ON_duration_secs > 1800 )
+          if ( $pump_ON_duration_secs > 2700 )
           {
             // turn shelly power for pump OFF and update transients
             $this->turn_pump_on_off( $user_index, 'off' );

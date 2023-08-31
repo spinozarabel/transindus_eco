@@ -1683,13 +1683,13 @@ class class_transindus_eco
       $webpushrAuthToken      = $this->config['accounts'][$user_index]['webpushrAuthToken'];
 
       // pump_duration_secs_max
-      $pump_duration_secs_max           = $this->config['accounts'][$user_index]['pump_duration_secs_max'];
+      $pump_duration_secs_max           = $all_usermeta['pump_duration_secs_max'];
 
       // pump_duration_control
-      $pump_duration_control            = $this->config['accounts'][$user_index]['pump_duration_control'];
+      $pump_duration_control            = $all_usermeta['pump_duration_control'];
 
       // pump_power_restart_interval_secs
-      $pump_power_restart_interval_secs = $this->config['accounts'][$user_index]['pump_power_restart_interval_secs'];
+      $pump_power_restart_interval_secs = $all_usermeta['pump_power_restart_interval_secs'];
 
       error_log("pump_duration_secs_max: $pump_duration_secs_max");
       error_log("pump_power_restart_interval_secs: $pump_power_restart_interval_secs");

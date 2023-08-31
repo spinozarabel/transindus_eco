@@ -1801,12 +1801,12 @@ class class_transindus_eco
             // turn the shelly 4PM pump control back ON after 2m
             // $this->turn_pump_on_off( $user_index, 'on' );
 
-            error_log("Pump turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF");
+            // error_log("Pump turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF");
 
-            $notification_title = "Pump Pwr Back";
-            $notification_message = "Pump Power back ON";
-            $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
-                                                $webpushrKey, $webpushrAuthToken  );
+            // $notification_title = "Pump Pwr Back";
+            // $notification_message = "Pump Power back ON";
+            // $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
+             //                                   $webpushrKey, $webpushrAuthToken  );
           }
 
           return true;

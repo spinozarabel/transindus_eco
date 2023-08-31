@@ -1691,10 +1691,6 @@ class class_transindus_eco
       // pump_power_restart_interval_secs
       $pump_power_restart_interval_secs = $all_usermeta['pump_power_restart_interval_secs'];
 
-      error_log("pump_duration_secs_max: $pump_duration_secs_max");
-      error_log("pump_power_restart_interval_secs: $pump_power_restart_interval_secs");
-      error_log("pump_duration_control: $pump_duration_control");
-
       // set property in case pump was off so that this doesnt give a php notice otherwise
       $shelly_4pm_readings_object->pump_ON_duration_secs = 0;
 

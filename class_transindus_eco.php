@@ -234,7 +234,10 @@ class class_transindus_eco
         $defaults['do_minutely_updates']                              = ['default' => true,  'lower_limit' =>true,  'upper_limit' =>true];
         $defaults['do_shelly']                                        = ['default' => false,  'lower_limit' =>true,  'upper_limit' =>true];
         $defaults['keep_shelly_switch_closed_always']                 = ['default' => false,  'lower_limit' =>true,  'upper_limit' =>true];
-
+        $defaults['pump_duration_control']                            = ['default' => true,   'lower_limit' =>true,  'upper_limit' =>true];
+        $defaults['pump_duration_secs_max']                           = ['default' => 2700,   'lower_limit' => 0,    'upper_limit' =>7200];
+        $defaults['pump_power_restart_interval_secs']                 = ['default' => 120,    'lower_limit' => 0,    'upper_limit' =>86400];
+        
         // save the data in a transient indexed by the user ID. Expiration is 30 minutes
         set_transient( $wp_user_ID . 'user_meta_defaults_arr', $defaults, 30*60 );
 
@@ -313,6 +316,21 @@ class class_transindus_eco
               case ( stripos( $field[ 'settings' ][ 'key' ], 'do_soc_cal_now' )!== false ):
                 // get the user's metadata for this flag
                 $user_meta_value = get_user_meta($wp_user_ID, 'do_soc_cal_now',  true);
+
+                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
+                if ($user_meta_value == true)
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'checked';
+                }
+                else
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
+                }
+              break;
+
+              case ( stripos( $field[ 'settings' ][ 'key' ], 'pump_duration_control' ) !== false ):
+                // get the user's metadata for this flag
+                $user_meta_value = get_user_meta($wp_user_ID, 'pump_duration_control',  true);
 
                 // Change the `default_value` setting of the checkbox field based on the retrieved user meta
                 if ($user_meta_value == true)
@@ -1664,6 +1682,15 @@ class class_transindus_eco
       // Webpushr Token
       $webpushrAuthToken      = $this->config['accounts'][$user_index]['webpushrAuthToken'];
 
+      // pump_duration_secs_max
+      $pump_duration_secs_max           = $this->config['accounts'][$user_index]['pump_duration_secs_max'];
+
+      // pump_duration_control
+      $pump_duration_control            = $this->config['accounts'][$user_index]['pump_duration_control'];
+
+      // pump_power_restart_interval_secs
+      $pump_power_restart_interval_secs = $this->config['accounts'][$user_index]['pump_power_restart_interval_secs'];
+
       // set property in case pump was off so that this doesnt give a php notice otherwise
       $shelly_4pm_readings_object->pump_ON_duration_secs = 0;
 
@@ -1730,7 +1757,7 @@ class class_transindus_eco
           $shelly_4pm_readings_object->pump_ON_duration_secs = $pump_ON_duration_secs;
           
           // if pump ON duration is more than 50m then switch the pump power OFF in Shelly 4PM channel 0
-          if ( $pump_ON_duration_secs > 2700 )
+          if ( $pump_duration_control && $pump_ON_duration_secs > 2700 )
           {
             // turn shelly power for pump OFF and update transients
             $this->turn_pump_on_off( $user_index, 'off' );
@@ -1752,7 +1779,7 @@ class class_transindus_eco
           // we return true since we turned pump power OFF
           return false;
         }
-        elseif ( ! $shelly_4pm_readings_object->pump_switch_status_bool ) 
+        elseif ( ! $shelly_4pm_readings_object->pump_switch_status_bool && $pump_duration_control ) 
         {
           // Shelly pump control is OFF because pump was ON for too long and we probably switched it off
           // check to see if the duration after switch off was greater than 2h. If so turn the shelly control back ON
@@ -2893,6 +2920,29 @@ class class_transindus_eco
           break;
 
 
+          case ( stripos( $field[ 'key' ], 'pump_duration_control' ) !== false ):
+            if ( $field[ 'value' ] )
+            {
+              $submitted_field_value = true;
+            }
+            else 
+            {
+              $submitted_field_value = false;
+            }
+
+            // get the existing user meta value
+            $existing_user_meta_value = get_user_meta($wp_user_ID, "pump_duration_control",  true);
+
+            if ( $existing_user_meta_value != $submitted_field_value )
+            {
+              // update the user meta with value from form since it is different from existing setting
+              update_user_meta( $wp_user_ID, 'pump_duration_control', $submitted_field_value);
+
+              error_log( "Updated User Meta - pump_duration_control - from Settings Form: " . $field[ 'value' ] );
+            }
+          break;
+
+
 
           case ( stripos( $field[ 'key' ], 'do_minutely_updates' ) !== false ):
             if ( $field[ 'value' ] )
@@ -3291,6 +3341,62 @@ class class_transindus_eco
 
             // define the meta key of interest
             $user_meta_key = 'psolar_min_for_rdbc_setting';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+
+          case ( stripos( $field[ 'key' ], 'pump_duration_secs_max' ) !== false ):
+
+            // define the meta key of interest
+            $user_meta_key = 'pump_duration_secs_max';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+
+          case ( stripos( $field[ 'key' ], 'pump_power_restart_interval_secs' ) !== false ):
+
+            // define the meta key of interest
+            $user_meta_key = 'pump_power_restart_interval_secs';
 
             // look for the defaults using the user meta key
             $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array

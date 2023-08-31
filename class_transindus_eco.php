@@ -1756,7 +1756,7 @@ class class_transindus_eco
           // Write the duration time as property of the object
           $shelly_4pm_readings_object->pump_ON_duration_secs = $pump_ON_duration_secs;
           
-          // if pump ON duration is more than 50m then switch the pump power OFF in Shelly 4PM channel 0
+          // if pump ON duration is more than 30m then switch the pump power OFF in Shelly 4PM channel 0
           if ( $pump_ON_duration_secs > 1800 )
           {
             // turn shelly power for pump OFF and update transients
@@ -1779,7 +1779,7 @@ class class_transindus_eco
           // we return true since we turned pump power OFF
           return false;
         }
-        elseif ( ! $shelly_4pm_readings_object->pump_switch_status_bool && $pump_duration_control ) 
+        elseif ( ! $shelly_4pm_readings_object->pump_switch_status_bool ) 
         {
           // Shelly pump control is OFF because pump was ON for too long and we probably switched it off
           // check to see if the duration after switch off was greater than 2h. If so turn the shelly control back ON

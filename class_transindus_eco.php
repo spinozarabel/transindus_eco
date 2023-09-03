@@ -1728,7 +1728,7 @@ class class_transindus_eco
           $pump_alreay_ON = 1;
           
           // update the transient so next check will work
-          set_transient( 'pump_alreay_ON', $pump_alreay_ONue, 12 * 3600 );
+          set_transient( 'pump_alreay_ON', $pump_alreay_ON, 12 * 3600 );
           
           // capture pump ON start time as now
           // get the unix time stamp when measurement was made

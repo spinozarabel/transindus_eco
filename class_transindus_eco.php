@@ -158,7 +158,7 @@ class class_transindus_eco
       date_default_timezone_set("Asia/Kolkata");;
 
       // set the logging
-      $this->verbose = false;
+      $this->verbose = true;
 
       // lat and lon at Trans Indus from Google Maps
       $this->lat        = 12.83463;
@@ -1723,6 +1723,8 @@ class class_transindus_eco
         // the transient exists. So if pump is currently ON but was not on before set the flag
         if ( $pump_is_on_now && ( empty( $pump_alreay_ON ) ) )
         {
+          $this->verbose ? error_log("Pump Just turned ON") : false;
+
           $pump_alreay_ON = 1;
           
           // update the transient so next check will work
@@ -1755,6 +1757,8 @@ class class_transindus_eco
 
           // Write the duration time as property of the object
           $shelly_4pm_readings_object->pump_ON_duration_secs = $pump_ON_duration_secs;
+
+          $this->verbose ? error_log("Pump ON for: $pump_ON_duration_secs Seconds") : false;
           
           // if pump ON duration is more than 30m then switch the pump power OFF in Shelly 4PM channel 0
           if ( $pump_ON_duration_secs > 1800 )

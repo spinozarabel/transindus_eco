@@ -1697,56 +1697,130 @@ class class_transindus_eco
       // set default timezone
       date_default_timezone_set("Asia/Kolkata");
 
-      // check if pump is ON now from the 4pm readings object. It is ON if status is ON and power is greater than 400W
-      $pump_is_on_now =                   $shelly_4pm_readings_object->pump_switch_status_bool              && 
-                          ( (int) round(  $shelly_4pm_readings_object->power_to_pump_kw * 1000, 0 ) > 400 );
+      $power_to_pump_is_enabled = $shelly_4pm_readings_object->pump_switch_status_bool;
 
+      $pump_power_watts = (int) round(  $shelly_4pm_readings_object->power_to_pump_kw * 1000, 0 );
+
+      $pump_is_drawing_power = ( $pump_power_watts > 50 );
+
+      // if we are here it means pump is ON or power is disabled
       // check if required transients exist
       if ( false === ( $pump_alreay_ON = get_transient( 'pump_alreay_ON' ) ) )
       {
         // the transient does NOT exist so lets initialize the transients valid for 12 hours
         // This happens rarely, when transients get wiped out or 1st time code is run
-        set_transient( 'pump_alreay_ON', 0, 12 * 3600 );
+        set_transient( 'pump_alreay_ON', 0,  3600 );
 
         // lets also initialize the pump start time to now since this is the 1st time ever
-        $now = new DateTime();
-        $timestamp = $now->getTimestamp();
+        // $now = new DateTime();
+        // $timestamp = $now->getTimestamp();
 
         // set pump start time as curreny time stamp
-        set_transient( 'timestamp_pump_ON_start',  $timestamp,  12 * 60 * 60 );
-        set_transient( 'timestamp_pump_OFF',  $timestamp,  12 * 60 * 60 );
-
-        return null;
+        // set_transient( 'timestamp_pump_ON_start',  $timestamp,  12 * 60 * 60 );
+        // set_transient( 'timestamp_pump_OFF',  $timestamp,  12 * 60 * 60 );
       }
       else
       {
-        // the transient exists. So if pump is currently ON but was not on before set the flag
-        if ( $pump_is_on_now && ( empty( $pump_alreay_ON ) ) )
-        {
+        // the pump_already_ON transient is loaded into the variable so start using the variable
+      }
+
+      switch (true)
+      {
+        // pump power is Enabled but pump is OFF.
+        case ( ! $pump_is_drawing_power && $power_to_pump_is_enabled ):
+
+          // Check to see if pump just got auto turned OFF by pump controller  as it normally should when tank is full
+          if ( ! empty( $pump_alreay_ON ) )
+          {
+            // reset the transient so next time it wont come here
+            set_transient( 'pump_alreay_ON', 0,  3600 );
+
+            // calculate pump ON duration time. This will be used for notifications
+            $now = new DateTime();
+            $timestamp = $now->getTimestamp();
+
+            // we are pretty sure the transient exists because pump is already ON
+            $previous_timestamp = get_transient(  'timestamp_pump_ON_start' );
+
+            $prev_datetime_obj = new DateTime();
+            $prev_datetime_obj->setTimeStamp($previous_timestamp);
+
+            // find out the time interval between the start timestamp and the present one in seconds
+            $diff = $now->diff( $prev_datetime_obj );
+
+            $pump_ON_duration_secs = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 );
+
+            // Write the duration time as property of the object
+            $shelly_4pm_readings_object->pump_ON_duration_secs = $pump_ON_duration_secs;
+
+            $this->verbose ? error_log("Pump ON for: $pump_ON_duration_secs Seconds") : false;
+
+            // set pump start time as curreny time stamp. So the duration will be small from now on
+            set_transient( 'timestamp_pump_ON_start',  $timestamp,  1 * 60 * 60 );
+
+            $notification_title = "Pump Auto OFF";
+            $notification_message = "Pump Auto OFF after " . $pump_ON_duration_secs;
+
+            $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                $webpushrKey, $webpushrAuthToken  );
+          }
+          else
+          {
+            // Pump is OFF long back so we just need to reset the transients
+            set_transient( 'pump_alreay_ON', 0,  3600 );
+
+            $now = new DateTime();
+            $timestamp = $now->getTimestamp();
+
+            // set pump start time as curreny time stamp
+            set_transient( 'timestamp_pump_ON_start',  $timestamp,  1 * 60 * 60 );
+
+            // disable notifications
+            set_transient( 'pump_notification_count', 1, 2 * 3600 );
+          }
+
+          return null;
+
+        break;
+
+
+        // pump was just ON. So we set the flag and start timer
+        case ( $pump_is_drawing_power &&  empty( $pump_alreay_ON ) ) :
+
           $this->verbose ? error_log("Pump Just turned ON") : false;
 
+          // set the flag to indicate that pump is already on for next cycle check
           $pump_alreay_ON = 1;
           
           // update the transient so next check will work
-          set_transient( 'pump_alreay_ON', $pump_alreay_ON, 12 * 3600 );
-          
+          set_transient( 'pump_alreay_ON', 1, 2 * 3600 );
+
           // capture pump ON start time as now
           // get the unix time stamp when measurement was made
           $now = new DateTime();
           $timestamp = $now->getTimestamp();
 
           // set pump start time as curreny time stamp
-          set_transient( 'timestamp_pump_ON_start',  $timestamp,   12 * 3600);
+          set_transient( 'timestamp_pump_ON_start',  $timestamp,   2 * 3600);
+
+          // reset notification transient so that notifications are enabled afresh for this cycle
+          set_transient( 'pump_notification_count', 0, 2 * 3600 );
 
           return null;
-        }
-        elseif ( $pump_is_on_now &&  ! empty( $pump_alreay_ON ) )
-        {
-          // calculate pump ON duration time. If greater than 45 minutes switch power to pump OFF
+
+        break;
+
+
+        // pump is already ON. Measure duration and if over limit disable power to pump
+        case ( $pump_is_drawing_power &&  ( ! empty( $pump_alreay_ON ) ) ):
+
+          // calculate pump ON duration time. If greater than 60 minutes switch power to pump OFF
           $now = new DateTime();
           $timestamp = $now->getTimestamp();
 
+          // we are pretty sure the transient exists because pump is already ON
           $previous_timestamp = get_transient(  'timestamp_pump_ON_start' );
+
           $prev_datetime_obj = new DateTime();
           $prev_datetime_obj->setTimeStamp($previous_timestamp);
 
@@ -1759,60 +1833,65 @@ class class_transindus_eco
           $shelly_4pm_readings_object->pump_ON_duration_secs = $pump_ON_duration_secs;
 
           $this->verbose ? error_log("Pump ON for: $pump_ON_duration_secs Seconds") : false;
-          
-          // if pump ON duration is more than 30m then switch the pump power OFF in Shelly 4PM channel 0
+
+          // if pump ON duration is more than 1h then switch the pump power OFF in Shelly 4PM channel 0
           if ( $pump_ON_duration_secs > 3600 )
           {
             // turn shelly power for pump OFF and update transients
-            $status_tun_pump_off = $this->turn_pump_on_off( $user_index, 'off' );
+            $status_turn_pump_off = $this->turn_pump_on_off( $user_index, 'off' );
 
-            if ( false === ( $pump_notification_count = get_transient( 'pump_notification_count' ) ) )
-            {
-              set_transient( 'pump_notification_count', 0, 1 * 3600 );
-            }
+            $pump_notification_count = get_transient( 'pump_notification_count' );
 
-            if ( $status_tun_pump_off->isok && ( empty( $pump_notification_count ) ) )
+            if ( $status_turn_pump_off->isok )
             {
-              // the pump was tuneed off
+              // the pump was tuneed off per status
               $this->verbose ? error_log("Pump turned OFF after duration of: $pump_ON_duration_secs Seconds") : false;
 
-              $notification_title = "Pump OFF";
-              $notification_message = "Pump OFF to prevent Overflow";
-              $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
-                                                  $webpushrKey, $webpushrAuthToken  );
+              // pump is not ON anymore so set the flag to false
+              set_transient( 'pump_alreay_ON', 0, 12 * 3600 );
 
-              $pump_notification_count += 1;
-              set_transient( 'pump_notification_count', $pump_notification_count, 1 * 3600 );
+              $now = new DateTime();
+              $timestamp = $now->getTimestamp();
+
+              // set pump STOP time as curreny time stamp
+              set_transient( 'timestamp_pump_OFF',  $timestamp,   12 * 60 * 60 );
+
+              set_transient( 'timestamp_pump_ON_start',  $timestamp,   2 * 3600);
+
+              // issue notification only once
+              if ( empty( $pump_notification_count ) )
+              {
+                $notification_title = "Pump Overflow OFF";
+                $notification_message = "After " . $pump_ON_duration_secs;
+
+                $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                    $webpushrKey, $webpushrAuthToken  );
+
+                // disable notifications
+                set_transient( 'pump_notification_count', 1, 1 * 3600 );
+              }
             }
             else 
             {
-              // the pump was tuneed off but it did not
-              $this->verbose ? error_log("Problem - Pump could NOT be turned OFF after duration of: $pump_ON_duration_secs Seconds") : false;
-              
-              $notification_title = "Pump OFF problem";
-              $notification_message = "Could NOT turn-OFF pump";
-              $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
-                                                  $webpushrKey, $webpushrAuthToken  );
+              if ( empty( $pump_notification_count ) )
+              {
+                // the pump was tordered to turn off but it did not
+                $this->verbose ? error_log("Problem - Pump could NOT be turned OFF after duration of: $pump_ON_duration_secs Seconds") : false;
+                
+                $notification_title = "Pump OFF problem";
+                $notification_message = "Tank maybe overflowing!";
+                $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                    $webpushrKey, $webpushrAuthToken  );
 
-              $pump_notification_count += 1;
-              set_transient( 'pump_notification_count', $pump_notification_count, 1 * 3600 );
+                set_transient( 'pump_notification_count', 1, 1 * 3600 );
+              }
             }
-
-            // pump is not ON anymore
-            set_transient( 'pump_alreay_ON', false, 12 * 3600 );
-
-            // set pump STOP time as curreny time stamp
-            set_transient( 'timestamp_pump_OFF',  $timestamp,   12 * 60 * 60 );
           }
 
-          // we return true since we turned pump power OFF
-          return false;
-        }
-        elseif ( ! $shelly_4pm_readings_object->pump_switch_status_bool ) 
-        {
-          // Shelly pump control is OFF because pump was ON for too long and we probably switched it off
-          // check to see if the duration after switch off was greater than 2h. If so turn the shelly control back ON
-          // so that when the tank sensor empty can retrigger pump
+        break;
+
+        //  pump was switched off after timer and needs to be ON again
+        case ( ! $power_to_pump_is_enabled ):
           $now = new DateTime();
           $timestamp = $now->getTimestamp();
 
@@ -1825,21 +1904,19 @@ class class_transindus_eco
 
           $pump_OFF_duration_secs = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 );
 
-          if ( $pump_OFF_duration_secs >= 120 )
+          if ( $pump_OFF_duration_secs >= 120 && $pump_OFF_duration_secs <= 360)
           {
             // turn the shelly 4PM pump control back ON after 2m
             $status_tun_pump_on = $this->turn_pump_on_off( $user_index, 'on' );
 
             $this->verbose ? error_log("Pump turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF"): false;
 
-            $notification_title = "Pump Pwr Back";
+            $notification_title = "Pump Pwr Back ON";
             $notification_message = "Pump Power back ON";
             $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
                                                 $webpushrKey, $webpushrAuthToken  );
           }
-
-          return true;
-        }
+        break;
       }
     }
 

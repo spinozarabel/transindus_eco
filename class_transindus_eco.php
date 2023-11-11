@@ -4213,7 +4213,7 @@ class class_transindus_eco
 
                 // $ratio_west_total = array_sum( $est_solar_kw ) / $est_solar_kw[1];
 
-                $solar_measurement_object = $this->get_shelly_solar_measurement( $config_index, $wp_user_name, $wp_user_ID, $ratio_west_total );
+                $solar_measurement_object = $this->get_shelly_solar_measurement( $config_index, 'transindus_admin', $wp_user_ID, $ratio_west_total );
 
                 $total_solar_current = 1.00 * round( $solar_measurement_object->solar_amps, 1);
 

@@ -148,6 +148,9 @@ class class_transindus_eco
 
         // Define shortcode to prepare for my-studer-settings page
         add_shortcode( 'my-studer-settings',          [$this, 'my_studer_settings'] );
+
+        // Define shortcode to prepare for view-power-values page
+        add_shortcode( 'view-grid-values',          [$this, 'view_grid_values_page_render'] );
     }
 
     /**
@@ -1048,13 +1051,13 @@ class class_transindus_eco
         $adc_voltage_shelly = $shelly_api_device_response->data->device_status->adcs[0]->voltage;  // measure the ADC voltage
 
         // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
-        $delta_voltage = $adc_voltage_shelly - 2.6;
+        $delta_voltage = $adc_voltage_shelly - 2.5;
 
         // convention here is that battery discharge current is positive. 10% is adjustment based on comparison
-        $solar_amps_west_raw_measurement = round( $delta_voltage / 0.055, 1 );
+        $solar_amps_west_raw_measurement = round( $delta_voltage / 0.00625, 1 );
 
         // multiply by factor for total from west facing only measurement using calculations
-        $solar_amps = round( $total_to_west_panel_ratio * $solar_amps_west_raw_measurement, 1 );
+        $solar_amps = round( 1 * $solar_amps_west_raw_measurement, 1 );
 
         $this->verbose ? error_log("Raw: $solar_amps_west_raw_measurement, Ratio: $total_to_west_panel_ratio, 
                                     SolarAmps: $solar_amps") : false;
@@ -2018,6 +2021,9 @@ class class_transindus_eco
           $shelly_switch_status             = $shelly_switch_acin_details_arr['shelly_switch_status'];
           $shelly_api_device_status_voltage = $shelly_switch_acin_details_arr['shelly_api_device_status_voltage'];
           $shelly_api_device_status_ON      = $shelly_switch_acin_details_arr['shelly_api_device_status_ON'];
+
+          // remember the voltage is set to 'NA' if the API call failed
+          set_transient( 'shelly1pm-acin-voltage', $shelly_api_device_status_voltage,  300);
         }
         
         if ( $it_is_still_dark )
@@ -3699,6 +3705,82 @@ class class_transindus_eco
 
     }
 
+
+    /**
+     * 
+     */
+    public function view_grid_values_page_render()
+    {
+      // initialize page HTML to be returned to be rendered by WordPress
+      $output = '';
+
+      $output .= '
+      <style>
+          @media (min-width: 768px) {
+            .synoptic-table {
+                margin: auto;
+                width: 95% !important;
+                height: 100%;
+                border-collapse: collapse;
+                overflow-x: auto;
+                border-spacing: 0;
+                font-size: 1.5em;
+            }
+            .rediconcolor {color:red;}
+            .greeniconcolor {color:green;}
+            .clickableIcon {
+              cursor: pointer
+            .arrowSliding_nw_se {
+              position: relative;
+              -webkit-animation: slide_nw_se 2s linear infinite;
+                      animation: slide_nw_se 2s linear infinite;
+            }
+      
+            .arrowSliding_ne_sw {
+              position: relative;
+              -webkit-animation: slide_ne_sw 2s linear infinite;
+                      animation: slide_ne_sw 2s linear infinite;
+            }
+      
+            .arrowSliding_sw_ne {
+              position: relative;
+              -webkit-animation: slide_ne_sw 2s linear infinite reverse;
+                      animation: slide_ne_sw 2s linear infinite reverse;
+            }
+      
+            @-webkit-keyframes slide_ne_sw {
+                0% { opacity:0; transform: translate(20%, -20%); }
+                20% { opacity:1; transform: translate(10%, -10%); }
+                80% { opacity:1; transform: translate(-10%, 10%); }
+              100% { opacity:0; transform: translate(-20%, 20%); }
+            }
+            @keyframes slide_ne_sw {
+                0% { opacity:0; transform: translate(20%, -20%); }
+                20% { opacity:1; transform: translate(10%, -10%); }
+                80% { opacity:1; transform: translate(-10%, 10%); }
+              100% { opacity:0; transform: translate(-20%, 20%); }
+            }
+      
+            @-webkit-keyframes slide_nw_se {
+                0% { opacity:0; transform: translate(-20%, -20%); }
+                20% { opacity:1; transform: translate(-10%, -10%); }
+                80% { opacity:1; transform: translate(10%, 10%);   }
+              100% { opacity:0; transform: translate(20%, 20%);   }
+            }
+            @keyframes slide_nw_se {
+                0% { opacity:0; transform: translate(-20%, -20%); }
+                20% { opacity:1; transform: translate(-10%, -10%); }
+                80% { opacity:1; transform: translate(10%, 10%);   }
+              100% { opacity:0; transform: translate(20%, 20%);   }
+            }
+         }
+      </style>';
+
+      // readin the transient object.
+      $shelly1pm_acin_voltage = (int) round( (float) get_transient( 'shelly1pm-acin-voltage' ), 0 );
+      $output .= "AC Voltage (RMS) at FB16 fed by FP7 feeder = " . $shelly1pm_acin_voltage;
+
+    }
     /**
      *  This function defined the shortcode to a page called mysolar that renders a user's solar system readings
      *  The HTML is created in a string variable and returned as is typical of a shortcode function
@@ -4136,7 +4218,6 @@ class class_transindus_eco
                 $total_solar_current = 1.00 * round( $solar_measurement_object->solar_amps, 1);
 
                 // print( "ADC voltage (V): " .                                $battery_measurement_object->voltage . PHP_EOL );
-                print( round($solar_measurement_object->solar_amps_west_raw_measurement, 1) . " " . PHP_EOL);
                 print( $total_solar_current . PHP_EOL);
                 print( " Time interval (H: " .                              $solar_measurement_object->hours_between_measurement . PHP_EOL);
                 print( " Solar (AH) accumulated since last measurement: " . $solar_measurement_object->solar_ah_this_measurement .PHP_EOL);

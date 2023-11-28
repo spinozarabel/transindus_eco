@@ -1622,13 +1622,15 @@ class class_transindus_eco
                 // get all the readings for this user. Enable Studer measurements
                 $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly, true );
 
+                
                 for ($i = 1; $i <= 5; $i++) 
                 {
-                  sleep(15);
+                  sleep(30);
 
                   // disable Studer measurements. These will complete and end the script.
                   $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly, true );
                 }
+                
               }
             }
 

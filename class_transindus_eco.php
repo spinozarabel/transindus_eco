@@ -1077,7 +1077,7 @@ class class_transindus_eco
 
         // update transients with current measurements. These will be used as previous measurements for next cycle
         set_transient( $wp_user_name . '_' . 'timestamp_battery_last_measurement',  $timestamp,   60 * 60 );
-        set_transient( $wp_user_name . '_' . 'amps_battery_last_measurement',       $solar_amps,  60 * 60 );
+        set_transient( $wp_user_name . '_' . 'amps_battery_last_measurement',       $battery_amps,  60 * 60 );
 
         $prev_datetime_obj = new DateTime();
         $prev_datetime_obj->setTimeStamp($previous_timestamp);

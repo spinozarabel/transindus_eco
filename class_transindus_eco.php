@@ -1073,7 +1073,7 @@ class class_transindus_eco
         $previous_timestamp = get_transient(  $wp_user_name . '_' . 'timestamp_battery_last_measurement' ) ?? $timestamp;
 
         // get the previous reading from transient. If doesnt exist set it to current measurement
-        $previous_battery_amps = get_transient(  $wp_user_name . '_' . 'amps_battery_last_measurement' ) ?? $solar_amps;
+        $previous_battery_amps = (float) get_transient(  $wp_user_name . '_' . 'amps_battery_last_measurement' ) ?? $battery_amps;
 
         // update transients with current measurements. These will be used as previous measurements for next cycle
         set_transient( $wp_user_name . '_' . 'timestamp_battery_last_measurement',  $timestamp,   60 * 60 );

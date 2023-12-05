@@ -1717,13 +1717,10 @@ class class_transindus_eco
             $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
 
             
-            for ($i = 1; $i <= 5; $i++) 
-            {
-              sleep(30);
+            sleep(30);
 
-              // enable Studer measurements. These will complete and end the script. User index is 0 since only 1 user
-              $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
-            }
+            // enable Studer measurements. These will complete and end the script. User index is 0 since only 1 user
+            $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
             
           }
         }

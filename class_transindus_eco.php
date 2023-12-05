@@ -2131,183 +2131,7 @@ class class_transindus_eco
           set_transient( 'shelly1pm-acin-voltage', $shelly_api_device_status_voltage,  300);
         }
         
-        if ( $it_is_still_dark )
-        {   //---------------- Studer Midnight Rollover and SOC from Shelly readings after dark --------
-            // gets the timestamp from transient / user meta to check if time interval from now to timestamp is < 12h
-          $soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
-
-          $soc_after_dark_happened = false; // prevent Shelly measurement method for SOC till we rewrite clean code
-
-          if ( $soc_after_dark_happened )
-          {   // it is dark AND soc capture after dark has happened so we can compute SOC using Shelly readings
-              // since it is dark, we don;t need Studer to calculate SOC as long as we can measure Home Energy consumption
-              // And also if ACIN switch is ON battery SOC remains conastant since Grid supplies Home and no charge/discharge
-            $soc_from_shelly_energy_readings = $this->compute_soc_from_shelly_energy_readings(  $user_index, 
-                                                                                                $wp_user_ID, 
-                                                                                                $wp_user_name,
-                                                                                                $shelly_switch_status );
-
-            if ( empty( $soc_from_shelly_energy_readings ) )
-            { // log and return null
-              error_log($wp_user_name . ": " . "Shelly PRO 4PM energy meter API call failed. No SOC update nor Grid Switch Control");
-              return null;
-            }
-
-            // extract the updated SOC from the returned object from SHelly Readings
-            $SOC_percentage_now = $soc_from_shelly_energy_readings->SOC_percentage_now; // rounded already to 1d
-
-            if ( $SOC_percentage_now )
-            {
-              // we can use the shelly soc updates since it is dark and SOC after dark reference has been captured
-              $soc_updated_using_shelly_after_dark_bool = true;
-
-              // Update user meta so this becomes the previous value for next cycle
-              update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
-
-              $this->verbose ? error_log("SOC update calculated by Shelly 4PM SOC= " . $SOC_percentage_now): false;
-
-              // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage     
-              $LVDS =             ( $SOC_percentage_now   <= $soc_percentage_lvds_setting )   // SOC is at or below threshold
-                                  &&
-                                  ( $shelly_switch_status == "OFF" );					                // The Grid switch is OFF
-
-              { // legacy code for SOC prediction at 6AM not used currently
-                // extract the SOC predicted at 6am from the returned object
-                $soc_predicted_at_6am = $soc_from_shelly_energy_readings->soc_predicted_at_6am; // rounded already to 1d
-
-                if ( false === ( $timer_since_last_6am_switch_event_running = get_transient( 'timer_since_last_6am_switch_event' ) ) )
-                { // transient not there. So 1h has not expired or not even set in the 1st place. 
-                  
-                  $timer_since_last_6am_switch_event_running = false; // This will enable the soc6am related switching if required
-                }
-                else
-                { // Transient exists. Since expected value of transient is true set the variable to true
-                  
-                  $timer_since_last_6am_switch_event_running = true;  // disable any soc6am switching till the timer runs out.
-                }
-
-                // Calculate boolean flag to determine if GRID is to be ON depending on SOC predicted at 6AM
-                $LVDS_soc_6am_grid_on = ( $soc_predicted_at_6am <= ( $soc_percentage_lvds_setting + 0.01 ) ) // below desired limit
-                                      &&
-                                        ( $shelly_switch_status == "OFF" ) // The Grid switch is not already ON
-                                      &&
-                                        ( $soc_from_shelly_energy_readings->check_for_soc_rate_bool ) // only during valid time
-                                      &&
-                                        ( $control_shelly == true )                                 // control flag must be true
-                                      &&
-                                        ( ! $keep_shelly_switch_closed_always )                     // overridden by keep on always flag
-                                      &&
-                                        ( ! $timer_since_last_6am_switch_event_running ); // only if allowed by timer after last switch event
-
-                // Calculate boolean flag to determine if GRID is to be OFF depending on SOC predicted at 6AM
-                $LVDS_soc_6am_grid_off = ( $soc_predicted_at_6am  >  ( $soc_percentage_lvds_setting + 4.01 ) )   // 5 points hysterisys to prevent switch chatter
-                                      &&
-                                        ( $shelly_switch_status == "ON" )	// The Grid switch is not already OFF
-                                      &&
-                                      ( $soc_from_shelly_energy_readings->check_for_soc_rate_bool ) // check only during valid times
-                                      &&
-                                        ( $control_shelly == true )                                 // servo flag must be set
-                                      &&
-                                        ( ! $keep_shelly_switch_closed_always )                    // overridden by always on flag
-                                      &&
-                                        ( ! $timer_since_last_6am_switch_event_running ) // prevents switch chatter - only once per interval
-                                      &&
-                                        ( $SOC_percentage_now  >  ( $soc_percentage_lvds_setting + 0.3 ) ); // make sure SOC is above LVDS
-
-                $soc_from_shelly_energy_readings->LVDS_soc_6am_grid_on              = $LVDS_soc_6am_grid_on;
-                $soc_from_shelly_energy_readings->LVDS_soc_6am_grid_off             = $LVDS_soc_6am_grid_off;
-
-                $soc_from_shelly_energy_readings->soc_predicted_at_6am              = $soc_predicted_at_6am;
-              }
-                                      // make an API call on the water heater to get its data object
-              $shelly_water_heater_data = $this->get_shelly_device_status_water_heater( $user_index );
-
-              { // prepare object for Transient for updating screen readings
-                $soc_from_shelly_energy_readings->shelly_water_heater_data          = $shelly_water_heater_data;
-                $soc_from_shelly_energy_readings->valid_shelly_config               = $valid_shelly_config;
-                $soc_from_shelly_energy_readings->control_shelly                    = $control_shelly;
-                $soc_from_shelly_energy_readings->shelly_switch_status              = $shelly_switch_status;
-                $soc_from_shelly_energy_readings->shelly_api_device_status_voltage  = $shelly_api_device_status_voltage;
-                $soc_from_shelly_energy_readings->shelly_api_device_status_ON       = $shelly_api_device_status_ON;
-                $soc_from_shelly_energy_readings->LVDS                              = $LVDS;
-                $soc_from_shelly_energy_readings->shelly_switch_acin_details_arr    = $shelly_switch_acin_details_arr;
-                
-
-                $soc_from_shelly_energy_readings->soc_updated_using_shelly_after_dark_bool = true;
-
-                // It is after all dark now :-)
-                $soc_from_shelly_energy_readings->psolar                            = 0;
-
-                // Psurplus is the -ve of Home Load since Solar is absent when dark
-                $surplus = -1.0 * $soc_from_shelly_energy_readings->pout_inverter_ac_kw;
-                $soc_from_shelly_energy_readings->surplus  = $surplus;
-
-                // the below flag is not relevant so we don't this to get triggered in the conditions checking
-                $switch_override = false;
-              }
-
-              $soc_update_method = "shelly_after_dark";
-
-              // we can now check to see if Studer midnight has happened for midnight rollover capture
-              // Each time the following executes it looks at a transient. Only when it expires does an API call made on Studer for 5002
-              $studer_time_just_passed_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
-
-              if ( $studer_time_just_passed_midnight )
-              { // reset the shelly load energy counter to 0. Capture SOC value for beginning of day
-              
-                error_log("Studer Clock just passed midnight-SOC=: " . $SOC_percentage_now);
-
-                // reset the energy since midnight counter to 0 to start accumulation of consumed load energy in WH
-                update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', 0 );
-
-                // reset the Solar AH counter also to 0
-                update_user_meta( $wp_user_ID, 'solar_accumulated_ah_since_midnight', 0 );
-
-                // reset the Grid WH accumulator also to 0
-                {
-                  // Make an API call to mesure the grid energy counter and calculate the accumulated grid energy since Studer midnight
-                  $shelly_em_readings_object = $this->get_shelly_accumulated_grid_wh_since_midnight( $user_index, $wp_user_name, $wp_user_ID );
-
-                  $present_grid_wh_reading = $shelly_em_readings_object->present_grid_wh_reading;
-
-                  update_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', $present_grid_wh_reading );
-
-                  // Make an API call to mesure the Input 3Phase grid energy using Shelly Pro 3EM
-                  $shelly_3em_readings_object = $this->get_shelly_3p_grid_wh_since_midnight( $user_index, $wp_user_name, $wp_user_ID );
-                }
-                
-
-                // we can use this to update the user meta for SOC at beginning of new day
-                if (  $SOC_percentage_now  > 20 && $SOC_percentage_now  < 100 )
-                {
-                  update_user_meta( $wp_user_ID, 'soc_percentage', $soc_from_shelly_energy_readings->SOC_percentage_now );
-                }
-                else
-                {
-                  error_log("Did not Update user meta for midnight rollover from Shelly - Number was not between 100 and 20");
-                }
-              }
-            }
-          }
-          else
-          {
-            // SOC after dark capture did not happen yet. But the flag was not set
-            // Therefore the flow below will happen and SOC after dark capture will now take place
-            // This else was not needed but is used for clarity in documentation
-          }
-        }
-        else  // it is not dark now so delete the transient to force capture of SOC dusk reference for next dark
-        {
-          delete_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' );
-
-          // make the timestamp Jan 1 20000 so that elapsed time is >>>>>>>12h so will fail our test
-          update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', 946665000);
-        }
-
-        // check to ensure that SOC shelly update was not done and if so make a Studer API call
-        if ( ! $soc_updated_using_shelly_after_dark_bool )
-        {   // Studer API call only when NOT dark or to capture SOC after dark
-          
+        {  
           if ( $make_studer_api_call )
           {   // make call only if flag enabled
             $studer_readings_obj  = $this->get_studer_min_readings($user_index);
@@ -2506,7 +2330,7 @@ class class_transindus_eco
                                           ( $shelly_switch_status == "OFF" );					                    // The Grid switch is OFF
           }
 
-          // wether STuder API fails or not this is common
+          // wether Studer API fails or not this is common
           if ( $this->verbose )
           {
             error_log("Psolar_calc: " . $est_solar_total_kw . " Psolar_act: " . $psolar . " - Psurplus: " . 
@@ -2572,8 +2396,8 @@ class class_transindus_eco
               $SOC_percentage_now_shelly4pm = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_shelly;
             }
   
-            // Check if Stider computed SOC update is reasonable
-            if ( $SOC_percentage_now < 20 || $SOC_percentage_now > 105 ) 
+            // Check if STUDER computed SOC update is reasonable
+            if ( $SOC_percentage_now < 20 || $SOC_percentage_now > 110 ) 
             {
               error_log("SOC_Studer is a bad update: " .  $SOC_percentage_now . " %");
 

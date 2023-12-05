@@ -5,7 +5,7 @@
  *
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
- * Ver 2.2
+ * Ver 3.0
  *     Added Shelly EM and removed Shelly 1PM for ACIN control
  *     Added Shelly 4 PM for energy readings to home. 
  *      During dark SOC updates can use this if Studer API calls fail
@@ -60,9 +60,12 @@ class class_transindus_eco
 
   public $twelve_cron_5s_cycles_completed;
 
-  // This flag is true when SOC update in cron loop is done using Shelly readings and not studer readings
+  // This flag is only true when SOC update in cron loop is done using Shelly readings and not studer readings
   // This can only happen when it is dark and when SOC after dark capture are both true
   public $soc_updated_using_shelly_energy_readings;
+
+  // the following flag is only true only when SOC is updated using Studer readings else false
+  public $soc_updated_using_studer_readings;
 
 
     /**
@@ -80,21 +83,21 @@ class class_transindus_eco
       }
       else
       {
-          $this->version = '2.3';
+          $this->version = '3.0';
       }
 
       $this->plugin_name = 'transindus_eco';
 
-          // load actions only if admin
+          // load actions only if admin such as adding menus etc.
       if (is_admin()) $this->define_admin_hooks();
 
           // load public facing actions
       $this->define_public_hooks();
 
-          // read the config file and build the secrets array for all users 
+          // read the config file and build the secrets array for all logged in users. Currently config available only for FB16
       $this->get_config();
 
-      // Initialize the defaults array to blank
+      // Initialize the defaults array to blank. These will hold defaults for the user supplied settings for this App
       $this->user_meta_defaults_arr = [];
 
       // Cannot call wp_get_current_user in a constructor
@@ -137,7 +140,7 @@ class class_transindus_eco
      */
     private function define_public_hooks()
     {
-        // register shortcode for pages. This is for showing the page with studer readings
+        // register shortcode for pages. This is for showing the page with studer readings. Currently not used
         add_shortcode( 'transindus-studer-readings',  [$this, 'studer_readings_page_render'] );
 
         // Action to process submitted data from a Ninja Form.
@@ -149,7 +152,7 @@ class class_transindus_eco
         // Define shortcode to prepare for my-studer-settings page
         add_shortcode( 'my-studer-settings',          [$this, 'my_studer_settings'] );
 
-        // Define shortcode to prepare for view-power-values page
+        // Define shortcode to prepare for view-power-values page. Page code for displaying values todo.
         add_shortcode( 'view-grid-values',          [$this, 'view_grid_values_page_render'] );
     }
 
@@ -166,6 +169,8 @@ class class_transindus_eco
       // lat and lon at Trans Indus from Google Maps
       $this->lat        = 12.83463;
       $this->lon        = 77.49814;
+
+      // UTC offset for local timezone
       $this->utc_offset = 5.5;
 
       // Get this user's usermeta into an array and set it as property the class
@@ -173,7 +178,7 @@ class class_transindus_eco
 
       // ................................ CLoudiness management ---------------------------------------------->
 
-      if ( $this->nowIsWithinTimeLimits("05:00", "06:00") )
+      if ( $this->nowIsWithinTimeLimits("06:00", "06:05") )
       {   // Get the weather forecast if time is between 5 to 6 in the morning.
         $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
 
@@ -459,6 +464,7 @@ class class_transindus_eco
 
       $config     = $this->config;
 
+      // get WP user object and so get its ID
       $wp_user_ID = $this->get_wp_user_from_user_index( $user_index )->ID;
 
       // ensure that the data below is current before coming here
@@ -530,6 +536,80 @@ class class_transindus_eco
 
       return $return_array;
     }
+
+    /**
+     *  Measure current energy counter of Shelly EM measuring load consumption in WH
+     *  Obtain the energy counter reading stored just after midnight
+     *  The difference between them will give the consumed energy in WH since midnight
+     *  The counter is a perpetual counter and is never erased or reset
+     */
+    public function get_shellyem_accumulated_load_wh_since_midnight( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
+    {
+      // get API and device ID from config based on user index
+      $config = $this->config;
+
+      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_acin'];
+
+      // get value accumulated till midnight upto previous API call
+      $previous_grid_wh_since_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_since_midnight', true), 0);
+
+      $returned_obj = new stdClass;
+
+      $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+
+      // this is $curl_response.
+      $shelly_api_device_response = $shelly_api->get_shelly_device_status();
+
+      // check to make sure that it exists. If null API call was fruitless
+      if (  empty( $shelly_api_device_response ) || 
+            empty( $shelly_api_device_response->data->device_status->emeters[0]->total ) ||
+            $shelly_api_device_response->data->device_status->emeters[0]->is_valid !== true || 
+            (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0) <= 0
+          )
+      {
+        $this->verbose ? error_log("Shelly EM Grid Energy API call failed"): false;
+
+        // since no grid get value from user meta. Also readings will not change since grid is absent :-)
+        $returned_obj->grid_wh_since_midnight = $previous_grid_wh_since_midnight;
+        $returned_obj->grid_kw_shelly_em = 0;
+        $returned_obj->grid_voltage_em = 0;
+
+        return $returned_obj;
+      }
+
+      // Shelly API call was successfull and we have useful data
+      $present_grid_wh_reading = (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0);
+
+      // get the energy counter value set at midnight. Assumes that this is an integer
+      $grid_wh_counter_midnight = (int) round(get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true), 0);
+
+      $returned_obj->grid_voltage_em = round($shelly_api_device_response->data->device_status->emeters[0]->voltage, 0);
+
+      // subtract the 2 integer counter readings to get the accumulated WH since midnight
+      $grid_wh_since_midnight = $present_grid_wh_reading - $grid_wh_counter_midnight;
+
+      if ( $grid_wh_since_midnight >=  0 )
+      {
+        // the value is positive so counter did not reset due to software update etc.
+        $returned_obj->grid_wh_since_midnight = $grid_wh_since_midnight;
+
+        update_user_meta( $wp_user_ID, 'grid_wh_since_midnight', $grid_wh_since_midnight);
+      }
+      else 
+      {
+        // value must be negative so cannot be possible set it to 0
+        $returned_obj->grid_wh_since_midnight   = 0;
+      }
+
+      $grid_kw_shelly_em = round( 0.001 * $shelly_api_device_response->data->device_status->emeters[0]->power, 3 );
+      $returned_obj->grid_kw_shelly_em        = $grid_kw_shelly_em;
+      $returned_obj->present_grid_wh_reading  = $present_grid_wh_reading;
+
+      return $returned_obj;
+    }
+
 
     /**
      * 
@@ -1203,6 +1283,21 @@ class class_transindus_eco
         return $energy_obj;
     }
 
+    /**
+     * 
+     */
+    public function get_shelly_3p_grid_wh_since_midnight( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
+    {
+      // get API and device ID from config based on user index
+      $config = $this->config;
+
+      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin_3p'];
+
+      
+    }
+
 
     /**
      * 
@@ -1591,53 +1686,52 @@ class class_transindus_eco
         // Loop over all of the eligible users
         $config = $this->get_config();
 
-        foreach ($config['accounts'] as $user_index => $account)
-        {
-            $wp_user_name = $account['wp_user_name'];
+        $account = $config['accounts'][0];
+        
+        $wp_user_name = $account['wp_user_name'];
 
-            // Get the wp user object given the above username
-            $wp_user_obj  = get_user_by('login', $wp_user_name);
+        // Get the wp user object given the above username
+        $wp_user_obj  = get_user_by('login', $wp_user_name);
 
-            if ( empty($wp_user_obj) ) continue;
+        if ( empty($wp_user_obj) ) continue;
 
-            $wp_user_ID   = $wp_user_obj->ID;
+        $wp_user_ID   = $wp_user_obj->ID;
 
-            if ( $wp_user_ID )
-            {   // we have a valid user
-              
-              // Trigger an all usermeta get such that all routines called from this loop will have a valid updated usermeta
-              // The call also updates the all usermeta as a property of this object for access from anywahere in the class
-              $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
+        if ( $wp_user_ID )
+        {   // we have a valid user
+          
+          // Trigger an all usermeta get such that all routines called from this loop will have a valid updated usermeta
+          // The call also updates the all usermeta as a property of this object for access from anywahere in the class
+          $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
 
-              // extract the control flag for the servo loop to pass to the servo routine
-              $do_shelly  = $all_usermeta['do_shelly'];
+          // extract the control flag for the servo loop to pass to the servo routine
+          $do_shelly  = $all_usermeta['do_shelly'];
 
-              // extract the control flag to perform minutely updates
-              $do_minutely_updates  = $all_usermeta['do_minutely_updates'];
+          // extract the control flag to perform minutely updates
+          $do_minutely_updates  = $all_usermeta['do_minutely_updates'];
 
-              // Check if the control flag for minutely updates is TRUE. If so get the readings
-              if( $do_minutely_updates ) 
-              {
+          // Check if the control flag for minutely updates is TRUE. If so get the readings
+          if( $do_minutely_updates ) 
+          {
 
-                // get all the readings for this user. Enable Studer measurements
-                $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly, true );
+            // get all the readings for this user. Enable Studer measurements. User Index is 0 since only one user
+            $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
 
-                
-                for ($i = 1; $i <= 5; $i++) 
-                {
-                  sleep(30);
+            
+            for ($i = 1; $i <= 5; $i++) 
+            {
+              sleep(30);
 
-                  // disable Studer measurements. These will complete and end the script.
-                  $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly, true );
-                }
-                
-              }
+              // enable Studer measurements. These will complete and end the script. User index is 0 since only 1 user
+              $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
             }
-
-            // loop for all users
+            
+          }
         }
-        unset( $account );
-
+        else
+        {
+          error_log("WP user ID: $wp_user_ID is not valid");
+        }
       return true;
     }
 
@@ -2042,6 +2136,8 @@ class class_transindus_eco
             // gets the timestamp from transient / user meta to check if time interval from now to timestamp is < 12h
           $soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
 
+          $soc_after_dark_happened = false; // prevent Shelly measurement method for SOC till we rewrite clean code
+
           if ( $soc_after_dark_happened )
           {   // it is dark AND soc capture after dark has happened so we can compute SOC using Shelly readings
               // since it is dark, we don;t need Studer to calculate SOC as long as we can measure Home Energy consumption
@@ -2175,6 +2271,9 @@ class class_transindus_eco
                   $present_grid_wh_reading = $shelly_em_readings_object->present_grid_wh_reading;
 
                   update_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', $present_grid_wh_reading );
+
+                  // Make an API call to mesure the Input 3Phase grid energy using Shelly Pro 3EM
+                  $shelly_3em_readings_object = $this->get_shelly_3p_grid_wh_since_midnight( $user_index, $wp_user_name, $wp_user_ID );
                 }
                 
 
@@ -2223,6 +2322,8 @@ class class_transindus_eco
           {
             // as flag is not enabled set api failed flag to true
             $studer_api_call_failed = true;
+
+            return null;
           }
           
           // instantiate object to hold all of non-studer measurement cycle to determine SOC
@@ -2257,37 +2358,12 @@ class class_transindus_eco
               $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
             }
 
-            // If Studer API call was successful update SOlar accumulated since midnight with STuder value as more accurate
-            // This way when STuder API call fails, updates to SOlar accumulated even if not accurate still improves overall accuracy
-            // This is because our solar power measurements are not as accurate as STuder's so we use that when available
-            if ( ! $studer_api_call_failed )
-            {
-              // calculate solar AH collected since midnight using Studer's accumulated solar energy since midnight data
-              $AH_solar_today_studer = round($studer_readings_obj->KWH_solar_today * 1000 / 49.8, 0);
-
-              update_user_meta( $wp_user_ID, 'solar_accumulated_ah_since_midnight', $AH_solar_today_studer);
-
-              // save the Studer measure solar KWH today as a transient for 30m.
-              set_transient( 'studer_kwh_solar_today', $studer_readings_obj->KWH_solar_today,  30*60);
-            }
-            else
-            {   // create a new stdclass object since Studer object not created due to api call fail
-                // we still need this for legacy purposes even though STuder API call failed
-              $studer_readings_obj = new stdclass;
-            }
-
             // get a measurement of the charging current into battery
             $shelly_battery_measurement_object = $this->get_shelly_battery_measurement( $user_index, $wp_user_name, $wp_user_ID, $total_to_west_panel_ratio );
 
             if ( empty( $shelly_battery_measurement_object ) )
             {
               error_log("Shelly UNI API call for Battery current Measurement FAILED ");
-              
-              if ( ! $make_studer_api_call )
-              {
-                // if this was not a studer call run then since API call was bad we can abort this run
-                return null;
-              }
             }
 
             $battery_kwh_since_midnight = round( 49.8 * 0.001 * $shelly_battery_measurement_object->battery_accumulated_ah_since_midnight, 3 );
@@ -2348,19 +2424,7 @@ class class_transindus_eco
                 // This is the load KWH consumed since midnight as measured by Shelly
                 $KWH_load_today_shelly = round( $accumulated_wh_since_midnight * 0.001, 3 );
 
-                /*
-                if ( abs( $studer_readings_obj->KWH_load_today - $KWH_load_today_shelly ) > 0.5 )
-                {   // value computed by shelly is way off. So we reset the baseline
-                  
-                  error_log(" Shelly Midnight Counter reset due to bad reading using Studer Value");
-
-                  $value_in_wh = (int) round( $studer_readings_obj->KWH_load_today * 1000.0, 0);
-
-                  update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', $value_in_wh );
-
-                  $KWH_load_today_shelly = $studer_readings_obj->KWH_load_today;
-                }
-                */
+                
                 // why am I doing this? check
                 $studer_readings_obj->KWH_load_today_shelly = $KWH_load_today_shelly;
 
@@ -2398,7 +2462,6 @@ class class_transindus_eco
             else 
             {
               error_log(" Shelly Pro 4 PM Home Load measurement API call failed - no SOC update");
-              return null;
             }
           }
 
@@ -2464,13 +2527,9 @@ class class_transindus_eco
             // Check if it is cloudy AT THE MOMENT. Yes if solar is less than half of estimate
             $it_is_cloudy_at_the_moment = $psolar <= 0.5 * array_sum($est_solar_kw_arr);
   
-            // Solar Current into Battery Junction at present moment
-            // $solar_pv_adc         = $studer_readings_obj->solar_pv_adc;
-  
             // Inverter readings at present Instant
             $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;    // Inverter Output Power in KW
-            $grid_input_vac       = $studer_readings_obj->grid_input_vac;         // Grid Input AC Voltage measured by STuder
-            // $inverter_current_adc = $studer_readings_obj->inverter_current_adc;   // DC current into Inverter to convert to AC power
+            $grid_input_vac       = $studer_readings_obj->grid_input_vac;         // Grid Input AC Voltage measured by Studer
   
             // Surplus power from Solar after supplying the Load
             $surplus              = $psolar - $pout_inverter;
@@ -2479,7 +2538,7 @@ class class_transindus_eco
             $cloudiness_average_percentage_weighted = round($this->cloudiness_forecast->cloudiness_average_percentage_weighted, 0);
   
             // get the current Measurement values from the Stider Readings Object
-            $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;  // Net SOlar Units generated Today
+            $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;  // Net Solar Units generated Today
             $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;   // Net Grid Units consumed Today
             $KWH_load_today       = $studer_readings_obj->KWH_load_today;   // Net Load units consumed Today
 
@@ -2494,12 +2553,6 @@ class class_transindus_eco
 
             if ( $this->verbose )
             {   // log all measurements inluding Studer and Shelly
-                /*
-                error_log("username: " . $wp_user_name . ' Switch: ' . $shelly_switch_status . ' ' . 
-                                         $battery_voltage_avg . ' V, ' . $studer_readings_obj->battery_charge_adc . 'A ' .
-                                         $shelly_api_device_status_voltage . ' VAC');
-                */
-
                 error_log("Grid Voltage (Shelly EM): $shelly_em_readings_object->grid_voltage_em");
 
                 error_log("Load_KWH_today_Studer = " . $KWH_load_today . " KWH_load_Shelly = " . $KWH_load_today_shelly);
@@ -2524,26 +2577,34 @@ class class_transindus_eco
             {
               error_log("SOC_Studer is a bad update: " .  $SOC_percentage_now . " %");
 
-              // SO Studer SOC value is bad. Lets check if the Shelly based SOC is reasonable
-              if ( $SOC_percentage_now_shelly4pm > 20 && $SOC_percentage_now_shelly4pm < 105 )
-              {   // Studer SOC update is bad but the Shelly updated SOC seems reasonable so lets use that
-                  // Update user meta so this becomes the previous value for next cycle
-                  update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now_shelly4pm);
-              }
-              else
-              {   // Both SOC updates are bad
-                  error_log("SOC_Shelly is also a bad update: " .  $SOC_percentage_now_shelly4pm . " %");
-
-                  error_log("Setting SOC to 5 points below the LVDS setting as a safety catch");
-
-                  // set a clamp for the SOC value at Min value -3 points
-                  update_user_meta( $wp_user_ID, 'soc_percentage_now', $soc_percentage_lvds_setting - 3 );
-              }
+              // no SOC update
             }
             else
             {   // Studer SOC update seems reasonable
                 // Update user meta so this becomes the previous value for next cycle
                 update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
+            }
+
+            // we can now check to see if Studer midnight has happened for midnight rollover capture
+            // Each time the following executes it looks at a transient. Only when it expires does an API call made on Studer for 5002
+            $studer_time_just_passed_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
+
+            if ( $studer_time_just_passed_midnight )
+            { // reset the shelly load energy counter to 0. Capture SOC value for beginning of day
+            
+              error_log("Studer Clock just passed midnight-SOC=: " . $SOC_percentage_now);
+              
+              // we can use this to update the user meta for SOC at beginning of new day
+              if (  $SOC_percentage_now  > 20 && $SOC_percentage_now  < 100 )
+              {
+                update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_now );
+              }
+              else
+              {
+                error_log("Reset SOC to 20% for safety as SOC update was bad");
+
+                update_user_meta( $wp_user_ID, 'soc_percentage', 20 );
+              }
             }
 
             { // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - or  battery voltage    
@@ -2554,15 +2615,8 @@ class class_transindus_eco
 
               $switch_override =  ( $shelly_switch_status                == "OFF" )  &&
                                   ( $studer_readings_obj->grid_input_vac >= 190   );
-  
-              // set the switch conditions to false since we are relying on the Studer readings, usually at daytime only.
-              // we don;t want these flags to cause any activity when Stder readings are relied upon
-              // These should be valid only for the case when the Shelly readings are used for update
-              $LVDS_soc_6am_grid_on   = false;
-              $LVDS_soc_6am_grid_off  = false;
 
               $soc_update_method = "studer";
-  
             }
 
             // update the object
@@ -2571,41 +2625,11 @@ class class_transindus_eco
             $studer_readings_obj->soc_updated_using_shelly_after_dark_bool = false;
 
             // capture soc after dark using shelly 4 pm. Only happens ONCE between 18:55 and 23:00 hrs
-            $this->capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index );
+            // $this->capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index );
           }   // endif of studer_api_failed = false
           else
-          {   // set SOC now to Shelly updated one if daytime since Studer API has failed. Also log Shelly values
-            $SOC_percentage_now = $soc_percentage_now_shelly;
-
-            // LVDS already defined above for Shelly measure values
-            $LVDS = false; // $shelly_readings_obj->LVDS;
-
-            // set this flag to false since we have no way of accessing Studer's Grid measurement.
-            // This flag is only valid when Studer's API call is successful.
-            $switch_override = false;
-
-            // set these flags to false since this is daytime. In anycase this is not even implemented at night anymore
-            $LVDS_soc_6am_grid_on   = false;
-            $LVDS_soc_6am_grid_off  = false;
-
-            $soc_update_method = "shelly_daytime";
-
-            if ( $this->verbose )
-            {   // log measurements
-              error_log( $wp_user_name . ": " . "SOC updates using Shelly EM, 4PM and Uni, Daytime" );
-
-              /*
-              error_log("username: " . $wp_user_name . ' Switch: ' . $shelly_switch_status . ' ' . 
-                                         $shelly_api_device_status_voltage . ' VAC');
-              */
-                
-              error_log("Grid Switch: " . $shelly_switch_status      .  " VOltage: " . $shelly_api_device_status_voltage . 
-                        " Load KWH= "   . $KWH_load_today_shelly     . 
-                        " Grid KWH= "   . $grid_kwh_since_midnight   . 
-                        " Solar KWH= "  . $solar_kwh_since_midnight  .
-                        " SOC %= "      . $soc_percentage_now_shelly);
-            }
-
+          {   
+            return null;
           } // end else of studer_api_failed = true
 
         }   // endif of soc_updated_using_shelly_after_dark_bool = false

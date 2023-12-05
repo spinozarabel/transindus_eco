@@ -6,3 +6,4 @@ pods.export
 *config.php*
 junk.php
 temp.php
+vendor/

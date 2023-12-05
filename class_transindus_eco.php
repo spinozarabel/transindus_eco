@@ -1864,9 +1864,10 @@ class class_transindus_eco
 
             $notification_title = "Pump Auto OFF";
             $notification_message = "Pump Auto OFF after " . $pump_ON_duration_secs;
-
+            /*
             $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
                                                 $webpushrKey, $webpushrAuthToken  );
+            */
           }
           else
           {
@@ -1967,9 +1968,10 @@ class class_transindus_eco
               {
                 $notification_title = "Pump Overflow OFF";
                 $notification_message = "After " . $pump_ON_duration_secs;
-
+                /*
                 $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
                                                     $webpushrKey, $webpushrAuthToken  );
+                */
 
                 // disable notifications
                 set_transient( 'pump_notification_count', 1, 1 * 3600 );
@@ -1984,9 +1986,10 @@ class class_transindus_eco
                 
                 $notification_title = "Pump OFF problem";
                 $notification_message = "Tank maybe overflowing!";
+                /*
                 $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
                                                     $webpushrKey, $webpushrAuthToken  );
-
+                */
                 set_transient( 'pump_notification_count', 1, 1 * 3600 );
               }
             }
@@ -2017,8 +2020,10 @@ class class_transindus_eco
 
             $notification_title = "Pump Pwr Back ON";
             $notification_message = "Pump Power back ON";
+            /*
             $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
                                                 $webpushrKey, $webpushrAuthToken  );
+            */
           }
         break;
       }

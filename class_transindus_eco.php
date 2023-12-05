@@ -2054,7 +2054,7 @@ class class_transindus_eco
 
           // False implies that Studer readings are to be used for SOC update, true indicates Shelly based processing
           // set default at the beginning to Studer updates of SOC
-          $soc_updated_using_shelly_after_dark_bool = false;
+          $soc_updated_using_shelly = false;
         }
 
         $RDBC = false;    // permamantly disable RDBC mode 
@@ -2133,7 +2133,7 @@ class class_transindus_eco
         
         {  
           if ( $make_studer_api_call )
-          {   // make call only if flag enabled
+          {   // make call only if flag parameter passed in is enabled, default is true
             $studer_readings_obj  = $this->get_studer_min_readings($user_index);
 
             // defined the condition for failure of the Studer API call
@@ -2150,7 +2150,7 @@ class class_transindus_eco
             return null;
           }
           
-          // instantiate object to hold all of non-studer measurement cycle to determine SOC
+          //  We get here only if Studer API call was successful. The Studer Readings object is already existing
           $shelly_readings_obj = new stdClass;
 
           // make an API call on the water heater to get its data object
@@ -2158,12 +2158,14 @@ class class_transindus_eco
 
           $shelly_readings_obj->shelly_water_heater_data  = $shelly_water_heater_data;            // water heater data object
 
-          { // get the SOCs % from the previous reading from user meta. This is needed for Studer and Shelly SOC updates
+          $studer_readings_obj->shelly_water_heater_data = $shelly_water_heater_data;
+
+          { // get the SOCs from the user meta for past midnight and also previous values
             $SOC_percentage_previous            = get_user_meta($wp_user_ID, "soc_percentage_now",  true);
 
             $SOC_percentage_previous_shelly_bm  = get_user_meta($wp_user_ID, "soc_percentage_now_calculated_using_shelly_bm",  true) ?? $SOC_percentage_previous;
 
-            // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only at beginning of day, once.
+            // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only just past midnight only once
             $SOC_percentage_beg_of_day          = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
           }
           
@@ -2304,9 +2306,8 @@ class class_transindus_eco
             $shelly_readings_obj->grid_voltage_em = $shelly_em_readings_object->grid_voltage_em;
           }
 
-          { // calculate non-studer based SOC during daytime using Shelly device measurements
-
-
+          { // calculate non-studer based SOC using Shelly device measurements
+            $solar_kwh_since_midnight = $studer_readings_obj->KWH_solar_today ?? 0;
 
             $KWH_batt_charge_net_today_shelly  = $solar_kwh_since_midnight * 0.96 + (0.988 * $grid_kwh_since_midnight - $KWH_load_today_shelly) * 1.07;
 
@@ -2372,7 +2373,7 @@ class class_transindus_eco
             // Calculate in percentage of  installed battery capacity
             $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
   
-            //  Update SOC  number 
+            //  Update SOC  number  using Studer Measurements
             $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
 
             if ( $this->verbose )
@@ -2401,11 +2402,21 @@ class class_transindus_eco
             {
               error_log("SOC_Studer is a bad update: " .  $SOC_percentage_now . " %");
 
-              // no SOC update
+              if ( $SOC_percentage_now_shelly4pm > 20 || $SOC_percentage_now_shelly4pm <= 100 ) 
+              {
+                error_log("SOC using Studer Load KWH was bad, using Shelly4PM is OK: " .  $SOC_percentage_now_shelly4pm . " %");
+
+                update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now_shelly4pm);
+              }
+              else
+              {
+                error_log("No SOC update: SOC_studer: $SOC_percentage_now, SOC_studer_4pmload: $SOC_percentage_now_shelly4pm");
+              }
             }
             else
             {   // Studer SOC update seems reasonable
                 // Update user meta so this becomes the previous value for next cycle
+                $this->verbose ? error_log("SOC update successful: $SOC_percentage_now") : false;
                 update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
             }
 

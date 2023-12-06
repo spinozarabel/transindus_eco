@@ -1118,6 +1118,8 @@ class class_transindus_eco
 
         $count = 0;
 
+        $c=[];
+
         for ($i = 0; $i <= 6; $i++) 
         {
           // this is $curl_response.

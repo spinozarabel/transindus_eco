@@ -1288,6 +1288,9 @@ class class_transindus_eco
      */
     public function get_shelly_3p_grid_wh_since_midnight( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
     {
+      // get value accumulated till midnight upto previous API call
+      $grid_wh_counter_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true), 0);
+
       // get API and device ID from config based on user index
       $config = $this->config;
 
@@ -1295,6 +1298,37 @@ class class_transindus_eco
       $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin_3p'];
 
+      $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+
+      // this is $curl_response.
+      $shelly_api_device_response = $shelly_api->get_shelly_device_status();
+
+      $shelly_3p_grid_wh_measurement_obj = new stdClass;
+
+      // check to make sure that it exists. If null API call was fruitless
+      if (  empty( $shelly_api_device_response ) || 
+            empty( $shelly_api_device_response->data->device_status->{"emdata:0"}->a_total_act_energy ) ||
+            $shelly_api_device_response->isok !== true || 
+            (int) round($shelly_api_device_response->data->device_status->{"emdata:0"}->a_total_act_energy, 0) < 0
+          )
+      {
+        $this->verbose ? error_log("Shelly EM Grid Energy API call failed"): false;
+
+        // since no valid reading return null
+        return null;
+      }
+      else
+      {
+        $a_grid_wh_counter_now = $shelly_api_device_response->data->device_status->{"emdata:0"}->a_total_act_energy;
+        $b_grid_wh_counter_now = $shelly_api_device_response->data->device_status->{"emdata:0"}->b_total_act_energy;
+
+        $a_grid_wh_accumulated_since_midnight = $a_grid_wh_counter_now - $grid_wh_counter_midnight;
+
+        $shelly_3p_grid_wh_measurement_obj->a_grid_wh_counter_now = $a_grid_wh_counter_now;
+        $shelly_3p_grid_wh_measurement_obj->b_grid_wh_counter_now = $b_grid_wh_counter_now;
+
+        $shelly_3p_grid_wh_measurement_obj->a_grid_wh_accumulated_since_midnight = $a_grid_wh_accumulated_since_midnight;
+      }
       
     }
 
@@ -2441,6 +2475,14 @@ class class_transindus_eco
 
                 update_user_meta( $wp_user_ID, 'soc_percentage', 20 );
               }
+
+              // reset midnighyt energy counter value for Red phase to current measured value
+
+              // reset midnight energy counter value for Yellow phase to current measured value
+
+              // reset midnight energy counter value for home load consumed to current measured value
+
+
             }
 
             { // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - or  battery voltage    
@@ -5519,6 +5561,7 @@ class class_transindus_eco
           // battery info shall be red in color
           $battery_info =  '<span style="font-size: 18px;color: Red;"><strong>' . $pbattery_kw . ' KW</strong><br>' 
                                                                         . abs($battery_charge_adc)  . 'A<br>'
+                                                                        . $studer_readings_obj->battery_amps . 'A<br>'
                                                                         . $battery_voltage_vdc      . ' V<br></span>';
         }
 

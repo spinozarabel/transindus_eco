@@ -1156,7 +1156,7 @@ class class_transindus_eco
           $count += 1;
         }
 
-        $battery_amps = array_sum($c) / $count;
+        $battery_amps = round( array_sum($c) / $count, 1);
 
 
         // get the unix time stamp when measurement was made

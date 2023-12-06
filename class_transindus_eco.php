@@ -2337,7 +2337,7 @@ class class_transindus_eco
 
           { // calculate non-studer based SOC using Shelly device measurements
 
-            $shelly_soc_percentage_at_midnight = get_user_meta($wp_user_ID, "shelly_soc_percentage_at_midnight",  true) 
+            $shelly_soc_percentage_at_midnight = (float) get_user_meta($wp_user_ID, "shelly_soc_percentage_at_midnight",  true) 
                                                                 ?? $SOC_percentage_beg_of_day;
 
             $solar_kwh_since_midnight = $studer_readings_obj->KWH_solar_today ?? 0;

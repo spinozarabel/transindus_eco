@@ -1118,15 +1118,15 @@ class class_transindus_eco
 
         $count = 0;
 
-        for ($i = 0; $i <= 4; $i++) 
+        for ($i = 0; $i <= 6; $i++) 
         {
           // this is $curl_response.
           $shelly_api_device_response = $shelly_api->get_shelly_device_status(); 
 
-          if ($i < 4)
+          if ($i < 5)
           {
             // delay at least 1 sec except for last measurement due to shelly cloud requirement
-            sleep(2);
+            sleep(1);
           }
 
           // check to make sure that it exists. If null API call was fruitless

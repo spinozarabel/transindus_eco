@@ -1116,34 +1116,48 @@ class class_transindus_eco
 
         $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
 
-        // this is $curl_response.
-        $shelly_api_device_response = $shelly_api->get_shelly_device_status();
+        $count = 0;
 
-        // check to make sure that it exists. If null API call was fruitless
-        if ( empty( $shelly_api_device_response ) )
+        for ($i = 0; $i <= 4; $i++) 
         {
-          $this->verbose ? error_log("Shelly Battery Measurement API call failed"): false;
+          // this is $curl_response.
+          $shelly_api_device_response = $shelly_api->get_shelly_device_status(); 
 
-          return null;
+          if ($i < 4)
+          {
+            // delay at least 1 sec except for last measurement due to shelly cloud requirement
+            sleep(2);
+          }
+
+          // check to make sure that it exists. If null API call was fruitless
+          if ( empty( $shelly_api_device_response ) )
+          {
+            continue;
+          }
+
+          // If you get here, you have a valid API response from the Shelly UNI
+          $adc_voltage_shelly = $shelly_api_device_response->data->device_status->adcs[0]->voltage;  // measure the ADC voltage
+
+          // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
+          $delta_voltage = $adc_voltage_shelly - 2.5;
+
+          // 100 Amps gives a voltage of 0.625V amplified by opamp by 4.7
+          $volts_amp = 0.625 * 4.7 / 100;
+
+          // convention here is that battery charging current is positive.
+          $battery_amps_raw_measurement = round( $delta_voltage / $volts_amp, 1 );
+
+          // +ve value indicates battery is charging
+          $battery_amps = -1.0 * $battery_amps_raw_measurement;
+
+          $c[] = $battery_amps;
+
+          // increment valid samples
+          $count += 1;
         }
 
-        // If you get here, you have a valid API response from the Shelly UNI
-        $adc_voltage_shelly = $shelly_api_device_response->data->device_status->adcs[0]->voltage;  // measure the ADC voltage
+        $battery_amps = array_sum($c) / $count;
 
-        // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
-        $delta_voltage = $adc_voltage_shelly - 2.5;
-
-        // 100 Amps gives a voltage of 0.625V amplified by opamp by 4.7
-        $volts_amp = 0.625 * 4.7 / 100;
-
-        // convention here is that battery charging current is positive.
-        $battery_amps_raw_measurement = round( $delta_voltage / $volts_amp, 1 );
-
-        // +ve value indicates battery is charging
-        $battery_amps = -1.0 * $battery_amps_raw_measurement;
-
-        $this->verbose ? error_log("ADC Voltage: $adc_voltage_shelly, delta_voltage: $delta_voltage, 
-                                    Batt Charging Amps: $battery_amps") : false;
 
         // get the unix time stamp when measurement was made
         $now = new DateTime();
@@ -1751,7 +1765,12 @@ class class_transindus_eco
             $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
 
             
-            sleep(30);
+            sleep(15);
+
+            // enable Studer measurements. These will complete and end the script. User index is 0 since only 1 user
+            $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
+
+            sleep(15);
 
             // enable Studer measurements. These will complete and end the script. User index is 0 since only 1 user
             $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );

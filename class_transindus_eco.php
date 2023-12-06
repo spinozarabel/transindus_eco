@@ -1329,6 +1329,8 @@ class class_transindus_eco
         $shelly_3p_grid_wh_measurement_obj->b_grid_wh_counter_now = $b_grid_wh_counter_now;
 
         $shelly_3p_grid_wh_measurement_obj->a_grid_wh_accumulated_since_midnight = $a_grid_wh_accumulated_since_midnight;
+
+        return $shelly_3p_grid_wh_measurement_obj;
       }
       
     }

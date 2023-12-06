@@ -1120,12 +1120,12 @@ class class_transindus_eco
 
         $c=[];
 
-        for ($i = 0; $i <= 6; $i++) 
+        for ($i = 0; $i <= 9; $i++) 
         {
           // this is $curl_response.
           $shelly_api_device_response = $shelly_api->get_shelly_device_status(); 
 
-          if ($i < 5)
+          if ($i < 9)
           {
             // delay at least 1 sec except for last measurement due to shelly cloud requirement
             sleep(1);

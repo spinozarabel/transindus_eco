@@ -4149,6 +4149,9 @@ class class_transindus_eco
      */
     public function estimated_solar_power( $user_index ): object
     {
+      // initialize to prevent warning after dark
+       $total_to_west_panel_ratio = 0;
+
         $est_solar_obj = new stdClass;
 
         $est_solar_kw_arr = [];

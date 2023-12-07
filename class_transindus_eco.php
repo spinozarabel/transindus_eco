@@ -2497,13 +2497,14 @@ class class_transindus_eco
           
 
           $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
+                                        ( $soc_update_method === "studer")             &&
                                         ( $keep_shelly_switch_closed_always == true )  &&
                                         ( $SOC_percentage_now <= ($soc_percentage_switch_release_setting - 5) )	&&  // OR SOC reached 90%
-                                        ( $control_shelly == true )                    &&
-                                        ( $soc_update_method === "studer");
+                                        ( $control_shelly == true );
 
 
           $reduce_daytime_battery_cycling = ( $shelly_switch_status == "OFF" )              &&  // Switch is OFF
+                                            ( $RDBC == true )                               &&
                                             ( $SOC_percentage_now <= $soc_percentage_rdbc_setting )	&&	// Battery NOT in FLOAT state
                                             ( $shelly_api_device_status_voltage >= $acin_min_voltage_for_rdbc	)	&&	// ensure Grid AC is not too low
                                             ( $shelly_api_device_status_voltage <= $acin_max_voltage_for_rdbc	)	&&	// ensure Grid AC is not too high
@@ -2511,15 +2512,15 @@ class class_transindus_eco
                                             ( $psolar  >= $psolar_min_for_rdbc_setting )    &&   // at least some solar generation
                                             ( $surplus <= $psolar_surplus_for_rdbc_setting ) &&  // Solar Deficit is negative
                                             ( $it_is_cloudy_at_the_moment )                 &&   // Only when it is cloudy
-                                            ( $RDBC == true )                               &&  // RDBC flag is ON
                                             ( $control_shelly == true );                         // Control Flag is SET
+
           // switch release typically after RDBC when Psurplus is positive.
-          $switch_release =  ( $SOC_percentage_now >= ( $soc_percentage_lvds_setting + 0.3 ) ) &&  // SOC ?= LBDS + offset
+          $switch_release =  ( $soc_update_method === "studer" )                              &&
+                             ( $SOC_percentage_now >= ( $soc_percentage_lvds_setting + 0.3 ) ) &&  // SOC ?= LBDS + offset
                              ( $shelly_switch_status == "ON" )  														  &&  // Switch is ON now
                              ( $surplus >= $min_solar_surplus_for_switch_release_after_rdbc ) &&  // Solar surplus is >= 0.2KW
                              ( $keep_shelly_switch_closed_always == false )                   &&	// Emergency flag is False
-                             ( $control_shelly == true )                                      &&
-                             ( $soc_update_method === "studer");                                  // only for studer updated value                            
+                             ( $control_shelly == true );                                         // only for studer updated                           
 
           // In general we want home to be on Battery after sunset
           $sunset_switch_release			=	( $keep_shelly_switch_closed_always == false )  &&  // Emergency flag is False
@@ -2530,10 +2531,10 @@ class class_transindus_eco
           // This is needed when RDBC or always ON was triggered and Psolar is charging battery beyond 95%
           // independent of keep_shelly_switch_closed_always flag status
           $switch_release_float_state	= ( $shelly_switch_status == "ON" )  							  &&  // Switch is ON now
+                                        ( $soc_update_method === "studer")                &&
                                         ( $SOC_percentage_now >= $soc_percentage_switch_release_setting )	&&  // OR SOC reached 95%
                                         // ( $keep_shelly_switch_closed_always == false )  &&  // Always ON flag is OFF
-                                        ( $control_shelly == true )                        &&
-                                        ( $soc_update_method === "studer");                    // only for studer updated values
+                                        ( $control_shelly == true );
         }
 
         if ( $soc_update_method === "studer" )

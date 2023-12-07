@@ -904,13 +904,8 @@ class class_transindus_eco
         $soc_predicted_at_6am_raw = $soc_percentage_now_computed_using_shelly - $est_soc_percentage_discharged_till_6am;
 
         $soc_predicted_at_6am = round( $soc_predicted_at_6am_raw , 1 );
-/*
-        if ( $soc_predicted_at_6am <= 40 )
-        {
-          $turn_on_acin_switch_soc6am_low = true;
-        }
-*/
-//      $return_obj->turn_on_acin_switch_soc6am_low    = $turn_on_acin_switch_soc6am_low;
+
+        // $return_obj->turn_on_acin_switch_soc6am_low    = $turn_on_acin_switch_soc6am_low;
         $return_obj->soc_predicted_at_6am              = $soc_predicted_at_6am;
         $return_obj->minutes_now_to_6am                = $minutes_now_to_6am;
         $return_obj->load_kw_avg                       = $load_kw_avg;
@@ -1091,7 +1086,7 @@ class class_transindus_eco
      *  @return object:$battery_measurements_object contains the measurements of the battery using the Shelly UNI device
      *  
      *  The current is measured using a hall effect sensor. The sensor output voltage is rread by the ADC in the shelly UNI
-     *  The transducer function is: V(A) = (Vout - 2.5)/0.065 for a 65mV/V aronund 2.5V in either direction
+     *  The transducer function is: V(A) = (Vout - 2.5)/0.0294 using 29.375 mv/A around 2.5V reference
      *  Trapezoidal rule is used to calculate Area
      *  Current measurements are used to update user meta for accumulated SOlar AH since Studer Midnight
      */
@@ -1111,7 +1106,7 @@ class class_transindus_eco
         $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_battery'];
 
         // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
-        $battery_capacity_ah = $config['accounts'][$user_index]['battery_capacity_ah'];
+        $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH
 
         $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
 
@@ -1121,7 +1116,7 @@ class class_transindus_eco
         // check to make sure that it exists. If null API call was fruitless
         if ( empty( $shelly_api_device_response ) )
         {
-          $this->verbose ? error_log("Shelly Battery Measurement API call failed"): false;
+          error_log("Shelly Battery Measurement API call failed");
 
           return null;
         }
@@ -1133,12 +1128,12 @@ class class_transindus_eco
         $delta_voltage = $adc_voltage_shelly - 2.5;
 
         // 100 Amps gives a voltage of 0.625V amplified by opamp by 4.7
-        $volts_amp = 0.625 * 4.7 / 100;
+        $volts_per_amp = 0.625 * 4.7 / 100;
 
         // convention here is that battery charging current is positive.
-        $battery_amps_raw_measurement = round( $delta_voltage / $volts_amp, 1 );
+        $battery_amps_raw_measurement = round( $delta_voltage / $volts_per_amp, 1 );
 
-        // +ve value indicates battery is charging
+        // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign for our convention
         $battery_amps = -1.0 * $battery_amps_raw_measurement;
 
         $this->verbose ? error_log("ADC Voltage: $adc_voltage_shelly, delta_voltage: $delta_voltage, 
@@ -1165,6 +1160,7 @@ class class_transindus_eco
         // find out the time interval between the last timestamp and the present one in seconds
         $diff = $now->diff( $prev_datetime_obj );
 
+        // take total seconds of difference between timestamp and divide by 3600
         $hours_between_measurement = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 ) / 3600;
 
         // AH of battery charge - +ve is charging and -ve is discharging
@@ -1177,7 +1173,7 @@ class class_transindus_eco
         // If this is the 1st time then we get the value from the SOC value in usermeta
         if ( empty( $battery_accumulated_ah_since_midnight ) )
         {
-          $SOC_percentage_now = get_user_meta($wp_user_ID, "soc_percentage_now",  true);
+          $SOC_percentage_now = (float) get_user_meta($wp_user_ID, "soc_percentage_now",  true);
 
           // for example if soc is 80% and capacity is 300AH our value will be 240 AH
           $battery_accumulated_ah_since_midnight = $SOC_percentage_now / 100 * $battery_capacity_ah;
@@ -1186,22 +1182,14 @@ class class_transindus_eco
         // accumulate  present measurement
         $battery_accumulated_ah_since_midnight += $battery_ah_this_measurement;
 
+        // update accumulated battery charge back to user meta
+        update_user_meta( $wp_user_ID, 'battery_accumulated_ah_since_midnight', $battery_accumulated_ah_since_midnight);
+
+        // write variables as properties to returned object
         $battery_measurements_object->battery_ah_this_measurement           = $battery_ah_this_measurement;
         $battery_measurements_object->battery_accumulated_ah_since_midnight = $battery_accumulated_ah_since_midnight;
-
-        $battery_measurements_object->adc_voltage_shelly        = $adc_voltage_shelly;
-
         $battery_measurements_object->battery_amps              = $battery_amps;
-
-        $battery_measurements_object->timestamp                 = $timestamp;
-        $battery_measurements_object->previous_timestamp        = $previous_timestamp;
-        
-        $battery_measurements_object->hours_between_measurement = $hours_between_measurement;
-        $battery_measurements_object->previous_battery_amps     = $previous_battery_amps;
-
         $battery_measurements_object->battery_capacity_ah       = $battery_capacity_ah;
-
-        update_user_meta( $wp_user_ID, 'battery_accumulated_ah_since_midnight', $battery_accumulated_ah_since_midnight);
 
         return $battery_measurements_object;
     }
@@ -1754,9 +1742,9 @@ class class_transindus_eco
             $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
 
             
-            for ( $i = 0; $i < 5; $i++ )
+            for ( $i = 0; $i < 10; $i++ )
             {
-              sleep(10);
+              sleep(5);
               // enable Studer measurements. These will complete and end the script. User index is 0 since only 1 user
             $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
             }
@@ -2098,10 +2086,10 @@ class class_transindus_eco
 
         $RDBC = false;    // permamantly disable RDBC mode 
 
-        // get the user meta, all of it as an array for fast retrieval rtahr than 1 by 1 as done before
-        $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
+        
 
-        { // Get user meta for limits and controls
+        { // Get user meta for limits and controls as an array rather than 1 by 1
+          $all_usermeta                           = $this->get_all_usermeta( $wp_user_ID );
           // SOC percentage needed to trigger LVDS
           $soc_percentage_lvds_setting            = $all_usermeta['soc_percentage_lvds_setting']  ?? 30;
 
@@ -2184,19 +2172,26 @@ class class_transindus_eco
           else
           {
             // as Studer measurements were not made lets recall the previous STUDER readings object to start with
-            // instead of starting with a null object we will use the previous object and update as much as possible
             $studer_readings_obj = get_transient( $wp_user_name . '_' . 'studer_readings_object') ??  null;
+
+            // This flag is set when it is a non-studer cycle or when Studer API call fails
+            $studer_api_call_failed = true;
           }
 
           { // get the SOCs from the user meta for past midnight and also previous values
-            $SOC_percentage_previous            = get_user_meta($wp_user_ID, "soc_percentage_now",  true);
+            $SOC_percentage_previous            = (float) get_user_meta($wp_user_ID, "soc_percentage_now",  true);
 
-            $SOC_percentage_previous_shelly_bm  = get_user_meta($wp_user_ID, "soc_percentage_now_calculated_using_shelly_bm",  true) ?? $SOC_percentage_previous;
+            $SOC_percentage_previous_shelly_bm  = (float) get_user_meta($wp_user_ID, "soc_percentage_now_calculated_using_shelly_bm",  true) ?? $SOC_percentage_previous;
 
             // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only just past midnight only once
-            $SOC_percentage_beg_of_day          = get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
+            $SOC_percentage_beg_of_day          = (float) get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
+
+            // SOC percentage just after midnight as measured by Shelly
+            $shelly_soc_percentage_at_midnight = (float) get_user_meta($wp_user_ID, "shelly_soc_percentage_at_midnight",  true) 
+                                                                ?? $SOC_percentage_beg_of_day;
           }
           
+          // initialize a new object for holding Shelly measurements similar to the Studer Readings Object
           $shelly_readings_obj = new stdClass;
 
           { // make WATER HEATER measurements using Shelly plus 1PM
@@ -2227,10 +2222,6 @@ class class_transindus_eco
             // get a measurement of the charging current into battery
             $shelly_battery_measurement_object = $this->get_shelly_battery_measurement( $user_index, $wp_user_name, $wp_user_ID );
 
-            if ( empty( $shelly_battery_measurement_object ) )
-            {
-              error_log("Shelly UNI API call for Battery current Measurement FAILED ");
-            }
             $battery_capacity_ah                    = $shelly_battery_measurement_object->battery_capacity_ah;
             $battery_accumulated_ah_since_midnight  = $shelly_battery_measurement_object->battery_accumulated_ah_since_midnight;
 
@@ -2244,15 +2235,9 @@ class class_transindus_eco
             $shelly_readings_obj->battery_accumulated_ah_since_midnight  = $battery_accumulated_ah_since_midnight;
             $shelly_readings_obj->battery_ah_this_measurement = $shelly_battery_measurement_object->battery_ah_this_measurement;
             $shelly_readings_obj->battery_capacity_ah         = $battery_capacity_ah;
-            $shelly_readings_obj->adc_voltage_shelly          = $shelly_battery_measurement_object->adc_voltage_shelly;
 
             // Also update the Studer object with battery amps
-            // $studer_readings_obj->battery_amps                = $shelly_battery_measurement_object->battery_amps;
-
-            // legacy, this variable is not set here anymore but elsewhere if at all
-            $psolar = 0;
-            $shelly_readings_obj->psolar    = $psolar;
-            $shelly_readings_obj->psolar_kw = $psolar;   // Solar power in KW
+            $studer_readings_obj->battery_amps                = $shelly_battery_measurement_object->battery_amps;
           }
 
           { // Now make a Shelly 4PM measurement to get individual powers for all channels
@@ -2328,7 +2313,9 @@ class class_transindus_eco
 
             // Grid AC voltage measured by Shelly EM
             $shelly_readings_obj->grid_voltage_em = $shelly_em_readings_object->grid_voltage_em;
+          }
 
+          { // Make Shelly pro 3EM energy measuremnts of 3phase Grid inout
             $shelly_3p_grid_wh_measurement_obj = $this->get_shelly_3p_grid_wh_since_midnight( $user_index, 
                                                                                               $wp_user_name, 
                                                                                               $wp_user_ID);
@@ -2336,22 +2323,14 @@ class class_transindus_eco
           }
 
           { // calculate non-studer based SOC using Shelly device measurements
-
-            $shelly_soc_percentage_at_midnight = (float) get_user_meta($wp_user_ID, "shelly_soc_percentage_at_midnight",  true) 
-                                                                ?? $SOC_percentage_beg_of_day;
-
-            $solar_kwh_since_midnight = $studer_readings_obj->KWH_solar_today ?? 0;
-
-            // $KWH_batt_charge_net_today_shelly  = $solar_kwh_since_midnight * 0.96 + (0.988 * $grid_kwh_since_midnight - $KWH_load_today_shelly) * 1.07;
             $soc_charge_net_percent_today_shelly = round( $battery_accumulated_ah_since_midnight / $battery_capacity_ah * 100, 1);
 
-            $soc_percentage_now_shelly = $shelly_soc_percentage_at_midnight + $soc_charge_net_percent_today_shelly;
+            $soc_percentage_now_shelly = round( $shelly_soc_percentage_at_midnight + $soc_charge_net_percent_today_shelly, 1);
             
             // lets update the user meta for updated SOC
             update_user_meta( $wp_user_ID, 'soc_percentage_now_calculated_using_shelly_bm', $soc_percentage_now_shelly);
 
-            // Surplus power from Solar after supplying the Load as measured by Shelly devices
-            // $surplus              = $shelly_readings_obj->psolar - $shelly_4pm_readings_object->power_total_to_home_kw;
+            // $surplus  power is any surplus from solar after load consumption, available for battery, etc.
             $surplus = round( $shelly_readings_obj->battery_amps * 49.8 * 0.001, 1 ); // in KW
 
             $shelly_readings_obj->surplus  = $surplus;
@@ -2376,29 +2355,28 @@ class class_transindus_eco
   
             // Check if it is cloudy AT THE MOMENT. Yes if solar is less than half of estimate
             $it_is_cloudy_at_the_moment = $psolar <= 0.5 * array_sum($est_solar_kw_arr);
+            // Weighted percentage cloudiness
+            $cloudiness_average_percentage_weighted = round($this->cloudiness_forecast->cloudiness_average_percentage_weighted, 0);
   
             // Inverter readings at present Instant
             $pout_inverter        = $studer_readings_obj->pout_inverter_ac_kw;    // Inverter Output Power in KW
             $grid_input_vac       = $studer_readings_obj->grid_input_vac;         // Grid Input AC Voltage measured by Studer
   
-            // Surplus power from Solar after supplying the Load
+            // Surplus power from Solar after supplying the Load as calculated by STUDER
             $surplus              = $psolar - $pout_inverter;
   
-            // Weighted percentage cloudiness
-            $cloudiness_average_percentage_weighted = round($this->cloudiness_forecast->cloudiness_average_percentage_weighted, 0);
-  
-            // get the current Measurement values from the Stider Readings Object
+            // get the current Measurement values from the STUDER Readings Object
             $KWH_solar_today      = $studer_readings_obj->KWH_solar_today;  // Net Solar Units generated Today
             $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;   // Net Grid Units consumed Today
             $KWH_load_today       = $studer_readings_obj->KWH_load_today;   // Net Load units consumed Today
 
-            // Net battery charge in KWH (discharge if minus)
+            // Net battery charge in KWH (discharge if minus) as measured by STUDER
             $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07;
   
             // Calculate in percentage of  installed battery capacity
             $SOC_batt_charge_net_percent_today = round( $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100, 1);
   
-            //  Update SOC  number  using Studer Measurements
+            //  Update SOC  number  using STUDER Measurements
             $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
 
             if ( $this->verbose )
@@ -2424,10 +2402,10 @@ class class_transindus_eco
   
             // Check if STUDER computed SOC update is reasonable
             if ( $SOC_percentage_now < 20 || $SOC_percentage_now > 110 ) 
-            {
+            { // STUDER computed SOC seems out of bounds
 
               if ( $SOC_percentage_now_shelly4pm > 20 || $SOC_percentage_now_shelly4pm <= 100 ) 
-              {
+              { // STUDER computed SOC using Shelly4PM load energy seems OK
                 error_log("SOC using Studer Load KWH was bad, using Shelly4PM is OK: " .  $SOC_percentage_now_shelly4pm . " %");
 
                 update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now_shelly4pm);
@@ -2442,43 +2420,7 @@ class class_transindus_eco
                 update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
             }
 
-            // we can now check to see if Studer midnight has happened for midnight rollover capture
-            // Each time the following executes it looks at a transient. Only when it expires does an API call made on Studer for 5002
-            $studer_time_just_passed_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
-
-            if ( $studer_time_just_passed_midnight )
-            { // reset the shelly load energy counter to 0. Capture SOC value for beginning of day
             
-              error_log("Studer Clock just passed midnight-SOC=: " . $SOC_percentage_now);
-              
-              // we can use this to update the user meta for SOC at beginning of new day
-              if (  $SOC_percentage_now  > 20 && $SOC_percentage_now  < 100 )
-              {
-                update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_now );
-              }
-              else
-              {
-                error_log("Reset SOC to 20% for safety as SOC update was bad");
-
-                update_user_meta( $wp_user_ID, 'soc_percentage', 20 );
-              }
-
-              // reset the user meta SOC as calculated using Shelly measured Battery current to the present value
-              update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $soc_percentage_now_shelly );
-
-              // reset the battery accumulated charge in AH to 0 at just past midnight.
-              update_user_meta( $wp_user_ID, 'battery_accumulated_ah_since_midnight', 0 );
-
-              // reset midnighyt energy counter value for Red phase to current measured value
-              update_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', $a_grid_wh_counter_now );
-
-              // Load energy consumed since midnight as measured by Shelly4PM reset to 0 at midnight
-              update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', 0 );
-              
-              // reset midnight energy counter value for Yellow phase to current measured value
-
-              // reset midnight energy counter value for home load consumed to current measured value
-            }
 
             { // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - or  battery voltage    
               $LVDS =             ( $battery_voltage_avg  <= $battery_voltage_avg_lvds_setting || 
@@ -2495,17 +2437,51 @@ class class_transindus_eco
             // update the object
             $studer_readings_obj->SOC_percentage_now  = $SOC_percentage_now;
             $studer_readings_obj->LVDS                = $LVDS;
-            $studer_readings_obj->soc_updated_using_shelly_after_dark_bool = false;
-
-            // capture soc after dark using shelly 4 pm. Only happens ONCE between 18:55 and 23:00 hrs
-            // $this->capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index );
           }   // endif of studer_api_failed = false
           else
           {   // Studer API call failed. So we set the flag appropriately
             $soc_update_method = "shelly";
           }
+        }
 
-        }   // endif of soc_updated_using_shelly_after_dark_bool = false
+        // we can now check to see if Studer midnight has happened for midnight rollover capture
+        // Each time the following executes it looks at a transient. Only when it expires does an API call made on Studer for 5002
+        $studer_time_just_passed_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
+
+        if ( $studer_time_just_passed_midnight )
+        { // reset the shelly load energy counter to 0. Capture SOC value for beginning of day
+        
+          error_log("Studer Clock just passed midnight-SOC=: " . $SOC_percentage_now);
+          
+          // we can use this to update the user meta for SOC at beginning of new day
+          if (  $SOC_percentage_now  > 20 && $SOC_percentage_now  < 100 )
+          {
+            update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_now );
+          }
+          else
+          {
+            error_log("Reset SOC to 20% for safety as SOC update was bad");
+
+            update_user_meta( $wp_user_ID, 'soc_percentage', 20 );
+          }
+
+          // reset the user meta SOC as calculated using Shelly measured Battery current to the present value
+          update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $soc_percentage_now_shelly );
+
+          // reset the battery accumulated charge in AH to 0 at just past midnight.
+          update_user_meta( $wp_user_ID, 'battery_accumulated_ah_since_midnight', 0 );
+
+          // reset midnighyt energy counter value for Red phase to current measured value
+          update_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', $a_grid_wh_counter_now );
+
+          // Load energy consumed since midnight as measured by Shelly4PM reset to 0 at midnight
+          update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', 0 );
+          
+          // reset midnight energy counter value for Yellow phase to current measured value
+
+          // reset midnight energy counter value for home load consumed to current measured value
+        }
+
         
         {   // define all the conditions for the SWITCH - CASE tree except for LVDS that is done individually
             // note that $SOC_percentage_now needs to be defined properly depending on path taken
@@ -2592,12 +2568,9 @@ class class_transindus_eco
           $shelly_readings_obj->shelly_api_device_status_ON       = $shelly_api_device_status_ON;
           $shelly_readings_obj->shelly_switch_acin_details_arr    = $shelly_switch_acin_details_arr;
 
-          $pbattery_kw =  $psolar * 0.96 + ( 0.988 * $shelly_em_readings_object->grid_kw_shelly_em 
-                                              - $shelly_4pm_readings_object->power_total_to_home_kw
-                                            ) * 1.07 ;
-          $battery_charge_adc = round( $pbattery_kw * 1000 / 49.8, 1);
+          $pbattery_kw =  round( 49.8 * 0.001 * $shelly_battery_measurement_object->battery_amps, 3 );
 
-          $shelly_readings_obj->battery_charge_adc = $battery_charge_adc;
+          $shelly_readings_obj->battery_charge_adc = $shelly_battery_measurement_object->battery_amps;
           $shelly_readings_obj->pbattery_kw = $pbattery_kw;
           $shelly_readings_obj->grid_pin_ac_kw = $shelly_em_readings_object->grid_kw_shelly_em;
           $shelly_readings_obj->grid_input_vac = $shelly_api_device_status_voltage;
@@ -5185,7 +5158,7 @@ class class_transindus_eco
       {
         $studer_readings_obj = get_transient( $wp_user_name . '_' . 'studer_readings_object' );
       }
-      elseif ( $soc_update_method === "shelly_daytime" )
+      elseif ( $soc_update_method === "shelly" )
       {
         $studer_readings_obj = get_transient( $wp_user_name . '_' . 'shelly_readings_obj' );
       }
@@ -5523,7 +5496,6 @@ class class_transindus_eco
             // battery info shall be green in color
             $battery_info =  '<span style="font-size: 18px;color: Green;"><strong>' . $pbattery_kw  . ' KW</strong><br>' 
                                                                             . abs($battery_charge_adc)  . 'A<br>'
-                                                                            . $studer_readings_obj->battery_amps . 'A<br>'
                                                                             . $battery_voltage_vdc      . ' V<br></span>';
         }
         else
@@ -5542,7 +5514,6 @@ class class_transindus_eco
           // battery info shall be red in color
           $battery_info =  '<span style="font-size: 18px;color: Red;"><strong>' . $pbattery_kw . ' KW</strong><br>' 
                                                                         . abs($battery_charge_adc)  . 'A<br>'
-                                                                        . $studer_readings_obj->battery_amps . 'A<br>'
                                                                         . $battery_voltage_vdc      . ' V<br></span>';
         }
 

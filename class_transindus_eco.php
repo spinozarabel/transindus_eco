@@ -2560,6 +2560,9 @@ class class_transindus_eco
         {   // write back to shelly_readings_obj object
           $note_exit = "Shelly";
 
+          $LVDS_soc_6am_grid_on = false;
+          $LVDS_soc_6am_grid_off = false;
+
           $shelly_readings_obj->battery_voltage_avg  = get_transient( $wp_user_name . '_' . 'battery_voltage_avg' ) ?? 49.8;
 
           $shelly_readings_obj->control_shelly                    = $control_shelly;

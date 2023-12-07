@@ -2574,6 +2574,7 @@ class class_transindus_eco
           $shelly_readings_obj->pbattery_kw = $pbattery_kw;
           $shelly_readings_obj->grid_pin_ac_kw = $shelly_em_readings_object->grid_kw_shelly_em;
           $shelly_readings_obj->grid_input_vac = $shelly_api_device_status_voltage;
+          $shelly_readings_obj->psolar_kw = ($pbattery_kw - 1.07 * $shelly_readings_obj->power_total_to_home_kw) / 0.96;
         }
         
         switch(true)

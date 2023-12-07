@@ -2482,6 +2482,9 @@ class class_transindus_eco
           // reset midnight energy counter value for home load consumed to current measured value
         }
 
+        $LVDS_soc_6am_grid_on = false;
+        $LVDS_soc_6am_grid_off = false;
+
         
         {   // define all the conditions for the SWITCH - CASE tree except for LVDS that is done individually
             // note that $SOC_percentage_now needs to be defined properly depending on path taken

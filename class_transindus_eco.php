@@ -2319,7 +2319,11 @@ class class_transindus_eco
             $shelly_3p_grid_wh_measurement_obj = $this->get_shelly_3p_grid_wh_since_midnight( $user_index, 
                                                                                               $wp_user_name, 
                                                                                               $wp_user_ID);
-            $a_grid_wh_counter_now = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_counter_now;
+            if (! empty($shelly_3p_grid_wh_measurement_obj))
+            {
+              $a_grid_wh_counter_now = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_counter_now;;
+            }
+            
           }
 
           { // calculate non-studer based SOC using Shelly device measurements

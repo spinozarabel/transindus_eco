@@ -2565,6 +2565,8 @@ class class_transindus_eco
 
           $LVDS_soc_6am_grid_on = false;
           $LVDS_soc_6am_grid_off = false;
+          $switch_override = false;
+
 
           $shelly_readings_obj->battery_voltage_avg  = get_transient( $wp_user_name . '_' . 'battery_voltage_avg' ) ?? 49.8;
 

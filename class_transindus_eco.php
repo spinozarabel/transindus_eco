@@ -2800,6 +2800,19 @@ class class_transindus_eco
 
           set_transient( $wp_user_name . '_' . 'shelly_readings_obj', $shelly_readings_obj, 5*60 );
 
+          if (  $soc_percentage_now_shelly > 100.0 )
+          {
+            // Since we know that the battery SOC is 100% use this knowledge along with
+            // Energy data to recalibrate the soc_percentage user meta
+            $SOC_percentage_beg_of_day_recal = 100 - $soc_charge_net_percent_today_shelly;
+
+            update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $SOC_percentage_beg_of_day_recal);
+
+            // Also recalibrate SOC as calculated by battery current measurement
+
+            error_log("Shelly SOC 100% clamp activated: " . $SOC_percentage_beg_of_day_recal  . " %");
+          }
+
           // no need to worry about 100% clamp during night time since battery will not charge unless Solar is there
           return $shelly_readings_obj;
         }

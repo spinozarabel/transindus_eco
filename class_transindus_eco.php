@@ -2172,7 +2172,12 @@ class class_transindus_eco
           else
           {
             // as Studer measurements were not made lets recall the previous STUDER readings object to start with
-            $studer_readings_obj = get_transient( $wp_user_name . '_' . 'studer_readings_object') ??  null;
+            $studer_readings_obj = get_transient( $wp_user_name . '_' . 'studer_readings_object');
+
+            if ( empty($studer_readings_obj))
+            {
+              $studer_readings_obj = new stdClass;
+            }
 
             // This flag is set when it is a non-studer cycle or when Studer API call fails
             $studer_api_call_failed = true;

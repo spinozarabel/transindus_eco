@@ -2372,6 +2372,7 @@ class class_transindus_eco
               $b_grid_wh_counter_now = $shelly_3p_grid_wh_measurement_obj->b_grid_wh_counter_now;
 
               $a_grid_wh_accumulated_since_midnight = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_accumulated_since_midnight;
+              $a_grid_kwh_accumulated_since_midnight = round( $a_grid_wh_accumulated_since_midnight * 0.001, 2 );
             }
             
           }
@@ -2443,7 +2444,7 @@ class class_transindus_eco
 
                 error_log("Load_KWH_today_Studer = " . $KWH_load_today . " KWH_load_Shelly = " . $KWH_load_today_shelly);
 
-                error_log("Grid KWH Studer Today: $KWH_grid_today, Grid KWH Shelly3EM Today: $a_grid_wh_accumulated_since_midnight");
+                error_log("Grid KWH Studer Today: $KWH_grid_today, Grid KWH Shelly3EM Today: $a_grid_kwh_accumulated_since_midnight");
 
                 error_log("Solar KWH Studer Today: $KWH_solar_today");
 

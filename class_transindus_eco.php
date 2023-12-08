@@ -2417,7 +2417,7 @@ class class_transindus_eco
 
                 error_log("Grid KWH Studer Today: $KWH_grid_today, Grid KWH Shelly Today: $grid_kwh_since_midnight");
 
-                error_log("Solar KWH Studer Today: $KWH_solar_today, Solar KWH Shelly Today: $solar_kwh_since_midnight");
+                error_log("Solar KWH Studer Today: $KWH_solar_today");
 
                 error_log("SOC_shelly_BM: $soc_percentage_now_shelly, SOC_Studer: $SOC_percentage_now");
             }

@@ -1306,13 +1306,24 @@ class class_transindus_eco
       {
         $this->verbose ? error_log("Shelly EM Grid Energy API call failed"): false;
 
-        // since no valid reading return null
-        return null;
+        // since no valid reading so lets use the reading from transient
+        $a_grid_wh_counter_now_from_transient = (float) get_transient('last_reading_phase_a_grid_wh_counter');
+
+        $shelly_3p_grid_wh_measurement_obj->a_grid_wh_counter_now = $a_grid_wh_counter_now_from_transient;
+
+        $a_grid_wh_accumulated_since_midnight = $a_grid_wh_counter_now_from_transient - $grid_wh_counter_midnight;
+
+        $shelly_3p_grid_wh_measurement_obj->a_grid_wh_accumulated_since_midnight = $a_grid_wh_accumulated_since_midnight;
+
+        return $shelly_3p_grid_wh_measurement_obj;
       }
       else
       {
         $a_grid_wh_counter_now = $shelly_api_device_response->data->device_status->{"emdata:0"}->a_total_act_energy;
         $b_grid_wh_counter_now = $shelly_api_device_response->data->device_status->{"emdata:0"}->b_total_act_energy;
+
+        // update the transient with most recent measurement
+        set_transient( 'last_reading_phase_a_grid_wh_counter', $a_grid_wh_counter_now, 24 * 60 * 60 );
 
         $a_grid_wh_accumulated_since_midnight = $a_grid_wh_counter_now - $grid_wh_counter_midnight;
 
@@ -2344,6 +2355,9 @@ class class_transindus_eco
             if ( ! empty( $shelly_3p_grid_wh_measurement_obj ) )
             {
               $a_grid_wh_counter_now = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_counter_now;
+              $b_grid_wh_counter_now = $shelly_3p_grid_wh_measurement_obj->b_grid_wh_counter_now;
+
+              $a_grid_wh_accumulated_since_midnight = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_accumulated_since_midnight;
             }
             
           }
@@ -2415,7 +2429,7 @@ class class_transindus_eco
 
                 error_log("Load_KWH_today_Studer = " . $KWH_load_today . " KWH_load_Shelly = " . $KWH_load_today_shelly);
 
-                error_log("Grid KWH Studer Today: $KWH_grid_today, Grid KWH Shelly Today: $grid_kwh_since_midnight");
+                error_log("Grid KWH Studer Today: $KWH_grid_today, Grid KWH Shelly3EM Today: $a_grid_wh_accumulated_since_midnight");
 
                 error_log("Solar KWH Studer Today: $KWH_solar_today");
 
@@ -2480,6 +2494,8 @@ class class_transindus_eco
 
         if ( $studer_time_just_passed_midnight )
         { // reset the shelly load energy counter to 0. Capture SOC value for beginning of day
+          // If Grid is OFF, then Shelly Pro 3EM  will not respond to read the energy counter at midnight.
+          // We need to keep this value as a transient and use it so that the last value is used as it is still valid
         
           error_log("Studer Clock just passed midnight-SOC=: " . $SOC_percentage_now);
           
@@ -2489,14 +2505,13 @@ class class_transindus_eco
             update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_now );
           }
          
-
           // reset the user meta SOC as calculated using Shelly measured Battery current to the present value
           update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $soc_percentage_now_shelly );
 
           // reset the battery accumulated charge in AH to 0 at just past midnight.
           update_user_meta( $wp_user_ID, 'battery_accumulated_ah_since_midnight', 0 );
 
-          // reset midnighyt energy counter value for Red phase to current measured value
+          // reset midnighyt energy counter value for Red phase to current measured value, or from transient if Grid OFF
           update_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', $a_grid_wh_counter_now );
 
           // Load energy consumed since midnight as measured by Shelly4PM reset to 0 at midnight

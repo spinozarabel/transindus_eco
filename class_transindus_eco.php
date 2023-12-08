@@ -2311,11 +2311,6 @@ class class_transindus_eco
                 
                 $KWH_load_today_studer = $studer_readings_obj->KWH_load_today;
 
-                $this->verbose ? error_log("energy consumed as measured by Shelly Pro 4PM (KWH): $KWH_load_today_shelly") : false;
-                $this->verbose ? error_log("energy consumed as measured by STUDER (KWH): $KWH_load_today_studer") : false;
-                
-
-
                 // Also load the properties to the Shelly Readings Object
                 $shelly_readings_obj->KWH_load_today_shelly  = $KWH_load_today_shelly;
                 $shelly_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw; // sum ch2 and ch3
@@ -2355,9 +2350,6 @@ class class_transindus_eco
 
             $studer_KWH_grid_today= $studer_readings_obj->KWH_grid_today;
 
-            $this->verbose ? error_log("Grid energy consumed as measured by Shelly EM (KWH): $grid_kwh_since_midnight") : false;
-            $this->verbose ? error_log("Grid energy as measured by STUDER (KWH): $studer_KWH_grid_today") : false;
-
             // Grid AC voltage measured by Shelly EM
             $shelly_readings_obj->grid_voltage_em = $shelly_em_readings_object->grid_voltage_em;
           }
@@ -2381,8 +2373,6 @@ class class_transindus_eco
             $soc_charge_net_percent_today_shelly = round( $battery_accumulated_ah_since_midnight / $battery_capacity_ah * 100, 1);
 
             $soc_percentage_now_shelly = round( $shelly_soc_percentage_at_midnight + $soc_charge_net_percent_today_shelly, 1);
-
-            $this->verbose ? error_log("Shelly SOC% = $soc_percentage_now_shelly") : false;
             
             // lets update the user meta for updated SOC
             update_user_meta( $wp_user_ID, 'soc_percentage_now_calculated_using_shelly_bm', $soc_percentage_now_shelly);

@@ -1136,9 +1136,6 @@ class class_transindus_eco
         // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign for our convention
         $battery_amps = -1.0 * $battery_amps_raw_measurement;
 
-        $this->verbose ? error_log("ADC Voltage: $adc_voltage_shelly, delta_voltage: $delta_voltage, 
-                                    Batt Charging Amps: $battery_amps") : false;
-
         // get the unix time stamp when measurement was made
         $now = new DateTime();
         $timestamp = $now->getTimestamp();
@@ -1184,6 +1181,12 @@ class class_transindus_eco
 
         // update accumulated battery charge back to user meta
         update_user_meta( $wp_user_ID, 'battery_accumulated_ah_since_midnight', $battery_accumulated_ah_since_midnight);
+
+        $this->verbose ? error_log("Battery AH today: $battery_accumulated_ah_since_midnight, 
+                                    AH accumulated just now: $battery_ah_this_measurement, 
+                                    Batt Amps: $battery_amps"
+                                  ) : false;
+
 
         // write variables as properties to returned object
         $battery_measurements_object->battery_ah_this_measurement           = $battery_ah_this_measurement;
@@ -2278,6 +2281,12 @@ class class_transindus_eco
                 $KWH_load_today_shelly = round( $accumulated_wh_since_midnight * 0.001, 3 );
                 $studer_readings_obj->KWH_load_today_shelly = $KWH_load_today_shelly;
 
+                $KWH_load_today_studer = $studer_readings_obj->KWH_load_today;
+
+                $this->verbose ? error_log("energy consumed as measured by Shelly Pro 4PM (KWH): $KWH_load_today_shelly") : false;
+                $this->verbose ? error_log("energy consumed as measured by STUDER (KWH): $KWH_load_today_studer") : false;
+                
+
 
                 // Also load the properties to the Shelly Readings Object
                 $shelly_readings_obj->KWH_load_today_shelly  = $KWH_load_today_shelly;
@@ -2301,7 +2310,7 @@ class class_transindus_eco
             }
             else 
             {
-              error_log(" Shelly Pro 4 PM Home Load measurement API call failed - no SOC update");
+              error_log(" Shelly Pro 4 PM Home Load measurement API call failed ");
             }
           }
 
@@ -2316,6 +2325,11 @@ class class_transindus_eco
 
             $shelly_readings_obj->grid_kw_shelly_em = $shelly_em_readings_object->grid_kw_shelly_em;
 
+            $studer_KWH_grid_today= $studer_readings_obj->KWH_grid_today;
+
+            $this->verbose ? error_log("Grid energy consumed as measured by Shelly EM (KWH): $grid_kwh_since_midnight") : false;
+            $this->verbose ? error_log("Grid energy as measured by STUDER (KWH): $studer_KWH_grid_today") : false;
+
             // Grid AC voltage measured by Shelly EM
             $shelly_readings_obj->grid_voltage_em = $shelly_em_readings_object->grid_voltage_em;
           }
@@ -2326,7 +2340,7 @@ class class_transindus_eco
                                                                                               $wp_user_ID);
             if ( ! empty( $shelly_3p_grid_wh_measurement_obj ) )
             {
-              $a_grid_wh_counter_now = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_counter_now;;
+              $a_grid_wh_counter_now = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_counter_now;
             }
             
           }
@@ -2463,16 +2477,11 @@ class class_transindus_eco
           error_log("Studer Clock just passed midnight-SOC=: " . $SOC_percentage_now);
           
           // we can use this to update the user meta for SOC at beginning of new day
-          if (  $SOC_percentage_now  > 20 && $SOC_percentage_now  < 100 )
+          if (  $SOC_percentage_now  > 20 && $SOC_percentage_now  < 100 && $soc_update_method === "studer")
           {
             update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_now );
           }
-          else
-          {
-            error_log("Reset SOC to 20% for safety as SOC update was bad");
-
-            update_user_meta( $wp_user_ID, 'soc_percentage', 20 );
-          }
+         
 
           // reset the user meta SOC as calculated using Shelly measured Battery current to the present value
           update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $soc_percentage_now_shelly );
@@ -2822,9 +2831,9 @@ class class_transindus_eco
           {
             // Since we know that the battery SOC is 100% use this knowledge along with
             // Energy data to recalibrate the soc_percentage user meta
-            $SOC_percentage_beg_of_day_recal = 100 - $soc_charge_net_percent_today_shelly;
+            // $SOC_percentage_beg_of_day_recal = 100 - $soc_charge_net_percent_today_shelly;
 
-            update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $SOC_percentage_beg_of_day_recal);
+            //update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $SOC_percentage_beg_of_day_recal);
 
             // Also recalibrate SOC as calculated by battery current measurement
 

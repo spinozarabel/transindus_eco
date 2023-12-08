@@ -2259,7 +2259,10 @@ class class_transindus_eco
             $shelly_readings_obj->battery_capacity_ah         = $battery_capacity_ah;
 
             // Also update the Studer object with battery amps
-            $studer_readings_obj->battery_amps                = $shelly_battery_measurement_object->battery_amps;
+            if ( ! empty ( $studer_readings_obj ) )
+            {
+              $studer_readings_obj->battery_amps                = $shelly_battery_measurement_object->battery_amps;
+            }
           }
 
           { // Now make a Shelly 4PM measurement to get individual powers for all channels

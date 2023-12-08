@@ -2831,7 +2831,7 @@ class class_transindus_eco
           {
             // Since we know that the battery SOC is 100% use this knowledge along with
             // Energy data to recalibrate the soc_percentage user meta
-            // $SOC_percentage_beg_of_day_recal = 100 - $soc_charge_net_percent_today_shelly;
+            $SOC_percentage_beg_of_day_recal = 100 - $soc_charge_net_percent_today_shelly;
 
             //update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $SOC_percentage_beg_of_day_recal);
 

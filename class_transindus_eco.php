@@ -2467,8 +2467,6 @@ class class_transindus_eco
                 error_log("SOC_shelly_BM: $soc_percentage_now_shelly, SOC_Studer: $SOC_percentage_now");
             }
 
-            
-
             { // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - or  battery voltage    
               $LVDS =             ( $battery_voltage_avg  <= $battery_voltage_avg_lvds_setting || 
                                     $SOC_percentage_now   <= $soc_percentage_lvds_setting           )  

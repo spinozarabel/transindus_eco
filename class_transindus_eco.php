@@ -2454,6 +2454,19 @@ class class_transindus_eco
                 update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now);
             }
 
+            if ( $this->verbose )
+            {   // log all measurements inluding Studer and Shelly
+                error_log("Grid Voltage (Shelly EM): $shelly_em_readings_object->grid_voltage_em");
+
+                error_log("Load_KWH_today_Studer = " . $KWH_load_today . " KWH_load_Shelly = " . $KWH_load_today_shelly);
+
+                error_log("Grid KWH Studer Today: $KWH_grid_today, Grid KWH Shelly3EM Today: $a_grid_kwh_accumulated_since_midnight");
+
+                error_log("Solar KWH Studer Today: $KWH_solar_today");
+
+                error_log("SOC_shelly_BM: $soc_percentage_now_shelly, SOC_Studer: $SOC_percentage_now");
+            }
+
             
 
             { // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - or  battery voltage    
@@ -2476,19 +2489,6 @@ class class_transindus_eco
           {   // Studer API call failed. So we set the flag appropriately
             $soc_update_method = "shelly";
           }
-        }
-
-        if ( $this->verbose )
-        {   // log all measurements inluding Studer and Shelly
-            error_log("Grid Voltage (Shelly EM): $shelly_em_readings_object->grid_voltage_em");
-
-            error_log("Load_KWH_today_Studer = " . $KWH_load_today . " KWH_load_Shelly = " . $KWH_load_today_shelly);
-
-            error_log("Grid KWH Studer Today: $KWH_grid_today, Grid KWH Shelly3EM Today: $a_grid_kwh_accumulated_since_midnight");
-
-            error_log("Solar KWH Studer Today: $KWH_solar_today");
-
-            error_log("SOC_shelly_BM: $soc_percentage_now_shelly, SOC_Studer: $SOC_percentage_now");
         }
 
         // we can now check to see if Studer midnight has happened for midnight rollover capture

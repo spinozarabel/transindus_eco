@@ -2352,6 +2352,8 @@ class class_transindus_eco
             $soc_charge_net_percent_today_shelly = round( $battery_accumulated_ah_since_midnight / $battery_capacity_ah * 100, 1);
 
             $soc_percentage_now_shelly = round( $shelly_soc_percentage_at_midnight + $soc_charge_net_percent_today_shelly, 1);
+
+            $this->verbose ? error_log("Shelly SOC% = $soc_percentage_now_shelly") : false;
             
             // lets update the user meta for updated SOC
             update_user_meta( $wp_user_ID, 'soc_percentage_now_calculated_using_shelly_bm', $soc_percentage_now_shelly);
@@ -2404,6 +2406,8 @@ class class_transindus_eco
   
             //  Update SOC  number  using STUDER Measurements
             $SOC_percentage_now = $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today;
+
+            $this->verbose ? error_log("Studer SOC% = $SOC_percentage_now") : false;
 
             if ( $this->verbose )
             {   // log all measurements inluding Studer and Shelly
@@ -2585,9 +2589,11 @@ class class_transindus_eco
         {   // write back to shelly_readings_obj object
           $note_exit = "Shelly";
 
-          $LVDS_soc_6am_grid_on = false;
-          $LVDS_soc_6am_grid_off = false;
-          $switch_override = false;
+          // define conditions to false, these are unused by shelly update but checked downstream
+          $LVDS_soc_6am_grid_on   = false;
+          $LVDS_soc_6am_grid_off  = false;
+          $switch_override  = false;
+          $LVDS             = false;
 
 
           $shelly_readings_obj->battery_voltage_avg  = get_transient( $wp_user_name . '_' . 'battery_voltage_avg' ) ?? 49.8;

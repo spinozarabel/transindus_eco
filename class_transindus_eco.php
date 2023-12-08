@@ -2209,7 +2209,10 @@ class class_transindus_eco
             $shelly_readings_obj->shelly_water_heater_data  = $shelly_water_heater_data;
 
             // Update Studer Readings Object also with the water heater object
-            $studer_readings_obj->shelly_water_heater_data = $shelly_water_heater_data;
+            if ( ! empty ( $studer_readings_obj ) )
+            {
+              $studer_readings_obj->shelly_water_heater_data = $shelly_water_heater_data;
+            }
           }
           
           { // Measure Battery Charging current as positive using Shelly UNI

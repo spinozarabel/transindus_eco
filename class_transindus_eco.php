@@ -2275,20 +2275,24 @@ class class_transindus_eco
                 $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object);
 
                 // Load or update the STUDER Object with properties from the Shelly 4PM object
-                $studer_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;
-                $studer_readings_obj->power_to_ac_kw      = $shelly_4pm_readings_object->power_to_ac_kw;
-                $studer_readings_obj->power_to_pump_kw    = $shelly_4pm_readings_object->power_to_pump_kw;
-                $studer_readings_obj->power_total_to_home = $shelly_4pm_readings_object->power_total_to_home;
-                $studer_readings_obj->power_total_to_home_kw  = $shelly_4pm_readings_object->power_total_to_home_kw;
-                $studer_readings_obj->current_total_home      = $shelly_4pm_readings_object->current_total_home;
-                $studer_readings_obj->energy_total_to_home_ts = $shelly_4pm_readings_object->energy_total_to_home_ts;
+                if ( ! empty ( $studer_readings_obj ) )
+                {
+                  $studer_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;
+                  $studer_readings_obj->power_to_ac_kw      = $shelly_4pm_readings_object->power_to_ac_kw;
+                  $studer_readings_obj->power_to_pump_kw    = $shelly_4pm_readings_object->power_to_pump_kw;
+                  $studer_readings_obj->power_total_to_home = $shelly_4pm_readings_object->power_total_to_home;
+                  $studer_readings_obj->power_total_to_home_kw  = $shelly_4pm_readings_object->power_total_to_home_kw;
+                  $studer_readings_obj->current_total_home      = $shelly_4pm_readings_object->current_total_home;
+                  $studer_readings_obj->energy_total_to_home_ts = $shelly_4pm_readings_object->energy_total_to_home_ts;
 
-                $studer_readings_obj->pump_switch_status_bool = $shelly_4pm_readings_object->pump_switch_status_bool;
-                $studer_readings_obj->ac_switch_status_bool   = $shelly_4pm_readings_object->ac_switch_status_bool;
-                $studer_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
-                $studer_readings_obj->voltage_home            = $shelly_4pm_readings_object->voltage_home;
+                  $studer_readings_obj->pump_switch_status_bool = $shelly_4pm_readings_object->pump_switch_status_bool;
+                  $studer_readings_obj->ac_switch_status_bool   = $shelly_4pm_readings_object->ac_switch_status_bool;
+                  $studer_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
+                  $studer_readings_obj->voltage_home            = $shelly_4pm_readings_object->voltage_home;
 
-                $studer_readings_obj->pump_ON_duration_secs   = $shelly_4pm_readings_object->pump_ON_duration_secs;
+                  $studer_readings_obj->pump_ON_duration_secs   = $shelly_4pm_readings_object->pump_ON_duration_secs;
+                }
+                
 
                 // calculate the energy consumed since midnight using Shelly4PM
                 $accumulated_wh_since_midnight = $this->get_accumulated_wh_since_midnight(  $shelly_4pm_readings_object->energy_total_to_home_ts, 
@@ -2296,8 +2300,12 @@ class class_transindus_eco
                                                                                             $wp_user_ID );
                 // This is the load KWH consumed since midnight as measured by Shelly4PM
                 $KWH_load_today_shelly = round( $accumulated_wh_since_midnight * 0.001, 3 );
-                $studer_readings_obj->KWH_load_today_shelly = $KWH_load_today_shelly;
 
+                if ( ! empty ( $studer_readings_obj ) )
+                {
+                  $studer_readings_obj->KWH_load_today_shelly = $KWH_load_today_shelly;
+                }
+                
                 $KWH_load_today_studer = $studer_readings_obj->KWH_load_today;
 
                 $this->verbose ? error_log("energy consumed as measured by Shelly Pro 4PM (KWH): $KWH_load_today_shelly") : false;

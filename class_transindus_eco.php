@@ -1308,8 +1308,10 @@ class class_transindus_eco
 
         // since no valid reading so lets use the reading from transient
         $a_grid_wh_counter_now_from_transient = (float) get_transient('last_reading_phase_a_grid_wh_counter');
+        $b_grid_wh_counter_now_from_transient = (float) get_transient('last_reading_phase_b_grid_wh_counter');
 
         $shelly_3p_grid_wh_measurement_obj->a_grid_wh_counter_now = $a_grid_wh_counter_now_from_transient;
+        $shelly_3p_grid_wh_measurement_obj->b_grid_wh_counter_now = $b_grid_wh_counter_now_from_transient;
 
         $a_grid_wh_accumulated_since_midnight = $a_grid_wh_counter_now_from_transient - $grid_wh_counter_midnight;
 
@@ -1324,6 +1326,7 @@ class class_transindus_eco
 
         // update the transient with most recent measurement
         set_transient( 'last_reading_phase_a_grid_wh_counter', $a_grid_wh_counter_now, 24 * 60 * 60 );
+        set_transient( 'last_reading_phase_b_grid_wh_counter', $b_grid_wh_counter_now, 24 * 60 * 60 );
 
         $a_grid_wh_accumulated_since_midnight = $a_grid_wh_counter_now - $grid_wh_counter_midnight;
 

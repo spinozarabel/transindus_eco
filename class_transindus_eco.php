@@ -1131,11 +1131,11 @@ class class_transindus_eco
         // 100 Amps gives a voltage of 0.625V amplified by opamp by 4.7
         $volts_per_amp = 0.625 * 4.7 / 100;
 
-        // convention here is that battery charging current is positive.
-        $battery_amps_raw_measurement = round( $delta_voltage / $volts_per_amp, 1 );
+        // Convert Volts to Amps using the value above. SUbtract an offest of 3.5A noticed, probably due to DC offset
+        $battery_amps_raw_measurement = $delta_voltage / $volts_per_amp - 3.5;
 
         // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign for our convention
-        $battery_amps = -1.0 * $battery_amps_raw_measurement;
+        $battery_amps = -1.0 * round( $battery_amps_raw_measurement, 1);
 
         // get the unix time stamp when measurement was made
         $now = new DateTime();

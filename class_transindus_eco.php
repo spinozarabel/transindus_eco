@@ -1132,7 +1132,7 @@ class class_transindus_eco
         $volts_per_amp = 0.625 * 4.7 / 100;
 
         // Convert Volts to Amps using the value above. SUbtract an offest of 8A noticed, probably due to DC offset
-        $battery_amps_raw_measurement = ($delta_voltage / $volts_per_amp) + 2.0;
+        $battery_amps_raw_measurement = ($delta_voltage / $volts_per_amp);
 
         // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign for our convention
         $battery_amps = -1.0 * round( $battery_amps_raw_measurement, 1);

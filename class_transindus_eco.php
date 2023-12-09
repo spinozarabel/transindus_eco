@@ -1090,7 +1090,8 @@ class class_transindus_eco
      *  Trapezoidal rule is used to calculate Area
      *  Current measurements are used to update user meta for accumulated SOlar AH since Studer Midnight
      */
-    public function get_shelly_battery_measurement( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
+    public function get_shelly_battery_measurement( int $user_index, string $wp_user_name, int $wp_user_ID, 
+                                                    string $shelly_switch_status, bool $it_is_still_dark) : ? object
     {
         // set default timezone to Asia Kolkata
         date_default_timezone_set("Asia/Kolkata");
@@ -1146,51 +1147,57 @@ class class_transindus_eco
         // get the previous reading from transient. If doesnt exist set it to current measurement
         $previous_battery_amps = (float) get_transient(  $wp_user_name . '_' . 'amps_battery_last_measurement' ) ?? $battery_amps;
 
+        $prev_datetime_obj = new DateTime();
+        $prev_datetime_obj->setTimeStamp($previous_timestamp);
+
+        if (  $it_is_still_dark             &&  // No solar
+              $shelly_switch_status = 'ON'  &&  // Grid switch is ON and supplying the Load
+              abs($battery_amps)  < 5 )         // The battery current is < 5A and probably noise
+        {
+          // There is no solar and the grid is supplying the load.
+          // Any small battery current is just noise and so can be set to 0 for accuracy
+          $battery_amps = 0;                // set battery current to truly 0 for more accurate calculation
+
+          $previous_battery_amps = 0;       // also 0 this
+
+          $battery_ah_this_measurement = 0; // accumulation of charge this cycle is 0
+        }
+        else
+        { // Battery probably charging or discharhing so take into account
+          // find out the time interval between the last timestamp and the present one in seconds
+          $diff = $now->diff( $prev_datetime_obj );
+
+          // take total seconds of difference between timestamp and divide by 3600
+          $hours_between_measurement = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 ) / 3600;
+
+          // AH of battery charge - +ve is charging and -ve is discharging
+          // use trapezoidal rule for integration
+          $battery_ah_this_measurement = 0.5 * ( $previous_battery_amps + $battery_amps ) * $hours_between_measurement;
+
+          $battery_percent_this_measurement = $battery_ah_this_measurement / $battery_capacity_ah * 100;
+
+          // get accumulated value till last measurement
+          $battery_accumulated_percent_since_midnight = (float) get_user_meta( $wp_user_ID, 
+                                                                               'battery_accumulated_percent_since_midnight', true);
+          // accumulate  present measurement
+          $battery_accumulated_percent_since_midnight += $battery_percent_this_measurement;
+
+          // update accumulated battery charge back to user meta
+          update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $battery_accumulated_percent_since_midnight);
+        }
+
+        $this->verbose ? error_log("Battery % added today: $battery_accumulated_percent_since_midnight, 
+                                    % accumulated just now: $battery_percent_this_measurement, 
+                                    Batt Amps: $battery_amps"
+                                  ) : false;
+
         // update transients with current measurements. These will be used as previous measurements for next cycle
         set_transient( $wp_user_name . '_' . 'timestamp_battery_last_measurement',  $timestamp,   60 * 60 );
         set_transient( $wp_user_name . '_' . 'amps_battery_last_measurement',       $battery_amps,  60 * 60 );
 
-        $prev_datetime_obj = new DateTime();
-        $prev_datetime_obj->setTimeStamp($previous_timestamp);
-
-
-        // find out the time interval between the last timestamp and the present one in seconds
-        $diff = $now->diff( $prev_datetime_obj );
-
-        // take total seconds of difference between timestamp and divide by 3600
-        $hours_between_measurement = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 ) / 3600;
-
-        // AH of battery charge - +ve is charging and -ve is discharging
-        // use trapezoidal rule for integration
-        $battery_ah_this_measurement = 0.5 * ( $previous_battery_amps + $battery_amps ) * $hours_between_measurement;
-
-        // get accumulated value till last measurement
-        $battery_accumulated_ah_since_midnight = (float) get_user_meta( $wp_user_ID, 'battery_accumulated_ah_since_midnight', true);
-
-        // If this is the 1st time then we get the value from the SOC value in usermeta
-        if ( empty( $battery_accumulated_ah_since_midnight ) )
-        {
-          $SOC_percentage_now = (float) get_user_meta($wp_user_ID, "soc_percentage_now",  true);
-
-          // for example if soc is 80% and capacity is 300AH our value will be 240 AH
-          $battery_accumulated_ah_since_midnight = $SOC_percentage_now / 100 * $battery_capacity_ah;
-        }
-
-        // accumulate  present measurement
-        $battery_accumulated_ah_since_midnight += $battery_ah_this_measurement;
-
-        // update accumulated battery charge back to user meta
-        update_user_meta( $wp_user_ID, 'battery_accumulated_ah_since_midnight', $battery_accumulated_ah_since_midnight);
-
-        $this->verbose ? error_log("Battery AH today: $battery_accumulated_ah_since_midnight, 
-                                    AH accumulated just now: $battery_ah_this_measurement, 
-                                    Batt Amps: $battery_amps"
-                                  ) : false;
-
-
         // write variables as properties to returned object
-        $battery_measurements_object->battery_ah_this_measurement           = $battery_ah_this_measurement;
-        $battery_measurements_object->battery_accumulated_ah_since_midnight = $battery_accumulated_ah_since_midnight;
+        $battery_measurements_object->battery_ah_this_measurement                = $battery_ah_this_measurement;
+        $battery_measurements_object->battery_accumulated_percent_since_midnight = $battery_accumulated_percent_since_midnight;
         $battery_measurements_object->battery_amps              = $battery_amps;
         $battery_measurements_object->battery_capacity_ah       = $battery_capacity_ah;
 
@@ -2245,10 +2252,14 @@ class class_transindus_eco
             }
 
             // get a measurement of the charging current into battery
-            $shelly_battery_measurement_object = $this->get_shelly_battery_measurement( $user_index, $wp_user_name, $wp_user_ID );
+            $shelly_battery_measurement_object = $this->get_shelly_battery_measurement( $user_index, $wp_user_name, $wp_user_ID, 
+                                                                                        $shelly_switch_status, $it_is_still_dark );
 
             $battery_capacity_ah                    = $shelly_battery_measurement_object->battery_capacity_ah;
-            $battery_accumulated_ah_since_midnight  = $shelly_battery_measurement_object->battery_accumulated_ah_since_midnight;
+
+            $battery_accumulated_percent_since_midnight = $shelly_battery_measurement_object->battery_accumulated_percent_since_midnight;
+
+            $battery_accumulated_ah_since_midnight  = $battery_accumulated_percent_since_midnight /100 * $battery_capacity_ah;
 
             $battery_kwh_since_midnight = round( 49.8 * 0.001 * $battery_accumulated_ah_since_midnight, 3 );
 
@@ -2257,7 +2268,8 @@ class class_transindus_eco
             $shelly_readings_obj->total_to_west_panel_ratio = $total_to_west_panel_ratio;
             $shelly_readings_obj->battery_kwh_since_midnight  = $battery_kwh_since_midnight;
             $shelly_readings_obj->battery_amps                = $shelly_battery_measurement_object->battery_amps;
-            $shelly_readings_obj->battery_accumulated_ah_since_midnight  = $battery_accumulated_ah_since_midnight;
+            $shelly_readings_obj->battery_accumulated_ah_since_midnight       = $battery_accumulated_ah_since_midnight;
+            $shelly_readings_obj->battery_accumulated_percent_since_midnight  = $battery_accumulated_percent_since_midnight;
             $shelly_readings_obj->battery_ah_this_measurement = $shelly_battery_measurement_object->battery_ah_this_measurement;
             $shelly_readings_obj->battery_capacity_ah         = $battery_capacity_ah;
 
@@ -2370,7 +2382,7 @@ class class_transindus_eco
           }
 
           { // calculate non-studer based SOC using Shelly device measurements
-            $soc_charge_net_percent_today_shelly = round( $battery_accumulated_ah_since_midnight / $battery_capacity_ah * 100, 1);
+            $soc_charge_net_percent_today_shelly = round( $battery_accumulated_percent_since_midnight, 1);
 
             $soc_percentage_now_shelly = round( $shelly_soc_percentage_at_midnight + $soc_charge_net_percent_today_shelly, 1);
             
@@ -2510,7 +2522,7 @@ class class_transindus_eco
           update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $soc_percentage_now_shelly );
 
           // reset the battery accumulated charge in AH to 0 at just past midnight.
-          update_user_meta( $wp_user_ID, 'battery_accumulated_ah_since_midnight', 0 );
+          update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', 0.0001 );
 
           // reset midnighyt energy counter value for Red phase to current measured value, or from transient if Grid OFF
           update_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', $a_grid_wh_counter_now );
@@ -2854,13 +2866,13 @@ class class_transindus_eco
 
             // Also apply the clamp to SOC calculated using Battery current measurement
             // we choose to keep the SOC at midnight cnstant and change accumulated AH value for convenience.
-            $recalc_battery_accumulated_AH_percent = 100 - $shelly_soc_percentage_at_midnight;
+            $recalc_battery_accumulated_percent = 100 - $shelly_soc_percentage_at_midnight;
 
             $battery_accumulated_ah_since_midnight = round( $recalc_battery_accumulated_AH_percent / 100 * $battery_capacity_ah, 1 );
 
-            update_user_meta( $wp_user_ID, 'battery_accumulated_ah_since_midnight', $battery_accumulated_ah_since_midnight );
+            update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $recalc_battery_accumulated_percent );
 
-            error_log("Shelly SOC 100% clamp activated-reset accumulated battery AH to: " . $battery_accumulated_ah_since_midnight  . " %");
+            error_log("Shelly SOC 100% clamp activated-reset accumulated battery to: " . $recalc_battery_accumulated_percent  . " %");
 
             // also make the load kwh today, equal between shelly and studer.
             $WH_load_today_studer = (int) round($KWH_load_today * 1000, 0);

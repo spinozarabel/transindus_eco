@@ -2868,8 +2868,6 @@ class class_transindus_eco
             // we choose to keep the SOC at midnight cnstant and change accumulated AH value for convenience.
             $recalc_battery_accumulated_percent = 100 - $shelly_soc_percentage_at_midnight;
 
-            $battery_accumulated_ah_since_midnight = round( $recalc_battery_accumulated_AH_percent / 100 * $battery_capacity_ah, 1 );
-
             update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $recalc_battery_accumulated_percent );
 
             error_log("Shelly SOC 100% clamp activated-reset accumulated battery to: " . $recalc_battery_accumulated_percent  . " %");

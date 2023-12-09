@@ -1330,6 +1330,8 @@ class class_transindus_eco
       {
         $a_grid_wh_counter_now = $shelly_api_device_response->data->device_status->{"emdata:0"}->a_total_act_energy;
         $b_grid_wh_counter_now = $shelly_api_device_response->data->device_status->{"emdata:0"}->b_total_act_energy;
+        $a_grid_w_pwr = $shelly_api_device_response->data->device_status->{"em:0"}->a_act_power;
+        $a_grid_kw_pwr = round( 0.001 * $a_grid_w_pwr, 3);
 
         // update the transient with most recent measurement
         set_transient( 'last_reading_phase_a_grid_wh_counter', $a_grid_wh_counter_now, 24 * 60 * 60 );
@@ -1339,6 +1341,8 @@ class class_transindus_eco
 
         $shelly_3p_grid_wh_measurement_obj->a_grid_wh_counter_now = $a_grid_wh_counter_now;
         $shelly_3p_grid_wh_measurement_obj->b_grid_wh_counter_now = $b_grid_wh_counter_now;
+
+        $shelly_3p_grid_wh_measurement_obj->a_grid_kw_pwr = $a_grid_kw_pwr;
 
         $shelly_3p_grid_wh_measurement_obj->a_grid_wh_accumulated_since_midnight = $a_grid_wh_accumulated_since_midnight;
 
@@ -2377,6 +2381,9 @@ class class_transindus_eco
 
               $a_grid_wh_accumulated_since_midnight = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_accumulated_since_midnight;
               $a_grid_kwh_accumulated_since_midnight = round( $a_grid_wh_accumulated_since_midnight * 0.001, 2 );
+              $a_grid_kw_pwr = $shelly_3p_grid_wh_measurement_obj->a_grid_kw_pwr;
+
+              $shelly_readings_obj->grid_pin_ac_kw  = $a_grid_kw_pwr;
             }
             
           }

@@ -1353,16 +1353,16 @@ class class_transindus_eco
 
 
     /**
-     * 
+     * This is the home power and energy consumed from output of Studer by the Shelly EM device.
      */
-    public function get_shelly_accumulated_grid_wh_since_midnight( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
+    public function get_shelly_em_home_load_metrics( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
     {
       // get API and device ID from config based on user index
       $config = $this->config;
 
       $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
       $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_acin'];
+      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
 
       // get value accumulated till midnight upto previous API call
       $previous_grid_wh_since_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_since_midnight', true), 0);
@@ -2354,7 +2354,9 @@ class class_transindus_eco
           }
 
           { // make an API call on the Grid Power Shelly EM device and calculate the accumulated WH since midnight
-            $shelly_em_readings_object = $this->get_shelly_accumulated_grid_wh_since_midnight( $user_index, $wp_user_name, $wp_user_ID );
+            $shelly_em_readings_object = $this->get_shelly_em_home_load_metrics( $user_index, $wp_user_name, $wp_user_ID );
+
+            $present_shelly_em_home_wh_counter = $shelly_em_readings_object->present_grid_wh_reading;
 
             $grid_wh_since_midnight = $shelly_em_readings_object->grid_wh_since_midnight;
 
@@ -2539,7 +2541,9 @@ class class_transindus_eco
           
           // reset midnight energy counter value for Yellow phase to current measured value
 
-          // reset midnight energy counter value for home load consumed to current measured value
+          // reset midnight energy counter value for home load consumed to current measured value as measured by Shelly EM
+          update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_midnight', $present_shelly_em_home_wh_counter );
+          
         }
 
         $LVDS_soc_6am_grid_on = false;

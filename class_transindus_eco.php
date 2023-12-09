@@ -1104,7 +1104,7 @@ class class_transindus_eco
 
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_battery'];
+        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_plus_addon'];
 
         // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
         $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH
@@ -1123,10 +1123,10 @@ class class_transindus_eco
         }
 
         // If you get here, you have a valid API response from the Shelly UNI
-        $adc_voltage_shelly = $shelly_api_device_response->data->device_status->adcs[0]->voltage;  // measure the ADC voltage
+        $adc_voltage_shelly = $shelly_api_device_response->data->device_status->{"input:100"}->percent;  // measure the ADC voltage
 
         // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
-        $delta_voltage = $adc_voltage_shelly - 2.5;
+        $delta_voltage = $adc_voltage_shelly * 0.1 - 2.5;
 
         // 100 Amps gives a voltage of 0.625V amplified by opamp by 4.7
         $volts_per_amp = 0.625 * 4.7 / 100;

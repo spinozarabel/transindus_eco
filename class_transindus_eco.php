@@ -1408,7 +1408,6 @@ class class_transindus_eco
 
       $shelly_em_readings_object->present_home_kw_shelly_em = $present_home_kw_shelly_em;
       $shelly_em_readings_object->present_home_wh_reading   = $present_home_wh_reading;
-      $shelly_em_readings_object->home_voltage_em           = $home_voltage_em;
 
       $shelly_em_readings_object->home_consumption_wh_since_midnight = $home_consumption_wh_since_midnight;
 

@@ -2368,6 +2368,11 @@ class class_transindus_eco
 
             // Energy consumed in WH by home since midnight on the red phase
             $shelly_readings_obj->home_consumption_wh_since_midnight = $shelly_em_readings_object->home_consumption_wh_since_midnight;
+
+            // energy consumed in KWH by home since midnight as measured by Shelly EM 
+            $home_consumption_kwh_since_midnight_helly_em = round( $shelly_readings_obj->home_consumption_wh_since_midnight * 0.001, 3 );
+          
+            $shelly_readings_obj->home_consumption_kwh_since_midnight_helly_em = $home_consumption_kwh_since_midnight_helly_em;
           }
           
 
@@ -2476,7 +2481,9 @@ class class_transindus_eco
             {   // log all measurements inluding Studer and Shelly
                 error_log("AC Voltage at Shelly Home Panel: $shelly_em_readings_object->home_voltage_em");
 
-                error_log("Load_KWH_today_Studer = " . $KWH_load_today . " KWH_load_Shelly = " . $KWH_load_today_shelly);
+                error_log("Load_KWH_today_Studer = " . $KWH_load_today . 
+                          " KWH_load_Shelly4M = " . $KWH_load_today_shelly . 
+                          "KWH_load_shellyEM =  " . $home_consumption_kwh_since_midnight_helly_em);
 
                 error_log("Grid KWH Studer Today: $KWH_grid_today, Grid KWH Shelly3EM Today: $a_grid_kwh_accumulated_since_midnight");
 

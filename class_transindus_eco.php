@@ -1361,7 +1361,7 @@ class class_transindus_eco
     /**
      * This is the home power and energy consumed from output of Studer by the Shelly EM device.
      */
-    public function get_shelly_em_home_load_metrics( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
+    public function get_shelly_em_home_load_measurements( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
     {
       // get API and device ID from config based on user index
       $config = $this->config;
@@ -1373,7 +1373,7 @@ class class_transindus_eco
       // get value accumulated till midnight upto previous API call
       $midnight_home_energy_counter = (int) round( (float) get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_midnight', true), 0);
 
-      $returned_obj = new stdClass;
+      $shelly_em_readings_object = new stdClass;
 
       $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
 
@@ -1389,34 +1389,30 @@ class class_transindus_eco
       {
         $this->verbose ? error_log("Shelly EM Grid Energy API call failed"): false;
 
-        // since no grid get value from user meta. Also readings will not change since grid is absent :-)
-        $returned_obj->home_consumption_wh_since_midnight = 0;
-        $returned_obj->home_kw_shelly_em = 0;
-        $returned_obj->grid_voltage_em = 0;
-
-        return $returned_obj;
+        return null;
       }
 
-      // Shelly API call was successfull and we have useful data
+      // Shelly API call was successfull and we have a valid reading
       $present_home_wh_reading = (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0);
 
       // get the energy counter value set at midnight. Assumes that this is an integer
-      $home_wh_counter_midnight = (int) round(get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_midnight', true), 0);
+      $shelly_em_home_energy_counter_midnight = (int) round(get_user_meta( $wp_user_ID, 
+                                                            'shelly_em_home_energy_counter_midnight', true), 0);
 
-      $returned_obj->home_voltage_em = round($shelly_api_device_response->data->device_status->emeters[0]->voltage, 0);
+      $shelly_em_readings_object->home_voltage_em = round($shelly_api_device_response->data->device_status->emeters[0]->voltage, 0);
 
-      // subtract the 2 integer counter readings to get the accumulated WH since midnight
-      $home_consumption_wh_since_midnight = $present_home_wh_reading - $home_wh_counter_midnight;
-
-      
-  
+      // subtract the 2 integer counter readings to get the home consumed energy in WH since midnight
+      $home_consumption_wh_since_midnight = $present_home_wh_reading - $shelly_em_home_energy_counter_midnight;
 
       $present_home_kw_shelly_em = round( 0.001 * $shelly_api_device_response->data->device_status->emeters[0]->power, 3 );
-      $returned_obj->present_home_kw_shelly_em  = $present_home_kw_shelly_em;
-      $returned_obj->present_home_wh_reading    = $present_home_wh_reading;
-      $returned_obj->home_consumption_wh_since_midnight = $home_consumption_wh_since_midnight;
 
-      return $returned_obj;
+      $shelly_em_readings_object->present_home_kw_shelly_em = $present_home_kw_shelly_em;
+      $shelly_em_readings_object->present_home_wh_reading   = $present_home_wh_reading;
+      $shelly_em_readings_object->home_voltage_em           = $home_voltage_em;
+
+      $shelly_em_readings_object->home_consumption_wh_since_midnight = $home_consumption_wh_since_midnight;
+
+      return $shelly_em_readings_object;
     }
 
 
@@ -2351,7 +2347,7 @@ class class_transindus_eco
           }
 
           { // make an API call on the Grid Power Shelly EM device and calculate the accumulated WH since midnight
-            $shelly_em_readings_object = $this->get_shelly_em_home_load_metrics( $user_index, $wp_user_name, $wp_user_ID );
+            $shelly_em_readings_object = $this->get_shelly_em_home_load_measurements( $user_index, $wp_user_name, $wp_user_ID );
 
             $present_shelly_em_home_wh_counter = $shelly_em_readings_object->present_grid_wh_reading;
 

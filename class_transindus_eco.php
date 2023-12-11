@@ -2467,7 +2467,7 @@ class class_transindus_eco
 
             if ( $this->verbose )
             {   // log all measurements inluding Studer and Shelly
-                error_log("Grid Voltage (Shelly EM): $shelly_em_readings_object->grid_voltage_em");
+                error_log("AC Voltage at Shelly Home Panel: $shelly_em_readings_object->home_voltage_em");
 
                 error_log("Load_KWH_today_Studer = " . $KWH_load_today . " KWH_load_Shelly = " . $KWH_load_today_shelly);
 

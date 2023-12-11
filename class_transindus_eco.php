@@ -1140,7 +1140,7 @@ class class_transindus_eco
         $battery_amps_raw_measurement = ($delta_voltage / $volts_per_amp);
 
         // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign. 1.06 is empirical correction 
-        $battery_amps = -1.0 * round( $battery_amps_raw_measurement, 1) / 1.06;
+        $battery_amps = -1.0 * round( $battery_amps_raw_measurement / 1.07, 1);
 
         // get the unix time stamp when measurement was made
         $now = new DateTime();

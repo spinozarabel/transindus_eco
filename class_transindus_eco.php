@@ -1113,8 +1113,6 @@ class class_transindus_eco
 
         $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
 
-        sleep(1);
-
         // this is $curl_response.
         $shelly_api_device_response = $shelly_api->get_shelly_device_status();
 

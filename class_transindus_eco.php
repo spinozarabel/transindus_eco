@@ -2351,16 +2351,16 @@ class class_transindus_eco
           if ( $shelly_em_readings_object )
           {
             // Current Power in KW consumed by Home on Red Phase
-            $shelly_readings_obj = $shelly_em_readings_object->present_home_kw_shelly_em;
+            $shelly_readings_obj->present_home_kw_shelly_em = $shelly_em_readings_object->present_home_kw_shelly_em;
 
             /// Current energy counter reading of Home Energy WJH meter
-            $shelly_readings_obj = $shelly_em_readings_object->present_home_wh_reading;
+            $shelly_readings_obj->present_home_wh_reading = $shelly_em_readings_object->present_home_wh_reading;
 
             // present AC RMS phase voltage at panel, after Studer output
-            $shelly_readings_obj = $shelly_em_readings_object->home_voltage_em;
+            $shelly_readings_obj->home_voltage_em = $shelly_em_readings_object->home_voltage_em;
 
             // Energy consumed in WH by home since midnight on the red phase
-            $shelly_readings_obj = $shelly_em_readings_object->home_consumption_wh_since_midnight;
+            $shelly_readings_obj->home_consumption_wh_since_midnight = $shelly_em_readings_object->home_consumption_wh_since_midnight;
           }
           
 

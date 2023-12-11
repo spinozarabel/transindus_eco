@@ -2349,20 +2349,17 @@ class class_transindus_eco
           { // make an API call on the Grid Power Shelly EM device and calculate the accumulated WH since midnight
             $shelly_em_readings_object = $this->get_shelly_em_home_load_measurements( $user_index, $wp_user_name, $wp_user_ID );
 
-            $present_shelly_em_home_wh_counter = $shelly_em_readings_object->present_grid_wh_reading;
+            // Current Power in KW consumed by Home on Red Phase
+            $shelly_em_readings_object->present_home_kw_shelly_em = $present_home_kw_shelly_em;
 
-            $grid_wh_since_midnight = $shelly_em_readings_object->grid_wh_since_midnight;
+            /// Current energy counter reading of Home Energy WJH meter
+            $shelly_em_readings_object->present_home_wh_reading   = $present_home_wh_reading;
 
-            $grid_kwh_since_midnight = round( $grid_wh_since_midnight / 1000.0, 3 );
+            // present AC RMS phase voltage at panel, after Studer output
+            $shelly_em_readings_object->home_voltage_em           = $home_voltage_em;
 
-            $shelly_readings_obj->grid_kwh_since_midnight  = $grid_kwh_since_midnight;
-
-            $shelly_readings_obj->grid_kw_shelly_em = $shelly_em_readings_object->grid_kw_shelly_em;
-
-            $studer_KWH_grid_today= $studer_readings_obj->KWH_grid_today;
-
-            // Grid AC voltage measured by Shelly EM
-            $shelly_readings_obj->grid_voltage_em = $shelly_em_readings_object->grid_voltage_em;
+            // Energy consumed in WH by home since midnight on the red phase
+            $shelly_em_readings_object->home_consumption_wh_since_midnight = $home_consumption_wh_since_midnight;
           }
 
           { // Make Shelly pro 3EM energy measuremnts of 3phase Grid inout

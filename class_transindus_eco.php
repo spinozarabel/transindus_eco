@@ -2345,9 +2345,11 @@ class class_transindus_eco
             }
           }
 
-          { // make an API call on the Grid Power Shelly EM device and calculate the accumulated WH since midnight
-            $shelly_em_readings_object = $this->get_shelly_em_home_load_measurements( $user_index, $wp_user_name, $wp_user_ID );
+          // make an API call on the Grid Power Shelly EM device and calculate the accumulated WH since midnight
+          $shelly_em_readings_object = $this->get_shelly_em_home_load_measurements( $user_index, $wp_user_name, $wp_user_ID );
 
+          if ( $shelly_em_readings_object )
+          {
             // Current Power in KW consumed by Home on Red Phase
             $shelly_em_readings_object->present_home_kw_shelly_em = $present_home_kw_shelly_em;
 
@@ -2360,6 +2362,7 @@ class class_transindus_eco
             // Energy consumed in WH by home since midnight on the red phase
             $shelly_em_readings_object->home_consumption_wh_since_midnight = $home_consumption_wh_since_midnight;
           }
+          
 
           { // Make Shelly pro 3EM energy measuremnts of 3phase Grid inout
             $shelly_3p_grid_wh_measurement_obj = $this->get_shelly_3p_grid_wh_since_midnight( $user_index, 

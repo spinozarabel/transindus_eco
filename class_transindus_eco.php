@@ -2639,7 +2639,7 @@ class class_transindus_eco
 
           $shelly_readings_obj->battery_charge_adc = $shelly_battery_measurement_object->battery_amps;
           $shelly_readings_obj->pbattery_kw = $pbattery_kw;
-          $shelly_readings_obj->grid_pin_ac_kw = $shelly_em_readings_object->grid_kw_shelly_em;
+          $shelly_readings_obj->grid_pin_ac_kw = $a_grid_kw_pwr;
           $shelly_readings_obj->grid_input_vac = $shelly_api_device_status_voltage;
 
           // Since we calculate Psolar indirectly, that depends on conditions as below

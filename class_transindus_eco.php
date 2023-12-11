@@ -2857,26 +2857,14 @@ class class_transindus_eco
 
           if (  $SOC_percentage_now > 100.0 || $battery_voltage_avg  >=  $battery_voltage_avg_float_setting )
           {
-            // Since we know that the battery SOC is 100% use this knowledge along with
-            // Energy data to recalibrate the soc_percentage user meta
+            // Since we know that the battery SOC is 100%, calculate the SOC at begininning of day
             $SOC_percentage_beg_of_day_recal = 100 - $SOC_batt_charge_net_percent_today;
 
             update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 
-            error_log("Studer SOC 100% clamp activated: " . $SOC_percentage_beg_of_day_recal  . " %");
-
-            // Also apply the clamp to SOC calculated using Battery current measurement
-            // we choose to keep the SOC at midnight cnstant and change accumulated AH value for convenience.
-            $recalc_battery_accumulated_percent = 100 - $shelly_soc_percentage_at_midnight;
-
-            update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $recalc_battery_accumulated_percent );
-
-            error_log("Shelly SOC 100% clamp activated-reset accumulated battery to: " . $recalc_battery_accumulated_percent  . " %");
-
-            // also make the load kwh today, equal between shelly and studer.
-            $WH_load_today_studer = (int) round($KWH_load_today * 1000, 0);
-            update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', $WH_load_today_studer);
-            
+            // we equalize the SOC at midnight for both STUDER and Shelly based on STUDER readings
+            update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $SOC_percentage_beg_of_day_recal);
+            update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $SOC_batt_charge_net_percent_today );            
           }
           return $studer_readings_obj;
         }
@@ -2885,20 +2873,7 @@ class class_transindus_eco
 
           set_transient( $wp_user_name . '_' . 'shelly_readings_obj', $shelly_readings_obj, 5*60 );
 
-          if (  $soc_percentage_now_shelly > 100.0 )
-          {
-            // Since we know that the battery SOC is 100% 
-            // Energy data to recalibrate the soc_percentage user meta
-            $recalc_battery_accumulated_AH_percent = 100 - $shelly_soc_percentage_at_midnight;
-
-            $battery_accumulated_ah_since_midnight_percent = round( $recalc_battery_accumulated_AH_percent / 100 * $battery_capacity_ah, 1 );
-
-            update_user_meta( $wp_user_ID, 'battery_accumulated_ah_since_midnight', $battery_accumulated_ah_since_midnight_percent );
-
-            error_log("Shelly SOC 100% clamp activated-reset accumulated battery AH to: " . $recalc_battery_accumulated_AH_percent  . " %");
-          }
-
-          // no need to worry about 100% clamp during night time since battery will not charge unless Solar is there
+          // We only apply 100% clamp based on Studer values or the battery voltage of Studer reading
           return $shelly_readings_obj;
         }
     }

@@ -2348,6 +2348,8 @@ class class_transindus_eco
           // make an API call on the Grid Power Shelly EM device and calculate the accumulated WH since midnight
           $shelly_em_readings_object = $this->get_shelly_em_home_load_measurements( $user_index, $wp_user_name, $wp_user_ID );
 
+          error_log(print_r($shelly_em_readings_object, true));
+
           if ( $shelly_em_readings_object )
           {
             // Current Power in KW consumed by Home on Red Phase

@@ -612,9 +612,12 @@ class class_transindus_eco
 
 
     /**
-     * 
+     *  @param float:energy_total_to_home_ts is the total energy measured by Shelly4PM energy meter upto this point
+     *  @param int:user_index
+     *  @param int:wp_user_ID
+     *  @return int:shelly_energy_counter_midnight
      */
-    public function get_accumulated_wh_since_midnight(  $energy_total_to_home_ts, int $user_index, int $wp_user_ID )
+    public function get_accumulated_wh_since_midnight_shelly4pm(  float $energy_total_to_home_ts, int $user_index, int $wp_user_ID ) : ? int
     {
       // set default timezone to Asia Kolkata
       date_default_timezone_set("Asia/Kolkata");
@@ -658,11 +661,11 @@ class class_transindus_eco
         // update the current energy counter with current reading for next cycle
         update_user_meta( $wp_user_ID, 'shelly_energy_counter_now', $current_energy_counter_wh );
 
-        return $shelly_energy_counter_midnight;
+        return (int) $shelly_energy_counter_midnight;
       }
 
       // accumulate the energy from this cycle to accumulator
-      $shelly_energy_counter_midnight = $shelly_energy_counter_midnight + $delta_increase_wh;
+      $shelly_energy_counter_midnight = (int) ($shelly_energy_counter_midnight + $delta_increase_wh);
 
       // update the accumulator user meta for next cycle
       update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', $shelly_energy_counter_midnight );
@@ -671,7 +674,7 @@ class class_transindus_eco
       update_user_meta( $wp_user_ID, 'shelly_energy_counter_now', $current_energy_counter_wh );
 
       // return the energy consumed since midnight in WH
-      return $shelly_energy_counter_midnight;
+      return (int) $shelly_energy_counter_midnight;
     }
 
 
@@ -1254,7 +1257,10 @@ class class_transindus_eco
         $energy_channel_2_ts = $shelly_api_device_response->data->device_status->{"switch:2"}->aenergy->total;
         $energy_channel_3_ts = $shelly_api_device_response->data->device_status->{"switch:3"}->aenergy->total;
 
-        $energy_total_to_home_ts = $energy_channel_0_ts + $energy_channel_1_ts + $energy_channel_2_ts + $energy_channel_3_ts;
+        $energy_total_to_home_ts = (float) ($energy_channel_0_ts + 
+                                            $energy_channel_1_ts + 
+                                            $energy_channel_2_ts + 
+                                            $energy_channel_3_ts);
 
         $current_total_home =  $shelly_api_device_response->data->device_status->{"switch:0"}->current;
         $current_total_home += $shelly_api_device_response->data->device_status->{"switch:1"}->current;
@@ -2306,7 +2312,7 @@ class class_transindus_eco
                 
 
                 // calculate the energy consumed since midnight using Shelly4PM
-                $accumulated_wh_since_midnight = $this->get_accumulated_wh_since_midnight(  $shelly_4pm_readings_object->energy_total_to_home_ts, 
+                $accumulated_wh_since_midnight = $this->get_accumulated_wh_since_midnight_shelly4pm(  $shelly_4pm_readings_object->energy_total_to_home_ts, 
                                                                                             $user_index, 
                                                                                             $wp_user_ID );
                 // This is the load KWH consumed since midnight as measured by Shelly4PM
@@ -2654,6 +2660,12 @@ class class_transindus_eco
           elseif ( $shelly_switch_status == "ON" && ! $it_is_still_dark )
           {
             $shelly_readings_obj->psolar_kw = ($pbattery_kw ) / 0.96;
+          }
+
+          if ($it_is_still_dark)
+          { // check if soc after dark has been captured
+
+
           }
           
         }

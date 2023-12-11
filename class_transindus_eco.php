@@ -2382,9 +2382,9 @@ class class_transindus_eco
           }
 
           { // calculate non-studer based SOC using Shelly device measurements
-            $soc_charge_net_percent_today_shelly = round( $battery_accumulated_percent_since_midnight, 1);
+            $soc_charge_net_percent_today_shelly = $battery_accumulated_percent_since_midnight;
 
-            $soc_percentage_now_shelly = round( $shelly_soc_percentage_at_midnight + $soc_charge_net_percent_today_shelly, 1);
+            $soc_percentage_now_shelly = $shelly_soc_percentage_at_midnight + $soc_charge_net_percent_today_shelly;
             
             // lets update the user meta for updated SOC
             update_user_meta( $wp_user_ID, 'soc_percentage_now_calculated_using_shelly_bm', $soc_percentage_now_shelly);
@@ -2393,7 +2393,7 @@ class class_transindus_eco
             $surplus = round( $shelly_readings_obj->battery_amps * 49.8 * 0.001, 1 ); // in KW
 
             $shelly_readings_obj->surplus  = $surplus;
-            $shelly_readings_obj->SOC_percentage_now  = $soc_percentage_now_shelly;
+            $shelly_readings_obj->SOC_percentage_now  = round( $soc_percentage_now_shelly, 1);
 
 
             // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage     
@@ -2509,13 +2509,14 @@ class class_transindus_eco
         { // reset the shelly load energy counter to 0. Capture SOC value for beginning of day
           // If Grid is OFF, then Shelly Pro 3EM  will not respond to read the energy counter at midnight.
           // We need to keep this value as a transient and use it so that the last value is used as it is still valid
+
+          error_log("Studer Clock just passed midnight-STUDER-SOC: $SOC_percentage_now ShellyBMSOC: $soc_percentage_now_shelly");
           
           // we can use this to update the user meta for SOC at beginning of new day
           if (  $SOC_percentage_now  > 20 && $SOC_percentage_now  < 100 && $soc_update_method === "studer")
           {
+            // reset the SOC percentage at midnight for Studer to present calculated value from Studer readings
             update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_now );
-
-            error_log("Studer Clock just passed midnight-SOC=: " . $SOC_percentage_now);
           }
          
           // reset the user meta SOC as calculated using Shelly measured Battery current to the present value

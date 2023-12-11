@@ -2317,7 +2317,8 @@ class class_transindus_eco
                   $studer_readings_obj->KWH_load_today_shelly = $KWH_load_today_shelly;
                 }
                 
-                $KWH_load_today_studer = $studer_readings_obj->KWH_load_today;
+                // probably needs to be deleted obsolete snippet?
+                // $KWH_load_today_studer = $studer_readings_obj->KWH_load_today;
 
                 // Also load the properties to the Shelly Readings Object
                 $shelly_readings_obj->KWH_load_today_shelly  = $KWH_load_today_shelly;

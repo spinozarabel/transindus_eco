@@ -1083,6 +1083,8 @@ class class_transindus_eco
     /**
      *  @param int:$user_index index of user in config array
      *  @param int:$wp_user_ID is the WP user ID
+     *  @param string:$shelly_switch_status is the string indicating the ON OFF or NULL state of the ACIN shelly switch
+     *  @param bool:$it_is_still_dark indicates if it is daylight or dark at present
      *  @return object:$battery_measurements_object contains the measurements of the battery using the Shelly UNI device
      *  
      *  The current is measured using a hall effect sensor. The sensor output voltage is rread by the ADC in the shelly UNI
@@ -1122,8 +1124,8 @@ class class_transindus_eco
           return null;
         }
 
-        // If you get here, you have a valid API response from the Shelly UNI
-        $adc_voltage_shelly = $shelly_api_device_response->data->device_status->{"input:100"}->percent;  // measure the ADC voltage
+        // The measure ADC voltage is in percent of 10V. So a 25% reading indicates 2.5V measured
+        $adc_voltage_shelly = $shelly_api_device_response->data->device_status->{"input:100"}->percent;
 
         // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
         $delta_voltage = $adc_voltage_shelly * 0.1 - 2.5;
@@ -1150,6 +1152,10 @@ class class_transindus_eco
         $prev_datetime_obj = new DateTime();
         $prev_datetime_obj->setTimeStamp($previous_timestamp);
 
+        // get accumulated value till last measurement
+        $battery_accumulated_percent_since_midnight = (float) get_user_meta(  $wp_user_ID, 
+                                                                              'battery_accumulated_percent_since_midnight', true);
+
         if (  $it_is_still_dark             &&  // No solar
               $shelly_switch_status = 'ON'  &&  // Grid switch is ON and supplying the Load
               abs($battery_amps)  < 5 )         // The battery current is < 5A and probably noise
@@ -1161,6 +1167,8 @@ class class_transindus_eco
           $previous_battery_amps = 0;       // also 0 this
 
           $battery_ah_this_measurement = 0; // accumulation of charge this cycle is 0
+
+          $battery_percent_this_measurement = 0;
         }
         else
         { // Battery probably charging or discharhing so take into account
@@ -1176,9 +1184,7 @@ class class_transindus_eco
 
           $battery_percent_this_measurement = $battery_ah_this_measurement / $battery_capacity_ah * 100;
 
-          // get accumulated value till last measurement
-          $battery_accumulated_percent_since_midnight = (float) get_user_meta( $wp_user_ID, 
-                                                                               'battery_accumulated_percent_since_midnight', true);
+          
           // accumulate  present measurement
           $battery_accumulated_percent_since_midnight += $battery_percent_this_measurement;
 
@@ -1365,7 +1371,7 @@ class class_transindus_eco
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
 
       // get value accumulated till midnight upto previous API call
-      $previous_grid_wh_since_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_since_midnight', true), 0);
+      $midnight_home_energy_counter = (int) round( (float) get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_midnight', true), 0);
 
       $returned_obj = new stdClass;
 
@@ -1384,40 +1390,31 @@ class class_transindus_eco
         $this->verbose ? error_log("Shelly EM Grid Energy API call failed"): false;
 
         // since no grid get value from user meta. Also readings will not change since grid is absent :-)
-        $returned_obj->grid_wh_since_midnight = $previous_grid_wh_since_midnight;
-        $returned_obj->grid_kw_shelly_em = 0;
+        $returned_obj->home_consumption_wh_since_midnight = 0;
+        $returned_obj->home_kw_shelly_em = 0;
         $returned_obj->grid_voltage_em = 0;
 
         return $returned_obj;
       }
 
       // Shelly API call was successfull and we have useful data
-      $present_grid_wh_reading = (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0);
+      $present_home_wh_reading = (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0);
 
       // get the energy counter value set at midnight. Assumes that this is an integer
-      $grid_wh_counter_midnight = (int) round(get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true), 0);
+      $home_wh_counter_midnight = (int) round(get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_midnight', true), 0);
 
-      $returned_obj->grid_voltage_em = round($shelly_api_device_response->data->device_status->emeters[0]->voltage, 0);
+      $returned_obj->home_voltage_em = round($shelly_api_device_response->data->device_status->emeters[0]->voltage, 0);
 
       // subtract the 2 integer counter readings to get the accumulated WH since midnight
-      $grid_wh_since_midnight = $present_grid_wh_reading - $grid_wh_counter_midnight;
+      $home_consumption_wh_since_midnight = $present_home_wh_reading - $home_wh_counter_midnight;
 
-      if ( $grid_wh_since_midnight >=  0 )
-      {
-        // the value is positive so counter did not reset due to software update etc.
-        $returned_obj->grid_wh_since_midnight = $grid_wh_since_midnight;
+      
+  
 
-        update_user_meta( $wp_user_ID, 'grid_wh_since_midnight', $grid_wh_since_midnight);
-      }
-      else 
-      {
-        // value must be negative so cannot be possible set it to 0
-        $returned_obj->grid_wh_since_midnight   = 0;
-      }
-
-      $grid_kw_shelly_em = round( 0.001 * $shelly_api_device_response->data->device_status->emeters[0]->power, 3 );
-      $returned_obj->grid_kw_shelly_em        = $grid_kw_shelly_em;
-      $returned_obj->present_grid_wh_reading  = $present_grid_wh_reading;
+      $present_home_kw_shelly_em = round( 0.001 * $shelly_api_device_response->data->device_status->emeters[0]->power, 3 );
+      $returned_obj->present_home_kw_shelly_em  = $present_home_kw_shelly_em;
+      $returned_obj->present_home_wh_reading    = $present_home_wh_reading;
+      $returned_obj->home_consumption_wh_since_midnight = $home_consumption_wh_since_midnight;
 
       return $returned_obj;
     }

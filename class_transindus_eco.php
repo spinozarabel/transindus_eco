@@ -1534,7 +1534,7 @@ class class_transindus_eco
      *  SO it needs to be valid from potentially 7PM to 7Am or almost 12h.
      *  However, SOC reference can get reset upto 7AM. So it maybe valid upto 7PM the next day.
      *  For above reason it is important to delete the transient after 7AM to force a SOC reference again the following 7PM.
-     *  This is done in the cron loop itself.
+     *  This is done in the main cron driven service loop itself.
      *  No other check is made in the function
      */
     public function check_if_soc_after_dark_happened( int $user_index, string $wp_user_name, int $wp_user_ID ) :bool
@@ -1562,7 +1562,7 @@ class class_transindus_eco
       }
 
       // we have a non-emtpy timestamp. To check if it is valid.
-      // It is valid if the timestamp is after 6:55 PM and is within the last 5h
+      // It is valid if the timestamp is after 6:55 PM and is within 12h of it
       $now = new DateTime();
 
       $datetimeobj_from_timestamp = new DateTime();
@@ -1584,60 +1584,55 @@ class class_transindus_eco
 
 
     /**
-     *  If now is after 6:55PM and before 11PM today and if timestamp is not yet set then capture soc
+     *  @param float:SOC_percentage_now is the passed in value of SOC percentage to be captured
+     *  @param int:present_home_wh_reading is the present counter reading of wh of home energy by Shelly EM
+     *  @param object:reading_timestamp is the timestamp of home energy reading counter by Shelly EM
+     *  @return bool true if successful, false if not.
+     * 
+     *  If now is after 6:55PM and before 7PM today and if timestamp is not yet set then capture soc
      *  The transients are set to last 4h so if capture happens at 6PM transients expire at 11PM
      *  However the captured values are saved to user meta for retrieval.
      *  @preturn bool:true if SOC capture happened today, false if it did not happen yet today.
      */
-    public function capture_evening_soc_after_dark( $wp_user_name, $SOC_percentage_now, $user_index ) : bool
+    public function capture_evening_soc_after_dark( int     $user_index, 
+                                                    string  $wp_user_name, 
+                                                    int     $wp_user_ID , 
+                                                    float   $SOC_percentage_now ,
+                                                    int     $present_home_wh_reading )  : bool
     {
       // set default timezone to Asia Kolkata
       date_default_timezone_set("Asia/Kolkata");
 
-      $wp_user_ID = $this->get_wp_user_from_user_index($user_index)->ID;
 
       // check if it is after dark and before midnightdawn annd that the transient has not been set yet
-      // The time window is large just in case Studer API fails repeatedly during this time.
-      if (  $this->nowIsWithinTimeLimits("18:55", "23:05")  ) 
+      // The time window for this to happen is over 15m in case internet is down during this time
+      if (  $this->nowIsWithinTimeLimits("18:55", "19:10")  ) 
       {
-        // so it is dark. Has this capture already happened today? let's check
         // lets get the transient. The 1st time this is tried in the evening it should be false, 2nd time onwards true
         if ( false === ( $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) 
-                                                                ||
+                    ||
                        empty(get_user_meta($wp_user_ID, 'timestamp_soc_capture_after_dark', true))
             )
         {
-          // transient has expired or doesn't exist, so SOC dark reference Capture has NOT happend yet.
-          // Now read the Shelly Pro 4 PM energy meter for energy counter and imestamp
+          // transient has expired or doesn't exist, OR meta data also is empty so must be the 1st time
+          // Capture the event
+          $timestamp_soc_capture_after_dark = time();
 
-          $shelly_device_status_obj = $this->get_shelly_device_status_homepwr( $user_index );
-
-          if ( empty( $shelly_device_status_obj ) )
-          {
-            error_log( "Shelly API call to Home Power Shelly 4PM failed during cature soc after dark, did not happen");
-            return false;
-          }
-
-
-          $timestamp_soc_capture_after_dark = $shelly_device_status_obj->minute_ts;
-          $shelly_energy_counter_after_dark = $shelly_device_status_obj->energy_total_to_home_ts;
-
-          set_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark, 4*60*60 );
-          set_transient( $wp_user_name . '_' . 'shelly_energy_counter_after_dark',  $shelly_energy_counter_after_dark, 4*60*60 );
-          set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now, 4 * 60 * 60 );
-
-
-          update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_energy_counter_after_dark);
+          update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $present_home_wh_reading);
           update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $timestamp_soc_capture_after_dark);
           update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $SOC_percentage_now);
 
-          error_log("SOC Capture after dark took place - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $shelly_energy_counter_after_dark);
+          set_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark, 4*60*60 );
+          set_transient( $wp_user_name . '_' . 'shelly_energy_counter_after_dark',  $present_home_wh_reading, 4*60*60 );
+          set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now, 4 * 60 * 60 );
+
+          error_log("SOC Capture after dark took place - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $present_home_wh_reading);
 
           return true;
         }
         else
         {
-          // transient exists, but lets double check the validity
+          // event transient exists, but lets double check the validity of the timestamp
           $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' );
 
           $check_if_soc_after_dark_happened = $this->check_if_soc_after_dark_happened( $user_index, $wp_user_name, $wp_user_ID );
@@ -1650,31 +1645,20 @@ class class_transindus_eco
           else
           {
             // looks like the transient was bad so lets redo the capture
-            // Now read the Shelly Pro 4 PM energy meter for energy counter and imestamp
-            $shelly_device_status_obj = $this->get_shelly_device_status_homepwr( $user_index );
+            $timestamp_soc_capture_after_dark = time();
 
-            if ( empty( $shelly_device_status_obj ) )
-            {
-              error_log( "Shelly API call to Home Power Shelly 4PM failed during cature soc after dark, did not happen");
-              return false;
-            }
-  
-  
-            $timestamp_soc_capture_after_dark = $shelly_device_status_obj->minute_ts;
-            $shelly_energy_counter_after_dark = $shelly_device_status_obj->energy_total_to_home_ts;
-
-          set_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark, 4*60*60 );
-          set_transient( $wp_user_name . '_' . 'shelly_energy_counter_after_dark',  $shelly_energy_counter_after_dark, 4*60*60 );
-          set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now, 4 * 60 * 60 );
+            set_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark, 4*60*60 );
+            set_transient( $wp_user_name . '_' . 'shelly_energy_counter_after_dark',  $present_home_wh_reading, 4*60*60 );
+            set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now, 4 * 60 * 60 );
 
 
-          update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_energy_counter_after_dark);
-          update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $timestamp_soc_capture_after_dark);
-          update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $SOC_percentage_now);
+            update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $present_home_wh_reading);
+            update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $timestamp_soc_capture_after_dark);
+            update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $SOC_percentage_now);
 
-          error_log("SOC Capture after dark took place - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $shelly_energy_counter_after_dark);
+            error_log("SOC Capture after dark took place - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $shelly_energy_counter_after_dark);
 
-          return true;
+            return true;
           }
         }
       }
@@ -2357,11 +2341,13 @@ class class_transindus_eco
 
           if ( $shelly_em_readings_object )
           {
+            $present_home_wh_reading  = $shelly_em_readings_object->present_home_wh_reading;
+
             // Current Power in KW consumed by Home on Red Phase
             $shelly_readings_obj->present_home_kw_shelly_em = $shelly_em_readings_object->present_home_kw_shelly_em;
 
             /// Current energy counter reading of Home Energy WJH meter
-            $shelly_readings_obj->present_home_wh_reading = $shelly_em_readings_object->present_home_wh_reading;
+            $shelly_readings_obj->present_home_wh_reading = $present_home_wh_reading;
 
             // present AC RMS phase voltage at panel, after Studer output
             $shelly_readings_obj->home_voltage_em = $shelly_em_readings_object->home_voltage_em;
@@ -2514,6 +2500,45 @@ class class_transindus_eco
           }
         }
 
+        if ($it_is_still_dark)
+        { // Do all the SOC after Dark operations here
+
+          // check if event happened. now-event time < 12h since event can happen at 7PM and last till 6:30AM
+          $soc_capture_after_dark_happened = $this->check_if_soc_after_dark_happened($user_index, $wp_user_name, $wp_user_ID);
+
+          if (  $soc_capture_after_dark_happened === false  && 
+                $soc_update_method === "shelly"             && 
+                $present_home_wh_reading                    && 
+                $soc_percentage_now_shelly )
+
+          {
+            // event not happened yet so make it happen. TODO have to decide which SOC value to use for the capture
+            $this->capture_evening_soc_after_dark(  $user_index, 
+                                                    $wp_user_name, 
+                                                    $wp_user_ID, 
+                                                    $soc_percentage_now_shelly, 
+                                                    $present_home_wh_reading );
+          }
+
+          if ( $soc_capture_after_dark_happened === true )
+          {
+            // compute SOC based on after dark shelly measurements
+            $soc_percentage_after_dark = (float) get_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', true);
+
+            $shelly_energy_counter_after_dark = (float) get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', true);
+
+            $home_consumption_wh_after_dark_using_shellyem = $present_home_wh_reading - $shelly_energy_counter_after_dark;
+
+            $home_consumption_kwh_after_dark_using_shellyem = round( $home_consumption_wh_after_dark_using_shellyem * 0.001, 3);
+
+            $soc_percentage_discharge = $home_consumption_kwh_after_dark_using_shellyem / $SOC_capacity_KWH * 100;
+
+            $soc_percentage_now_using_dark_shelly = round( $soc_percentage_after_dark - $soc_percentage_discharge, 1);
+
+            $this->verbose ? error_log("SOC % using after dark Shelly: $soc_percentage_now_using_dark_shelly"): false;
+          }
+        }
+
         // we can now check to see if Studer midnight has happened for midnight rollover capture
         // Each time the following executes it looks at a transient. Only when it expires does an API call made on Studer for 5002
         $studer_time_just_passed_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
@@ -2535,7 +2560,7 @@ class class_transindus_eco
           // reset the user meta SOC as calculated using Shelly measured Battery current to the present value
           update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $soc_percentage_now_shelly );
 
-          // reset the battery accumulated charge in AH to 0 at just past midnight.
+          // reset the battery accumulated charge in AH to 0 at just past midnight. This is used by Shelly Pro 3EM grid energy
           update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', 0.0001 );
 
           // reset midnighyt energy counter value for Red phase to current measured value, or from transient if Grid OFF
@@ -2667,12 +2692,6 @@ class class_transindus_eco
           elseif ( $shelly_switch_status == "ON" && ! $it_is_still_dark )
           {
             $shelly_readings_obj->psolar_kw = ($pbattery_kw ) / 0.96;
-          }
-
-          if ($it_is_still_dark)
-          { // check if soc after dark has been captured
-
-
           }
           
         }

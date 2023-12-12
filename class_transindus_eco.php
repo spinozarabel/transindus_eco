@@ -2522,23 +2522,30 @@ class class_transindus_eco
 
           if ( $soc_capture_after_dark_happened === true )
           {
-            // compute SOC based on after dark shelly measurements
-            $soc_percentage_after_dark = (float) get_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', true);
+            if ( $shelly_switch_status == "ON" )
+            {
+              // Grid is supplying Load and since SOlar is 0 battery current is 0 so no change in battery SOC
+            }
+            else
+            {
+              // compute SOC based on after dark shelly measurements
+              $soc_percentage_after_dark = (float) get_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', true);
 
-            $shelly_energy_counter_after_dark = (float) get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', true);
+              $shelly_energy_counter_after_dark = (float) get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', true);
 
-            $home_consumption_wh_after_dark_using_shellyem = $present_home_wh_reading - $shelly_energy_counter_after_dark;
+              $home_consumption_wh_after_dark_using_shellyem = $present_home_wh_reading - $shelly_energy_counter_after_dark;
 
-            $home_consumption_kwh_after_dark_using_shellyem = round( $home_consumption_wh_after_dark_using_shellyem * 0.001, 3);
+              $home_consumption_kwh_after_dark_using_shellyem = round( $home_consumption_wh_after_dark_using_shellyem * 0.001, 3);
 
-            $soc_percentage_discharge = $home_consumption_kwh_after_dark_using_shellyem / $SOC_capacity_KWH * 100;
+              $soc_percentage_discharge = $home_consumption_kwh_after_dark_using_shellyem / $SOC_capacity_KWH * 100;
 
-            $soc_percentage_now_using_dark_shelly = round( $soc_percentage_after_dark - $soc_percentage_discharge, 1);
+              $soc_percentage_now_using_dark_shelly = round( $soc_percentage_after_dark - $soc_percentage_discharge, 1);
 
-            // update the running counter soc after dark counter for next cycle
-            update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_using_dark_shelly);
+              // update the running counter soc after dark counter for next cycle
+              update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_using_dark_shelly);
 
-            $this->verbose ? error_log("SOC % using after dark Shelly: $soc_percentage_now_using_dark_shelly"): false;
+              $this->verbose ? error_log("SOC % using after dark Shelly: $soc_percentage_now_using_dark_shelly"): false;
+            }
           }
         }
 

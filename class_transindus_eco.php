@@ -1131,7 +1131,7 @@ class class_transindus_eco
         $adc_voltage_shelly = $shelly_api_device_response->data->device_status->{"input:100"}->percent;
 
         // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
-        $delta_voltage = $adc_voltage_shelly * 0.1 - 2.5;
+        $delta_voltage = $adc_voltage_shelly * 0.1 - 2.528;
 
         // 100 Amps gives a voltage of 0.625V amplified by opamp by 4.7
         $volts_per_amp = 0.625 * 4.7 / 100;
@@ -1140,7 +1140,7 @@ class class_transindus_eco
         $battery_amps_raw_measurement = ($delta_voltage / $volts_per_amp);
 
         // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign. 1.06 is empirical correction 
-        $battery_amps = -1.0 * round( $battery_amps_raw_measurement / 1.07, 1);
+        $battery_amps = -1.0 * round( $battery_amps_raw_measurement, 1);
 
         // get the unix time stamp when measurement was made
         $now = new DateTime();

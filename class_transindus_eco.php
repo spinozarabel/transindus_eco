@@ -2535,6 +2535,9 @@ class class_transindus_eco
 
             $soc_percentage_now_using_dark_shelly = round( $soc_percentage_after_dark - $soc_percentage_discharge, 1);
 
+            // update the running counter soc after dark counter for next cycle
+            update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_using_dark_shelly);
+
             $this->verbose ? error_log("SOC % using after dark Shelly: $soc_percentage_now_using_dark_shelly"): false;
           }
         }

@@ -2525,14 +2525,16 @@ class class_transindus_eco
             if ( $shelly_switch_status == "ON" )
             {
               // Grid is supplying Load and since SOlar is 0 battery current is 0 so no change in battery SOC
+              // so update the after dark energy counter to latest value
+              update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $present_home_wh_reading);
             }
             else
             {
-              // compute SOC based on after dark shelly measurements
-              $soc_percentage_after_dark = (float) get_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', true);
+              // Get the captured after dark SOC and home wh counters from user meta
+              $soc_percentage_after_dark        = (float) get_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark',  true);
+              $shelly_energy_counter_after_dark = (float) get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark',   true);
 
-              $shelly_energy_counter_after_dark = (float) get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', true);
-
+              // get the difference in energy consumed since last reading
               $home_consumption_wh_after_dark_using_shellyem = $present_home_wh_reading - $shelly_energy_counter_after_dark;
 
               $home_consumption_kwh_after_dark_using_shellyem = round( $home_consumption_wh_after_dark_using_shellyem * 0.001, 3);
@@ -2541,8 +2543,9 @@ class class_transindus_eco
 
               $soc_percentage_now_using_dark_shelly = round( $soc_percentage_after_dark - $soc_percentage_discharge, 1);
 
-              // update the running counter soc after dark counter for next cycle
+              // update values to get differentials for next cycle from this cycle
               update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_using_dark_shelly);
+              update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $present_home_wh_reading);
 
               $this->verbose ? error_log("SOC % using after dark Shelly: $soc_percentage_now_using_dark_shelly"): false;
             }

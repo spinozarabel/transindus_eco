@@ -201,6 +201,14 @@ class class_transindus_eco
           $this->cloudiness_forecast = get_transient( 'cloudiness_forecast' );
         }
       }
+
+      $sunset_timestamp = $this->cloudiness_forecast->$sunset_timestamp;
+      $sunset_datetime_obj = new DateTime();
+      $sunset_datetime_obj->setTimeStamp($sunset_timestamp);
+
+      $sunset_hms_format = $sunset_datetime_obj->format('H:i:s');
+
+      error_log ($sunset_hms_format);
     }
 
 

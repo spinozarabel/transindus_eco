@@ -2564,7 +2564,7 @@ class class_transindus_eco
           error_log("Studer Clock just passed midnight-STUDER-SOC: $SOC_percentage_now ShellyBMSOC: $soc_percentage_now_shelly");
           
           // we can use this to update the user meta for SOC at beginning of new day
-          if (  $SOC_percentage_now  > 20 && $SOC_percentage_now  < 100 )
+          if (  $soc_percentage_now_using_dark_shelly  > 20 && $soc_percentage_now_using_dark_shelly  < 100 )
           {
             // reset the SOC percentage at midnight for Studer to present calculated value from Studer readings
             update_user_meta( $wp_user_ID, 'soc_percentage', $soc_percentage_now_using_dark_shelly );

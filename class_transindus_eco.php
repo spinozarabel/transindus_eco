@@ -2547,6 +2547,13 @@ class class_transindus_eco
               update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_using_dark_shelly);
               update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $present_home_wh_reading);
 
+              $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
+
+              if ($studer_readings_obj)
+              {
+                $studer_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
+              }
+
               $this->verbose ? error_log("SOC % using after dark Shelly: $soc_percentage_now_using_dark_shelly"): false;
             }
           }
@@ -5487,6 +5494,8 @@ class class_transindus_eco
 
         $SOC_percentage_now = $studer_readings_obj->SOC_percentage_now;
 
+        $soc_percentage_now_using_dark_shelly = $studer_readings_obj->soc_percentage_now_using_dark_shelly;
+
         // If power is flowing OR switch has ON status then show CHeck and Green
         $grid_arrow_size = $this->get_arrow_size_based_on_power($grid_pin_ac_kw);
 
@@ -5807,8 +5816,9 @@ class class_transindus_eco
                                                   $saved_cron_exit_condition  .
                                               '</span>';
         */
+        
         $format_object->soc_percentage_now_html = '<span style="font-size: 20px;color: Blue; display:block; text-align: center;">' . 
-                                                      '<strong>' . $SOC_percentage_now . ' %' . '</strong><br>' .
+                                                      '<strong>' . $SOC_percentage_now . '-' . $soc_percentage_now_using_dark_shelly . ' %' . '</strong><br>' .
                                                   '</span>';
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' .
                                                     $formatted_interval   . ' ' . $saved_cron_exit_condition  . $soc_update_method .

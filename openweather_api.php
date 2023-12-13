@@ -111,6 +111,10 @@ class openweathermap_api
         $it_is_a_cloudy_day_weighted_average = false;
       }
 
+      // get sunrise and sunset unix time stamps
+      $cloudiness_forecast->sunrise_timestamp = $forecast->city->sunrise;
+      $cloudiness_forecast->sunset_timestamp  = $forecast->city->sunset;
+
       $cloudiness_forecast->it_is_a_cloudy_day                      = $it_is_a_cloudy_day;
       $cloudiness_forecast->it_is_a_cloudy_day_weighted_average     = $it_is_a_cloudy_day_weighted_average;
       $cloudiness_forecast->cloudiness_average_percentage           = $cloudiness_average_percentage;

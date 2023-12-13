@@ -209,6 +209,14 @@ class class_transindus_eco
       $sunset_hms_format = $sunset_datetime_obj->format('H:i:s');
 
       error_log ($sunset_hms_format);
+
+      $sunrise_timestamp = $this->cloudiness_forecast->$sunrise_timestamp;
+      $sunrise_datetime_obj = new DateTime();
+      $sunrise_datetime_obj->setTimeStamp($sunrise_timestamp);
+
+      $sunrise_hms_format = $sunrise_datetime_obj->format('H:i:s');
+
+      error_log ($sunrise_hms_format);
     }
 
 

@@ -178,15 +178,15 @@ class class_transindus_eco
 
       // ................................ CLoudiness management ---------------------------------------------->
 
-      if ( $this->nowIsWithinTimeLimits("06:00", "06:05") )
-      {   // Get the weather forecast if time is between 5 to 6 in the morning.
+      if ( $this->nowIsWithinTimeLimits("05:00", "05:05") )
+      {   // Get the weather forecast if time is between 5 to 5:05 in the morning
         $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
 
         // write the weatehr forecast to a transient valid for 24h
         set_transient( 'cloudiness_forecast', $this->cloudiness_forecast, 24*60*60 );
       }
       else  
-      {   // Read the transient for the weatehr forecast that has already been read between 5 and 6 AM
+      {   // it is not between 5-5:05 so get the transient instead
         if ( false === get_transient( 'cloudiness_forecast' ) )
         {
           // Transient does not exist or has expired, so regenerate the cloud forecast
@@ -202,10 +202,12 @@ class class_transindus_eco
         }
       }
 
+      // we either got the forecast from API between 05-0500 or read it from the transient at other times.
       $sunset_timestamp = $this->cloudiness_forecast->$sunset_timestamp;
       $sunset_datetime_obj = new DateTime();
       $sunset_datetime_obj->setTimeStamp($sunset_timestamp);
 
+      // sunset time in hours:minutes:seconds format
       $sunset_hms_format = $sunset_datetime_obj->format('H:i:s');
 
       error_log ($sunset_hms_format);

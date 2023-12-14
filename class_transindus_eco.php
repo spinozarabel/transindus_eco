@@ -2769,6 +2769,47 @@ class class_transindus_eco
           }
           
         }
+        elseif ( $soc_update_method === "shelly-after-dark" )
+        {   // write back to shelly_readings_obj object
+          $note_exit = "Shelly-after-dark";
+
+          // define conditions to false, these are unused by shelly update but checked downstream
+          $LVDS_soc_6am_grid_on   = false;
+          $LVDS_soc_6am_grid_off  = false;
+          $switch_override  = false;
+          $LVDS             = false;
+
+
+          $shelly_readings_obj->battery_voltage_avg  = get_transient( $wp_user_name . '_' . 'battery_voltage_avg' ) ?? 49.8;
+
+          $shelly_readings_obj->control_shelly                    = $control_shelly;
+          $shelly_readings_obj->shelly_switch_status              = $shelly_switch_status;
+          $shelly_readings_obj->shelly_api_device_status_voltage  = $shelly_api_device_status_voltage;
+          $shelly_readings_obj->shelly_api_device_status_ON       = $shelly_api_device_status_ON;
+          $shelly_readings_obj->shelly_switch_acin_details_arr    = $shelly_switch_acin_details_arr;
+
+          $pbattery_kw =  round( 49.8 * 0.001 * $shelly_battery_measurement_object->battery_amps, 3 );
+
+          $shelly_readings_obj->battery_charge_adc = $shelly_battery_measurement_object->battery_amps;
+          $shelly_readings_obj->pbattery_kw = $pbattery_kw;
+          $shelly_readings_obj->grid_pin_ac_kw = $a_grid_kw_pwr;
+          $shelly_readings_obj->grid_input_vac = $shelly_api_device_status_voltage;
+
+          // Since we calculate Psolar indirectly, that depends on conditions as below
+          if ($it_is_still_dark)
+          {
+            $shelly_readings_obj->psolar_kw = 0;
+          }
+          elseif ( $shelly_switch_status == "OFF" && ! $it_is_still_dark )
+          {
+            $shelly_readings_obj->psolar_kw = ($pbattery_kw + 1.07 * $shelly_readings_obj->power_total_to_home_kw) / 0.96;
+          }
+          elseif ( $shelly_switch_status == "ON" && ! $it_is_still_dark )
+          {
+            $shelly_readings_obj->psolar_kw = ($pbattery_kw ) / 0.96;
+          }
+          
+        }
         
         switch(true)
         {   // switch conditional tree
@@ -2983,6 +3024,14 @@ class class_transindus_eco
           return $studer_readings_obj;
         }
         elseif ( $soc_update_method === "shelly" )
+        { // SOC updates from Shelly Uni, Shelly EM and Shelly Pro day time measurements
+
+          set_transient( $wp_user_name . '_' . 'shelly_readings_obj', $shelly_readings_obj, 5*60 );
+
+          // We only apply 100% clamp based on Studer values or the battery voltage of Studer reading
+          return $shelly_readings_obj;
+        }
+        elseif ( $soc_update_method === "shelly-after-dark" )
         { // SOC updates from Shelly Uni, Shelly EM and Shelly Pro day time measurements
 
           set_transient( $wp_user_name . '_' . 'shelly_readings_obj', $shelly_readings_obj, 5*60 );

@@ -2617,7 +2617,7 @@ class class_transindus_eco
           }
          
           // reset the user meta SOC as calculated using Shelly measured Battery current to the present value
-          update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $soc_percentage_now_shelly );
+          update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $soc_percentage_now_using_dark_shelly );
 
           // reset the battery accumulated charge in AH to 0 at just past midnight. This is used by Shelly Pro 3EM grid energy
           update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', 0.0001 );

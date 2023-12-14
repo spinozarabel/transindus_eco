@@ -2540,8 +2540,8 @@ class class_transindus_eco
                 $present_home_wh_reading                    && 
                 $SOC_percentage_now )
 
-          {
-            // event not happened yet so make it happen. TODO have to decide which SOC value to use for the capture
+          { // event not happened yet so make it happen. TODO have to decide which SOC value to use for the capture
+            
             $this->capture_evening_soc_after_dark(  $user_index, 
                                                     $wp_user_name, 
                                                     $wp_user_ID, 
@@ -2777,7 +2777,9 @@ class class_transindus_eco
           $LVDS_soc_6am_grid_on   = false;
           $LVDS_soc_6am_grid_off  = false;
           $switch_override  = false;
-          $LVDS             = false;
+          $LVDS =             (   $soc_percentage_now_using_dark_shelly <= $soc_percentage_lvds_setting           )  
+                                &&
+                              (   $shelly_switch_status == "OFF" );					  // The switch is OFF
 
 
           $shelly_readings_obj->battery_voltage_avg  = get_transient( $wp_user_name . '_' . 'battery_voltage_avg' ) ?? 49.8;

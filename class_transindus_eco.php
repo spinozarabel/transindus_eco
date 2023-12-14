@@ -1624,7 +1624,7 @@ class class_transindus_eco
 
       // check if it is after dark and before midnightdawn annd that the transient has not been set yet
       // The time window for this to happen is over 15m from sunset to 15m after. Keep adjusting this in sync with dark time
-      if (  $this->nowIsWithinTimeLimits("17:50", "18:10")  ) 
+      if (  $this->nowIsWithinTimeLimits("17:50", "18:05")  ) 
       {
         // lets get the transient. The 1st time this is tried in the evening it should be false, 2nd time onwards true
         if ( false === ( $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) 
@@ -2526,6 +2526,11 @@ class class_transindus_eco
 
           // check if event happened. now-event time < 12h since event can happen at 7PM and last till 6:30AM
           $soc_capture_after_dark_happened = $this->check_if_soc_after_dark_happened($user_index, $wp_user_name, $wp_user_ID);
+
+          // Ideally if SOC after dark is to happen, then 1st preference should be given to SOC STUDER value
+          // If Studer API calls keep failing then as a fallback the SOC shelly BM value should be used
+          // before the time window closes.
+          // How to implement this? currently only the SHelly BM SOC value is used.
 
           if (  $soc_capture_after_dark_happened === false  && 
                 $soc_update_method === "shelly"             && 

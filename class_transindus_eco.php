@@ -2499,6 +2499,9 @@ class class_transindus_eco
                 error_log("SOC_shelly_BM: $soc_percentage_now_shelly, SOC_Studer: $SOC_percentage_now");
             }
 
+            // Since STUDER API call was successful, lets equalize SOC now of shelly BM method to that of STUDER SOC now
+            // We also want that SOC midnight of both are the same
+
             { // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - or  battery voltage    
               $LVDS =             ( $battery_voltage_avg  <= $battery_voltage_avg_lvds_setting || 
                                     $SOC_percentage_now   <= $soc_percentage_lvds_setting           )  
@@ -2533,16 +2536,16 @@ class class_transindus_eco
           // How to implement this? currently only the SHelly BM SOC value is used.
 
           if (  $soc_capture_after_dark_happened === false  && 
-                $soc_update_method === "shelly"             && 
+                $soc_update_method === "studer"             && 
                 $present_home_wh_reading                    && 
-                $soc_percentage_now_shelly )
+                $SOC_percentage_now )
 
           {
             // event not happened yet so make it happen. TODO have to decide which SOC value to use for the capture
             $this->capture_evening_soc_after_dark(  $user_index, 
                                                     $wp_user_name, 
                                                     $wp_user_ID, 
-                                                    $soc_percentage_now_shelly, 
+                                                    $SOC_percentage_now, 
                                                     $present_home_wh_reading );
           }
 

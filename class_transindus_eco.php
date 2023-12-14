@@ -2601,7 +2601,7 @@ class class_transindus_eco
           }
         }
 
-        $this->verbose ? error_log("SOC update method: soc_update_method"): false;
+        $this->verbose ? error_log("SOC update method: $soc_update_method"): false;
 
         // we can now check to see if Studer midnight has happened for midnight rollover capture
         // Each time the following executes it looks at a transient. Only when it expires does an API call made on Studer for 5002

@@ -1623,8 +1623,8 @@ class class_transindus_eco
 
 
       // check if it is after dark and before midnightdawn annd that the transient has not been set yet
-      // The time window for this to happen is over 15m in case internet is down during this time
-      if (  $this->nowIsWithinTimeLimits("18:55", "19:10")  ) 
+      // The time window for this to happen is over 15m from sunset to 15m after. Keep adjusting this in sync with dark time
+      if (  $this->nowIsWithinTimeLimits("17:50", "18:10")  ) 
       {
         // lets get the transient. The 1st time this is tried in the evening it should be false, 2nd time onwards true
         if ( false === ( $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) 
@@ -2101,7 +2101,7 @@ class class_transindus_eco
                                                         bool $make_studer_api_call = true ) : ? object
     {
         { // Define boolean control variables for various time intervals
-          $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
+          $it_is_still_dark = $this->nowIsWithinTimeLimits( "17:50", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
 
           // Boolean values for checking is present time is within defined time intervals
           $now_is_daytime       = $this->nowIsWithinTimeLimits("08:30", "16:30"); // changed from 17:30  on 7/28/22

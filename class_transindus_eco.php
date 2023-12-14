@@ -2551,6 +2551,9 @@ class class_transindus_eco
 
           if ( $soc_capture_after_dark_happened === true )
           { // SOC capture after dark is DONE so use it to compute SOC after dark using Shelly
+
+            $soc_update_method = "shelly-after-dark";
+
             if ( $shelly_switch_status == "ON" )
             {
               // Grid is supplying Load and since SOlar is 0 battery current is 0 so no change in battery SOC
@@ -2598,6 +2601,8 @@ class class_transindus_eco
           }
         }
 
+        $this->verbose ? error_log("SOC update method: soc_update_method"): false;
+
         // we can now check to see if Studer midnight has happened for midnight rollover capture
         // Each time the following executes it looks at a transient. Only when it expires does an API call made on Studer for 5002
         $studer_time_just_passed_midnight = $this->is_studer_time_just_pass_midnight( $user_index, $wp_user_name );
@@ -2608,31 +2613,41 @@ class class_transindus_eco
           // We need to keep this value as a transient and use it so that the last value is used as it is still valid
 
           error_log("Studer Clock just passed midnight-STUDER-SOC: $SOC_percentage_now ShellyBMSOC: $soc_percentage_now_shelly");
+          error_log("SOC after Dark at midnight - $soc_percentage_now_using_dark_shelly");
           
-          // we can use this to update the user meta for SOC at beginning of new day
+          // 1st preference is given to SOC after dark for midnight update if that value at midnight is reasonable
           if (  $soc_percentage_now_using_dark_shelly  > 20 && $soc_percentage_now_using_dark_shelly  < 100 )
           {
-            // reset the SOC percentage at midnight for Studer to present calculated value from Studer readings
-            update_user_meta( $wp_user_ID, 'soc_percentage', $soc_percentage_now_using_dark_shelly );
+            $soc_used_for_midnight_update = $soc_percentage_now_using_dark_shelly;
+            error_log("SOC after Dark used for midnight update: $soc_percentage_now_using_dark_shelly");
           }
-         
-          // reset the user meta SOC as calculated using Shelly measured Battery current to the present value
-          update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $soc_percentage_now_using_dark_shelly );
+          elseif ( $SOC_percentage_now  > 20 && $SOC_percentage_now  < 100 && ( ! $studer_api_call_failed ) )
+          { // 2nd preference is given to STUDER SOC if its SOC value at midnight is reasonable and available
+            $soc_used_for_midnight_update = $SOC_percentage_now;
+            error_log("SOC STUDER used for midnight update: $SOC_percentage_now");
+          }
+          else
+          {
+            $soc_used_for_midnight_update = $soc_percentage_now_shelly;
+            error_log("SOC shelly BM used for midnight update: $soc_percentage_now_shelly");
+          }
+            // reset the SOC percentage at midnight for Studer to present calculated value from Studer readings
+            update_user_meta( $wp_user_ID, 'soc_percentage', $soc_used_for_midnight_update );
 
-          // reset the battery accumulated charge in AH to 0 at just past midnight. This is used by Shelly Pro 3EM grid energy
-          update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', 0.0001 );
+            // reset the user meta SOC as calculated using Shelly measured Battery current to the present value
+            update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $soc_used_for_midnight_update );
 
-          // reset midnighyt energy counter value for Red phase to current measured value, or from transient if Grid OFF
-          update_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', $a_grid_wh_counter_now );
+            // reset the battery accumulated charge in AH to 0 at just past midnight. This is used by Shelly Pro 3EM grid energy
+            update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', 0.0001 );
 
-          // Load energy consumed since midnight as measured by Shelly4PM reset to 0 at midnight
-          update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', 0 );
-          
-          // reset midnight energy counter value for Yellow phase to current measured value
+            // reset midnighyt energy counter value for Red phase to current measured value, or from transient if Grid OFF
+            update_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', $a_grid_wh_counter_now );
 
-          // reset midnight energy counter value for home load consumed to current measured value as measured by Shelly EM
-          update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_midnight', $present_shelly_em_home_wh_counter );
-          
+            // Load energy consumed since midnight as measured by Shelly4PM reset to 0 at midnight
+            update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', 0 );
+
+            // reset midnight energy counter value for home load consumed to current measured value as measured by Shelly EM
+            update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_midnight', $present_shelly_em_home_wh_counter );
         }
 
         $LVDS_soc_6am_grid_on = false;

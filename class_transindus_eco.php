@@ -2377,6 +2377,9 @@ class class_transindus_eco
             $home_consumption_kwh_since_midnight_helly_em = round( $shelly_readings_obj->home_consumption_wh_since_midnight * 0.001, 3 );
           
             $shelly_readings_obj->home_consumption_kwh_since_midnight_helly_em = $home_consumption_kwh_since_midnight_helly_em;
+
+            // another variable created for better readability of code
+            $present_shelly_em_home_wh_counter = $present_home_wh_reading;
           }
           
 
@@ -2539,12 +2542,22 @@ class class_transindus_eco
           }
 
           if ( $soc_capture_after_dark_happened === true )
-          {
+          { // SOC capture after dark is DONE so use it to compute SOC after dark using Shelly
             if ( $shelly_switch_status == "ON" )
             {
               // Grid is supplying Load and since SOlar is 0 battery current is 0 so no change in battery SOC
               // so update the after dark energy counter to latest value
               update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $present_home_wh_reading);
+
+              // SOC is unchanging due to Grid ON however set the variables using the user meta since they are undefined.
+              $soc_percentage_now_using_dark_shelly = (float) get_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark',  true);
+
+              $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
+
+              if ($studer_readings_obj)
+              {
+                $studer_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
+              }
             }
             else
             {

@@ -2552,7 +2552,7 @@ class class_transindus_eco
           if ( $soc_capture_after_dark_happened === true )
           { // SOC capture after dark is DONE so use it to compute SOC after dark using Shelly
 
-            $soc_update_method = "shelly-after-dark";
+            // $soc_update_method = "shelly-after-dark";
 
             if ( $shelly_switch_status == "ON" )
             {
@@ -2777,9 +2777,7 @@ class class_transindus_eco
           $LVDS_soc_6am_grid_on   = false;
           $LVDS_soc_6am_grid_off  = false;
           $switch_override  = false;
-          $LVDS =             (   $soc_percentage_now_using_dark_shelly <= $soc_percentage_lvds_setting           )  
-                                &&
-                              (   $shelly_switch_status == "OFF" );					  // The switch is OFF
+          $LVDS =             false;
 
 
           $shelly_readings_obj->battery_voltage_avg  = get_transient( $wp_user_name . '_' . 'battery_voltage_avg' ) ?? 49.8;

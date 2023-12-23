@@ -2647,7 +2647,7 @@ class class_transindus_eco
             update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', 0 );
 
             // reset midnight energy counter value for home load consumed to current measured value as measured by Shelly EM
-            update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_midnight', $present_shelly_em_home_wh_counter );
+            update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_midnight', $present_home_wh_reading );
         }
 
         $LVDS_soc_6am_grid_on = false;

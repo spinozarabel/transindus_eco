@@ -3124,7 +3124,9 @@ class class_transindus_eco
 
             // we equalize the SOC at midnight for both STUDER and Shelly based on STUDER readings
             update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $SOC_percentage_beg_of_day_recal);
-            update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $SOC_batt_charge_net_percent_today );            
+            update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $SOC_batt_charge_net_percent_today );
+            
+            $this->verbose ? error_log("SOC 100% clamp for STuder and Shelly BM applied") : false;
           }
           return $studer_readings_obj;
         }
@@ -3137,6 +3139,8 @@ class class_transindus_eco
             $battery_accumulated_percent_since_midnight_recal = 100 - $shelly_soc_percentage_at_midnight;
             
             update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $battery_accumulated_percent_since_midnight_recal );
+            
+            $this->verbose ? error_log("SOC 100% clamp for Shelly BM only, applied") : false;
           }
 
           set_transient( $wp_user_name . '_' . 'shelly_readings_obj', $shelly_readings_obj, 5*60 );

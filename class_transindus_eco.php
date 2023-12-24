@@ -3135,8 +3135,9 @@ class class_transindus_eco
           {
             // Since we know that the battery SOC is 100%, calculate the SOC at begininning of day
             $SOC_percentage_beg_of_day_recal_shelly = 100 - $SOC_batt_charge_net_percent_today_shelly;
+            update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $SOC_percentage_beg_of_day_recal_shelly);
           }
-          
+
           set_transient( $wp_user_name . '_' . 'shelly_readings_obj', $shelly_readings_obj, 5*60 );
 
           // We only apply 100% clamp based on Studer values or the battery voltage of Studer reading

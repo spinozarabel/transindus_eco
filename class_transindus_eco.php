@@ -3133,9 +3133,9 @@ class class_transindus_eco
 
           if (  $soc_percentage_now_shelly > 100.2 )
           {
-            // Since we know that the battery SOC is 100%, calculate the SOC at begininning of day
+            // Since we know that the battery SOC is 100%, calculate the battery accumulated anew since we want to keep midnioght SOC fixed
             $battery_accumulated_percent_since_midnight_recal = 100 - $shelly_soc_percentage_at_midnight;
-            // update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $SOC_percentage_beg_of_day_recal_shelly);
+            
             update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $battery_accumulated_percent_since_midnight_recal );
           }
 

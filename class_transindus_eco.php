@@ -3134,8 +3134,9 @@ class class_transindus_eco
           if (  $soc_percentage_now_shelly > 100.2 )
           {
             // Since we know that the battery SOC is 100%, calculate the SOC at begininning of day
-            $SOC_percentage_beg_of_day_recal_shelly = 100 - $soc_charge_net_percent_today_shelly;
-            update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $SOC_percentage_beg_of_day_recal_shelly);
+            $battery_accumulated_percent_since_midnight_recal = 100 - $shelly_soc_percentage_at_midnight;
+            // update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $SOC_percentage_beg_of_day_recal_shelly);
+            update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $battery_accumulated_percent_since_midnight_recal );
           }
 
           set_transient( $wp_user_name . '_' . 'shelly_readings_obj', $shelly_readings_obj, 5*60 );

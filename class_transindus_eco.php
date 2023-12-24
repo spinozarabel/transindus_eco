@@ -2510,6 +2510,18 @@ class class_transindus_eco
             $KWH_grid_today       = $studer_readings_obj->KWH_grid_today;   // Net Grid Units consumed Today
             $KWH_load_today       = $studer_readings_obj->KWH_load_today;   // Net Load units consumed Today
 
+            if ($home_consumption_kwh_since_midnight_shelly_em > 0.2 )
+            {
+              $KWH_load_today_percent_delta = ( $KWH_load_today - $home_consumption_kwh_since_midnight_shelly_em ) / 
+                                                $home_consumption_kwh_since_midnight_shelly_em * 100.0;
+
+              // compare the Load consumption in KWH with Shelly EM method. If too different use the Shelly EM value
+              if ( abs( $KWH_load_today_percent_delta ) > 10 )
+              {
+                $KWH_load_today = $home_consumption_kwh_since_midnight_shelly_em;
+              }
+            }
+
             // Net battery charge in KWH (discharge if minus) as measured by STUDER
             $KWH_batt_charge_net_today  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $KWH_load_today) * 1.07;
   
@@ -2518,30 +2530,11 @@ class class_transindus_eco
   
             //  Update SOC  number  using STUDER Measurements
             $SOC_percentage_now = round( $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today, 1);
-
-            {   // calculate SOC  using Load KWH from Shelly EM. Occassionally This is value is bad from Studer
-              $KWH_batt_charge_net_today_shelly  = $KWH_solar_today * 0.96 + (0.988 * $KWH_grid_today - $home_consumption_kwh_since_midnight_shelly_em) * 1.07;
-              
-              $SOC_batt_charge_net_percent_today_shelly = $KWH_batt_charge_net_today_shelly / $SOC_capacity_KWH * 100;
-
-              $SOC_percentage_now_shellyem = round( $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today_shelly, 1);
-            }
   
             // Check if STUDER computed SOC update is reasonable
-            if ( $SOC_percentage_now < 20 || $SOC_percentage_now > 101 ) 
+            if ( $SOC_percentage_now < 30 || $SOC_percentage_now > 101 ) 
             { // STUDER computed SOC is out of bounds
-
-              // lets check to see if Shelly EM load based Studer SOC update values are reasonable
-              if ( $SOC_percentage_now_shellyem > 20 || $SOC_percentage_now_shellyem <= 100 ) 
-              { // STUDER computed SOC using Shellyem load energy seems OK
-                error_log("SOC using Studer Load KWH was bad, using Shelly EM Load: " .  $SOC_percentage_now_shellyem . " %");
-
-                update_user_meta( $wp_user_ID, 'soc_percentage_now', $SOC_percentage_now_shellyem);
-              }
-              else
-              {
-                error_log("No SOC update: SOC_studer: $SOC_percentage_now, SOC_studer_4pmload: $SOC_percentage_now_shellyem");
-              }
+                error_log("No SOC update: SOC_studer: $SOC_percentage_now");
             }
             else
             {   // STUDER SOC update seems reasonable Update user meta so this becomes the previous value for next cycle

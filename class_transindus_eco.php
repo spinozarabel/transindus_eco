@@ -2478,9 +2478,9 @@ class class_transindus_eco
 
 
             // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage     
-            $shelly_readings_obj->LVDS =  ( $soc_percentage_now_shelly  <= $soc_percentage_lvds_setting ) // SOC threshold
-                                          &&
-                                          ( $shelly_switch_status == "OFF" );					                    // The Grid switch is OFF
+            $shelly_readings_obj->LVDS_BM = ( $soc_percentage_now_shelly  <= $soc_percentage_lvds_setting ) // SOC threshold
+                                            &&
+                                            ( $shelly_switch_status == "OFF" );					                    // The Grid switch is OFF
           }
           
           if ( ! $studer_api_call_failed )
@@ -2511,7 +2511,7 @@ class class_transindus_eco
             $KWH_load_today       = $studer_readings_obj->KWH_load_today;   // Net Load units consumed Today
 
             if ($home_consumption_kwh_since_midnight_shelly_em > 0.2 )
-            {
+            {   // for the case where the Studer Load KWH consumed is bad sometimes
               $KWH_load_today_percent_delta = ( $KWH_load_today - $home_consumption_kwh_since_midnight_shelly_em ) / 
                                                 $home_consumption_kwh_since_midnight_shelly_em * 100.0;
 
@@ -2559,11 +2559,14 @@ class class_transindus_eco
             // Since STUDER API call was successful, lets equalize SOC now of shelly BM method to that of STUDER SOC now
             // We also want that SOC midnight of both are the same
 
-            { // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - or  battery voltage    
-              $LVDS =             ( $battery_voltage_avg  <= $battery_voltage_avg_lvds_setting || 
-                                    $SOC_percentage_now   <= $soc_percentage_lvds_setting           )  
-                                    &&
-                                  ( $shelly_switch_status == "OFF" );					  // The switch is OFF
+            { // This is Studer based LVDS and only happens when SOC after dark is not happening
+              // When SOC after dark happens the same variable is determined by SOC after dark values.
+              // TODO what happens during day time when STUDER is offline and close to LVDS?
+              // TODO how to then use $shelly_readings_obj->LVDS_BM as the main LVDS?
+              $LVDS =             ( ( $battery_voltage_avg  <= $battery_voltage_avg_lvds_setting || 
+                                      $SOC_percentage_now   <= $soc_percentage_lvds_setting           )  
+                                      &&
+                                    ( $shelly_switch_status == "OFF" ) );
 
               $switch_override =  ( $shelly_switch_status                == "OFF" )  &&
                                   ( $studer_readings_obj->grid_input_vac >= 190   );
@@ -2573,11 +2576,12 @@ class class_transindus_eco
 
             // update the object
             $studer_readings_obj->SOC_percentage_now  = $SOC_percentage_now;
-            $studer_readings_obj->LVDS                = $LVDS;
+            $studer_readings_obj->LVDS                = $LVDS_studer;
+            $studer_readings_obj->switch_override     = $switch_override;
             $studer_readings_obj->soc_update_method   = "studer";
             $studer_readings_obj->soc_percentage_now_using_dark_shelly = 1000;
 
-          }   // endif of studer_api_failed = false
+          }   // endif of STUDER measurement successful
           else
           {   // Studer API call failed. So we set the flag appropriately
             $soc_update_method = "shelly";
@@ -2587,20 +2591,19 @@ class class_transindus_eco
         }
 
         if ($it_is_still_dark)
-        { // Do all the SOC after Dark operations here
+        { // Do all the SOC after Dark operations here - Capture and also SOC updation
 
-          // check if event happened. now-event time < 12h since event can happen at 7PM and last till 6:30AM
+          // check if capture happened. now-event time < 12h since event can happen at 7PM and last till 6:30AM
           $soc_capture_after_dark_happened = $this->check_if_soc_after_dark_happened($user_index, $wp_user_name, $wp_user_ID);
 
           // Ideally if SOC after dark is to happen, then 1st preference should be given to SOC STUDER value
           // If Studer API calls keep failing then as a fallback the SOC shelly BM value should be used
           // before the time window closes.
-          // How to implement this?
 
           if (  $soc_capture_after_dark_happened === false  && $present_home_wh_reading )
-          { // event not happened yet so make it happen.
+          { // event not happened yet so make it happen with valid value for the home energy EM counter reading
 
-            // Give 1st preference to Studer readings. Try between 5:50-6:05 PM if possible
+            // Give 1st preference to Studer readings. Use the 1st window of 10m after sunset
             if (  $soc_update_method === "studer" && $SOC_percentage_now && $SOC_percentage_now > 30 && 
                   $SOC_percentage_now <= 101  && $time_window_open_for_soc_capture_after_dark_using_studer )
             {   // Capture SOC after dark using Studer SOC value and set the energy counter after dark to present reading
@@ -2623,6 +2626,7 @@ class class_transindus_eco
             }
           } 
 
+          // iimediately after capture thie following will not trigger but the next loop will.
           if ( $soc_capture_after_dark_happened === true )
           { // SOC capture after dark is DONE so use it to compute SOC after dark using only Shelly readings
 
@@ -2657,7 +2661,7 @@ class class_transindus_eco
               // calculate SOC percentage discharge
               $soc_percentage_discharge = $home_consumption_kwh_after_dark_using_shellyem / $SOC_capacity_KWH * 100;
               // round it to 3 decimal places for accuracy of arithmatic for accumulation
-              $soc_percentage_now_using_dark_shelly = round( $soc_percentage_after_dark - $soc_percentage_discharge, 3);
+              $soc_percentage_now_using_dark_shelly = round( $soc_percentage_after_dark - $soc_percentage_discharge, 4);
 
               // update values to get differentials for next cycle from this cycle. Ignore word studer it could be from studer or shelly
               update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_using_dark_shelly);
@@ -2675,14 +2679,16 @@ class class_transindus_eco
             }
 
             // check the validity of the SOC using this after dark shelly method
-            $soc_after_dark_update_valid = $soc_percentage_now_using_dark_shelly < 100 &&
-                                          $soc_percentage_now_using_dark_shelly > 30;
+            $soc_after_dark_update_valid =  $soc_percentage_now_using_dark_shelly < 100 &&
+                                            $soc_percentage_now_using_dark_shelly > 30;
 
             
             // set the switch tree conditions for this mode of update
-            $LVDS =               $soc_percentage_now_using_dark_shelly <= $soc_percentage_lvds_setting &&  // less than LVDS setting
-                                  $soc_after_dark_update_valid                                          &&  // update OK
-                                  $shelly_switch_status == "OFF" ;					                                // The switch is still OFF
+            $LVDS = $soc_percentage_now_using_dark_shelly <= $soc_percentage_lvds_setting &&  // less than LVDS setting
+                    $soc_after_dark_update_valid                                          &&  // update OK
+                    $shelly_switch_status == "OFF" ;					                                // The switch is still OFF
+
+            $shelly_readings_obj->LVDS = $LVDS;
 
             $switch_override = false;
           }
@@ -2759,7 +2765,6 @@ class class_transindus_eco
           // So between this and switch_release_float_state battery may cycle up and down by 5 points
           // Ofcourse if the Psurplus is too much it will charge battery to 100% inspite of this.
           // Obviously after sunset the battery will remain at 90% till sunrise the next day
-          
 
           $keep_switch_closed_always =  ( $shelly_switch_status == "OFF" )             &&
                                         ( $soc_update_method === "studer")             &&

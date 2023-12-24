@@ -842,10 +842,10 @@ class class_transindus_eco
       { // Update SOC usng counters. DO NOT reset SOC after dark values, they are still valid
         $energy_consumed_since_after_dark_update_kwh = ( $current_energy_counter_wh - $shelly_energy_counter_after_dark ) * 0.001;
 
-        $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH * 107, 1);
+        $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH * 107, 3);
 
         // Change in SOC ( a decrease) from value captured just after dark to now based on energy consumed by home during dark
-        $soc_percentage_now_computed_using_shelly  = round($soc_update_from_studer_after_dark - $soc_percentage_discharged, 1);
+        $soc_percentage_now_computed_using_shelly  = round($soc_update_from_studer_after_dark - $soc_percentage_discharged, 3);
     
         // no need to worry about SOC clamp to 100 since value will only decrease never increase, no solar
         // update_user_meta( $wp_user_ID, 'soc_percentage_now', $soc_percentage_now_computed_using_shelly );
@@ -867,7 +867,7 @@ class class_transindus_eco
         $energy_consumed_since_after_dark_update_kwh = (  $modified_energy_counter_due_to_reset_wh - $shelly_energy_counter_after_dark ) * 0.001;
 
         // Energy in terms of percentage Battery SOC capacity discharged from battery. 107 is 1.07 for inverter loss * 100%
-        $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH * 107, 1);
+        $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH * 107, 3);
 
         // Change in SOC ( a decrease) from just after dark (reference) to now based on energy consumed only
         $soc_percentage_now_computed_using_shelly  = $soc_update_from_studer_after_dark - $soc_percentage_discharged;
@@ -2456,7 +2456,7 @@ class class_transindus_eco
               $b_grid_wh_counter_now                  = $shelly_3p_grid_wh_measurement_obj->b_grid_wh_counter_now;
 
               $a_grid_wh_accumulated_since_midnight   = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_accumulated_since_midnight;
-              $a_grid_kwh_accumulated_since_midnight  = round( $a_grid_wh_accumulated_since_midnight * 0.001, 2 );
+              $a_grid_kwh_accumulated_since_midnight  = round( $a_grid_wh_accumulated_since_midnight * 0.001, 3 );
               $a_grid_kw_pwr                          = $shelly_3p_grid_wh_measurement_obj->a_grid_kw_pwr;
             }
             
@@ -2474,7 +2474,7 @@ class class_transindus_eco
             $surplus = round( $shelly_readings_obj->battery_amps * 49.8 * 0.001, 1 ); // in KW
 
             $shelly_readings_obj->surplus  = $surplus;
-            $shelly_readings_obj->SOC_percentage_now  = round( $soc_percentage_now_shelly, 1);
+            $shelly_readings_obj->SOC_percentage_now  = round( $soc_percentage_now_shelly, 5);
 
 
             // Independent of Servo Control Flag  - Switch Grid ON due to Low SOC - Don't care about Grid Voltage     
@@ -2529,7 +2529,7 @@ class class_transindus_eco
             $SOC_batt_charge_net_percent_today = $KWH_batt_charge_net_today / $SOC_capacity_KWH * 100;
   
             //  Update SOC  number  using STUDER Measurements
-            $SOC_percentage_now = round( $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today, 1);
+            $SOC_percentage_now = round( $SOC_percentage_beg_of_day + $SOC_batt_charge_net_percent_today, 5);
   
             // Check if STUDER computed SOC update is reasonable
             if ( $SOC_percentage_now < 30 || $SOC_percentage_now > 101 ) 
@@ -2661,7 +2661,7 @@ class class_transindus_eco
               // calculate SOC percentage discharge
               $soc_percentage_discharge = $home_consumption_kwh_after_dark_using_shellyem / $SOC_capacity_KWH * 100;
               // round it to 3 decimal places for accuracy of arithmatic for accumulation
-              $soc_percentage_now_using_dark_shelly = round( $soc_percentage_after_dark - $soc_percentage_discharge, 4);
+              $soc_percentage_now_using_dark_shelly = round( $soc_percentage_after_dark - $soc_percentage_discharge, 5);
 
               // update values to get differentials for next cycle from this cycle. Ignore word studer it could be from studer or shelly
               update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_using_dark_shelly);
@@ -4626,7 +4626,7 @@ class class_transindus_eco
                   $shelly_water_heater_voltage        = $shelly_api_device_response->data->device_status->{'switch:0'}->voltage;
                   $shelly_water_heater_current        = $shelly_api_device_response->data->device_status->{'switch:0'}->current;
                   $shelly_water_heater_w              = $shelly_api_device_response->data->device_status->{'switch:0'}->apower;
-                  $shelly_water_heater_kw             = round( $shelly_water_heater_w * 0.001, 2);
+                  $shelly_water_heater_kw             = round( $shelly_water_heater_w * 0.001, 3);
               }
               else
               {
@@ -4795,12 +4795,12 @@ class class_transindus_eco
             break;
 
             case ( $user_value->reference == 3137 ) :
-              $grid_pin_ac_kw = round($user_value->value, 2);
+              $grid_pin_ac_kw = round($user_value->value, 3);
 
             break;
 
             case ( $user_value->reference == 3136 ) :
-              $pout_inverter_ac_kw = round($user_value->value, 2);
+              $pout_inverter_ac_kw = round($user_value->value, 3);
 
             break;
 
@@ -4810,17 +4810,17 @@ class class_transindus_eco
              break;
 
             case ( $user_value->reference == 3078 ) :
-              $KWH_battery_today = round($user_value->value, 2);
+              $KWH_battery_today = round($user_value->value, 3);
 
             break;
 
              case ( $user_value->reference == 3080 ) :
-               $energy_grid_yesterday = round($user_value->value, 2);
+               $energy_grid_yesterday = round($user_value->value, 3);
 
              break;
 
              case ( $user_value->reference == 3082 ) :
-               $energy_consumed_yesterday = round($user_value->value, 2);
+               $energy_consumed_yesterday = round($user_value->value, 3);
 
              break;
 
@@ -4837,7 +4837,7 @@ class class_transindus_eco
 
             case ( $user_value->reference == 11004 ) :
               // we have to accumulate values form 2 cases so we have used accumulation below
-              $psolar_kw += round($user_value->value, 2);
+              $psolar_kw += round($user_value->value, 3);
 
             break;
 
@@ -4848,7 +4848,7 @@ class class_transindus_eco
 
             case ( $user_value->reference == 11011 ) :
                // we have to accumulate values form 2 cases so we have used accumulation below
-               $psolar_kw_yesterday += round($user_value->value, 2);
+               $psolar_kw_yesterday += round($user_value->value, 3);
 
              break;
 
@@ -4864,7 +4864,7 @@ class class_transindus_eco
 
         // calculate the current into/out of battery and battery instantaneous power
         $battery_charge_adc  = round($solar_pv_adc + $inverter_current_adc, 1); // + is charge, - is discharge
-        $pbattery_kw         = round($battery_voltage_vdc * $battery_charge_adc * 0.001, 2); //$psolar_kw - $pout_inverter_ac_kw;
+        $pbattery_kw         = round($battery_voltage_vdc * $battery_charge_adc * 0.001, 3); //$psolar_kw - $pout_inverter_ac_kw;
 
 
         // inverter's output always goes to load never the other way around :-)
@@ -5205,42 +5205,42 @@ class class_transindus_eco
             break;
 
             case ( $user_value->reference == 3137 ) :
-              $grid_pin_ac_kw = round($user_value->value, 2);
+              $grid_pin_ac_kw = round($user_value->value, 3);
 
             break;
 
             case ( $user_value->reference == 3136 ) :
-              $pout_inverter_ac_kw = round($user_value->value, 2);
+              $pout_inverter_ac_kw = round($user_value->value, 3);
 
             break;
 
             case ( $user_value->reference == 3076 ) :
-               $energyout_battery_yesterday = round($user_value->value, 2);
+               $energyout_battery_yesterday = round($user_value->value, 3);
 
              break;
 
              case ( $user_value->reference == 3078 ) :
-                $KWH_batt_discharged_today = round($user_value->value, 2);
+                $KWH_batt_discharged_today = round($user_value->value, 3);
 
             break;
 
              case ( $user_value->reference == 3080 ) :
-               $energy_grid_yesterday = round($user_value->value, 2);
+               $energy_grid_yesterday = round($user_value->value, 3);
 
              break;
 
              case ( $user_value->reference == 3081 ) :
-                $KWH_grid_today = round($user_value->value, 2);
+                $KWH_grid_today = round($user_value->value, 3);
 
             break;
 
              case ( $user_value->reference == 3082 ) :
-               $energy_consumed_yesterday = round($user_value->value, 2);
+               $energy_consumed_yesterday = round($user_value->value, 3);
 
              break;
 
              case ( $user_value->reference == 3083 ) :
-              $KWH_load_today = round($user_value->value, 2);
+              $KWH_load_today = round($user_value->value, 3);
 
             break;
 
@@ -5257,7 +5257,7 @@ class class_transindus_eco
 
             case ( $user_value->reference == 11004 ) :
               // we have to accumulate values form 2 cases so we have used accumulation below
-              $psolar_kw += round($user_value->value, 2);
+              $psolar_kw += round($user_value->value, 3);
 
             break;
 
@@ -5268,13 +5268,13 @@ class class_transindus_eco
 
             case ( $user_value->reference == 11011 ) :
                // we have to accumulate values form 2 cases so we have used accumulation below
-               $psolar_kw_yesterday += round($user_value->value, 2);
+               $psolar_kw_yesterday += round($user_value->value, 3);
 
              break;
 
             case ( $user_value->reference == 11007 ) :
               // we have to accumulate values form 2 cases so we have used accumulation below
-              $KWH_solar_today += round($user_value->value, 2);
+              $KWH_solar_today += round($user_value->value, 3);
 
             break;
 
@@ -5285,7 +5285,7 @@ class class_transindus_eco
 
         // calculate the current into/out of battery and battery instantaneous power
         $battery_charge_adc  = round($solar_pv_adc + $inverter_current_adc, 1); // + is charge, - is discharge
-        $pbattery_kw         = round($battery_voltage_vdc * $battery_charge_adc * 0.001, 2); //$psolar_kw - $pout_inverter_ac_kw;
+        $pbattery_kw         = round($battery_voltage_vdc * $battery_charge_adc * 0.001, 3); //$psolar_kw - $pout_inverter_ac_kw;
 
 
         // conditional class names for battery charge down or up arrow

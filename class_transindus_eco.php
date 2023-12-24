@@ -3131,11 +3131,11 @@ class class_transindus_eco
         elseif ( $soc_update_method === "shelly" )
         { // SOC updates from Shelly Uni, Shelly EM and Shelly Pro day time measurements
 
-          if (  $soc_percentage_now_shelly > 100.0 )
+          if (  $soc_percentage_now_shelly > 100.2 )
           {
             // Since we know that the battery SOC is 100%, calculate the SOC at begininning of day
-            // $SOC_percentage_beg_of_day_recal_shelly = 100 - $SOC_batt_charge_net_percent_today_shelly;
-            // update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $SOC_percentage_beg_of_day_recal_shelly);
+            $SOC_percentage_beg_of_day_recal_shelly = 100 - $soc_charge_net_percent_today_shelly;
+            update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $SOC_percentage_beg_of_day_recal_shelly);
           }
 
           set_transient( $wp_user_name . '_' . 'shelly_readings_obj', $shelly_readings_obj, 5*60 );

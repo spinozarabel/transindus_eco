@@ -207,16 +207,34 @@ class class_transindus_eco
       $sunset_datetime_obj = new DateTime();
       $sunset_datetime_obj->setTimeStamp($sunset_timestamp);
 
-      // sunset time in hours:minutes:seconds format
-      $sunset_hms_format = $sunset_datetime_obj->format('H:i:s');
+      $sunset_plus_10_minutes_timestamp = $sunset_timestamp + 10 * 60;
+      $sunset_plus_10_minutes_datetime_object = new DateTime();
+      $sunset_plus_10_minutes_datetime_object->setTimeStamp($sunset_plus_10_minutes_timestamp);
 
-      error_log ($sunset_hms_format);
+      $sunset_plus_15_minutes_timestamp = $sunset_timestamp + 15 * 60;
+      $sunset_plus_15_minutes_datetime_object = new DateTime();
+      $sunset_plus_15_minutes_datetime_object->setTimeStamp($sunset_plus_15_minutes_timestamp);
+
+
+      // sunset time in hours:minutes:seconds format
+      $sunset_hms_format                  = $sunset_datetime_obj->format('H:i:s');
+      $sunset_plus_10_minutes_hms_format  = $sunset_plus_10_minutes_datetime_object->format('H:i:s');
+      $sunset_plus_15_minutes_hms_format  = $sunset_plus_15_minutes_datetime_object->format('H:i:s');
+
+      $this->cloudiness_forecast->sunset_hms_format                 = $sunset_hms_format;
+      $this->cloudiness_forecast->sunset_plus_10_minutes_hms_format = $sunset_plus_10_minutes_hms_format;
+      $this->cloudiness_forecast->sunset_plus_15_minutes_hms_format = $sunset_plus_15_minutes_hms_format;
+
+      error_log ("Sunset: $sunset_hms_format, Sunset plus 10m: $sunset_plus_10_minutes_hms_format, Sunset plus 15m: $sunset_plus_15_minutes_hms_format");
 
       $sunrise_timestamp = $this->cloudiness_forecast->sunrise_timestamp;
       $sunrise_datetime_obj = new DateTime();
       $sunrise_datetime_obj->setTimeStamp($sunrise_timestamp);
 
       $sunrise_hms_format = $sunrise_datetime_obj->format('H:i:s');
+
+      $this->cloudiness_forecast->sunrise_hms_format                = $sunrise_hms_format;
+      
 
       error_log ($sunrise_hms_format);
     }

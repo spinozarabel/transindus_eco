@@ -2576,7 +2576,7 @@ class class_transindus_eco
 
             // update the object
             $studer_readings_obj->SOC_percentage_now  = $SOC_percentage_now;
-            $studer_readings_obj->LVDS                = $LVDS_studer;
+            $studer_readings_obj->LVDS                = $LVDS;
             $studer_readings_obj->switch_override     = $switch_override;
             $studer_readings_obj->soc_update_method   = "studer";
             $studer_readings_obj->soc_percentage_now_using_dark_shelly = 1000;

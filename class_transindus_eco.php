@@ -2544,12 +2544,14 @@ class class_transindus_eco
             $studer_readings_obj->SOC_percentage_now  = $SOC_percentage_now;
             $studer_readings_obj->LVDS                = $LVDS;
             $studer_readings_obj->soc_update_method   = "studer";
+            $studer_readings_obj->soc_percentage_now_using_dark_shelly = 1000;
 
           }   // endif of studer_api_failed = false
           else
           {   // Studer API call failed. So we set the flag appropriately
             $soc_update_method = "shelly";
             $shelly_readings_obj->soc_update_method   = "shelly";
+            $shelly_readings_obj->soc_percentage_now_using_dark_shelly = 1000;
           }
         }
 
@@ -5975,6 +5977,11 @@ class class_transindus_eco
                                                   $saved_cron_exit_condition  .
                                               '</span>';
         */
+
+        if ( $soc_percentage_now_using_dark_shelly == 1000 )
+        {
+          $soc_percentage_now_using_dark_shelly = "NA";
+        }
         
         $format_object->soc_percentage_now_html = '<span style="font-size: 20px;color: Blue; display:block; text-align: center;">' . 
                                                       '<strong>' . $SOC_percentage_now . '-' . $soc_percentage_now_using_dark_shelly . ' %' . '</strong><br>' .

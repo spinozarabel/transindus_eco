@@ -2248,6 +2248,8 @@ class class_transindus_eco
             $soc_update_from_studer_after_dark  = (float) get_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark',  true);
           }
 
+          $soc_capture_after_dark_happened = $this->check_if_soc_after_dark_happened($user_index, $wp_user_name, $wp_user_ID);
+
           // define conditions for Studer API call to be made
           $conditions_satisfied_to_make_studer_api_call = 
                   

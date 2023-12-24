@@ -5710,9 +5710,9 @@ class class_transindus_eco
         // This is the AC voltage of switch:0 of Shelly 4PM
         $shelly_api_device_status_voltage = $studer_readings_obj->shelly_api_device_status_voltage;
 
-        $SOC_percentage_now = $studer_readings_obj->SOC_percentage_now;
+        $SOC_percentage_now = round($studer_readings_obj->SOC_percentage_now, 1);
 
-        $soc_percentage_now_using_dark_shelly = $studer_readings_obj->soc_percentage_now_using_dark_shelly;
+        $soc_percentage_now_using_dark_shelly = round($studer_readings_obj->soc_percentage_now_using_dark_shelly, 1);
 
         // If power is flowing OR switch has ON status then show CHeck and Green
         $grid_arrow_size = $this->get_arrow_size_based_on_power($grid_pin_ac_kw);

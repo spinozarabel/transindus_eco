@@ -3108,7 +3108,7 @@ class class_transindus_eco
               update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ) );
           }
         
-        // return object based on mode of update whetehr Studer or Shelly. If Studer, also apply 100% clamp
+        // return object based on mode of update whetehr Studer or Shelly. For Studer case only, also apply 100% clamp
         if ( $soc_update_method === "studer" )
         {  // SOC is updated by Studer
           set_transient( $wp_user_name . '_' . 'studer_readings_object', $studer_readings_obj, 5*60 );
@@ -3118,6 +3118,7 @@ class class_transindus_eco
             // Since we know that the battery SOC is 100%, calculate the SOC at begininning of day
             $SOC_percentage_beg_of_day_recal = 100 - $SOC_batt_charge_net_percent_today;
 
+            // reset the STUDER SOC at midnight to clamp calculated value above
             update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
 
             // we equalize the SOC at midnight for both STUDER and Shelly based on STUDER readings

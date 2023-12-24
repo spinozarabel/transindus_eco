@@ -229,7 +229,7 @@ class class_transindus_eco
 
       $sunrise_hms_format = $sunrise_datetime_obj->format('H:i:s');
 
-      
+
 
       $this->cloudiness_forecast->sunrise_hms_format                = $sunrise_hms_format;
 
@@ -1644,7 +1644,8 @@ class class_transindus_eco
                                                     string  $wp_user_name, 
                                                     int     $wp_user_ID , 
                                                     float   $SOC_percentage_now ,
-                                                    int     $present_home_wh_reading )  : bool
+                                                    int     $present_home_wh_reading,
+                                                    bool    $time_window_for_soc_dark_capture_open )  : bool
     {
       // set default timezone to Asia Kolkata
       date_default_timezone_set("Asia/Kolkata");
@@ -1652,7 +1653,7 @@ class class_transindus_eco
 
       // check if it is after dark and before midnightdawn annd that the transient has not been set yet
       // The time window for this to happen is over 15m after sunset for Studer and 5m therafter for Shelly if Studer fails
-      if (  $this->nowIsWithinTimeLimits("17:50", "18:11")  ) 
+      if (  $time_window_for_soc_dark_capture_open  ) 
       {
         // lets get the transient. The 1st time this is tried in the evening it should be false, 2nd time onwards true
         if ( false === ( $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) 
@@ -2122,14 +2123,28 @@ class class_transindus_eco
      * @return object:studer_readings_obj
      * 
      */
-    public function get_readings_and_servo_grid_switch( int $user_index, 
-                                                        int $wp_user_ID, 
-                                                        string $wp_user_name, 
-                                                        bool $do_shelly,
-                                                        bool $make_studer_api_call = true ) : ? object
+    public function get_readings_and_servo_grid_switch( int     $user_index, 
+                                                        int     $wp_user_ID, 
+                                                        string  $wp_user_name, 
+                                                        bool    $do_shelly,
+                                                        bool    $make_studer_api_call = true ) : ? object
     {
         { // Define boolean control variables for various time intervals
-          $it_is_still_dark = $this->nowIsWithinTimeLimits( "17:50", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
+          $sunset_hms_format  = $this->cloudiness_forecast->sunset_hms_format   ?? "18:00:00";
+          $sunrise_hms_format = $this->cloudiness_forecast->sunrise_hms_format  ?? "06:00:00";
+
+          $sunset_plus_10_minutes_hms_format  = $this->cloudiness_forecast->sunset_plus_10_minutes_hms_format ?? "18:10:00";
+
+          $sunset_plus_15_minutes_hms_format  = $this->cloudiness_forecast->sunset_plus_15_minutes_hms_format ?? "18:15:00";
+
+          $time_window_for_soc_dark_capture_open = $this->nowIsWithinTimeLimits( $sunset_hms_format, $sunset_plus_15_minutes_hms_format );
+
+          $time_window_open_for_soc_capture_after_dark_using_studer = $this->nowIsWithinTimeLimits( $sunset_hms_format, $sunset_plus_10_minutes_hms_format );
+
+          $time_window_open_for_soc_capture_after_dark_using_shelly = $this->nowIsWithinTimeLimits( $sunset_plus_10_minutes_hms_format, $sunset_plus_15_minutes_hms_format );
+
+          $it_is_still_dark = $this->nowIsWithinTimeLimits( $sunset_hms_format, "23:59:59" ) || 
+                              $this->nowIsWithinTimeLimits( "00:00", $sunrise_hms_format );
 
           // Boolean values for checking is present time is within defined time intervals
           $now_is_daytime       = $this->nowIsWithinTimeLimits("08:30", "16:30"); // changed from 17:30  on 7/28/22
@@ -2138,11 +2153,9 @@ class class_transindus_eco
           // False implies that Studer readings are to be used for SOC update, true indicates Shelly based processing
           // set default at the beginning to Studer updates of SOC
           $soc_updated_using_shelly = false;
+
+          $RDBC = false;    // permamantly disable RDBC mode 
         }
-
-        $RDBC = false;    // permamantly disable RDBC mode 
-
-        
 
         { // Get user meta for limits and controls as an array rather than 1 by 1
           $all_usermeta                           = $this->get_all_usermeta( $wp_user_ID );
@@ -2216,33 +2229,38 @@ class class_transindus_eco
         
         {  // make all measurements, update SOC, set switch tree control flags, reset midnight values
 
-          { // get the SOCs from the user meta for past midnight and also previous values. This step is unconditional
+          { // get the SOCs from the user meta. These will be used to calculate new updates
+
+            // This is the value of the SOC from previous cycle as calculated by STUDER readings
             $SOC_percentage_previous            = (float) get_user_meta($wp_user_ID, "soc_percentage_now",  true);
 
+            // This is the value of the SOC from previous cycle using SHelly BM
             $SOC_percentage_previous_shelly_bm  = (float) get_user_meta($wp_user_ID, "soc_percentage_now_calculated_using_shelly_bm",  true) ?? $SOC_percentage_previous;
 
-            // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only just past midnight only once
-            $SOC_percentage_beg_of_day          = (float) get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 50;
+            // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only just past midnight once
+            $SOC_percentage_beg_of_day          = (float) get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 60;
 
-            // SOC percentage just after midnight as measured by Shelly
+            // SOC percentage just after midnight as measured by Shelly BM.
             $shelly_soc_percentage_at_midnight = (float) get_user_meta($wp_user_ID, "shelly_soc_percentage_at_midnight",  true) 
                                                                 ?? $SOC_percentage_beg_of_day;
-            // SOC percentage after dark as computed by Shelly EM after dark
+            // SOC percentage after dark as computed by Shelly EM after dark. This gets captured at dark and gets updated every cycle
+            // using only shelly devices no STUDER involvement.
             $soc_update_from_studer_after_dark  = (float) get_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark',  true);
           }
 
           // define conditions for Studer API call to be made
           $conditions_satisfied_to_make_studer_api_call = 
-                  // It is daytime and studer call flag is true. This is the main trusted mode of measurement
-                ( $make_studer_api_call &&  ! $it_is_still_dark )                                         ||  
-                  // it is dark and Studer flag is enabled and soc capture after dark did not happen yet.
-                ( $make_studer_api_call &&    $it_is_still_dark &&  ! $soc_capture_after_dark_happened )  ||  
+                  
+                $make_studer_api_call &&  
+
+                ( ! $it_is_still_dark ||  // It is daytime and studer call flag is true. This is the main trusted mode
+                  // it is dark and Studer flag is enabled but soc capture after dark did not happen yet.
+                (   $it_is_still_dark &&  ! $soc_capture_after_dark_happened )  ||  
                   // It is dark, Studer flag is enabled, soc dark capture happened but its values dont exist
-                ( $make_studer_api_call &&    $it_is_still_dark &&    $soc_capture_after_dark_happened && 
-                  empty( $soc_update_from_studer_after_dark ) )                                           ||
+                (   $it_is_still_dark &&    $soc_capture_after_dark_happened && empty( $soc_update_from_studer_after_dark ) ) ||
                   // it is dark, Studer flag is enabled, soc after dark capture happened but soc after dark values are bad
-                ( $make_studer_api_call &&    $it_is_still_dark &&    $soc_capture_after_dark_happened && 
-                  $soc_update_from_studer_after_dark < 20 && $soc_update_from_studer_after_dark > 102 );
+                (   $it_is_still_dark &&    $soc_capture_after_dark_happened && 
+                    $soc_update_from_studer_after_dark < 20 && $soc_update_from_studer_after_dark > 102 ) );
  
           // make Studer API call when flag is let in main cron loop to do so
           if ( $conditions_satisfied_to_make_studer_api_call )
@@ -2265,7 +2283,7 @@ class class_transindus_eco
               $studer_readings_obj = new stdClass;
             }
 
-            // This flag is set when it is a non-studer cycle or when Studer API call fails
+            // This flag is set when it is a non-studer cycle or when Studer API call fails or when its dark and SOC after dark valid
             $studer_api_call_failed = true;
           }
 
@@ -2591,24 +2609,26 @@ class class_transindus_eco
 
             // Give 1st preference to Studer readings. Try between 5:50-6:05 PM if possible
             if (  $soc_update_method === "studer" && $SOC_percentage_now && $SOC_percentage_now > 30 && 
-                  $SOC_percentage_now <= 101  && $this->nowIsWithinTimeLimits("17:50", "18:05") )
+                  $SOC_percentage_now <= 101  && $time_window_open_for_soc_capture_after_dark_using_studer )
             {   // Capture SOC after dark using Studer SOC value and set the energy counter after dark to present reading
               $this->capture_evening_soc_after_dark(  $user_index, 
                                                       $wp_user_name, 
                                                       $wp_user_ID, 
                                                       $SOC_percentage_now, 
-                                                      $present_home_wh_reading );
+                                                      $present_home_wh_reading,
+                                                      $time_window_for_soc_dark_capture_open );
             }
             elseif (  $soc_update_method === "shelly" && $soc_percentage_now_shelly && $soc_percentage_now_shelly > 30 && 
-                      $soc_percentage_now_shelly <= 101  && $this->nowIsWithinTimeLimits("18:06", "18:11"))
-            { // Studer SOC after dark failed between 5:50-6:05PM so try Shelly SOC between 6:06-6:11 PM
+                      $soc_percentage_now_shelly <= 101  && $time_window_open_for_soc_capture_after_dark_using_shelly )
+            { // Studer SOC after dark failed in 10m window so use Shelly for dark capture in 5m window after
               $this->capture_evening_soc_after_dark(  $user_index, 
                                                       $wp_user_name, 
                                                       $wp_user_ID, 
                                                       $soc_percentage_now_shelly, 
-                                                      $present_home_wh_reading );
+                                                      $present_home_wh_reading,
+                                                      $time_window_for_soc_dark_capture_open );
             }
-          }
+          } 
 
           if ( $soc_capture_after_dark_happened === true )
           { // SOC capture after dark is DONE so use it to compute SOC after dark using only Shelly readings
@@ -2660,11 +2680,16 @@ class class_transindus_eco
 
               $this->verbose ? error_log("SOC % using after dark Shelly: $soc_percentage_now_using_dark_shelly"): false;
             }
+
+            // check the validity of the SOC using this after dark shelly method
+            $soc_after_dark_update_valid = $soc_percentage_now_using_dark_shelly < 100 &&
+                                          $soc_percentage_now_using_dark_shelly > 30;
+
             
             // set the switch tree conditions for this mode of update
-            $LVDS =             ( $soc_percentage_now_using_dark_shelly <= $soc_percentage_lvds_setting &&  // less than LVDS setting
-                                  $soc_update_method === "shelly-after-dark"                            &&
-                                  $shelly_switch_status == "OFF" );					  // The switch is still OFF
+            $LVDS =               $soc_percentage_now_using_dark_shelly <= $soc_percentage_lvds_setting &&  // less than LVDS setting
+                                  $soc_after_dark_update_valid                                          &&  // update OK
+                                  $shelly_switch_status == "OFF" ;					                                // The switch is still OFF
 
             $switch_override = false;
           }

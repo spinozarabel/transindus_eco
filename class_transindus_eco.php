@@ -2139,7 +2139,7 @@ class class_transindus_eco
           $sunset_plus_15_minutes_hms_format  = $this->cloudiness_forecast->sunset_plus_15_minutes_hms_format ?? "18:15:00";
 
           error_log ("Sunset: $sunset_hms_format, Sunset plus 10m: $sunset_plus_10_minutes_hms_format, Sunset plus 15m: $sunset_plus_15_minutes_hms_format");
-
+          error_log("Sunrise: $sunrise_hms_format");
           $time_window_for_soc_dark_capture_open = $this->nowIsWithinTimeLimits( $sunset_hms_format, $sunset_plus_15_minutes_hms_format );
 
           $time_window_open_for_soc_capture_after_dark_using_studer = $this->nowIsWithinTimeLimits( $sunset_hms_format, $sunset_plus_10_minutes_hms_format );

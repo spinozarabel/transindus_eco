@@ -221,7 +221,7 @@ class class_transindus_eco
       $sunset_plus_10_minutes_hms_format  = $sunset_plus_10_minutes_datetime_object->format('H:i:s');
       $sunset_plus_15_minutes_hms_format  = $sunset_plus_15_minutes_datetime_object->format('H:i:s');
 
-      error_log ("Sunset: $sunset_hms_format, Sunset plus 10m: $sunset_plus_10_minutes_hms_format, Sunset plus 15m: $sunset_plus_15_minutes_hms_format");
+      // error_log ("Sunset: $sunset_hms_format, Sunset plus 10m: $sunset_plus_10_minutes_hms_format, Sunset plus 15m: $sunset_plus_15_minutes_hms_format");
 
       $sunrise_timestamp = $this->cloudiness_forecast->sunrise_timestamp;
       $sunrise_timestamp_delayed = $sunrise_timestamp + 20 * 60;
@@ -237,7 +237,7 @@ class class_transindus_eco
       $this->cloudiness_forecast->sunset_plus_10_minutes_hms_format = $sunset_plus_10_minutes_hms_format;
       $this->cloudiness_forecast->sunset_plus_15_minutes_hms_format = $sunset_plus_15_minutes_hms_format;
       
-      error_log("SUnrise hms format: $sunrise_hms_format");
+      // error_log("Sunrise hms format: $sunrise_hms_format");
       
 
     }
@@ -2137,6 +2137,8 @@ class class_transindus_eco
           $sunset_plus_10_minutes_hms_format  = $this->cloudiness_forecast->sunset_plus_10_minutes_hms_format ?? "18:10:00";
 
           $sunset_plus_15_minutes_hms_format  = $this->cloudiness_forecast->sunset_plus_15_minutes_hms_format ?? "18:15:00";
+
+          error_log ("Sunset: $sunset_hms_format, Sunset plus 10m: $sunset_plus_10_minutes_hms_format, Sunset plus 15m: $sunset_plus_15_minutes_hms_format");
 
           $time_window_for_soc_dark_capture_open = $this->nowIsWithinTimeLimits( $sunset_hms_format, $sunset_plus_15_minutes_hms_format );
 

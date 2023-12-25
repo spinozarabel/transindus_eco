@@ -6057,11 +6057,15 @@ class class_transindus_eco
 
         if ( $soc_percentage_now_using_dark_shelly == 1000 )
         {
-          $soc_percentage_now_using_dark_shelly = "NA";
+          $soc_percentage_now_disp = round($SOC_percentage_now, 1);
+        }
+        else
+        {
+          $soc_percentage_now_disp = round($SOC_percentage_now, 1) . "-" . $soc_percentage_now_using_dark_shelly;
         }
         
         $format_object->soc_percentage_now_html = '<span style="font-size: 20px;color: Blue; display:block; text-align: center;">' . 
-                                                      '<strong>' . $SOC_percentage_now . '-' . $soc_percentage_now_using_dark_shelly . ' %' . '</strong><br>' .
+                                                      '<strong>' . $soc_percentage_now_disp  . ' %' . '</strong><br>' .
                                                   '</span>';
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' .
                                                     $formatted_interval   . ' ' . $saved_cron_exit_condition  . $soc_update_method .

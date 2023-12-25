@@ -221,12 +221,12 @@ class class_transindus_eco
       $sunset_plus_10_minutes_hms_format  = $sunset_plus_10_minutes_datetime_object->format('H:i:s');
       $sunset_plus_15_minutes_hms_format  = $sunset_plus_15_minutes_datetime_object->format('H:i:s');
 
-      // error_log ("Sunset: $sunset_hms_format, Sunset plus 10m: $sunset_plus_10_minutes_hms_format, Sunset plus 15m: $sunset_plus_15_minutes_hms_format");
+      error_log ("Sunset: $sunset_hms_format, Sunset plus 10m: $sunset_plus_10_minutes_hms_format, Sunset plus 15m: $sunset_plus_15_minutes_hms_format");
 
       $sunrise_timestamp = $this->cloudiness_forecast->sunrise_timestamp;
       $sunrise_timestamp_delayed = $sunrise_timestamp + 20 * 60;
       $sunrise_datetime_obj = new DateTime();
-      $sunrise_datetime_obj->setTimeStamp($sunrise_timestamp_delayed);
+      $sunrise_datetime_obj->setTimeStamp($sunrise_timestamp);
       $sunrise_hms_format = $sunrise_datetime_obj->format('H:i:s');
 
 
@@ -237,8 +237,9 @@ class class_transindus_eco
       $this->cloudiness_forecast->sunset_plus_10_minutes_hms_format = $sunset_plus_10_minutes_hms_format;
       $this->cloudiness_forecast->sunset_plus_15_minutes_hms_format = $sunset_plus_15_minutes_hms_format;
       
+      error_log("SUnrise hms format: $sunrise_hms_format");
+      
 
-      // error_log ($sunrise_hms_format);
     }
 
 
@@ -2295,13 +2296,15 @@ class class_transindus_eco
           { // make WATER HEATER measurements using Shelly plus 1PM
             $shelly_water_heater_data = $this->get_shelly_device_status_water_heater( $user_index );
 
-            // update the Shelly readings object with the water heater data object
-            $shelly_readings_obj->shelly_water_heater_data  = $shelly_water_heater_data;
+            if ( $shelly_water_heater_data )
+            {   // update the Shelly readings object with the water heater data object
+              $shelly_readings_obj->shelly_water_heater_data  = $shelly_water_heater_data;
 
-            // Update Studer Readings Object also with the water heater object
-            if ( ! empty ( $studer_readings_obj ) )
-            {
-              $studer_readings_obj->shelly_water_heater_data = $shelly_water_heater_data;
+              // Update Studer Readings Object also with the water heater object
+              if ( ! empty ( $studer_readings_obj ) )
+              {
+                $studer_readings_obj->shelly_water_heater_data = $shelly_water_heater_data;
+              }
             }
           }
           
@@ -2323,25 +2326,26 @@ class class_transindus_eco
             // get a measurement of the charging current into battery
             $shelly_battery_measurement_object = $this->get_shelly_battery_measurement( $user_index, $wp_user_name, $wp_user_ID, 
                                                                                         $shelly_switch_status, $it_is_still_dark );
+            if ( $shelly_battery_measurement_object )
+            {
+              $battery_capacity_ah                    = $shelly_battery_measurement_object->battery_capacity_ah;
 
-            $battery_capacity_ah                    = $shelly_battery_measurement_object->battery_capacity_ah;
+              $battery_accumulated_percent_since_midnight = $shelly_battery_measurement_object->battery_accumulated_percent_since_midnight;
 
-            $battery_accumulated_percent_since_midnight = $shelly_battery_measurement_object->battery_accumulated_percent_since_midnight;
+              $battery_accumulated_ah_since_midnight  = $battery_accumulated_percent_since_midnight /100 * $battery_capacity_ah;
 
-            $battery_accumulated_ah_since_midnight  = $battery_accumulated_percent_since_midnight /100 * $battery_capacity_ah;
+              $battery_kwh_since_midnight = round( 49.8 * 0.001 * $battery_accumulated_ah_since_midnight, 3 );
 
-            $battery_kwh_since_midnight = round( 49.8 * 0.001 * $battery_accumulated_ah_since_midnight, 3 );
-
-            $shelly_readings_obj->est_solar_total_kw        = $est_solar_total_kw;
-            $shelly_readings_obj->est_solar_kw_arr          = $est_solar_kw_arr;
-            $shelly_readings_obj->total_to_west_panel_ratio = $total_to_west_panel_ratio;
-            $shelly_readings_obj->battery_kwh_since_midnight  = $battery_kwh_since_midnight;
-            $shelly_readings_obj->battery_amps                = $shelly_battery_measurement_object->battery_amps;
-            $shelly_readings_obj->battery_accumulated_ah_since_midnight       = $battery_accumulated_ah_since_midnight;
-            $shelly_readings_obj->battery_accumulated_percent_since_midnight  = $battery_accumulated_percent_since_midnight;
-            $shelly_readings_obj->battery_ah_this_measurement = $shelly_battery_measurement_object->battery_ah_this_measurement;
-            $shelly_readings_obj->battery_capacity_ah         = $battery_capacity_ah;
-
+              $shelly_readings_obj->est_solar_total_kw        = $est_solar_total_kw;
+              $shelly_readings_obj->est_solar_kw_arr          = $est_solar_kw_arr;
+              $shelly_readings_obj->total_to_west_panel_ratio = $total_to_west_panel_ratio;
+              $shelly_readings_obj->battery_kwh_since_midnight  = $battery_kwh_since_midnight;
+              $shelly_readings_obj->battery_amps                = $shelly_battery_measurement_object->battery_amps;
+              $shelly_readings_obj->battery_accumulated_ah_since_midnight       = $battery_accumulated_ah_since_midnight;
+              $shelly_readings_obj->battery_accumulated_percent_since_midnight  = $battery_accumulated_percent_since_midnight;
+              $shelly_readings_obj->battery_ah_this_measurement = $shelly_battery_measurement_object->battery_ah_this_measurement;
+              $shelly_readings_obj->battery_capacity_ah         = $battery_capacity_ah;
+            }
             // Also update the Studer object with battery amps
             if ( ! empty ( $studer_readings_obj ) )
             {
@@ -4607,14 +4611,10 @@ class class_transindus_eco
       $shelly_api_device_response = $shelly_api->get_shelly_device_status();
 
       if ( is_null($shelly_api_device_response) ) 
-          { // switch status is unknown
+          { // No response for Shelly water heater switch API call
 
-              error_log("Shelly Water Heater Switch API call failed - Reason unknown");
-
-              $shelly_api_device_status_ON = null;
-
-              $shelly_switch_status             = "OFFLINE";
-              $shelly_api_device_status_voltage = "NA";
+            error_log("Shelly Water Heater Switch API call failed - Reason unknown");
+            return null;
           }
           else 
           {  // Switch is ONLINE - Get its status, VOltage, and Power

@@ -1171,7 +1171,7 @@ class class_transindus_eco
         $adc_voltage_shelly = $shelly_api_device_response->data->device_status->{"input:100"}->percent;
 
         // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
-        $delta_voltage = $adc_voltage_shelly * 0.1 - ( 2.5 + 0.09875); // added an offset for 2A
+        $delta_voltage = $adc_voltage_shelly * 0.1 - 2.54;
 
         // 100 Amps gives a voltage of 0.625V amplified by opamp by 4.7. So voltas/amp measured by Shelly Addon is
         $volts_per_amp = 0.625 * 4.7 / 100;

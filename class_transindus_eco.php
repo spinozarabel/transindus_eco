@@ -2660,6 +2660,7 @@ class class_transindus_eco
               // SOC is unchanging due to Grid ON however set the variables using the user meta since they are undefined.
               $soc_percentage_now_using_dark_shelly = (float) get_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark',  true);
 
+              
               $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
 
               if ($studer_readings_obj)
@@ -2682,34 +2683,50 @@ class class_transindus_eco
               // round it to 3 decimal places for accuracy of arithmatic for accumulation
               $soc_percentage_now_using_dark_shelly = round( $soc_percentage_after_dark - $soc_percentage_discharge, 5);
 
-              // update values to get differentials for next cycle from this cycle. Ignore word studer it could be from studer or shelly
-              update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_using_dark_shelly);
-              update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $present_home_wh_reading);
+              // update SOC only if values are reasonable
+              if ( $soc_percentage_now_using_dark_shelly > 30 && $soc_percentage_now_using_dark_shelly < 100)
+              {
+                // update values to get differentials for next cycle from this cycle. Ignore word studer it could be from studer or shelly
+                update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_using_dark_shelly);
+                update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $present_home_wh_reading);
 
-              // update the readings object for transient and display
-              $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
+                // update the readings object for transient and display
+                $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
 
-              if ($studer_readings_obj)
-              { // not sure if this is needed TODO check
-                $studer_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
+                if ($studer_readings_obj)
+                { // not sure if this is needed TODO check
+                  $studer_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
+                }
+
+                $this->verbose ? error_log("SOC % using after dark Shelly: $soc_percentage_now_using_dark_shelly"): false;
               }
-
-              $this->verbose ? error_log("SOC % using after dark Shelly: $soc_percentage_now_using_dark_shelly"): false;
             }
 
             // check the validity of the SOC using this after dark shelly method
             $soc_after_dark_update_valid =  $soc_percentage_now_using_dark_shelly < 100 &&
                                             $soc_percentage_now_using_dark_shelly > 30;
 
-            
-            // set the switch tree conditions for this mode of update
-            $LVDS = $soc_percentage_now_using_dark_shelly <= $soc_percentage_lvds_setting &&  // less than LVDS setting
-                    $soc_after_dark_update_valid                                          &&  // update OK
-                    $shelly_switch_status == "OFF" ;                                          // Grid switch is OFF
-
-            if ($LVDS)
+            if ( $soc_after_dark_update_valid )
             {
-              error_log("LVDS using SOC after Dark using Shelly EM: $LVDS");
+              // set the switch tree conditions for this mode of update
+              $LVDS = $soc_percentage_now_using_dark_shelly <= $soc_percentage_lvds_setting &&  // less than LVDS setting
+                      $shelly_switch_status == "OFF" ;                                          // Grid switch is OFF
+
+              if ($LVDS)
+              {
+                error_log("LVDS using SOC after Dark using Shelly EM: $LVDS");
+              }
+            }
+            else
+            {
+              // use soc using shelly BM as fallback since soc dark seems invalid
+              $LVDS = $soc_percentage_now_shelly <= $soc_percentage_lvds_setting &&  // less than LVDS setting
+                      $shelly_switch_status == "OFF" ; 
+                      
+              if ($LVDS)
+              {
+                error_log("LVDS using SOC Shelly BM: $LVDS");
+              }
             }
 
             $shelly_readings_obj->LVDS = $LVDS;

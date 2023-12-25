@@ -2580,6 +2580,12 @@ class class_transindus_eco
                                       &&
                                     ( $shelly_switch_status == "OFF" ) );
 
+              if ($LVDS)
+              {
+                error_log("LVDS using SOC from STUDER: $LVDS");
+              }
+              
+
               $switch_override =  ( $shelly_switch_status                == "OFF" )  &&
                                   ( $studer_readings_obj->grid_input_vac >= 190   );
 
@@ -2640,7 +2646,7 @@ class class_transindus_eco
 
           // iimediately after capture thie following will not trigger but the next loop will.
           if ( $soc_capture_after_dark_happened === true )
-          { // SOC capture after dark is DONE so use it to compute SOC after dark using only Shelly readings
+          { // SOC capture after dark is DONE and it is still dark, so use it to compute SOC after dark using only Shelly readings
 
             $soc_update_method = "shelly-after-dark";
 
@@ -2698,7 +2704,12 @@ class class_transindus_eco
             // set the switch tree conditions for this mode of update
             $LVDS = $soc_percentage_now_using_dark_shelly <= $soc_percentage_lvds_setting &&  // less than LVDS setting
                     $soc_after_dark_update_valid                                          &&  // update OK
-                    $shelly_switch_status == "OFF" ;					                                // The switch is still OFF
+                    $shelly_switch_status == "OFF" ;                                          // Grid switch is OFF
+
+            if ($LVDS)
+            {
+              error_log("LVDS using SOC after Dark using Shelly EM: $LVDS");
+            }
 
             $shelly_readings_obj->LVDS = $LVDS;
 

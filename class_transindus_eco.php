@@ -224,9 +224,9 @@ class class_transindus_eco
       // error_log ("Sunset: $sunset_hms_format, Sunset plus 10m: $sunset_plus_10_minutes_hms_format, Sunset plus 15m: $sunset_plus_15_minutes_hms_format");
 
       $sunrise_timestamp = $this->cloudiness_forecast->sunrise_timestamp;
+      $sunrise_timestamp_delayed = $sunrise_timestamp + 20 * 60;
       $sunrise_datetime_obj = new DateTime();
-      $sunrise_datetime_obj->setTimeStamp($sunrise_timestamp);
-
+      $sunrise_datetime_obj->setTimeStamp($sunrise_timestamp_delayed);
       $sunrise_hms_format = $sunrise_datetime_obj->format('H:i:s');
 
 

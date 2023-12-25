@@ -2531,6 +2531,7 @@ class class_transindus_eco
               if ( abs( $KWH_load_today_percent_delta ) > 10 )
               {
                 $KWH_load_today = $home_consumption_kwh_since_midnight_shelly_em;
+                error_log("Used Shelly EM load calculation for STuder SOC update - KWH_load_today_percent_delta: $KWH_load_today_percent_delta");
               }
             }
 

@@ -2354,7 +2354,7 @@ class class_transindus_eco
               $shelly_readings_obj->studer_measured_battery_charging_amps = $studer_readings_obj->battery_charge_adc ?? "NA";
 
               // lets compare the currents measured by Studer when it exists and Shelly BM
-              if ($studer_readings_obj->battery_charge_adc == "NA" )
+              if ($studer_readings_obj->studer_measured_battery_charging_amps != "NA" )
               {
                 $shelly_readings_obj->battery_current_comparison  = 
                                               $studer_readings_obj->battery_charge_adc . "-" . $shelly_readings_obj->battery_amps;

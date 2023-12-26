@@ -2683,10 +2683,14 @@ class class_transindus_eco
               // round it to 3 decimal places for accuracy of arithmatic for accumulation
               $soc_percentage_now_using_dark_shelly = round( $soc_percentage_after_dark - $soc_percentage_discharge, 5);
 
+              // check the validity of the SOC using this after dark shelly method
+              $soc_after_dark_update_valid =  $soc_percentage_now_using_dark_shelly < 100 &&
+                                              $soc_percentage_now_using_dark_shelly > 30;
+
               // update SOC only if values are reasonable
-              if ( $soc_percentage_now_using_dark_shelly > 30 && $soc_percentage_now_using_dark_shelly < 100)
+              if ( $soc_after_dark_update_valid === false )
               {
-                // update values to get differentials for next cycle from this cycle. Ignore word studer it could be from studer or shelly
+                // uValid values, pdate values to get differentials for next cycl. Word STUDER is legacy, nothing to do with Studer
                 update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_using_dark_shelly);
                 update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $present_home_wh_reading);
 
@@ -2700,13 +2704,18 @@ class class_transindus_eco
 
                 $this->verbose ? error_log("SOC % using after dark Shelly: $soc_percentage_now_using_dark_shelly"): false;
               }
+              else
+              {
+                error_log("SOC using after dark Shelly not updated due to bad value: $soc_percentage_now_using_dark_shelly");
+                error_log("shelly_energy_counter value NOW: $present_home_wh_reading");
+              }
             }
 
-            // check the validity of the SOC using this after dark shelly method
+            // check the validity of the SOC using this after dark shelly method. We need to repeat since could have come from top branch
             $soc_after_dark_update_valid =  $soc_percentage_now_using_dark_shelly < 100 &&
                                             $soc_percentage_now_using_dark_shelly > 30;
 
-            if ( $soc_after_dark_update_valid )
+            if ( $soc_after_dark_update_valid === true )
             {
               // set the switch tree conditions for this mode of update
               $LVDS = $soc_percentage_now_using_dark_shelly <= $soc_percentage_lvds_setting &&  // less than LVDS setting
@@ -2718,8 +2727,7 @@ class class_transindus_eco
               }
             }
             else
-            {
-              // use soc using shelly BM as fallback since soc dark seems invalid
+            { // invalid Sdark OC value, use soc using shelly BM as fallback since soc dark seems invalid
               $LVDS = $soc_percentage_now_shelly <= $soc_percentage_lvds_setting &&  // less than LVDS setting
                       $shelly_switch_status == "OFF" ; 
                       
@@ -2757,9 +2765,8 @@ class class_transindus_eco
           error_log("SOC after Dark at midnight - $soc_percentage_now_using_dark_shelly");
           
           // 1st preference is given to SOC after dark for midnight update if that value at midnight is reasonable
-          if (  $soc_update_method === "shelly-after-dark"    && 
-                $soc_percentage_now_using_dark_shelly  > 30  && 
-                $soc_percentage_now_using_dark_shelly  < 100      )
+          if (  $soc_update_method            === "shelly-after-dark"    && 
+                $soc_after_dark_update_valid  === true  )
           {
             $soc_used_for_midnight_update = $soc_percentage_now_using_dark_shelly;
             error_log("1st preference SOC after Dark used for midnight update: $soc_percentage_now_using_dark_shelly");

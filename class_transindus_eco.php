@@ -2688,7 +2688,7 @@ class class_transindus_eco
                                               $soc_percentage_now_using_dark_shelly > 30;
 
               // update SOC only if values are reasonable
-              if ( $soc_after_dark_update_valid === false )
+              if ( $soc_after_dark_update_valid === true )
               {
                 // uValid values, pdate values to get differentials for next cycl. Word STUDER is legacy, nothing to do with Studer
                 update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_using_dark_shelly);

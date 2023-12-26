@@ -6101,8 +6101,8 @@ class class_transindus_eco
                                                       '<strong>' . $soc_percentage_now_disp  . ' %' . '</strong><br>' .
                                                   '</span>';
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' .
-                                                    $formatted_interval   . ' ' . $saved_cron_exit_condition  . $soc_update_method . '<br>' . 
-                                                    $studer_readings_obj->battery_current_comparison . 
+                                                    $formatted_interval   . ' ' . $saved_cron_exit_condition  . $soc_update_method .
+                                                    // $studer_readings_obj->battery_current_comparison . 
                                               '</span>';
         return $format_object;
     }

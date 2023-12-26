@@ -2351,6 +2351,14 @@ class class_transindus_eco
               $shelly_readings_obj->battery_accumulated_percent_since_midnight  = $battery_accumulated_percent_since_midnight;
               $shelly_readings_obj->battery_ah_this_measurement = $shelly_battery_measurement_object->battery_ah_this_measurement;
               $shelly_readings_obj->battery_capacity_ah         = $battery_capacity_ah;
+              $shelly_readings_obj->studer_measured_battery_charging_amps = $studer_readings_obj->battery_charge_adc ?? "NA";
+
+              // lets compare the currents measured by Studer when it exists and Shelly BM
+              if ($studer_readings_obj->battery_charge_adc == "NA" )
+              {
+                $shelly_readings_obj->battery_current_comparison  = 
+                                              $studer_readings_obj->battery_charge_adc . "-" . $shelly_readings_obj->battery_amps;
+              }
             }
             // Also update the Studer object with battery amps
             if ( ! empty ( $studer_readings_obj ) )
@@ -5927,6 +5935,7 @@ class class_transindus_eco
         $format_object->battery_status_icon = $battery_status_icon;
         $format_object->battery_arrow_icon  = $battery_arrow_icon;
         $format_object->battery_info        = $battery_info;
+        
 
         // Shelly 4PM load breakout data
         $power_total_to_home = $studer_readings_obj->power_total_to_home;
@@ -6092,7 +6101,8 @@ class class_transindus_eco
                                                       '<strong>' . $soc_percentage_now_disp  . ' %' . '</strong><br>' .
                                                   '</span>';
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' .
-                                                    $formatted_interval   . ' ' . $saved_cron_exit_condition  . $soc_update_method .
+                                                    $formatted_interval   . ' ' . $saved_cron_exit_condition  . $soc_update_method . '<br>' . 
+                                                    $studer_readings_obj->battery_current_comparison . 
                                               '</span>';
         return $format_object;
     }

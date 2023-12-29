@@ -2556,7 +2556,8 @@ class class_transindus_eco
 
                 // $now was set just around the time STuder readings were taken.
                 $diff = $now->diff( $prev_datetime_obj );
-                $time_between_measurements_hours = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 ) / 3600;
+                $time_between_measurements_secs   = (int) ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 );
+                $time_between_measurements_hours  = $time_between_measurements_secs / 3600;
 
                 // calculate the AM of battery current charge in this time interval
                 $studer_measured_battery_ah_this_interval = 
@@ -2566,9 +2567,14 @@ class class_transindus_eco
                                                             $studer_measured_battery_ah_this_interval / $battery_capacity_ah * 100;
                 // get the accumulated studer measured battery SOC5 using the current measurement only from user meta
                 $studer_current_based_soc_percentage_accumulated_since_midnight = (float) get_user_meta(  $wp_user_ID, 
-                                                            'studer_current_based_soc_percentage_accumulated_since_midnight', true) ?? $soc_charge_net_percent_today_shelly;
+                                                            'studer_current_based_soc_percentage_accumulated_since_midnight', true) ?? $battery_accumulated_percent_since_midnight;
                 // accumulate current measurement
                 $studer_current_based_soc_percentage_accumulated_since_midnight += $studer_current_based_battery_delta_soc_percentage;
+
+                if ( $time_between_measurements_secs >= 15 * 60 )
+                {   // If time difference is greater than 10m reset the accumulated value to the one based on Shelly BM
+                  $studer_current_based_soc_percentage_accumulated_since_midnight = $battery_accumulated_percent_since_midnight;
+                }
 
                 // Use the Studer SOC percentage at midnight to calculate the present SOC based on current based measurement
                 $studer_current_based_soc_percentage_now =  round(  $SOC_percentage_beg_of_day + 

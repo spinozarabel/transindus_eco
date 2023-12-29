@@ -654,7 +654,7 @@ class class_transindus_eco
      *  @param float:energy_total_to_home_ts is the total energy measured by Shelly4PM energy meter upto this point
      *  @param int:user_index
      *  @param int:wp_user_ID
-     *  @return int:shelly_energy_counter_midnight
+     *  @return int:shelly_energy_counter_midnight is the accumulated load energy as measured by Shelly Pro 4PM
      */
     public function get_accumulated_wh_since_midnight_shelly4pm(  float $energy_total_to_home_ts, int $user_index, int $wp_user_ID ) : ? int
     {
@@ -2131,6 +2131,8 @@ class class_transindus_eco
                                                         bool    $make_studer_api_call = true ) : ? object
     {
         { // Define boolean control variables for various time intervals
+          date_default_timezone_set("Asia/Kolkata");
+          
           $sunset_hms_format  = $this->cloudiness_forecast->sunset_hms_format   ?? "18:00:00";
           $sunrise_hms_format = $this->cloudiness_forecast->sunrise_hms_format  ?? "06:00:00";
 
@@ -2273,7 +2275,10 @@ class class_transindus_eco
  
           // make Studer API call when flag is let in main cron loop to do so
           if ( $conditions_satisfied_to_make_studer_api_call === true )
-          {   // conditions are satisfied to make Studer API call
+          {   // conditions are satisfied to make Studer API 
+            $now = new DateTime();
+            $studer_measured_battery_amps_now_timestamp = $now->getTimestamp();
+
             $studer_readings_obj  = $this->get_studer_min_readings($user_index);
 
             // define the condition for failure of the Studer API call
@@ -2351,14 +2356,6 @@ class class_transindus_eco
               $shelly_readings_obj->battery_accumulated_percent_since_midnight  = $battery_accumulated_percent_since_midnight;
               $shelly_readings_obj->battery_ah_this_measurement = $shelly_battery_measurement_object->battery_ah_this_measurement;
               $shelly_readings_obj->battery_capacity_ah         = $battery_capacity_ah;
-              $shelly_readings_obj->studer_measured_battery_charging_amps = $studer_readings_obj->battery_charge_adc ?? "NA";
-
-              // lets compare the currents measured by Studer when it exists and Shelly BM
-              if ($shelly_readings_obj->studer_measured_battery_charging_amps != "NA" )
-              {
-                $shelly_readings_obj->battery_current_comparison  = 
-                                              $studer_readings_obj->battery_charge_adc . "-" . $shelly_readings_obj->battery_amps;
-              }
             }
             // Also update the Studer object with battery amps
             if ( ! empty ( $studer_readings_obj ) )
@@ -2539,8 +2536,55 @@ class class_transindus_eco
               if ( abs( $KWH_load_today_percent_delta ) > 10 )
               {
                 $KWH_load_today = $home_consumption_kwh_since_midnight_shelly_em;
-                error_log("Used Shelly EM load calculation for STuder SOC update - KWH_load_today_percent_delta: $KWH_load_today_percent_delta");
+                error_log("Used Shelly EM load calculation for STUDER SOC update - KWH_load_today_percent_delta: $KWH_load_today_percent_delta");
               }
+            }
+
+            {   // calculate SOC update based on Studer measurement of battery current only, amps positive if charging
+                $studer_measured_battery_amps_now = $studer_readings_obj->battery_charge_adc;
+
+                // get Studer measured current from previous cycle from Transient if it exists. If not set value to present value
+                $studer_measured_battery_amps_previous = (float) get_transient( 'studer_measured_battery_amps_previous' ) ?? 
+                                                                  $studer_measured_battery_amps_now;
+                // get timestamp of previous studer measurement - set to present value if it doesnt exist
+                $studer_measured_battery_amps_previous_timestamp = (float) get_transient( 'studer_measured_battery_amps_previous_timestamp' ) ?? 
+                                                                  $studer_measured_battery_amps_now_timestamp;
+
+                // calculate the time difference in seconds between previous and current Studer measurements
+                $prev_datetime_obj = new DateTime();
+                $prev_datetime_obj->setTimeStamp($studer_measured_battery_amps_previous_timestamp);
+
+                // $now was set just around the time STuder readings were taken.
+                $diff = $now->diff( $prev_datetime_obj );
+                $time_between_measurements_hours = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 ) / 3600;
+
+                // calculate the AM of battery current charge in this time interval
+                $studer_measured_battery_ah_this_interval = 
+                0.5 * ( $studer_measured_battery_amps_now + $studer_measured_battery_amps_previous ) * $time_between_measurements_hours;
+                
+                $studer_current_based_battery_delta_soc_percentage = 
+                                                            $studer_measured_battery_ah_this_interval / $battery_capacity_ah * 100;
+                // get the accumulated studer measured battery SOC5 using the current measurement only from user meta
+                $studer_current_based_soc_percentage_accumulated_since_midnight = (float) get_user_meta(  $wp_user_ID, 
+                                                            'studer_current_based_soc_percentage_accumulated_since_midnight', true) ?? $soc_charge_net_percent_today_shelly;
+                // accumulate current measurement
+                $studer_current_based_soc_percentage_accumulated_since_midnight += $studer_current_based_battery_delta_soc_percentage;
+
+                // Use the Studer SOC percentage at midnight to calculate the present SOC based on current based measurement
+                $studer_current_based_soc_percentage_now =  round(  $SOC_percentage_beg_of_day + 
+                                                                    $studer_current_based_soc_percentage_accumulated_since_midnight, 1  );
+                // write current measurement to user meta accumulation 
+                update_user_meta( $wp_user_ID, 'studer_current_based_soc_percentage_accumulated_since_midnight', 
+                                               $studer_current_based_soc_percentage_accumulated_since_midnight);
+
+                $studer_current_based_measurement_timestamp_now = $now->getTimestamp();
+
+                // Reset transients to current measurements for use in next cycle for trapeziod rule integration
+                set_transient( 'studer_measured_battery_amps_previous',           $studer_measured_battery_amps_now ,               5 * 60);
+                set_transient( 'studer_measured_battery_amps_previous_timestamp', $studer_current_based_measurement_timestamp_now,  5 * 60);
+
+                // display values for logging
+                $this->verbose ? error_log("Studer Current Based SOC: $studer_current_based_soc_percentage_now %"): false;
             }
 
             // Net battery charge in KWH (discharge if minus) as measured by STUDER
@@ -2607,6 +2651,7 @@ class class_transindus_eco
             $studer_readings_obj->switch_override     = $switch_override;
             $studer_readings_obj->soc_update_method   = "studer";
             $studer_readings_obj->soc_percentage_now_using_dark_shelly = 1000;
+            $studer_readings_obj->studer_current_based_soc_percentage_accumulated_since_midnight = $studer_current_based_soc_percentage_accumulated_since_midnight;
 
           }   // endif of STUDER measurement successful
           else
@@ -2807,6 +2852,9 @@ class class_transindus_eco
 
           // reset midnight energy counter value for home load consumed to current measured value as measured by Shelly EM
           update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_midnight', $present_home_wh_reading );
+
+          // Reset the Studer Current based method of calculating SOC% to 0 at midnight.
+          update_user_meta( $wp_user_ID, 'studer_current_based_soc_percentage_accumulated_since_midnight', 0.0001 );
         }
 
         $LVDS_soc_6am_grid_on = false;
@@ -2948,7 +2996,9 @@ class class_transindus_eco
 
           $pbattery_kw =  round( 49.8 * 0.001 * $shelly_battery_measurement_object->battery_amps, 3 );
 
+          // This is looked for to get battery urrent for display later on and the name is same for Studer or Shelly BM
           $shelly_readings_obj->battery_charge_adc = $shelly_battery_measurement_object->battery_amps;
+
           $shelly_readings_obj->pbattery_kw = $pbattery_kw;
           $shelly_readings_obj->grid_pin_ac_kw = $a_grid_kw_pwr;
           $shelly_readings_obj->grid_input_vac = $shelly_api_device_status_voltage;
@@ -3170,15 +3220,23 @@ class class_transindus_eco
 
           if (  $SOC_percentage_now > 100.0 || $battery_voltage_avg  >=  $battery_voltage_avg_float_setting )
           {
-            // Since we know that the battery SOC is 100%, calculate the SOC at begininning of day
+            // Since we know that the battery SOC is 100%, reset the SOC at midnight since we cannot change the Studer day accumulation values
             $SOC_percentage_beg_of_day_recal = 100 - $SOC_batt_charge_net_percent_today;
 
             // reset the STUDER SOC at midnight to clamp calculated value above
             update_user_meta( $wp_user_ID, 'soc_percentage', $SOC_percentage_beg_of_day_recal);
+            // we equalize the Shelly based midnight SOC value to the STuder's midnight SOC value
+            update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight',           $SOC_percentage_beg_of_day_recal);
 
-            // we equalize the SOC at midnight for both STUDER and Shelly based on STUDER readings
-            update_user_meta( $wp_user_ID, 'shelly_soc_percentage_at_midnight', $SOC_percentage_beg_of_day_recal);
-            update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $SOC_batt_charge_net_percent_today );
+            // Since the Shelly BM uses the shelly_soc_percentage_at_midnight and battery_accumulated_percent_since_midnight
+            // we need to also reset the battery_accumulated_percent_since_midnight based on rest value above and 100% present SOC
+            update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight',  $SOC_batt_charge_net_percent_today );
+
+            // reset the studer current based accumulated SOC percent since midnight
+            $studer_current_based_soc_percentage_accumulated_since_midnight_recal = 100 - $studer_current_based_soc_percentage_accumulated_since_midnight;
+
+            update_user_meta( $wp_user_ID, 'studer_current_based_soc_percentage_accumulated_since_midnight', 
+                                           $studer_current_based_soc_percentage_accumulated_since_midnight_recal );
             
             $this->verbose ? error_log("SOC 100% clamp for STuder and Shelly BM applied") : false;
           }

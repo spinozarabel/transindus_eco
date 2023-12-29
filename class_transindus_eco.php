@@ -2658,6 +2658,7 @@ class class_transindus_eco
             $studer_readings_obj->soc_update_method   = "studer";
             $studer_readings_obj->soc_percentage_now_using_dark_shelly = 1000;
             $studer_readings_obj->studer_current_based_soc_percentage_accumulated_since_midnight = $studer_current_based_soc_percentage_accumulated_since_midnight;
+            $studer_readings_obj->studer_current_based_soc_percentage_now = $studer_current_based_soc_percentage_now;
 
           }   // endif of STUDER measurement successful
           else
@@ -3204,7 +3205,7 @@ class class_transindus_eco
         }   // end witch statement
 
         // set transient. This will be read in by prepare data to load appropriate transient object
-        set_transient( $wp_user_name . '_' . 'soc_update_method', $soc_update_method, 5*60 );
+        set_transient( $wp_user_name . '_' . 'soc_update_method', $soc_update_method, 30 * 60 );
 
         $now = new DateTime();
 
@@ -6152,13 +6153,22 @@ class class_transindus_eco
                                               '</span>';
         */
 
-        if ( $soc_percentage_now_using_dark_shelly == 1000 )
+        // we want the SOC display as follows:
+        // When Studer measurements are valid, display Studer SOC along with Studer current measured SOC
+        // When Studer is not valid display Shelly BM SOC in daylight
+        // At night when Studer measurements are not made display Shelly dark and Shelly BM values
+        if ( $soc_update_method = "studer" )
         {
-          $soc_percentage_now_disp = round($SOC_percentage_now, 1);
+          // display normal Studer SOC along with tuder current based SOC
+          $soc_percentage_now_disp = round($SOC_percentage_now, 1) . "-" . $studer_readings_obj->studer_current_based_soc_percentage_now;
         }
-        else
-        {
+        elseif ( $soc_update_method = "shelly" && $soc_percentage_now_using_dark_shelly != 1000 )
+        {   // display Shelly BM and Shelly after dark values
           $soc_percentage_now_disp = round($SOC_percentage_now, 1) . "-" . $soc_percentage_now_using_dark_shelly;
+        }
+        elseif ( $soc_update_method = "shelly" && $soc_percentage_now_using_dark_shelly == 1000 )
+        {   // display Shelly BM values only
+          $soc_percentage_now_disp = round($SOC_percentage_now, 1);
         }
         
         $format_object->soc_percentage_now_html = '<span style="font-size: 20px;color: Blue; display:block; text-align: center;">' . 

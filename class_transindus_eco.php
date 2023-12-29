@@ -6157,16 +6157,16 @@ class class_transindus_eco
         // When Studer measurements are valid, display Studer SOC along with Studer current measured SOC
         // When Studer is not valid display Shelly BM SOC in daylight
         // At night when Studer measurements are not made display Shelly dark and Shelly BM values
-        if ( $soc_update_method = "studer" )
+        if ( $soc_update_method === "studer" )
         {
           // display normal Studer SOC along with tuder current based SOC
           $soc_percentage_now_disp = round($SOC_percentage_now, 1) . "-" . $studer_readings_obj->studer_current_based_soc_percentage_now;
         }
-        elseif ( $soc_update_method = "shelly" && $soc_percentage_now_using_dark_shelly != 1000 )
+        elseif ( $soc_update_method === "shelly" && $soc_percentage_now_using_dark_shelly != 1000 )
         {   // display Shelly BM and Shelly after dark values
           $soc_percentage_now_disp = round($SOC_percentage_now, 1) . "-" . $soc_percentage_now_using_dark_shelly;
         }
-        elseif ( $soc_update_method = "shelly" && $soc_percentage_now_using_dark_shelly == 1000 )
+        elseif ( $soc_update_method === "shelly" && $soc_percentage_now_using_dark_shelly == 1000 )
         {   // display Shelly BM values only
           $soc_percentage_now_disp = round($SOC_percentage_now, 1);
         }

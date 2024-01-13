@@ -470,7 +470,10 @@ class class_transindus_eco
 
 
     /**
+     *  @param int:$wp_user_ID is the WP user ID
+     *  @return array:$all_usermeta is the return array containing all of the user meta for the user with user ID passed in.
      * 
+     *  The property of $this is also set for what its worth
      */
     public function get_all_usermeta( int $wp_user_ID ) : array
     {
@@ -491,6 +494,7 @@ class class_transindus_eco
     /**
      *  @param int:$user_index is the user of ineterst in the config array
      *  @return array:$return_array containing values from API call on Shelly ACIN Transfer switch
+     * 
      *  Checks the validity of Shelly switch configuration required for program
      *  Makes an API call on the Shelly ACIN switch and return the ststus such as State, Voltage, etc.
      */
@@ -509,11 +513,7 @@ class class_transindus_eco
       // ensure that the data below is current before coming here
       $all_usermeta = $this->all_usermeta ?? $this->get_all_usermeta( $wp_user_ID );
 
-      $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['shelly_device_id_acin']   )  &&
-                              ! empty( $config['accounts'][$user_index]['shelly_device_id_homepwr'] ) &&
-                              ! empty( $config['accounts'][$user_index]['shelly_server_uri']  )       &&
-                              ! empty( $config['accounts'][$user_index]['shelly_auth_key']    )       &&
-                                $all_usermeta['do_shelly'];
+      $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['ip_shelly_acin_1pm']   )  && $all_usermeta['do_shelly'];
     
       if ( $valid_shelly_config ) 
       {  // Cotrol Shelly TRUE if usermeta AND valid config
@@ -590,16 +590,17 @@ class class_transindus_eco
       $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
       $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_acin'];
+      $ip_shelly_load_em  = $config['accounts'][$user_index]['ip_shelly_load_em'];
 
       // get value accumulated till midnight upto previous API call
       $previous_grid_wh_since_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_since_midnight', true), 0);
 
       $returned_obj = new stdClass;
 
-      $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+      $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_shelly_load_em );
 
       // this is $curl_response.
-      $shelly_api_device_response = $shelly_api->get_shelly_device_status();
+      $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
 
       // check to make sure that it exists. If null API call was fruitless
       if (  empty( $shelly_api_device_response ) || 
@@ -608,18 +609,18 @@ class class_transindus_eco
             (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0) <= 0
           )
       {
-        $this->verbose ? error_log("Shelly EM Grid Energy API call failed"): false;
+        $this->verbose ? error_log( "Shelly EM Load Energy API call failed" ): false;
 
-        // since no grid get value from user meta. Also readings will not change since grid is absent :-)
-        $returned_obj->grid_wh_since_midnight = $previous_grid_wh_since_midnight;
-        $returned_obj->grid_kw_shelly_em = 0;
-        $returned_obj->grid_voltage_em = 0;
+        // Shelly Load EM did not respond over LAN
+        // $returned_obj->grid_wh_since_midnight = $previous_grid_wh_since_midnight;
+        $returned_obj->kw_shelly_em = 0;
+        $returned_obj->voltage_em   = 0;
 
         return $returned_obj;
       }
 
-      // Shelly API call was successfull and we have useful data
-      $present_grid_wh_reading = (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0);
+      // Shelly API call was successfull and we have useful data. Round to 0 and convert to integer to get WattHours
+      $present_wh_reading = (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0);
 
       // get the energy counter value set at midnight. Assumes that this is an integer
       $grid_wh_counter_midnight = (int) round(get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true), 0);
@@ -1150,19 +1151,20 @@ class class_transindus_eco
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
         $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_plus_addon'];
+        $ip_static_shelly    = $config['accounts'][$user_index]['ip_shelly_addon'];
 
         // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
         $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH
 
-        $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+        $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
 
         // this is $curl_response.
-        $shelly_api_device_response = $shelly_api->get_shelly_device_status();
+        $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
 
-        // check to make sure that it exists. If null API call was fruitless
+        // check to make sure that it exists. If null call was fruitless
         if ( empty( $shelly_api_device_response ) )
         {
-          error_log("Shelly Battery Measurement API call failed");
+          error_log("Shelly Battery Measurement API call over LAN failed");
 
           return null;
         }
@@ -1196,8 +1198,8 @@ class class_transindus_eco
         $prev_datetime_obj->setTimeStamp($previous_timestamp);
 
         // get accumulated value till last measurement
-        $battery_accumulated_percent_since_midnight = (float) get_user_meta(  $wp_user_ID, 
-                                                                              'battery_accumulated_percent_since_midnight', true);
+        $battery_soc_percentage_accumulated_since_midnight = (float) get_user_meta(  $wp_user_ID, 
+                                                                              'battery_soc_percentage_accumulated_since_midnight', true);
 
         if (  $it_is_still_dark             &&  // No solar
               $shelly_switch_status = 'ON'  &&  // Grid switch is ON and supplying the Load
@@ -1229,10 +1231,10 @@ class class_transindus_eco
 
           
           // accumulate  present measurement
-          $battery_accumulated_percent_since_midnight += $battery_percent_this_measurement;
+          $battery_soc_percentage_accumulated_since_midnight += $battery_percent_this_measurement;
 
           // update accumulated battery charge back to user meta
-          update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $battery_accumulated_percent_since_midnight);
+          update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $battery_soc_percentage_accumulated_since_midnight);
         }
 
         $this->verbose ? error_log("Battery % added today: $battery_accumulated_percent_since_midnight, 
@@ -1797,14 +1799,36 @@ class class_transindus_eco
           {
 
             // get all the readings for this user. Enable Studer measurements. User Index is 0 since only one user
-            $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
+            // $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
+            // set default timezone to Asia Kolkata
+            date_default_timezone_set("Asia/Kolkata");
 
+            // initialize the object to be returned
+            $battery_measurements_object = new stdClass;
+
+            // Make an API call on the Shelly UNI device
+            $config = $this->config;
+
+            $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+            $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+            $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_plus_addon'];
+            $ip_static_shelly    = $config['accounts'][$user_index]['ip_shelly_addon'];
+
+            // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
+            $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH
+
+            $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
+
+            // this is $curl_response.
+            $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
+
+            error_log( print_r( $shelly_api_device_response, true) );
             
             for ( $i = 0; $i < 10; $i++ )
             {
               sleep(5);
               // enable Studer measurements. These will complete and end the script. User index is 0 since only 1 user
-            $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
+              // $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
             }
           }
         }

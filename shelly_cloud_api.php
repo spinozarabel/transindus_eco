@@ -14,21 +14,23 @@ class shelly_cloud_api
 {
     const VERBOSE     = false;
 
-    public function __construct(string $auth_key, string $server_uri, string $shelly_device_id, int $channel = 0)
+    public function __construct( string $auth_key, string $server_uri, string $shelly_device_id, string $shelly_device_static_ip, int $channel = 0 )
     {
       $this->verbose  = self::VERBOSE;
 
-      $this->auth_key		      = $auth_key;        // Auth key to access account
-	    $this->server_uri	          = $server_uri;  // The server uri can be obtained 
-                                                  // on the same page where the authorization key is generated
-      $this->shelly_device_id     = $shelly_device_id;
-      $this->channel              = $channel;     // channel of interest. Defaults to 0 if not specified
+      $this->auth_key		              = $auth_key;        // Auth key to access account
+	    $this->server_uri	              = $server_uri;      // The server uri can be obtained 
+                                                          // on the same page where the authorization key is generated
+      $this->shelly_device_id         = $shelly_device_id;
+      $this->channel                  = $channel;         // channel of interest. Defaults to 0 if not specified
+      $this->shelly_device_static_ip  = $shelly_device_static_ip;
+
     }       // end construct function
 
     /**
      * @param string:$desired_state is "on" or 'off'
      */
-    public function turn_on_off_shelly_switch($desired_state)
+    public function turn_on_off_shelly_switch( string $desired_state ) : ? object
     {
        // parameters for query string
       $params     = array
@@ -39,11 +41,6 @@ class shelly_cloud_api
           "auth_key"    => $this->auth_key          ,
       );
       
-        //  error_log( "This is the Shelly API params for turn-on-off " . print_r($params, true) );
-
-        
-
-
       $headers  = [];
 
       $endpoint = $this->server_uri . "/device/relay/control";
@@ -69,7 +66,40 @@ class shelly_cloud_api
     * read status of Shelly Device using Shelly CLoud API
     * @return object:$curlResponse if not a valid response, a null object is returned
     */
-    public function get_shelly_device_status(): ?object
+    public function get_shelly_device_status_over_lan(): ? object
+    {
+      // parameters for query string
+      $params     = [];
+
+      $headers  = [];
+
+      $endpoint = $this->shelly_device_static_ip . "/rpc/Shelly.GetStatus";
+
+      // already json decoded into object
+      $curlResponse   = $this->getCurl($endpoint, $headers, $params);
+
+      print_r($curlResponse);
+
+      if ( $curlResponse->isok )
+          {
+              return $curlResponse;
+          }
+      else
+          {
+              if ($this->verbose)
+              {
+                  error_log( "Shelly device Cloud not responding or device offline" . print_r($curlResponse, true) );
+              }
+              return null;
+          }
+    }
+
+
+    /**
+    * read status of Shelly Device using Shelly CLoud API
+    * @return object:$curlResponse if not a valid response, a null object is returned
+    */
+    public function get_shelly_device_status(): ? object
     {
       // parameters for query string
       $params     = array

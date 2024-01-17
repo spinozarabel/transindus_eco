@@ -52,7 +52,7 @@ if (!wp_next_scheduled('shellystuder_task_hook'))
 function shelly_studer_add_new_cron_interval( $schedules ) 
 { 
     $schedules['sixty_seconds'] = array(
-                                    'interval' => 1*60,
+                                    'interval' => 1 * 60,
                                     'display'  => esc_html__( 'Every 60 seconds' ),
                                     );
 

@@ -18,8 +18,8 @@ class shelly_cloud_api
     {
       $this->verbose  = self::VERBOSE;
 
-      $this->auth_key		              = $auth_key;        // Auth key to access account
-	    $this->server_uri	              = $server_uri;      // The server uri can be obtained 
+      $this->auth_key		          = $auth_key;        // Auth key to access account
+	  $this->server_uri	              = $server_uri;      // The server uri can be obtained 
                                                           // on the same page where the authorization key is generated
       $this->shelly_device_id         = $shelly_device_id;
       $this->channel                  = $channel;         // channel of interest. Defaults to 0 if not specified
@@ -63,6 +63,46 @@ class shelly_cloud_api
 
 
     /**
+     * @param $desired_state is true or false 1 or 0 "true" or "false"
+     */
+    public function turn_on_off_shelly_switch_over_lan( $desired_state ) : ? object
+    {
+        // parse the desired state so end result is 1 or 0
+        if ( $desired_state == "true" || $desired_state === true || $desired_state === 1 || strtolower($desired_state) === "on")
+        {
+            $desired_switch_state = "true";
+        }
+        elseif ( $desired_state == "false" || $desired_state === false || $desired_state === 0 || strtolower($desired_state) === "off" )
+        {
+            $desired_switch_state = "false";
+        }
+       // parameters for query string
+      $params     = array
+      (
+          "id"          => $this->channel           ,
+          'on'          => $desired_switch_state    ,
+      );
+      
+      $headers  = [];
+
+      $endpoint = $this->shelly_device_static_ip . "/rpc/Switch.Set";
+
+      $curlResponse   = $this->getCurl($endpoint, $headers, $params);
+
+      if ( $curlResponse )
+          {
+              return $curlResponse;
+          }
+      else
+          {
+                echo( "This is the response when turn ON_OFF of your Shelly device ID: $this->shelly_device_id " . print_r($curlResponse, true) );
+              
+                return null;
+          }
+    }
+
+
+    /**
     * read status of Shelly Device using Shelly CLoud API
     * @return object:$curlResponse if not a valid response, a null object is returned
     */
@@ -78,9 +118,7 @@ class shelly_cloud_api
       // already json decoded into object
       $curlResponse   = $this->getCurl($endpoint, $headers, $params);
 
-      print_r($curlResponse);
-
-      if ( $curlResponse->isok )
+      if ( $curlResponse )
           {
               return $curlResponse;
           }

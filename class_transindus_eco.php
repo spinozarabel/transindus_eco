@@ -498,7 +498,7 @@ class class_transindus_eco
      *  Checks the validity of Shelly switch configuration required for program
      *  Makes an API call on the Shelly ACIN switch and return the ststus such as State, Voltage, etc.
      */
-    public function get_shelly_switch_acin_details( int $user_index) : array
+    public function get_shelly_switch_acin_details_over_lan( int $user_index) : array
     {
       $return_array = [];
 
@@ -513,7 +513,7 @@ class class_transindus_eco
       // ensure that the data below is current before coming here
       $all_usermeta = $this->all_usermeta ?? $this->get_all_usermeta( $wp_user_ID );
 
-      $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['ip_shelly_acin_1pm']   )  && $all_usermeta['do_shelly'];
+      $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['ip_shelly_acin_1pm'] )  && $all_usermeta['do_shelly'];
     
       if ( $valid_shelly_config ) 
       {  // Cotrol Shelly TRUE if usermeta AND valid config
@@ -528,7 +528,15 @@ class class_transindus_eco
       if ( $valid_shelly_config ) 
       {   //  get shelly device status ONLY if valid config for switch
 
-          $shelly_api_device_response = $this->get_shelly_device_status_acin( $user_index );
+          $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+          $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+          $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
+          $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_1pm'];
+
+          $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
+
+          // this is curl_response.
+          $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
 
           if ( is_null($shelly_api_device_response) ) 
           { // switch status is unknown
@@ -543,8 +551,13 @@ class class_transindus_eco
           else 
           {  // Switch is ONLINE - Get its status and Voltage
               
-              $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->{'switch:0'}->output;
-              $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{'switch:0'}->voltage;
+              $shelly_api_device_status_ON        = $shelly_api_device_response->{'switch:0'}->output;
+              $shelly_api_device_status_voltage   = $shelly_api_device_response->{'switch:0'}->voltage;
+
+              $shelly_api_device_status_current   = $shelly_api_device_response->{'switch:0'}->current;
+              $shelly_api_device_status_minute_ts = $shelly_api_device_response->{'switch:0'}->aenergy->minute_ts;
+
+              $shelly_api_device_status_power_kw  = round( $shelly_api_device_response->{'switch:0'}->apower * 0.001, 3);
 
               if ($shelly_api_device_status_ON)
               {
@@ -554,6 +567,7 @@ class class_transindus_eco
               {
                   $shelly_switch_status = "OFF";
               }
+              
           }
       }
       else 
@@ -561,15 +575,20 @@ class class_transindus_eco
 
           $shelly_api_device_status_ON = null;
 
-          $shelly_switch_status             = "Not Configured";
-          $shelly_api_device_status_voltage = "NA";    
+          $shelly_switch_status               = "Not Configured";
+          $shelly_api_device_status_voltage   = "NA";
+          $shelly_api_device_status_current   = 'NA';
+          $shelly_api_device_status_power_kw  = 'NA';
+          $shelly_api_device_status_minute_ts = 'NA';   
       }  
 
-      $return_array['valid_shelly_config']              = $valid_shelly_config;
-      $return_array['control_shelly']                   = $control_shelly;
-      $return_array['shelly_switch_status']             = $shelly_switch_status;
-      $return_array['shelly_api_device_status_voltage'] = $shelly_api_device_status_voltage;
-      $return_array['shelly_api_device_status_ON']      = $shelly_api_device_status_ON;
+      $return_array['shelly1pm_acin_switch_config']   = $valid_shelly_config;
+      $return_array['control_shelly']                 = $control_shelly;
+      $return_array['shelly1pm_acin_switch_status']   = $shelly_switch_status;
+      $return_array['shelly1pm_acin_voltage']         = $shelly_api_device_status_voltage;
+      $return_array['shelly1pm_acin_current']         = $shelly_api_device_status_current;
+      $return_array['shelly1pm_acin_power_kw']        = $shelly_api_device_status_power_kw;
+      $return_array['shelly1pm_acin_minute_ts']       = $shelly_api_device_status_minute_ts;
 
       $this->shelly_switch_acin_details = $return_array;
 
@@ -1133,11 +1152,11 @@ class class_transindus_eco
      *  The current is measured using a hall effect sensor. The sensor output voltage is rread by the ADC in the shelly UNI
      *  The transducer function is: V(A) = (Vout - 2.5)/0.0294 using 29.375 mv/A around 2.5V reference
      *  Trapezoidal rule is used to calculate Area
-     *  Current measurements are used to update user meta for accumulated SOlar AH since Studer Midnight
-     *  in user meta 'battery_accumulated_percent_since_midnight'. This must be reset to 0 just aftermidnight elsewhere.
+     *  Current measurements are used to update user meta for accumulated Solar AH since Studer Midnight
+     *  in user meta 'battery_soc_percentage_accumulated_since_midnight'. This must be reset to 0 just aftermidnight elsewhere.
      */
-    public function get_shelly_battery_measurement( int $user_index, string $wp_user_name, int $wp_user_ID, 
-                                                    string $shelly_switch_status, bool $it_is_still_dark) : ? object
+    public function get_shelly_battery_measurement_over_lan(  int     $user_index,            string  $wp_user_name,  int $wp_user_ID, 
+                                                              string  $shelly_switch_status,  bool    $it_is_still_dark) : ? object
     {
         // set default timezone to Asia Kolkata
         date_default_timezone_set("Asia/Kolkata");
@@ -1151,7 +1170,7 @@ class class_transindus_eco
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
         $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_plus_addon'];
-        $ip_static_shelly    = $config['accounts'][$user_index]['ip_shelly_addon'];
+        $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_addon'];
 
         // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
         $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH
@@ -1169,8 +1188,12 @@ class class_transindus_eco
           return null;
         }
 
+        // get the unix time stamp when measurement was made
+        $now = new DateTime();
+        $timestamp = $now->getTimestamp();
+
         // The measure ADC voltage is in percent of 10V. So a 25% reading indicates 2.5V measured
-        $adc_voltage_shelly = $shelly_api_device_response->data->device_status->{"input:100"}->percent;
+        $adc_voltage_shelly = $shelly_api_device_response->{"input:100"}->percent;
 
         // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
         $delta_voltage = $adc_voltage_shelly * 0.1 - 2.54;
@@ -1184,15 +1207,11 @@ class class_transindus_eco
         // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign. 1.06 is empirical correction 
         $battery_amps = -1.0 * round( $battery_amps_raw_measurement, 1);
 
-        // get the unix time stamp when measurement was made
-        $now = new DateTime();
-        $timestamp = $now->getTimestamp();
-
         // get the previous reading's timestamp from transient. If transient doesnt exist set the value to current measurement
-        $previous_timestamp = get_transient(  $wp_user_name . '_' . 'timestamp_battery_last_measurement' ) ?? $timestamp;
+        $previous_timestamp = get_transient( 'timestamp_battery_last_measurement' ) ?? $timestamp;
 
         // get the previous reading from transient. If doesnt exist set it to current measurement
-        $previous_battery_amps = (float) get_transient(  $wp_user_name . '_' . 'amps_battery_last_measurement' ) ?? $battery_amps;
+        $previous_battery_amps = (float) get_transient( 'amps_battery_last_measurement' ) ?? $battery_amps;
 
         $prev_datetime_obj = new DateTime();
         $prev_datetime_obj->setTimeStamp($previous_timestamp);
@@ -1201,9 +1220,9 @@ class class_transindus_eco
         $battery_soc_percentage_accumulated_since_midnight = (float) get_user_meta(  $wp_user_ID, 
                                                                               'battery_soc_percentage_accumulated_since_midnight', true);
 
-        if (  $it_is_still_dark             &&  // No solar
-              $shelly_switch_status = 'ON'  &&  // Grid switch is ON and supplying the Load
-              abs($battery_amps)  < 5 )         // The battery current is < 5A and probably noise
+        if (  $it_is_still_dark               &&  // No solar
+              $shelly_switch_status === 'ON'  &&  // Grid switch is ON and supplying the Load
+              abs($battery_amps)  < 5 )           // The battery current is < 5A and probably noise
         {
           // There is no solar and the grid is supplying the load.
           // Any small battery current is just noise and so can be set to 0 for accuracy
@@ -1237,18 +1256,18 @@ class class_transindus_eco
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $battery_soc_percentage_accumulated_since_midnight);
         }
 
-        $this->verbose ? error_log("Battery % added today: $battery_accumulated_percent_since_midnight, 
+        $this->verbose ? error_log("Battery % added today: $battery_soc_percentage_accumulated_since_midnight, 
                                     % accumulated just now: $battery_percent_this_measurement, 
                                     Batt Amps: $battery_amps"
                                   ) : false;
 
         // update transients with current measurements. These will be used as previous measurements for next cycle
-        set_transient( $wp_user_name . '_' . 'timestamp_battery_last_measurement',  $timestamp,   60 * 60 );
-        set_transient( $wp_user_name . '_' . 'amps_battery_last_measurement',       $battery_amps,  60 * 60 );
+        set_transient( 'timestamp_battery_last_measurement',  $timestamp,     60 * 60 );
+        set_transient( 'amps_battery_last_measurement',       $battery_amps,  60 * 60 );
 
         // write variables as properties to returned object
-        $battery_measurements_object->battery_ah_this_measurement                = $battery_ah_this_measurement;
-        $battery_measurements_object->battery_accumulated_percent_since_midnight = $battery_accumulated_percent_since_midnight;
+        $battery_measurements_object->battery_ah_this_measurement                       = $battery_ah_this_measurement;
+        $battery_measurements_object->battery_soc_percentage_accumulated_since_midnight = $battery_soc_percentage_accumulated_since_midnight;
         $battery_measurements_object->battery_amps              = $battery_amps;
         $battery_measurements_object->battery_capacity_ah       = $battery_capacity_ah;
 
@@ -1260,7 +1279,7 @@ class class_transindus_eco
      *  @return object:$shelly_device_data contains energy counter and its timestamp along with switch status object
      *  Gets the power readings supplied to Home using Shelly Pro 4PM
      */
-    public function get_shelly_device_status_homepwr(int $user_index): ?object
+    public function get_shelly_device_status_homepwr_over_lan(int $user_index): ?object
     {
         // get API and device ID from config based on user index
         $config = $this->config;
@@ -1268,14 +1287,15 @@ class class_transindus_eco
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
         $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_homepwr'];
+        $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_4pm'];
 
-        $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+        $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
 
         // this is $curl_response.
-        $shelly_api_device_response = $shelly_api->get_shelly_device_status();
+        $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
 
         // check to make sure that it exists. If null API call was fruitless
-        if ( empty( $shelly_api_device_response ) || empty( $shelly_api_device_response->data->device_status->{"switch:3"}->aenergy->total ) )
+        if ( empty( $shelly_api_device_response ) || empty( $shelly_api_device_response->{"switch:3"}->aenergy->total ) )
         {
           $this->verbose ? error_log("Shelly Homepwr switch API call failed"): false;
 
@@ -1283,42 +1303,43 @@ class class_transindus_eco
         }
 
         // Since this is the switch that also measures the power and energy to home, let;s extract those details
-        $power_channel_0 = $shelly_api_device_response->data->device_status->{"switch:0"}->apower;
-        $power_channel_1 = $shelly_api_device_response->data->device_status->{"switch:1"}->apower;
-        $power_channel_2 = $shelly_api_device_response->data->device_status->{"switch:2"}->apower;
-        $power_channel_3 = $shelly_api_device_response->data->device_status->{"switch:3"}->apower;
+        $power_channel_0 = $shelly_api_device_response->{"switch:0"}->apower;
+        $power_channel_1 = $shelly_api_device_response->{"switch:1"}->apower;
+        $power_channel_2 = $shelly_api_device_response->{"switch:2"}->apower;
+        $power_channel_3 = $shelly_api_device_response->{"switch:3"}->apower;
 
         $power_to_home_kw = round( ( $power_channel_2 + $power_channel_3 ) * 0.001, 3 );
         $power_to_ac_kw   = round( ( $power_channel_1 * 0.001 ), 3 );
         $power_to_pump_kw = round( ( $power_channel_0 * 0.001 ), 3 );
 
-        $power_total_to_home = $power_channel_0 + $power_channel_1 + $power_channel_2 + $power_channel_3;
+        $power_total_to_home    = $power_channel_0 + $power_channel_1 + $power_channel_2 + $power_channel_3;
         $power_total_to_home_kw = round( ( $power_total_to_home * 0.001 ), 3 );
 
-        $energy_channel_0_ts = $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->total;
-        $energy_channel_1_ts = $shelly_api_device_response->data->device_status->{"switch:1"}->aenergy->total;
-        $energy_channel_2_ts = $shelly_api_device_response->data->device_status->{"switch:2"}->aenergy->total;
-        $energy_channel_3_ts = $shelly_api_device_response->data->device_status->{"switch:3"}->aenergy->total;
+        $energy_channel_0_ts = $shelly_api_device_response->{"switch:0"}->aenergy->total;
+        $energy_channel_1_ts = $shelly_api_device_response->{"switch:1"}->aenergy->total;
+        $energy_channel_2_ts = $shelly_api_device_response->{"switch:2"}->aenergy->total;
+        $energy_channel_3_ts = $shelly_api_device_response->{"switch:3"}->aenergy->total;
 
         $energy_total_to_home_ts = (float) ($energy_channel_0_ts + 
                                             $energy_channel_1_ts + 
                                             $energy_channel_2_ts + 
                                             $energy_channel_3_ts);
 
-        $current_total_home =  $shelly_api_device_response->data->device_status->{"switch:0"}->current;
-        $current_total_home += $shelly_api_device_response->data->device_status->{"switch:1"}->current;
-        $current_total_home += $shelly_api_device_response->data->device_status->{"switch:2"}->current;
-        $current_total_home += $shelly_api_device_response->data->device_status->{"switch:3"}->current;
+        $current_total_home =  $shelly_api_device_response->{"switch:0"}->current;
+        $current_total_home += $shelly_api_device_response->{"switch:1"}->current;
+        $current_total_home += $shelly_api_device_response->{"switch:2"}->current;
+        $current_total_home += $shelly_api_device_response->{"switch:3"}->current;
 
 
         // Unix minute time stamp for the power and energy readings
-        $minute_ts = $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->minute_ts;
+        $minute_ts = $shelly_api_device_response->{"switch:0"}->aenergy->minute_ts;
 
         $energy_obj = new stdClass;
 
         // add these to returned object for later use in calling program
         $energy_obj->power_total_to_home_kw   = $power_total_to_home_kw;
         $energy_obj->power_total_to_home      = $power_total_to_home;
+
         $energy_obj->power_to_home_kw         = $power_to_home_kw;
         $energy_obj->power_to_ac_kw           = $power_to_ac_kw;
         $energy_obj->power_to_pump_kw         = $power_to_pump_kw;
@@ -1326,13 +1347,12 @@ class class_transindus_eco
         $energy_obj->energy_total_to_home_ts  = $energy_total_to_home_ts;
         $energy_obj->minute_ts                = $minute_ts;
         $energy_obj->current_total_home       = $current_total_home;
-        $energy_obj->voltage_home             = $shelly_api_device_response->data->device_status->{"switch:3"}->voltage;
+        $energy_obj->voltage_home             = $shelly_api_device_response->{"switch:3"}->voltage;
 
         // set the state of the channel if OFF or ON. ON switch will be true and OFF will be false
-        $energy_obj->pump_switch_status_bool  = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
-        $energy_obj->ac_switch_status_bool    = $shelly_api_device_response->data->device_status->{"switch:1"}->output;
-        $energy_obj->home_switch_status_bool  = $shelly_api_device_response->data->device_status->{"switch:2"}->output || 
-                                                $shelly_api_device_response->data->device_status->{"switch:3"}->output;
+        $energy_obj->pump_switch_status_bool  = $shelly_api_device_response->{"switch:0"}->output;
+        $energy_obj->ac_switch_status_bool    = $shelly_api_device_response->{"switch:1"}->output;
+        $energy_obj->home_switch_status_bool  = $shelly_api_device_response->{"switch:2"}->output || $shelly_api_device_response->{"switch:3"}->output;
 
         return $energy_obj;
     }
@@ -1340,12 +1360,12 @@ class class_transindus_eco
     /**
      * 'grid_wh_counter_midnight' user meta is set at midnight elsewhere using the current reading then
      *  At any time after, this midnight reading is subtracted from current reading to get consumption since midnight
-     *  @return object:$shelly_3p_grid_wh_measurement_obj contsining all the measurements
+     *  @return object:$shelly_3p_grid_energy_measurement_obj contsining all the measurements
      */
-    public function get_shelly_3p_grid_wh_since_midnight( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
+    public function get_shelly_3p_grid_wh_since_midnight_over_lan( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
     {
       // get value of Shelly Pro 3EM Red phase watt hour counter as set at midnight
-      $grid_wh_counter_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true), 0);
+      $grid_wh_counter_at_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', true), 0);
 
       // get API and device ID from config based on user index
       $config = $this->config;
@@ -1353,19 +1373,19 @@ class class_transindus_eco
       $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
       $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin_3p'];
+      $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_3em'];
 
-      $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+      $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
 
       // this is $curl_response.
-      $shelly_api_device_response = $shelly_api->get_shelly_device_status();
+      $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
 
-      $shelly_3p_grid_wh_measurement_obj = new stdClass;
+      $shelly_3p_grid_energy_measurement_obj = new stdClass;
 
       // check to make sure that it exists. If null API call was fruitless
-      if (  empty( $shelly_api_device_response ) || 
-            empty( $shelly_api_device_response->data->device_status->{"emdata:0"}->a_total_act_energy ) ||
-            $shelly_api_device_response->isok !== true || 
-            (int) round($shelly_api_device_response->data->device_status->{"emdata:0"}->a_total_act_energy, 0) < 0
+      if (  empty(        $shelly_api_device_response ) || 
+            empty(        $shelly_api_device_response->{"emdata:0"}->a_total_act_energy ) ||
+            (int) round(  $shelly_api_device_response->{"emdata:0"}->a_total_act_energy, 0 ) < 0
           )
       {
         $this->verbose ? error_log("Shelly EM Grid Energy API call failed"): false;
@@ -1374,36 +1394,38 @@ class class_transindus_eco
         $a_grid_wh_counter_now_from_transient = (float) get_transient('last_reading_phase_a_grid_wh_counter');
         $b_grid_wh_counter_now_from_transient = (float) get_transient('last_reading_phase_b_grid_wh_counter');
 
-        $shelly_3p_grid_wh_measurement_obj->a_grid_wh_counter_now = $a_grid_wh_counter_now_from_transient;
-        $shelly_3p_grid_wh_measurement_obj->b_grid_wh_counter_now = $b_grid_wh_counter_now_from_transient;
+        $shelly_3p_grid_energy_measurement_obj->a_grid_wh_counter_now = $a_grid_wh_counter_now_from_transient;
+        $shelly_3p_grid_energy_measurement_obj->b_grid_wh_counter_now = $b_grid_wh_counter_now_from_transient;
 
-        $a_grid_wh_accumulated_since_midnight = $a_grid_wh_counter_now_from_transient - $grid_wh_counter_midnight;
+        $a_grid_wh_accumulated_since_midnight = $a_grid_wh_counter_now_from_transient - $grid_wh_counter_at_midnight;
 
-        $shelly_3p_grid_wh_measurement_obj->a_grid_wh_accumulated_since_midnight = $a_grid_wh_accumulated_since_midnight;
+        $shelly_3p_grid_energy_measurement_obj->a_grid_wh_accumulated_since_midnight  = $a_grid_wh_accumulated_since_midnight;
+        $shelly_3p_grid_energy_measurement_obj->a_grid_kwh_accumulated_since_midnight = round( $a_grid_wh_accumulated_since_midnight * 0.001, 3);
 
-        return $shelly_3p_grid_wh_measurement_obj;
+        return $shelly_3p_grid_energy_measurement_obj;
       }
       else
-      {
-        $a_grid_wh_counter_now = $shelly_api_device_response->data->device_status->{"emdata:0"}->a_total_act_energy;
-        $b_grid_wh_counter_now = $shelly_api_device_response->data->device_status->{"emdata:0"}->b_total_act_energy;
-        $a_grid_w_pwr = $shelly_api_device_response->data->device_status->{"em:0"}->a_act_power;
-        $a_grid_kw_pwr = round( 0.001 * $a_grid_w_pwr, 3);
+      { // we have a valid reading from SHelly 3EM device
+        $a_grid_wh_counter_now  = $shelly_api_device_response->{"emdata:0"}->a_total_act_energy;
+        $b_grid_wh_counter_now  = $shelly_api_device_response->{"emdata:0"}->b_total_act_energy;
+        $a_grid_w_pwr           = $shelly_api_device_response->{"em:0"}->a_act_power;
+        $a_grid_kw_pwr          = round( 0.001 * $a_grid_w_pwr, 3);
 
         // update the transient with most recent measurement
         set_transient( 'last_reading_phase_a_grid_wh_counter', $a_grid_wh_counter_now, 24 * 60 * 60 );
         set_transient( 'last_reading_phase_b_grid_wh_counter', $b_grid_wh_counter_now, 24 * 60 * 60 );
 
-        $a_grid_wh_accumulated_since_midnight = $a_grid_wh_counter_now - $grid_wh_counter_midnight;
+        $a_grid_wh_accumulated_since_midnight = $a_grid_wh_counter_now - $grid_wh_counter_at_midnight;
 
-        $shelly_3p_grid_wh_measurement_obj->a_grid_wh_counter_now = $a_grid_wh_counter_now;
-        $shelly_3p_grid_wh_measurement_obj->b_grid_wh_counter_now = $b_grid_wh_counter_now;
+        $shelly_3p_grid_energy_measurement_obj->a_grid_wh_counter_now = $a_grid_wh_counter_now;
+        $shelly_3p_grid_energy_measurement_obj->b_grid_wh_counter_now = $b_grid_wh_counter_now;
 
-        $shelly_3p_grid_wh_measurement_obj->a_grid_kw_pwr = $a_grid_kw_pwr;
+        $shelly_3p_grid_energy_measurement_obj->a_grid_kw_pwr = $a_grid_kw_pwr;
 
-        $shelly_3p_grid_wh_measurement_obj->a_grid_wh_accumulated_since_midnight = $a_grid_wh_accumulated_since_midnight;
+        $shelly_3p_grid_energy_measurement_obj->a_grid_wh_accumulated_since_midnight  =         $a_grid_wh_accumulated_since_midnight;
+        $shelly_3p_grid_energy_measurement_obj->a_grid_kwh_accumulated_since_midnight = round(  $a_grid_wh_accumulated_since_midnight * 0.001, 3);
 
-        return $shelly_3p_grid_wh_measurement_obj;
+        return $shelly_3p_grid_energy_measurement_obj;
       }
       
     }
@@ -1413,9 +1435,9 @@ class class_transindus_eco
      * This is the home power and energy consumed from output of Studer by the Shelly EM device.
      *  'shelly_em_home_energy_counter_midnight' user meta has the midnight value of counter set elsewhere
      *  The consumption since midnight is got by subtracting the midnight value from the present reading
-     *  @return object:$shelly_em_readings_object has all the measurements of nterest
+     *  @return object:$shelly_em_home_load_energy_readings_object has all the measurements of nterest
      */
-    public function get_shelly_em_home_load_measurements( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
+    public function get_shelly_em_home_load_measurements_over_lan( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
     {
       // get API and device ID from config based on user index
       $config = $this->config;
@@ -1423,46 +1445,50 @@ class class_transindus_eco
       $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
       $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
+      $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_em'];
 
-      $shelly_em_readings_object = new stdClass;
+      $shelly_em_home_load_energy_readings_object = new stdClass;
 
-      $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+      $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
 
       // this is $curl_response.
-      $shelly_api_device_response = $shelly_api->get_shelly_device_status();
+      $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
 
       // check to make sure that it exists. If null API call was fruitless
       if (  empty( $shelly_api_device_response ) || 
-            empty( $shelly_api_device_response->data->device_status->emeters[0]->total ) ||
-            $shelly_api_device_response->data->device_status->emeters[0]->is_valid !== true || 
-            (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0) <= 0
+            empty( $shelly_api_device_response->emeters[0]->total ) ||
+            (int) round($shelly_api_device_response->emeters[0]->total, 0) <= 0
           )
       {
-        $this->verbose ? error_log("Shelly EM Grid Energy API call failed"): false;
+        $this->verbose ? error_log("Shelly EM Grid Energy API call over LAN failed"): false;
 
         return null;
       }
 
       // Shelly API call was successfull and we have a valid reading
-      $present_home_wh_reading = (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0);
+      $present_home_wh_reading = (int) round($shelly_api_device_response->emeters[0]->total, 0);
 
       // get the energy counter value set at midnight. Assumes that this is an integer
-      $shelly_em_home_energy_counter_midnight = (int) get_user_meta( $wp_user_ID, 
-                                                            'shelly_em_home_energy_counter_midnight', true);
+      $shelly_em_home_energy_counter_at_midnight = (int) get_user_meta( $wp_user_ID, 
+                                                            'shelly_em_home_energy_counter_at_midnight', true);
 
-      $shelly_em_readings_object->home_voltage_em = round($shelly_api_device_response->data->device_status->emeters[0]->voltage, 0);
+      $shelly_em_home_load_energy_readings_object->home_voltage_em = round($shelly_api_device_response->emeters[0]->voltage, 0);
 
       // subtract the 2 integer counter readings to get the home consumed energy in WH since midnight
-      $home_consumption_wh_since_midnight = $present_home_wh_reading - $shelly_em_home_energy_counter_midnight;
+      $home_consumption_wh_since_midnight = $present_home_wh_reading - $shelly_em_home_energy_counter_at_midnight;
 
-      $present_home_kw_shelly_em = round( 0.001 * $shelly_api_device_response->data->device_status->emeters[0]->power, 3 );
+      $present_home_kw_shelly_em = round( 0.001 * $shelly_api_device_response->emeters[0]->power, 3 );
 
-      $shelly_em_readings_object->present_home_kw_shelly_em = $present_home_kw_shelly_em;
-      $shelly_em_readings_object->present_home_wh_reading   = $present_home_wh_reading;
+      $shelly_em_home_load_energy_readings_object->present_home_kw_shelly_em  = $present_home_kw_shelly_em;
+      $shelly_em_home_load_energy_readings_object->present_home_wh_reading    = $present_home_wh_reading;
+      $shelly_em_home_load_energy_readings_object->present_home_kwh_reading   = $present_home_wh_reading * 0.001;
 
-      $shelly_em_readings_object->home_consumption_wh_since_midnight = $home_consumption_wh_since_midnight;
+      $shelly_em_home_load_energy_readings_object->home_consumption_wh_since_midnight   = $home_consumption_wh_since_midnight;
+      $shelly_em_home_load_energy_readings_object->home_consumption_kwh_since_midnight  = $home_consumption_wh_since_midnight * 0.001;
 
-      return $shelly_em_readings_object;
+      $shelly_em_home_load_energy_readings_object->shelly_em_home_energy_counter_at_midnight    = $shelly_em_home_energy_counter_at_midnight;
+
+      return $shelly_em_home_load_energy_readings_object;
     }
 
 
@@ -1768,7 +1794,9 @@ class class_transindus_eco
         // increment counter each time and signal when 12 cycles have completed - counter is modulo 12
         // $this->count_5s_cron_cycles_modulo_12();
 
-        // Loop over all of the eligible users
+        // set default timezone to Asia Kolkata
+        date_default_timezone_set("Asia/Kolkata");
+
         $config = $this->get_config();
 
         $account = $config['accounts'][0];
@@ -1778,11 +1806,10 @@ class class_transindus_eco
         // Get the wp user object given the above username
         $wp_user_obj  = get_user_by('login', $wp_user_name);
 
-
         $wp_user_ID   = $wp_user_obj->ID;
 
         if ( $wp_user_ID )
-        {   // we have a valid user
+        { // we have a valid user
           
           // Trigger an all usermeta get such that all routines called from this loop will have a valid updated usermeta
           // The call also updates the all usermeta as a property of this object for access from anywahere in the class
@@ -1796,78 +1823,89 @@ class class_transindus_eco
 
           // Check if the control flag for minutely updates is TRUE. If so get the readings
           if( $do_minutely_updates ) 
-          {
-
-            // get all the readings for this user. Enable Studer measurements. User Index is 0 since only one user
-            // $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
-            // set default timezone to Asia Kolkata
-            date_default_timezone_set("Asia/Kolkata");
-
-            // initialize the object to be returned
-            $battery_measurements_object = new stdClass;
-
-            // Make an API call on the Shelly UNI device
-            $config = $this->config;
-
-            $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-            $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-            $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_plus_addon'];
-            $ip_static_shelly    = $config['accounts'][$user_index]['ip_shelly_addon'];
-
-            // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
-            $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH
-
-            $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
-
-            // this is $curl_response.
-            $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
-
-            error_log( print_r( $shelly_api_device_response, true) );
+          { // get all the readings for this user. Enable Studer measurements. User Index is 0 since only one user
             
+            $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
+
             for ( $i = 0; $i < 10; $i++ )
             {
               sleep(5);
-              // enable Studer measurements. These will complete and end the script. User index is 0 since only 1 user
-              // $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
+              // disable Studer measurements. Only Shelly Battery current measurement based updates will be used
+              $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
             }
+          }
+          else
+          {
+            // if do minutely updates flag is not set then nothing hapens
           }
         }
         else
         {
           error_log("WP user ID: $wp_user_ID is not valid");
         }
-      return true;
     }
 
 
     /**
-     * 
+     *  Assumes pump is channel 0 of the Shelly Pro 4PM supplying the entire Home Load
      */
-    public function turn_pump_on_off( int $user_index, string $desired_state, $shelly_switch_name = 'shelly_device_id_homepwr' ) : ? object
+    public function turn_pump_on_off( int $user_index, string $desired_state ) : bool
     {
-      // Shelly API has a max request rate of 1 per second. So we wait 1s just in case we made a Shelly API call before coming here
-        sleep (2);
-
         // get the config array from the object properties
         $config = $this->config;
 
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-
-        // this is the device ID using index that is passed in defaults to 'shelly_device_id_acin'
-        // other shelly 1PM names are: 'shelly_device_id_water_heater'
-        $shelly_device_id   = $config['accounts'][$user_index][$shelly_switch_name];
+        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_homepwr'];
+        $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_4pm'];
 
         // set the channel of the switch that the pump is on
-        $channel_pump       = 0;
+        $channel_pump  = 0;
 
-        $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id, $channel_pump);
+        $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, $channel_pump );
 
-        // this is $curl_response. Pump is on channel 0 which is default argument assumed in the called function
-        $shelly_device_data = $shelly_api->turn_on_off_shelly_switch( $desired_state );
+        // Get the pump switch status now
+        $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
 
-        // True if API call was successful, False if not.
-        return $shelly_device_data;
+        if ( $shelly_api_device_response )
+        {
+          $pump_initial_switch_state = $shelly_api_device_response->{'switch:0'}->output;
+
+          // if the existing pump switch is same as desired, we simply exit with message
+          if (  ( $pump_initial_switch_state === true  &&  ( strtolower( $desired_state) === "on"  || $desired_state === true  || $desired_state == 1) ) || 
+                ( $pump_initial_switch_state === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
+          {
+            // esisting state is same as desired final state so return
+            error_log( "No Action in Pump Switch done since no change is desired " );
+            return true;
+          }
+        }
+        else
+        {
+          // we didn't get a valid response but we can continue and try switching
+          error_log( "we didn't get a valid response for pump switch initial status check but we can continue and try switching" );
+        }
+
+        // Now lets change the pump state
+        $shelly_api_device_response = $shelly_api->turn_on_off_shelly_switch_over_lan( $desired_state );
+        sleep (1);
+
+        // lets get the new state of the pump shelly switch
+        $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
+
+        $pump_final_switch_state = $shelly_api_device_response->{'switch:0'}->output;
+
+        if (  ( $pump_final_switch_state === true  &&  ( strtolower( $desired_state) === "on"  || $desired_state === true  || $desired_state == 1) ) || 
+              ( $pump_final_switch_state === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
+        {
+          // Final state is same as desired final state so return
+          return true;
+        }
+        else
+        {
+          error_log( "Pump Switch to desired state was not successful" );
+          return false;
+        }
     }
     
 
@@ -1878,7 +1916,8 @@ class class_transindus_eco
     {
       if (empty($shelly_4pm_readings_object))
       {
-        // pad data passed in do nothing
+        // bad data passed in do nothing
+        error_log( "Pump bad data passed in do nothing in function control_pump_on_duration" );
         return null;
       }
 
@@ -1888,7 +1927,7 @@ class class_transindus_eco
       // get webpshr subscriber id for this user
       $webpushr_subscriber_id = $all_usermeta['webpushr_subscriber_id'];
 
-      // Webpushr NPush otifications API Key
+      // Webpushr Push notifications API Key
       $webpushrKey            = $this->config['accounts'][$user_index]['webpushrKey'];
 
       // Webpushr Token
@@ -1897,7 +1936,7 @@ class class_transindus_eco
       // pump_duration_secs_max
       $pump_duration_secs_max           = $all_usermeta['pump_duration_secs_max'];
 
-      // pump_duration_control
+      // pump_duration_control flag
       $pump_duration_control            = $all_usermeta['pump_duration_control'];
 
       // pump_power_restart_interval_secs
@@ -1917,11 +1956,11 @@ class class_transindus_eco
 
       // if we are here it means pump is ON or power is disabled
       // check if required transients exist
-      if ( false === ( $pump_alreay_ON = get_transient( 'pump_alreay_ON' ) ) )
+      if ( false === ( $pump_already_ON = get_transient( 'pump_already_ON' ) ) )
       {
         // the transient does NOT exist so lets initialize the transients valid for 12 hours
         // This happens rarely, when transients get wiped out or 1st time code is run
-        set_transient( 'pump_alreay_ON', 0,  3600 );
+        set_transient( 'pump_already_ON', 0,  3600 );
 
         // lets also initialize the pump start time to now since this is the 1st time ever
         // $now = new DateTime();
@@ -1938,14 +1977,14 @@ class class_transindus_eco
 
       switch (true)
       {
-        // pump power is Enabled but pump is OFF.
+        // pump power is Enabled by Shelly 4PM but pump is OFF due to controller
         case ( ! $pump_is_drawing_power && $power_to_pump_is_enabled ):
 
           // Check to see if pump just got auto turned OFF by pump controller  as it normally should when tank is full
-          if ( ! empty( $pump_alreay_ON ) )
+          if ( ! empty( $pump_already_ON ) )
           {
             // reset the transient so next time it wont come here
-            set_transient( 'pump_alreay_ON', 0,  3600 );
+            set_transient( 'pump_already_ON', 0,  3600 );
 
             // calculate pump ON duration time. This will be used for notifications
             $now = new DateTime();
@@ -1980,7 +2019,7 @@ class class_transindus_eco
           else
           {
             // Pump is OFF long back so we just need to reset the transients
-            set_transient( 'pump_alreay_ON', 0,  3600 );
+            set_transient( 'pump_already_ON', 0,  3600 );
 
             $now = new DateTime();
             $timestamp = $now->getTimestamp();
@@ -1998,15 +2037,15 @@ class class_transindus_eco
 
 
         // pump was just ON. So we set the flag and start timer
-        case ( $pump_is_drawing_power &&  empty( $pump_alreay_ON ) ) :
+        case ( $pump_is_drawing_power &&  empty( $pump_already_ON ) ) :
 
           $this->verbose ? error_log("Pump Just turned ON") : false;
 
           // set the flag to indicate that pump is already on for next cycle check
-          $pump_alreay_ON = 1;
+          $pump_already_ON = 1;
           
           // update the transient so next check will work
-          set_transient( 'pump_alreay_ON', 1, 2 * 3600 );
+          set_transient( 'pump_already_ON', 1, 2 * 3600 );
 
           // capture pump ON start time as now
           // get the unix time stamp when measurement was made
@@ -2025,7 +2064,7 @@ class class_transindus_eco
 
 
         // pump is already ON. Measure duration and if over limit disable power to pump
-        case ( $pump_is_drawing_power &&  ( ! empty( $pump_alreay_ON ) ) ):
+        case ( $pump_is_drawing_power &&  ( ! empty( $pump_already_ON ) ) ):
 
           // calculate pump ON duration time. If greater than 60 minutes switch power to pump OFF
           $now = new DateTime();
@@ -2055,13 +2094,13 @@ class class_transindus_eco
 
             $pump_notification_count = get_transient( 'pump_notification_count' );
 
-            if ( $status_turn_pump_off->isok )
+            if ( $status_turn_pump_off )
             {
               // the pump was tuneed off per status
               $this->verbose ? error_log("Pump turned OFF after duration of: $pump_ON_duration_secs Seconds") : false;
 
               // pump is not ON anymore so set the flag to false
-              set_transient( 'pump_alreay_ON', 0, 12 * 3600 );
+              set_transient( 'pump_already_ON', 0, 12 * 3600 );
 
               $now = new DateTime();
               $timestamp = $now->getTimestamp();
@@ -2089,7 +2128,7 @@ class class_transindus_eco
             {
               if ( empty( $pump_notification_count ) )
               {
-                // the pump was tordered to turn off but it did not
+                // the pump was ordered to turn off but it did not
                 $this->verbose ? error_log("Problem - Pump could NOT be turned OFF after duration of: $pump_ON_duration_secs Seconds") : false;
                 
                 $notification_title = "Pump OFF problem";
@@ -2119,7 +2158,7 @@ class class_transindus_eco
 
           $pump_OFF_duration_secs = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 );
 
-          if ( $pump_OFF_duration_secs >= 120 && $pump_OFF_duration_secs <= 360)
+          if ( $pump_OFF_duration_secs >= 120 && $pump_OFF_duration_secs <= 360 )
           {
             // turn the shelly 4PM pump control back ON after 2m
             $status_tun_pump_on = $this->turn_pump_on_off( $user_index, 'on' );
@@ -2163,9 +2202,6 @@ class class_transindus_eco
           $sunset_plus_10_minutes_hms_format  = $this->cloudiness_forecast->sunset_plus_10_minutes_hms_format ?? "18:10:00";
           $sunset_plus_15_minutes_hms_format  = $this->cloudiness_forecast->sunset_plus_15_minutes_hms_format ?? "18:15:00";
 
-          // error_log ("Sunset: $sunset_hms_format, Sunset plus 10m: $sunset_plus_10_minutes_hms_format, Sunset plus 15m: $sunset_plus_15_minutes_hms_format");
-          // error_log("Sunrise: $sunrise_hms_format");
-
           // From sunset to 15m after, the total time window for SOC after Dark Capture
           $time_window_for_soc_dark_capture_open = $this->nowIsWithinTimeLimits( $sunset_hms_format, $sunset_plus_15_minutes_hms_format );
 
@@ -2175,6 +2211,7 @@ class class_transindus_eco
           // From 10m after sunset to 5m after is the time window for SOC capture after dark using Shelly, if Studer fails in 1st window
           $time_window_open_for_soc_capture_after_dark_using_shelly = $this->nowIsWithinTimeLimits( $sunset_plus_10_minutes_hms_format, $sunset_plus_15_minutes_hms_format );
 
+          // it is still dark if now is after sunset to midnight and from midnight to sunrise.
           $it_is_still_dark = $this->nowIsWithinTimeLimits( $sunset_hms_format, "23:59:59" ) || 
                               $this->nowIsWithinTimeLimits( "00:00", $sunrise_hms_format );
 
@@ -2185,98 +2222,72 @@ class class_transindus_eco
           // False implies that Studer readings are to be used for SOC update, true indicates Shelly based processing
           // set default at the beginning to Studer updates of SOC
           $soc_updated_using_shelly = false;
-
-          $RDBC = false;    // permamantly disable RDBC mode 
         }
 
         { // Get user meta for limits and controls as an array rather than 1 by 1
           $all_usermeta                           = $this->get_all_usermeta( $wp_user_ID );
           // SOC percentage needed to trigger LVDS
-          $soc_percentage_lvds_setting            = $all_usermeta['soc_percentage_lvds_setting']  ?? 30;
-
-          // SOH of battery currently. 
-          $soh_percentage_setting                 = $all_usermeta['soh_percentage_setting']       ?? 100;
+          $soc_percentage_lvds_setting            = $all_usermeta['soc_percentage_lvds_setting']  ?? 50;
 
           // Avg Battery Voltage lower threshold for LVDS triggers
-          $battery_voltage_avg_lvds_setting       = $all_usermeta['battery_voltage_avg_lvds_setting']  ?? 48.3;
-
-          // RDBC active only if SOC is below this percentage level.
-          $soc_percentage_rdbc_setting            = $all_usermeta['soc_percentage_rdbc_setting']  ?? 80.0;
+          $average_battery_voltage_lvds_setting   = $all_usermeta['average_battery_voltage_lvds_setting']  ?? 48.3;
 
           // Switch releases if SOC is above this level 
           $soc_percentage_switch_release_setting  = $all_usermeta['soc_percentage_switch_release_setting']  ?? 95.0; 
 
-          // SOC needs to be higher than this to allow switch release after RDBC
-          $min_soc_percentage_for_switch_release_after_rdbc 
-                                                  = $all_usermeta['min_soc_percentage_for_switch_release_after_rdbc'] ?? 32;
-
-          // min KW of Surplus Solar to release switch after RDBC
-          $min_solar_surplus_for_switch_release_after_rdbc 
-                                                  = $all_usermeta['min_solar_surplus_for_switch_release_after_rdbc'] ?? 0.2;
-
           // battery float voltage setting. Only used for SOC clamp for 100%
-          $battery_voltage_avg_float_setting      = $all_usermeta['battery_voltage_avg_float_setting'] ?? 51.9; 
+          $average_battery_float_voltage          = $all_usermeta['average_battery_float_voltage'] ?? 51.3; 
 
           // Min VOltage at ACIN for RDBC to switch to GRID
-          $acin_min_voltage_for_rdbc              = $all_usermeta['acin_min_voltage_for_rdbc'] ?? 199;  
+          $acin_min_voltage                       = $all_usermeta['acin_min_voltage'] ?? 199;  
 
           // Max voltage at ACIN for RDBC to switch to GRID
-          $acin_max_voltage_for_rdbc              = $all_usermeta['acin_max_voltage_for_rdbc'] ?? 241; 
-
-          // KW of deficit after which RDBC activates to GRID. Usually a -ve number
-          $psolar_surplus_for_rdbc_setting        = $all_usermeta['psolar_surplus_for_rdbc_setting'] ?? -0.5;  
+          $acin_max_voltage                       = $all_usermeta['acin_max_voltage'] ?? 241; 
 
           // Minimum Psolar before RDBC can be actiated
-          $psolar_min_for_rdbc_setting            = $all_usermeta['psolar_min_for_rdbc_setting'] ?? 0.3;  
+          $psolar_kw_min                          = $all_usermeta['psolar_kw_min'] ?? 0.3;  
 
           // get operation flags from user meta. Set it to false if not set
           $keep_shelly_switch_closed_always       = $all_usermeta['keep_shelly_switch_closed_always'] ?? false;
 
           // get the installed battery capacity in KWH from config
-          $SOC_capacity_KWH = $this->config['accounts'][$user_index]['battery_capacity'];
+          $battery_capacity                       = $this->config['accounts'][$user_index]['battery_capacity'];
 
-          // get webpshr subscriber id for this user
-          $webpushr_subscriber_id = $all_usermeta['webpushr_subscriber_id'];
-
-          // Webpushr NPush otifications API Key
-          $webpushrKey            = $this->config['accounts'][$user_index]['webpushrKey'];
-
-          // Webpushr Token
-          $webpushrAuthToken      = $this->config['accounts'][$user_index]['webpushrAuthToken'];
+          // Battery capacity for 100% SOC in AH
+          $battery_capacity_ah                    = $this->config['accounts'][$user_index]['battery_capacity_ah'];
         }
 
-        { // --------------------- ACIN SWITCH Details after making a Shelly API call -------------------
+        { // get the SOCs from the user meta.
+
+          // This is the value of the SOC from previous cycle as calculated by STUDER readings
+          $soc_percentage_previous_calculated_using_studer      = (float) get_user_meta($wp_user_ID, "soc_percentage_now_calculated_using_studer",    true);
+
+          // This is the value of the SOC from previous cycle using SHelly BM
+          $soc_percentage_previous_calculated_using_shelly_bm   = (float) get_user_meta($wp_user_ID, "soc_percentage_now_calculated_using_shelly_bm", true);
+
+          // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only just past midnight once
+          $soc_percentage_at_midnight          = (float) get_user_meta($wp_user_ID, "soc_percentage_at_midnight",  true);
+
+          // SOC percentage after dark. This gets captured at dark and gets updated every cycle
+          // using only shelly devices and does NOT involve Battery Current based measurements.
+          $soc_after_dark  = (float) get_user_meta( $wp_user_ID, 'soc_after_dark',  true);
+        }
+
+        { // --------------------- Shelly1PM ACIN SWITCH data after making a Shelly API call -------------------
 
           $shelly_switch_acin_details_arr = $this->get_shelly_switch_acin_details( $user_index );
 
-          $valid_shelly_config              = $shelly_switch_acin_details_arr['valid_shelly_config'];
-          $control_shelly                   = $shelly_switch_acin_details_arr['control_shelly'];
-          $shelly_switch_status             = $shelly_switch_acin_details_arr['shelly_switch_status'];
-          $shelly_api_device_status_voltage = $shelly_switch_acin_details_arr['shelly_api_device_status_voltage'];
-          $shelly_api_device_status_ON      = $shelly_switch_acin_details_arr['shelly_api_device_status_ON'];
+          $shelly1pm_acin_switch_config     = $shelly_switch_acin_details_arr['shelly1pm_acin_switch_config'];  // Is configuration valid?
+          $control_shelly                   = $shelly_switch_acin_details_arr['control_shelly'];                // is switch set to be controllable?
+          $shelly1pm_acin_switch_status     = $shelly_switch_acin_details_arr['shelly1pm_acin_switch_status'];  // ON/OFF/OFFLINE/Not COnfigured
+          $shelly1pm_acin_voltage           = $shelly_switch_acin_details_arr['shelly1pm_acin_voltage'];
+          $shelly1pm_acin_current           = $shelly_switch_acin_details_arr['shelly1pm_acin_current'];
+          $shelly1pm_acin_power_kw          = $shelly_switch_acin_details_arr['shelly1pm_acin_power_kw'];
 
-          // remember the voltage is set to 'NA' if the API call failed
-          set_transient( 'shelly1pm-acin-voltage', $shelly_api_device_status_voltage,  300);
+          print_r($shelly_switch_acin_details_arr);
         }
 
-        { // get the SOCs from the user meta. These will be used to calculate new updates
-
-          // This is the value of the SOC from previous cycle as calculated by STUDER readings
-          $SOC_percentage_previous            = (float) get_user_meta($wp_user_ID, "soc_percentage_now",  true);
-
-          // This is the value of the SOC from previous cycle using SHelly BM
-          $SOC_percentage_previous_shelly_bm  = (float) get_user_meta($wp_user_ID, "soc_percentage_now_calculated_using_shelly_bm",  true) ?? $SOC_percentage_previous;
-
-          // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only just past midnight once
-          $SOC_percentage_beg_of_day          = (float) get_user_meta($wp_user_ID, "soc_percentage",  true) ?? 60;
-
-          // SOC percentage just after midnight as measured by Shelly BM.
-          $shelly_soc_percentage_at_midnight = (float) get_user_meta($wp_user_ID, "shelly_soc_percentage_at_midnight",  true) 
-                                                              ?? $SOC_percentage_beg_of_day;
-          // SOC percentage after dark as computed by Shelly EM after dark. This gets captured at dark and gets updated every cycle
-          // using only shelly devices no STUDER involvement.
-          $soc_update_from_studer_after_dark  = (float) get_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark',  true);
-        }
+        
         
         {  // make all measurements, update SOC, set switch tree control flags, reset midnight values
 
@@ -4042,130 +4053,7 @@ class class_transindus_eco
         }
     }
 
-    /**
-     *
-     */
-    public function studer_sttings_page_render()
-    {
-        $output = '';
 
-        $output .= '
-        <style>
-            table {
-                border-collapse: collapse;
-                }
-                th, td {
-                border: 1px solid orange;
-                padding: 10px;
-                text-align: left;
-                }
-                .rediconcolor {color:red;}
-                .greeniconcolor {color:green;}
-                .img-pow-genset { max-width: 59px; }
-        </style>';
-        $output .= '
-        <table>
-        <tr>
-            <th>
-              Parameter
-            </th>';
-
-
-        foreach ($config['accounts'] as $user_index => $account)
-        {
-          $home = $account['home'];
-          $output .=
-            '<th>' . $home .
-            '</th>';
-        }
-        unset($account);
-        $output .=
-        '</tr>';
-        // Now we need to get all of the parameters of interest for each of the users and display them
-        foreach ($config['accounts'] as $user_index => $account)
-        {
-          $wp_user_name = $account['wp_user_name'];
-
-        }
-
-    }
-
-
-    /**
-     * 
-     */
-    public function view_grid_values_page_render()
-    {
-      // initialize page HTML to be returned to be rendered by WordPress
-      $output = '';
-
-      $output .= '
-      <style>
-          @media (min-width: 768px) {
-            .synoptic-table {
-                margin: auto;
-                width: 95% !important;
-                height: 100%;
-                border-collapse: collapse;
-                overflow-x: auto;
-                border-spacing: 0;
-                font-size: 1.5em;
-            }
-            .rediconcolor {color:red;}
-            .greeniconcolor {color:green;}
-            .clickableIcon {
-              cursor: pointer
-            .arrowSliding_nw_se {
-              position: relative;
-              -webkit-animation: slide_nw_se 2s linear infinite;
-                      animation: slide_nw_se 2s linear infinite;
-            }
-      
-            .arrowSliding_ne_sw {
-              position: relative;
-              -webkit-animation: slide_ne_sw 2s linear infinite;
-                      animation: slide_ne_sw 2s linear infinite;
-            }
-      
-            .arrowSliding_sw_ne {
-              position: relative;
-              -webkit-animation: slide_ne_sw 2s linear infinite reverse;
-                      animation: slide_ne_sw 2s linear infinite reverse;
-            }
-      
-            @-webkit-keyframes slide_ne_sw {
-                0% { opacity:0; transform: translate(20%, -20%); }
-                20% { opacity:1; transform: translate(10%, -10%); }
-                80% { opacity:1; transform: translate(-10%, 10%); }
-              100% { opacity:0; transform: translate(-20%, 20%); }
-            }
-            @keyframes slide_ne_sw {
-                0% { opacity:0; transform: translate(20%, -20%); }
-                20% { opacity:1; transform: translate(10%, -10%); }
-                80% { opacity:1; transform: translate(-10%, 10%); }
-              100% { opacity:0; transform: translate(-20%, 20%); }
-            }
-      
-            @-webkit-keyframes slide_nw_se {
-                0% { opacity:0; transform: translate(-20%, -20%); }
-                20% { opacity:1; transform: translate(-10%, -10%); }
-                80% { opacity:1; transform: translate(10%, 10%);   }
-              100% { opacity:0; transform: translate(20%, 20%);   }
-            }
-            @keyframes slide_nw_se {
-                0% { opacity:0; transform: translate(-20%, -20%); }
-                20% { opacity:1; transform: translate(-10%, -10%); }
-                80% { opacity:1; transform: translate(10%, 10%);   }
-              100% { opacity:0; transform: translate(20%, 20%);   }
-            }
-         }
-      </style>';
-
-      // readin the transient object.
-      $shelly1pm_acin_voltage = (int) round( (float) get_transient( 'shelly1pm-acin-voltage' ), 0 );
-      $output .= "AC Voltage (RMS) at FB16 fed by FP7 feeder = " . $shelly1pm_acin_voltage;
-
-    }
     /**
      *  This function defined the shortcode to a page called mysolar that renders a user's solar system readings
      *  The HTML is created in a string variable and returned as is typical of a shortcode function
@@ -4336,101 +4224,6 @@ class class_transindus_eco
         return $output;
     }
 
-
-    /**
-     *
-     */
-    public function studer_readings_page_render()
-    {
-        // $script = '"' . $config['fontawesome_cdn'] . '"';
-        //$output = '<script src="' . $config['fontawesome_cdn'] . '"></script>';
-        $output = '';
-
-        $output .= '
-        <style>
-            table {
-                border-collapse: collapse;
-                }
-                th, td {
-                border: 1px solid orange;
-                padding: 10px;
-                text-align: left;
-                }
-                .rediconcolor {color:red;}
-                .greeniconcolor {color:green;}
-                .img-pow-genset { max-width: 59px; }
-        </style>';
-
-        $output .= '
-        <table>
-        <tr>
-            <th>
-              Install
-            </th>
-            <th>
-                <i class="fa-regular fa-2xl fa-calendar-minus"></i>
-                <i class="fa-solid fa-2xl fa-solar-panel greeniconcolor"></i>
-            </th>
-            <th>
-                <i class="fa-regular fa-2xl fa-calendar-minus"></i>
-                <i class="fa-solid fa-2xl fa-plug-circle-check rediconcolor"></i>
-            </th>
-            <th><i class="fa-solid fa-2xl fa-charging-station"></i></th>
-            <th><i class="fa-solid fa-2xl fa-solar-panel greeniconcolor"></i></th>
-            <th><i class="fa-solid fa-2xl fa-house"></i></th>
-        </tr>';
-
-        // loop through all of the users in the config
-        foreach ($this->config['accounts'] as $user_index => $account)
-        {
-            $home = $account['home'];
-
-            $studer_readings_obj = $this->get_studer_readings($user_index);
-
-            if ($studer_readings_obj->grid_pin_ac_kw < 0.1)
-            {
-                $grid_staus_icon = '<i class="fa-solid fa-2xl fa-plug-circle-xmark greeniconcolor"></i>';
-            }
-            else
-            {
-                $grid_staus_icon = '<i class="fa-solid fa-2xl fa-plug-circle-check rediconcolor"></i>';
-            }
-            $solar_capacity         =   $account['solar_pk_install'];
-            $battery_capacity       =   $account['battery_capacity'];
-            $solar_yesterday        =   $studer_readings_obj->psolar_kw_yesterday;
-            $grid_yesterday         =   $studer_readings_obj->energy_grid_yesterday;
-            $consumed_yesterday     =   $studer_readings_obj->energy_consumed_yesterday;
-            $battery_icon_class     =   $studer_readings_obj->battery_icon_class;
-            $solar                  =   $studer_readings_obj->psolar_kw;
-            $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
-            $battery_span_fontawesome = $studer_readings_obj->battery_span_fontawesome;
-            $battery_voltage_vdc    =   round( $studer_readings_obj->battery_voltage_vdc, 1);
-
-            $output .= $this->print_row_table(  $home, $solar_capacity, $battery_capacity, $battery_voltage_vdc,
-                                                $solar_yesterday, $grid_yesterday, $consumed_yesterday,
-                                                $battery_span_fontawesome, $solar, $grid_staus_icon, $pout_inverter_ac_kw   );
-        }
-        $output .= '</table>';
-
-        return $output;
-    }
-
-    public function print_row_table(    $home, $solar_capacity, $battery_capacity, $battery_voltage_vdc,
-                                        $solar_yesterday, $grid_yesterday, $consumed_yesterday,
-                                        $battery_span_fontawesome, $solar, $grid_staus_icon, $pout_inverter_ac_kw   )
-    {
-        $returnstring =
-        '<tr>' .
-            '<td>' . $home .                                            '</td>' .
-            '<td>' . '<font color="green">' . $solar_yesterday .        '</td>' .
-            '<td>' . '<font color="red">' .   $grid_yesterday .         '</td>' .
-            '<td>' . $battery_span_fontawesome . $battery_voltage_vdc . '</td>' .
-            '<td>' . '<font color="green">' . $solar .                  '</td>' .
-            '<td>' . $grid_staus_icon .       $pout_inverter_ac_kw  .   '</td>' .
-        '</tr>';
-        return $returnstring;
-    }
-
 /**
  *  Function to test code conveniently.
  */
@@ -4472,15 +4265,11 @@ class class_transindus_eco
             case 'Get_Studer_Readings':
 
                 // echo "<pre>" . print_r($config, true) . "</pre>";
-                $studer_readings_obj = $this->get_studer_readings($config_index);
+                $studer_readings_obj = $this->get_studer_min_readings($config_index);
 
                 echo "<pre>" . "Studer Inverter Output (KW): " .    $studer_readings_obj->pout_inverter_ac_kw . "</pre>";
                 echo "<pre>" . "Studer Solar Output(KW): " .        $studer_readings_obj->psolar_kw .           "</pre>";
                 echo "<pre>" . "Battery Voltage (V): " .            $studer_readings_obj->battery_voltage_vdc . "</pre>";
-                echo "<pre>" . "Solar Generated Yesterday (KWH): ". $studer_readings_obj->psolar_kw_yesterday . "</pre>";
-                echo "<pre>" . "Battery Discharged Yesterday (KWH): ". $studer_readings_obj->energyout_battery_yesterday . "</pre>";
-                echo "<pre>" . "Grid Energy In Yesterday (KWH): ".  $studer_readings_obj->energy_grid_yesterday . "</pre>";
-                echo "<pre>" . "Energy Consumed Yesterday (KWH): ".  $studer_readings_obj->energy_consumed_yesterday . "</pre>";
                 echo nl2br("/n");
             break;
 
@@ -4679,60 +4468,63 @@ class class_transindus_eco
      *  @param string:$shelly_switch_name is the name of the switch used to index its shelly_device_id in the config array
      *  @return object:$shelly_device_data is the curl response stdclass object from Shelly device
      */
-    public function turn_on_off_shelly_switch( int $user_index, string $desired_state, $shelly_switch_name = 'shelly_device_id_acin' ) : ? object
+    public function turn_on_off_shelly1pm_acin_switch( int $user_index, string $desired_state ) : ? bool
     {
-      // Shelly API has a max request rate of 1 per second. So we wait 1s just in case we made a Shelly API call before coming here
-        sleep (2);
-
         // get the config array from the object properties
         $config = $this->config;
 
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-
-        // this is the device ID using index that is passed in defaults to 'shelly_device_id_acin'
-        // other shelly 1PM names are: 'shelly_device_id_water_heater'
-        $shelly_device_id   = $config['accounts'][$user_index][$shelly_switch_name];
-
-        $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
-
-        // this is $curl_response
-        $shelly_device_data = $shelly_api->turn_on_off_shelly_switch( $desired_state );
-
-        // True if API call was successful, False if not.
-        return $shelly_device_data;
-    }
-
-    public function get_shelly_device_status(int $user_index): ?object
-    {
-        // get API and device ID from config based on user index
-        $config = $this->config;
-        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id'];
-
-        $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
-
-        // this is $curl_response.
-        $shelly_device_data = $shelly_api->get_shelly_device_status();
-
-        return $shelly_device_data;
-    }
-
-    public function get_shelly_device_status_acin(int $user_index): ? object
-    {
-        // get API and device ID from config based on user index
-        $config = $this->config;
-        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
         $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
+        $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_1pm'];
 
-        $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+        // set the channel of the switch
+        $channel  = 0;
 
-        // this is $curl_response.
-        $shelly_device_data = $shelly_api->get_shelly_device_status();
+        $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, $channel  );
 
-        return $shelly_device_data;
+        // Get the switch initial status now before any switching happens
+        $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
+
+        if ( $shelly_api_device_response )
+        {
+          $initial_switch_state = $shelly_api_device_response->{'switch:0'}->output;
+
+          // if the existing switch state is same as desired, we simply exit with message
+          if (  ( $initial_switch_state === true  &&  ( strtolower( $desired_state) === "on"  || $desired_state === true  || $desired_state == 1) ) || 
+                ( $initial_switch_state === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
+          {
+            // esisting state is same as desired final state so return
+            error_log( "No Action in ACIN Switch done since no change is desired " );
+            return true;
+          }
+        }
+        else
+        {
+          // we didn't get a valid response but we can continue and try switching
+          error_log( "we didn't get a valid response for ACIN switch initial status check but we can continue and try switching" );
+        }
+
+        // Now lets change the switch state by command over LAN
+        $shelly_api_device_response = $shelly_api->turn_on_off_shelly_switch_over_lan( $desired_state );
+        sleep (1);
+
+        // lets get the new state of the ACIN shelly switch
+        $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
+
+        $final_switch_state = $shelly_api_device_response->{'switch:0'}->output;
+
+        if (  ( $final_switch_state === true  &&  ( strtolower( $desired_state) === "on"  || $desired_state === true  || $desired_state == 1) ) || 
+              ( $final_switch_state === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
+        {
+          // Final state is same as desired final state so return success
+          return true;
+        }
+        else
+        {
+          error_log( "ACIN Switch to desired state was not successful" );
+          return false;
+        }
     }
 
 
@@ -4743,464 +4535,50 @@ class class_transindus_eco
       $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
       $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_water_heater'];
+      $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_water_heater'];
 
-      $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
+      $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
 
       // this is $curl_response.
-      $shelly_api_device_response = $shelly_api->get_shelly_device_status();
+      $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
 
       if ( is_null($shelly_api_device_response) ) 
-          { // No response for Shelly water heater switch API call
+      { // No response for Shelly water heater switch API call
 
-            error_log("Shelly Water Heater Switch API call failed - Reason unknown");
-            return null;
-          }
-          else 
-          {  // Switch is ONLINE - Get its status, VOltage, and Power
-              // switch ON is true OFF is false boolean variable
-              $shelly_water_heater_status         = $shelly_api_device_response->data->device_status->{'switch:0'}->output;
-              
+        error_log("Shelly Water Heater Switch over LAN call failed - Reason unknown");
+        return null;
+      }
+      else 
+      {  // Switch is ONLINE - Get its status, VOltage, and Power
+          // switch ON is true OFF is false boolean variable
+          $shelly_water_heater_status         = $shelly_api_device_response->{'switch:0'}->output;
+          
 
-              if ($shelly_water_heater_status)
-              {
-                  $shelly_water_heater_status_ON      = "ON";
-                  $shelly_water_heater_voltage        = $shelly_api_device_response->data->device_status->{'switch:0'}->voltage;
-                  $shelly_water_heater_current        = $shelly_api_device_response->data->device_status->{'switch:0'}->current;
-                  $shelly_water_heater_w              = $shelly_api_device_response->data->device_status->{'switch:0'}->apower;
-                  $shelly_water_heater_kw             = round( $shelly_water_heater_w * 0.001, 3);
-              }
-              else
-              {
-                  $shelly_water_heater_status_ON      = "OFF";
-                  $shelly_water_heater_current        = 0;
-                  $shelly_water_heater_kw             = 0;
-              }
-          }
-
-          $shelly_water_heater_data =  new stdclass;
-          $shelly_water_heater_data->shelly_water_heater_status     = $shelly_water_heater_status;
-          $shelly_water_heater_data->shelly_water_heater_status_ON  = $shelly_water_heater_status_ON;
-          $shelly_water_heater_data->shelly_water_heater_kw         = $shelly_water_heater_kw;
-          $shelly_water_heater_data->shelly_water_heater_current    = $shelly_water_heater_current;
-
-      return $shelly_water_heater_data;
-    }
-
-    /**
-    ** This function returns an object that comprises data read form user's installtion
-    *  @param int:$user_index  is the numeric index to denote a particular installtion
-    *  @return object:$studer_readings_obj
-    */
-    public function get_studer_readings(int $user_index): ?object
-    {
-        $config = $this->config;
-
-        $Ra = 0.0;       // value of resistance from DC junction to Inverter
-        $Rb = 0.025;       // value of resistance from DC junction to Battery terminals
-
-        $base_url  = $config['studer_api_baseurl'];
-        $uhash     = $config['accounts'][$user_index]['uhash'];
-        $phash     = $config['accounts'][$user_index]['phash'];
-
-        $studer_api = new studer_api($uhash, $phash, $base_url);
-
-        $studer_readings_obj = new stdClass;
-
-        $body = [];
-
-        // get the input AC active power value
-        $body = array(array(
-                              "userRef"       =>  3136,   // AC active power delivered by inverter
-                              "infoAssembly"  => "Master"
-                           ),
-                       array(
-                               "userRef"       =>  3076,   // Energy from Battery Yesterday
-                               "infoAssembly"  => "Master"
-                           ),
-                       array(
-                               "userRef"       =>  3078,   // Energy from Battery Today till now
-                               "infoAssembly"  => "Master"
-                           ),
-                       array(
-                               "userRef"       =>  3082,   // Energy consumed yesterday
-                               "infoAssembly"  => "Master"
-                           ),
-                       array(
-                               "userRef"       =>  3080,   // Energy from Grid yesterda
-                               "infoAssembly"  => "Master"
-                           ),
-                       array(
-                               "userRef"       =>  11011,   // Solar Production from Panel set1 yesterday
-                               "infoAssembly"  => "1"
-                           ),
-                       array(
-                               "userRef"       =>  11011,   // Solar Production from Panel set 2 yesterday
-                               "infoAssembly"  => "2"
-                           ),
-                      array(
-                               "userRef"       =>  3137,   // Grid AC input Active power
-                               "infoAssembly"  => "Master"
-                           ),
-                      array(
-                               "userRef"       =>  3020,   // State of Transfer Relay
-                               "infoAssembly"  => "Master"
-                            ),
-                      array(
-                               "userRef"       =>  3031,   // State of AUX1 relay
-                               "infoAssembly"  => "Master"
-                            ),
-                      array(
-                              "userRef"       =>  3000,   // Battery Voltage
-                              "infoAssembly"  => "Master"
-                            ),
-                      array(
-                              "userRef"       =>  3011,   // Grid AC in Voltage Vac
-                              "infoAssembly"  => "Master"
-                            ),
-                      array(
-                              "userRef"       =>  3012,   // Grid AC in Current Aac
-                              "infoAssembly"  => "Master"
-                            ),
-                      array(
-                              "userRef"       =>  3005,   // DC input current to Inverter
-                              "infoAssembly"  => "Master"
-                            ),
-
-                      array(
-                              "userRef"       =>  11001,   // DC current into Battery junstion from VT1
-                              "infoAssembly"  => "1"
-                            ),
-                      array(
-                              "userRef"       =>  11001,   // DC current into Battery junstion from VT2
-                              "infoAssembly"  => "2"
-                            ),
-                      array(
-                              "userRef"       =>  11002,   // solar pv Voltage to variotrac
-                              "infoAssembly"  => "Master"
-                            ),
-                      array(
-                              "userRef"       =>  11004,   // Psolkw from VT1
-                              "infoAssembly"  => "1"
-                            ),
-                      array(
-                              "userRef"       =>  11004,   // Psolkw from VT2
-                              "infoAssembly"  => "2"
-                            ),
-
-                      array(
-                              "userRef"       =>  5002,   // Studer RCC date in Unix timestamp with UTC offset built in
-                              "infoAssembly"  => "Master"
-                            ),
-                      );
-        $studer_api->body   = $body;
-
-        // POST curl request to Studer
-        $user_values  = $studer_api->get_user_values();
-
-        if (empty($user_values))
-            {
-              return null;
-            }
-
-        $solar_pv_adc = 0;
-        $psolar_kw    = 0;
-        $psolar_kw_yesterday = 0;
-
-
-        foreach ($user_values as $user_value)
-        {
-          switch (true)
+          if ($shelly_water_heater_status)
           {
-            case ( $user_value->reference == 3031 ) :
-              $aux1_relay_state = $user_value->value;
-            break;
-
-            case ( $user_value->reference == 3020 ) :
-              $transfer_relay_state = $user_value->value;
-            break;
-
-            case ( $user_value->reference == 3011 ) :
-              $grid_input_vac = round($user_value->value, 0);
-            break;
-
-            case ( $user_value->reference == 3012 ) :
-              $grid_input_aac = round($user_value->value, 1);
-            break;
-
-            case ( $user_value->reference == 3000 ) :
-              $battery_voltage_vdc = round($user_value->value, 2);
-            break;
-
-            case ( $user_value->reference == 3005 ) :
-              $inverter_current_adc = round($user_value->value, 1);
-            break;
-
-            case ( $user_value->reference == 3137 ) :
-              $grid_pin_ac_kw = round($user_value->value, 3);
-
-            break;
-
-            case ( $user_value->reference == 3136 ) :
-              $pout_inverter_ac_kw = round($user_value->value, 3);
-
-            break;
-
-            case ( $user_value->reference == 3076 ) :
-               $energyout_battery_yesterday = round($user_value->value, 2);
-
-             break;
-
-            case ( $user_value->reference == 3078 ) :
-              $KWH_battery_today = round($user_value->value, 3);
-
-            break;
-
-             case ( $user_value->reference == 3080 ) :
-               $energy_grid_yesterday = round($user_value->value, 3);
-
-             break;
-
-             case ( $user_value->reference == 3082 ) :
-               $energy_consumed_yesterday = round($user_value->value, 3);
-
-             break;
-
-            case ( $user_value->reference == 11001 ) :
-              // we have to accumulate values form 2 cases:VT1 and VT2 so we have used accumulation below
-              $solar_pv_adc += $user_value->value;
-
-            break;
-
-            case ( $user_value->reference == 11002 ) :
-              $solar_pv_vdc = round($user_value->value, 1);
-
-            break;
-
-            case ( $user_value->reference == 11004 ) :
-              // we have to accumulate values form 2 cases so we have used accumulation below
-              $psolar_kw += round($user_value->value, 3);
-
-            break;
-
-            case ( $user_value->reference == 3010 ) :
-              $phase_battery_charge = $user_value->value;
-
-            break;
-
-            case ( $user_value->reference == 11011 ) :
-               // we have to accumulate values form 2 cases so we have used accumulation below
-               $psolar_kw_yesterday += round($user_value->value, 3);
-
-             break;
-
-            case ( $user_value->reference == 5002 ) :
-
-              $studer_clock_unix_timestamp_with_utc_offset = $user_value->value;
-
-            break;
+              $shelly_water_heater_status_ON      = (string) "ON";
+              $shelly_water_heater_voltage        = $shelly_api_device_response->{'switch:0'}->voltage;
+              $shelly_water_heater_current        = $shelly_api_device_response->{'switch:0'}->current;
+              $shelly_water_heater_w              = $shelly_api_device_response->{'switch:0'}->apower;
+              $shelly_water_heater_kw             = round( $shelly_water_heater_w * 0.001, 3);
           }
-        }
-
-        $solar_pv_adc = round($solar_pv_adc, 1);
-
-        // calculate the current into/out of battery and battery instantaneous power
-        $battery_charge_adc  = round($solar_pv_adc + $inverter_current_adc, 1); // + is charge, - is discharge
-        $pbattery_kw         = round($battery_voltage_vdc * $battery_charge_adc * 0.001, 3); //$psolar_kw - $pout_inverter_ac_kw;
-
-
-        // inverter's output always goes to load never the other way around :-)
-        $inverter_pout_arrow_class = "fa fa-long-arrow-right fa-rotate-45 rediconcolor";
-
-        // conditional class names for battery charge down or up arrow
-        if ($battery_charge_adc > 0.0)
-        {
-          // current is positive so battery is charging so arrow is down and to left. Also arrow shall be red to indicate charging
-          $battery_charge_arrow_class = "fa fa-long-arrow-down fa-rotate-45 rediconcolor";
-          // battery animation class is from ne-sw
-          $battery_charge_animation_class = "arrowSliding_ne_sw";
-
-          $battery_color_style = 'greeniconcolor';
-
-          // also good time to compensate for IR drop.
-          // Actual voltage is smaller than indicated, when charging
-          $battery_voltage_vdc = round($battery_voltage_vdc + abs($inverter_current_adc) * $Ra - abs($battery_charge_adc) * $Rb, 2);
-        }
-        else
-        {
-          // current is -ve so battery is discharging so arrow is up and icon color shall be red
-          $battery_charge_arrow_class = "fa fa-long-arrow-up fa-rotate-45 greeniconcolor";
-          $battery_charge_animation_class = "arrowSliding_sw_ne";
-          $battery_color_style = 'rediconcolor';
-
-          // Actual battery voltage is larger than indicated when discharging
-          $battery_voltage_vdc = round($battery_voltage_vdc + abs($inverter_current_adc) * $Ra + abs($battery_charge_adc) * $Rb, 2);
-        }
-
-        switch(true)
-        {
-          case (abs($battery_charge_adc) < 27 ) :
-            $battery_charge_arrow_class .= " fa-1x";
-          break;
-
-          case (abs($battery_charge_adc) < 54 ) :
-            $battery_charge_arrow_class .= " fa-2x";
-          break;
-
-          case (abs($battery_charge_adc) >=54 ) :
-            $battery_charge_arrow_class .= " fa-3x";
-          break;
-        }
-
-        // conditional for solar pv arrow
-        if ($psolar_kw > 0.1)
-        {
-          // power is greater than 0.2kW so indicate down arrow
-          $solar_arrow_class = "fa fa-long-arrow-down fa-rotate-45 greeniconcolor";
-          $solar_arrow_animation_class = "arrowSliding_ne_sw";
-        }
-        else
-        {
-          // power is too small indicate a blank line vertically down from Solar panel to Inverter in diagram
-          $solar_arrow_class = "fa fa-minus fa-rotate-90";
-          $solar_arrow_animation_class = "";
-        }
-
-        switch(true)
-        {
-          case (abs($psolar_kw) < 0.5 ) :
-            $solar_arrow_class .= " fa-1x";
-          break;
-
-          case (abs($psolar_kw) < 2.0 ) :
-            $solar_arrow_class .= " fa-2x";
-          break;
-
-          case (abs($psolar_kw) >= 2.0 ) :
-            $solar_arrow_class .= " fa-3x";
-          break;
-        }
-
-        switch(true)
-        {
-          case (abs($pout_inverter_ac_kw) < 1.0 ) :
-            $inverter_pout_arrow_class .= " fa-1x";
-          break;
-
-          case (abs($pout_inverter_ac_kw) < 2.0 ) :
-            $inverter_pout_arrow_class .= " fa-2x";
-          break;
-
-          case (abs($pout_inverter_ac_kw) >=2.0 ) :
-            $inverter_pout_arrow_class .= " fa-3x";
-          break;
-        }
-
-        // conditional for Grid input arrow
-        if ($transfer_relay_state)
-        {
-          // Transfer Relay is closed so grid input is possible
-          $grid_input_arrow_class = "fa fa-long-arrow-right fa-rotate-45";
-        }
-        else
-        {
-          // Transfer relay is open and grid input is not possible
-          $grid_input_arrow_class = "fa fa-times-circle fa-2x";
-        }
-
-        switch(true)
-        {
-          case (abs($grid_pin_ac_kw) < 1.0 ) :
-            $grid_input_arrow_class .= " fa-1x";
-          break;
-
-          case (abs($grid_pin_ac_kw) < 2.0 ) :
-            $grid_input_arrow_class .= " fa-2x";
-          break;
-
-          case (abs($grid_pin_ac_kw) < 3.5 ) :
-            $grid_input_arrow_class .= " fa-3x";
-          break;
-
-          case (abs($grid_pin_ac_kw) < 4 ) :
-            $grid_input_arrow_class .= " fa-4x";
-          break;
-        }
-
-       $current_user           = wp_get_current_user();
-       $current_user_ID        = $current_user->ID;
-       // $battery_vdc_state_json = get_user_meta($current_user_ID, "json_battery_voltage_state", true);
-       // $battery_vdc_state      = json_decode($battery_vdc_state_json, true);
-
-       // select battery icon based on charge level
-      switch(true)
-      {
-        case ($battery_voltage_vdc < $config['battery_vdc_state']["25p"] ):
-          $battery_icon_class = "fa fa-3x fa-solid fa-battery-empty";
-        break;
-
-        case ($battery_voltage_vdc >= $config['battery_vdc_state']["25p"] &&
-              $battery_voltage_vdc <  $config['battery_vdc_state']["50p"] ):
-          $battery_icon_class = "fa fa-3x fa-solid fa-battery-quarter";
-        break;
-
-        case ($battery_voltage_vdc >= $config['battery_vdc_state']["50p"] &&
-              $battery_voltage_vdc <  $config['battery_vdc_state']["75p"] ):
-          $battery_icon_class = "fa fa-3x fa-solid fa-battery-half";
-        break;
-
-        case ($battery_voltage_vdc >= $config['battery_vdc_state']["75p"] &&
-              $battery_voltage_vdc <  $config['battery_vdc_state']["100p"] ):
-          $battery_icon_class = "fa fa-3x fa-solid fa-battery-three-quarters";
-        break;
-
-        case ($battery_voltage_vdc >= $config['battery_vdc_state']["100p"] ):
-          $battery_icon_class = "fa fa-3x fa-solid fa-battery-full";
-        break;
+          else
+          {
+              $shelly_water_heater_status_ON      = (string) "OFF";
+              $shelly_water_heater_voltage        = $shelly_api_device_response->{'switch:0'}->voltage;
+              $shelly_water_heater_current        = 0;
+              $shelly_water_heater_kw             = 0;
+          }
       }
 
-      $battery_span_fontawesome = '
-                                    <i class="' . $battery_icon_class . ' ' . $battery_color_style . '"></i>';
+      $shelly_water_heater_data =  new stdclass;
+      $shelly_water_heater_data->shelly_water_heater_status     = $shelly_water_heater_status;
+      $shelly_water_heater_data->shelly_water_heater_status_ON  = $shelly_water_heater_status_ON;
+      $shelly_water_heater_data->shelly_water_heater_kw         = $shelly_water_heater_kw;
+      $shelly_water_heater_data->shelly_water_heater_current    = $shelly_water_heater_current;
+      $shelly_water_heater_data->shelly_water_heater_voltage    = $shelly_water_heater_voltage;
 
-      // select battery icon color: Green if charging, Red if discharging
-
-
-      // update the object with battery data read
-      $studer_readings_obj->battery_charge_adc          = $battery_charge_adc;
-      $studer_readings_obj->pbattery_kw                 = abs($pbattery_kw);
-      $studer_readings_obj->battery_voltage_vdc         = $battery_voltage_vdc;
-      $studer_readings_obj->battery_charge_arrow_class  = $battery_charge_arrow_class;
-      $studer_readings_obj->battery_icon_class          = $battery_icon_class;
-      $studer_readings_obj->battery_charge_animation_class = $battery_charge_animation_class;
-      $studer_readings_obj->energyout_battery_yesterday    = $energyout_battery_yesterday;
-
-      // update the object with SOlar data read
-      $studer_readings_obj->psolar_kw                   = $psolar_kw;
-      $studer_readings_obj->solar_pv_adc                = $solar_pv_adc;
-      // $studer_readings_obj->solar_pv_vdc                = $solar_pv_vdc;
-      $studer_readings_obj->solar_arrow_class           = $solar_arrow_class;
-      $studer_readings_obj->solar_arrow_animation_class = $solar_arrow_animation_class;
-      $studer_readings_obj->psolar_kw_yesterday         = $psolar_kw_yesterday;
-
-      //update the object with Inverter Load details
-      $studer_readings_obj->pout_inverter_ac_kw         = $pout_inverter_ac_kw;
-      $studer_readings_obj->inverter_pout_arrow_class   = $inverter_pout_arrow_class;
-
-      // update the Grid input values
-      $studer_readings_obj->transfer_relay_state        = $transfer_relay_state;
-      $studer_readings_obj->grid_pin_ac_kw              = $grid_pin_ac_kw;
-      $studer_readings_obj->grid_input_vac              = $grid_input_vac;
-      $studer_readings_obj->grid_input_arrow_class      = $grid_input_arrow_class;
-      $studer_readings_obj->aux1_relay_state            = $aux1_relay_state;
-      $studer_readings_obj->energy_grid_yesterday       = $energy_grid_yesterday;
-      $studer_readings_obj->energy_consumed_yesterday   = $energy_consumed_yesterday;
-      $studer_readings_obj->battery_span_fontawesome    = $battery_span_fontawesome;
-
-      $studer_readings_obj->studer_clock_unix_timestamp_with_utc_offset = $studer_clock_unix_timestamp_with_utc_offset;
-
-      // update the object with the fontawesome cdn from Studer API object
-      // $studer_readings_obj->fontawesome_cdn             = $studer_api->fontawesome_cdn;
-
-      return $studer_readings_obj;
+      return $shelly_water_heater_data;
     }
 
 
@@ -5311,7 +4689,7 @@ class class_transindus_eco
               return null;
             }
 
-        $solar_pv_adc = 0;
+        $solar_amps_into_battery = 0;
         $psolar_kw    = 0;
         $psolar_kw_yesterday = 0;
         $KWH_solar_today = 0;
@@ -5342,7 +4720,7 @@ class class_transindus_eco
             break;
 
             case ( $user_value->reference == 3005 ) :
-              $inverter_current_adc = round($user_value->value, 1);
+              $inverter_current_amps = round($user_value->value, 1);
             break;
 
             case ( $user_value->reference == 3137 ) :
@@ -5387,7 +4765,7 @@ class class_transindus_eco
 
             case ( $user_value->reference == 11001 ) :
               // we have to accumulate values form 2 cases:VT1 and VT2 so we have used accumulation below
-              $solar_pv_adc += $user_value->value;
+              $solar_amps_into_battery += $user_value->value;
 
             break;
 
@@ -5422,15 +4800,13 @@ class class_transindus_eco
           }
         }
 
-        $solar_pv_adc = round($solar_pv_adc, 1);
+        $solar_amps_into_battery = round( $solar_amps_into_battery, 1 );
 
         // calculate the current into/out of battery and battery instantaneous power
-        $battery_charge_adc  = round($solar_pv_adc + $inverter_current_adc, 1); // + is charge, - is discharge
-        $pbattery_kw         = round($battery_voltage_vdc * $battery_charge_adc * 0.001, 3); //$psolar_kw - $pout_inverter_ac_kw;
-
+        $battery_charge_amps  = round(  $solar_amps_into_battery + $inverter_current_amps, 1 );   // + is charge, - is discharge
 
         // conditional class names for battery charge down or up arrow
-        if ($battery_charge_adc > 0.0)
+        if ( $battery_charge_amps > 0.0 )
         {
           // current is positive so battery is charging so arrow is down and to left. Also arrow shall be red to indicate charging
           $battery_charge_arrow_class = "fa fa-long-arrow-down fa-rotate-45 rediconcolor";
@@ -5441,7 +4817,7 @@ class class_transindus_eco
 
           // also good time to compensate for IR drop.
           // Actual voltage is smaller than indicated, when charging
-          $battery_voltage_vdc = round($battery_voltage_vdc + abs($inverter_current_adc) * $Ra - abs($battery_charge_adc) * $Rb, 2);
+          $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);
         }
         else
         {
@@ -5451,20 +4827,22 @@ class class_transindus_eco
           $battery_color_style = 'rediconcolor';
 
           // Actual battery voltage is larger than indicated when discharging
-          $battery_voltage_vdc = round($battery_voltage_vdc + abs($inverter_current_adc) * $Ra + abs($battery_charge_adc) * $Rb, 2);
+          $battery_voltage_vdc  = round( $battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra + abs( $battery_charge_amps ) * $Rb, 2 );
         }
+
+        $pbattery_kw            = round( $battery_voltage_vdc * $battery_charge_amps * 0.001, 3 );  //$psolar_kw - $pout_inverter_ac_kw;
 
         switch(true)
         {
-          case (abs($battery_charge_adc) < 27 ) :
+          case (abs($battery_charge_amps) < 27 ) :
             $battery_charge_arrow_class .= " fa-1x";
           break;
 
-          case (abs($battery_charge_adc) < 54 ) :
+          case (abs($battery_charge_amps) < 54 ) :
             $battery_charge_arrow_class .= " fa-2x";
           break;
 
-          case (abs($battery_charge_adc) >=54 ) :
+          case (abs($battery_charge_amps) >=54 ) :
             $battery_charge_arrow_class .= " fa-3x";
           break;
         }
@@ -5531,8 +4909,6 @@ class class_transindus_eco
 
        $current_user           = wp_get_current_user();
        $current_user_ID        = $current_user->ID;
-       // $battery_vdc_state_json = get_user_meta($current_user_ID, "json_battery_voltage_state", true);
-       // $battery_vdc_state      = json_decode($battery_vdc_state_json, true);
 
        // select battery icon based on charge level
       switch(true)
@@ -5568,7 +4944,7 @@ class class_transindus_eco
 
 
       // update the object with battery data read
-      $studer_readings_obj->battery_charge_adc          = $battery_charge_adc;
+      $studer_readings_obj->battery_charge_amps         = $battery_charge_amps;
       $studer_readings_obj->pbattery_kw                 = abs($pbattery_kw);
       $studer_readings_obj->battery_voltage_vdc         = $battery_voltage_vdc;
       $studer_readings_obj->battery_charge_arrow_class  = $battery_charge_arrow_class;
@@ -5578,16 +4954,15 @@ class class_transindus_eco
 
       // update the object with Solar data read
       $studer_readings_obj->psolar_kw                   = $psolar_kw;
-      $studer_readings_obj->solar_pv_adc                = $solar_pv_adc;
-      // $studer_readings_obj->solar_pv_vdc                = $solar_pv_vdc;
+      $studer_readings_obj->solar_amps_into_battery     = $solar_amps_into_battery;
+      $studer_readings_obj->solar_pv_vdc                = $solar_pv_vdc;
       $studer_readings_obj->solar_arrow_class           = $solar_arrow_class;
       $studer_readings_obj->solar_arrow_animation_class = $solar_arrow_animation_class;
       $studer_readings_obj->psolar_kw_yesterday         = $psolar_kw_yesterday;
 
       //update the object with Inverter Load details
       $studer_readings_obj->pout_inverter_ac_kw         = $pout_inverter_ac_kw;
-      // $studer_readings_obj->inverter_pout_arrow_class   = $inverter_pout_arrow_class;
-      $studer_readings_obj->inverter_current_adc        = $inverter_current_adc;
+      $studer_readings_obj->inverter_current_amps        = $inverter_current_amps;
 
       // update the Grid input values
       $studer_readings_obj->transfer_relay_state        = $transfer_relay_state;
@@ -5595,8 +4970,7 @@ class class_transindus_eco
       $studer_readings_obj->grid_input_vac              = $grid_input_vac;
       $studer_readings_obj->grid_input_arrow_class      = $grid_input_arrow_class;
       $studer_readings_obj->aux1_relay_state            = $aux1_relay_state;
-      // $studer_readings_obj->energy_grid_yesterday       = $energy_grid_yesterday;
-      // $studer_readings_obj->energy_consumed_yesterday   = $energy_consumed_yesterday;
+
       $studer_readings_obj->battery_span_fontawesome    = $battery_span_fontawesome;
 
       // Energy in KWH generated since midnight to now by Solar Panels

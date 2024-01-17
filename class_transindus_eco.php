@@ -238,8 +238,6 @@ class class_transindus_eco
       $this->cloudiness_forecast->sunset_plus_15_minutes_hms_format = $sunset_plus_15_minutes_hms_format;
       
       // error_log("Sunrise hms format: $sunrise_hms_format");
-      
-
     }
 
 

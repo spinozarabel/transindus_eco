@@ -2388,6 +2388,11 @@ class class_transindus_eco
 
           // reset battery soc accumulated value to o
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', 0);
+
+          error_log("Midnight - shelly_em_home_energy_counter_at_midnight: $shelly_em_home_wh");
+          error_log("Midnight - grid_wh_counter_at_midnight: $a_grid_wh_counter_now");
+          error_log("Midnight - soc_percentage_at_midnight: $soc_percentage_now_calculated_using_shelly_bm");
+          error_log("Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
         }
 
     }

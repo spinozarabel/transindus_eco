@@ -122,43 +122,6 @@ class my_shelly_over_lan_test
         }
     }
 
-    /**
-     * @param int:user_index
-     * @return object:wp_user_obj
-     */
-    public function get_wp_user_from_user_index( int $user_index): ? object
-    {
-        $config = $this->get_config();
-
-        $wp_user_name = $config['accounts'][$user_index]['wp_user_name'];
-
-        // Get the wp user object given the above username
-        $wp_user_obj  = get_user_by('login', $wp_user_name);
-
-        return $wp_user_obj;
-    }
-
-
-    /**
-     *  @param int:$wp_user_ID is the WP user ID
-     *  @return array:$all_usermeta is the return array containing all of the user meta for the user with user ID passed in.
-     * 
-     *  The property of $this is also set for what its worth
-     */
-    public function get_all_usermeta( int $wp_user_ID ) : array
-    {
-      $all_usermeta = [];
-
-      // set default timezone to Asia Kolkata
-      date_default_timezone_set("Asia/Kolkata");
-
-      $all_usermeta = array_map( function( $a ){ return $a[0]; }, get_user_meta( $wp_user_ID ) );
-
-      // Set this as class property valid for the user index under consideration.
-      $this->all_usermeta = $all_usermeta;
-
-      return $all_usermeta;
-    }
 
 
 
@@ -309,3 +272,15 @@ echo("Battery Amps = " . $battery_amps . "\n" );
 
 
 $test->turn_pump_on_off( 0, "on");
+
+
+$shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+$shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+$shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
+$ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_em'];
+
+$shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
+
+// this is $curl_response.
+$shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
+print_r($shelly_api_device_response);

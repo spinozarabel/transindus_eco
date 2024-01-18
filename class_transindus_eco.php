@@ -599,7 +599,7 @@ class class_transindus_eco
      *  The difference between them will give the consumed energy in WH since midnight
      *  The counter is a perpetual counter and is never erased or reset
      */
-    public function get_shellyem_accumulated_load_wh_since_midnight( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
+    public function get_shellyem_accumulated_load_wh_since_midnight_over_lan( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
     {
       // get API and device ID from config based on user index
       $config = $this->config;
@@ -610,7 +610,7 @@ class class_transindus_eco
       $ip_shelly_load_em  = $config['accounts'][$user_index]['ip_shelly_load_em'];
 
       // get value accumulated till midnight upto previous API call
-      $previous_grid_wh_since_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_since_midnight', true), 0);
+      // $previous_grid_wh_since_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_since_midnight', true), 0);
 
       $returned_obj = new stdClass;
 
@@ -620,47 +620,46 @@ class class_transindus_eco
       $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
 
       // check to make sure that it exists. If null API call was fruitless
-      if (  empty( $shelly_api_device_response ) || 
-            empty( $shelly_api_device_response->data->device_status->emeters[0]->total ) ||
-            $shelly_api_device_response->data->device_status->emeters[0]->is_valid !== true || 
-            (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0) <= 0
+      if (  empty(      $shelly_api_device_response ) || 
+            empty(      $shelly_api_device_response->emeters[0]->total ) ||
+            (int) round($shelly_api_device_response->emeters[0]->total, 0) <= 0
           )
       {
         $this->verbose ? error_log( "Shelly EM Load Energy API call failed" ): false;
 
         // Shelly Load EM did not respond over LAN
         // $returned_obj->grid_wh_since_midnight = $previous_grid_wh_since_midnight;
-        $returned_obj->kw_shelly_em = 0;
-        $returned_obj->voltage_em   = 0;
+        // $returned_obj->kw_shelly_em = 0;
+        // $returned_obj->voltage_em   = 0;
 
-        return $returned_obj;
+        return null;
       }
 
       // Shelly API call was successfull and we have useful data. Round to 0 and convert to integer to get WattHours
-      $present_wh_reading = (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0);
+      $present_shelly_em_home_wh = (int) round($shelly_api_device_response->emeters[0]->total, 0);
 
       // get the energy counter value set at midnight. Assumes that this is an integer
-      $grid_wh_counter_midnight = (int) round(get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true), 0);
+      $shelly_em_home_energy_counter_at_midnight = (int) round(get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', true), 0);
 
-      $returned_obj->grid_voltage_em = round($shelly_api_device_response->data->device_status->emeters[0]->voltage, 0);
+      $returned_obj->shelly_em_home_voltage = round($shelly_api_device_response->emeters[0]->voltage, 0);
 
       // subtract the 2 integer counter readings to get the accumulated WH since midnight
-      $grid_wh_since_midnight = $present_grid_wh_reading - $grid_wh_counter_midnight;
+      $home_wh_since_midnight = $present_shelly_em_home_wh - $shelly_em_home_energy_counter_at_midnight;
 
-      if ( $grid_wh_since_midnight >=  0 )
+      if ( $home_wh_since_midnight >=  0 )
       {
         // the value is positive so counter did not reset due to software update etc.
-        $returned_obj->grid_wh_since_midnight = $grid_wh_since_midnight;
+        $returned_obj->home_wh_since_midnight = $home_wh_since_midnight;
 
-        update_user_meta( $wp_user_ID, 'grid_wh_since_midnight', $grid_wh_since_midnight);
+        update_user_meta( $wp_user_ID, 'grid_wh_since_midnight', $home_wh_since_midnight);
       }
       else 
       {
         // value must be negative so cannot be possible set it to 0
-        $returned_obj->grid_wh_since_midnight   = 0;
+        $returned_obj->home_wh_since_midnight   = 0;
       }
 
-      $grid_kw_shelly_em = round( 0.001 * $shelly_api_device_response->data->device_status->emeters[0]->power, 3 );
+      $grid_kw_shelly_em = round( 0.001 * $shelly_api_device_response->emeters[0]->power, 3 );
       $returned_obj->grid_kw_shelly_em        = $grid_kw_shelly_em;
       $returned_obj->present_grid_wh_reading  = $present_grid_wh_reading;
 
@@ -674,7 +673,7 @@ class class_transindus_eco
      *  @param int:wp_user_ID
      *  @return int:shelly_energy_counter_midnight is the accumulated load energy as measured by Shelly Pro 4PM
      */
-    public function get_accumulated_wh_since_midnight_shelly4pm(  float $energy_total_to_home_ts, int $user_index, int $wp_user_ID ) : ? int
+    public function get_accumulated_wh_since_midnight_shelly4pm_over_lan(  float $energy_total_to_home_ts, int $user_index, int $wp_user_ID ) : ? int
     {
       // set default timezone to Asia Kolkata
       date_default_timezone_set("Asia/Kolkata");

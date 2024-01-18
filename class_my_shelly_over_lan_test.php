@@ -73,7 +73,7 @@ class my_shelly_over_lan_test
         // set the channel of the switch that the pump is on
         $channel_pump  = 0;
 
-        $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, $channel_pump );
+        $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
 
         // Get the pump switch status now
         $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
@@ -279,7 +279,21 @@ $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
 $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
 $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_em'];
 
-$shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
+$shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'gen1' );
+
+// this is $curl_response.
+$shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
+$energy = $shelly_api_device_response->emeters[0]->total;
+
+echo("Home Shelly EM WH counter = " . $energy . "\n" );
+
+// test Shelly Pro 4PM to see how it works
+$shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+$shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+$shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_homepwr'];
+$ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_4pm'];
+
+$shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'gen2' );
 
 // this is $curl_response.
 $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();

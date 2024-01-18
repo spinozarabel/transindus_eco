@@ -531,7 +531,8 @@ class class_transindus_eco
           $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
           $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_1pm'];
 
-          $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
+          // Shelly Pro 1PM is a Gen2 device and we only have 1 channel=0
+          $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'gen2', 0 );
 
           // this is curl_response.
           $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
@@ -609,59 +610,52 @@ class class_transindus_eco
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_acin'];
       $ip_shelly_load_em  = $config['accounts'][$user_index]['ip_shelly_load_em'];
 
-      // get value accumulated till midnight upto previous API call
-      // $previous_grid_wh_since_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_since_midnight', true), 0);
+      $shelly_gen         = 'gen1'; // Shelly 1EM is a Gen1 device
 
       $returned_obj = new stdClass;
 
-      $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_shelly_load_em );
+      $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_shelly_load_em, $shelly_gen );
 
       // this is $curl_response.
       $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
 
       // check to make sure that it exists. If null API call was fruitless
       if (  empty(      $shelly_api_device_response ) || 
-            empty(      $shelly_api_device_response->emeters[0]->total ) ||
-            (int) round($shelly_api_device_response->emeters[0]->total, 0) <= 0
+            empty(      $shelly_api_device_response->emeters[0]->total ) 
           )
-      {
-        $this->verbose ? error_log( "Shelly EM Load Energy API call failed" ): false;
-
-        // Shelly Load EM did not respond over LAN
-        // $returned_obj->grid_wh_since_midnight = $previous_grid_wh_since_midnight;
-        // $returned_obj->kw_shelly_em = 0;
-        // $returned_obj->voltage_em   = 0;
+      { // Shelly Load EM did not respond over LAN
+        $this->verbose ? error_log( "Shelly EM Load Energy API call failed - See below for response" ): false;
+        $this->verbose ? error_log( print_r($shelly_api_device_response , true) ): false;
 
         return null;
       }
 
       // Shelly API call was successfull and we have useful data. Round to 0 and convert to integer to get WattHours
-      $present_shelly_em_home_wh = (int) round($shelly_api_device_response->emeters[0]->total, 0);
+      $shelly_em_home_wh = (int) round($shelly_api_device_response->emeters[0]->total, 0);
 
       // get the energy counter value set at midnight. Assumes that this is an integer
       $shelly_em_home_energy_counter_at_midnight = (int) round(get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', true), 0);
 
-      $returned_obj->shelly_em_home_voltage = round($shelly_api_device_response->emeters[0]->voltage, 0);
+      $returned_obj->shelly_em_home_voltage = (int)   round($shelly_api_device_response->emeters[0]->voltage, 0);
+      $returned_obj->shelly_em_home_kw      = (float) round( 0.001 * $shelly_api_device_response->emeters[0]->power, 3 );
 
       // subtract the 2 integer counter readings to get the accumulated WH since midnight
-      $home_wh_since_midnight = $present_shelly_em_home_wh - $shelly_em_home_energy_counter_at_midnight;
+      $shelly_em_home_wh_since_midnight = $shelly_em_home_wh - $shelly_em_home_energy_counter_at_midnight;
 
-      if ( $home_wh_since_midnight >=  0 )
-      {
-        // the value is positive so counter did not reset due to software update etc.
-        $returned_obj->home_wh_since_midnight = $home_wh_since_midnight;
+      $returned_obj->shelly_em_home_wh  = $shelly_em_home_wh;   // update object property for present wh energy counter reading
+        
+      $returned_obj->shelly_em_home_wh_since_midnight           = $shelly_em_home_wh_since_midnight;          // object property for energy since midnight
+      $returned_obj->shelly_em_home_energy_counter_at_midnight  = $shelly_em_home_energy_counter_at_midnight; // object property for energy counter at midnight
 
-        update_user_meta( $wp_user_ID, 'grid_wh_since_midnight', $home_wh_since_midnight);
+      if ( $shelly_em_home_wh_since_midnight >=  0 )
+      { // the value is positive so counter did not reset due to software update etc.
+        update_user_meta( $wp_user_ID, 'shelly_em_home_wh_since_midnight', $shelly_em_home_wh_since_midnight);
       }
       else 
       {
         // value must be negative so cannot be possible set it to 0
-        $returned_obj->home_wh_since_midnight   = 0;
+        $returned_obj->shelly_em_home_wh_since_midnight   = 0;
       }
-
-      $grid_kw_shelly_em = round( 0.001 * $shelly_api_device_response->emeters[0]->power, 3 );
-      $returned_obj->grid_kw_shelly_em        = $grid_kw_shelly_em;
-      $returned_obj->present_grid_wh_reading  = $present_grid_wh_reading;
 
       return $returned_obj;
     }
@@ -1172,6 +1166,7 @@ class class_transindus_eco
         // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
         $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH
 
+        // uses default values of 'gen2' and channel 0 for last 2 unsoecified parameters 
         $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
 
         // this is $curl_response.
@@ -1201,7 +1196,7 @@ class class_transindus_eco
         // Convert Volts to Amps using the value above. SUbtract an offest of 8A noticed, probably due to DC offset
         $battery_amps_raw_measurement = ($delta_voltage / $volts_per_amp);
 
-        // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign. 1.06 is empirical correction 
+        // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign.
         $battery_amps = -1.0 * round( $battery_amps_raw_measurement, 1);
 
         // get the previous reading's timestamp from transient. If transient doesnt exist set the value to current measurement
@@ -1210,10 +1205,14 @@ class class_transindus_eco
         // get the previous reading from transient. If doesnt exist set it to current measurement
         $previous_battery_amps = (float) get_transient( 'amps_battery_last_measurement' ) ?? $battery_amps;
 
+        // update transients with current measurements. These will be used as previous measurements for next cycle
+        set_transient( 'timestamp_battery_last_measurement',  $timestamp,     60 * 60 );
+        set_transient( 'amps_battery_last_measurement',       $battery_amps,  60 * 60 );
+
         $prev_datetime_obj = new DateTime();
         $prev_datetime_obj->setTimeStamp($previous_timestamp);
 
-        // get accumulated value till last measurement
+        // get Battery SOC percentage accumulated till last measurement
         $battery_soc_percentage_accumulated_since_midnight = (float) get_user_meta(  $wp_user_ID, 
                                                                               'battery_soc_percentage_accumulated_since_midnight', true);
 
@@ -1229,7 +1228,7 @@ class class_transindus_eco
 
           $battery_ah_this_measurement = 0; // accumulation of charge this cycle is 0
 
-          $battery_percent_this_measurement = 0;
+          $battery_soc_percent_this_measurement = 0;  // delta SOC% accumulated this sycle is 0
         }
         else
         { // Battery probably charging or discharhing so take into account
@@ -1243,31 +1242,30 @@ class class_transindus_eco
           // use trapezoidal rule for integration
           $battery_ah_this_measurement = 0.5 * ( $previous_battery_amps + $battery_amps ) * $hours_between_measurement;
 
-          $battery_percent_this_measurement = $battery_ah_this_measurement / $battery_capacity_ah * 100;
+          $battery_soc_percent_this_measurement = $battery_ah_this_measurement / $battery_capacity_ah * 100;
 
           
           // accumulate  present measurement
-          $battery_soc_percentage_accumulated_since_midnight += $battery_percent_this_measurement;
+          $battery_soc_percentage_accumulated_since_midnight += $battery_soc_percent_this_measurement;
 
           // update accumulated battery charge back to user meta
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $battery_soc_percentage_accumulated_since_midnight);
         }
 
         $this->verbose ? error_log("Battery % added today: $battery_soc_percentage_accumulated_since_midnight, 
-                                    % accumulated just now: $battery_percent_this_measurement, 
+                                    % accumulated just now: $battery_soc_percent_this_measurement, 
                                     Batt Amps: $battery_amps"
                                   ) : false;
 
-        // update transients with current measurements. These will be used as previous measurements for next cycle
-        set_transient( 'timestamp_battery_last_measurement',  $timestamp,     60 * 60 );
-        set_transient( 'amps_battery_last_measurement',       $battery_amps,  60 * 60 );
+        
 
         // write variables as properties to returned object
         $battery_measurements_object->battery_ah_this_measurement                       = $battery_ah_this_measurement;
+        $battery_measurements_object->battery_soc_percent_this_measurement              = $battery_soc_percent_this_measurement;
         $battery_measurements_object->battery_soc_percentage_accumulated_since_midnight = $battery_soc_percentage_accumulated_since_midnight;
-        $battery_measurements_object->battery_amps              = $battery_amps;
-        $battery_measurements_object->battery_capacity_ah       = $battery_capacity_ah;
-
+        $battery_measurements_object->battery_amps                                      = $battery_amps;
+        $battery_measurements_object->battery_capacity_ah                               = $battery_capacity_ah;
+        
         return $battery_measurements_object;
     }
 
@@ -1286,6 +1284,7 @@ class class_transindus_eco
         $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_homepwr'];
         $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_4pm'];
 
+        // gen2 is default as pass parameter
         $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
 
         // this is $curl_response.
@@ -1300,16 +1299,16 @@ class class_transindus_eco
         }
 
         // Since this is the switch that also measures the power and energy to home, let;s extract those details
-        $power_channel_0 = $shelly_api_device_response->{"switch:0"}->apower;
-        $power_channel_1 = $shelly_api_device_response->{"switch:1"}->apower;
-        $power_channel_2 = $shelly_api_device_response->{"switch:2"}->apower;
-        $power_channel_3 = $shelly_api_device_response->{"switch:3"}->apower;
+        $power_channel_0 = $shelly_api_device_response->{"switch:0"}->apower; // sump pump
+        $power_channel_1 = $shelly_api_device_response->{"switch:1"}->apower; // Ac units except in Dad;s room
+        $power_channel_2 = $shelly_api_device_response->{"switch:2"}->apower; // Home
+        $power_channel_3 = $shelly_api_device_response->{"switch:3"}->apower; // Home
 
-        $power_to_home_kw = round( ( $power_channel_2 + $power_channel_3 ) * 0.001, 3 );
-        $power_to_ac_kw   = round( ( $power_channel_1 * 0.001 ), 3 );
-        $power_to_pump_kw = round( ( $power_channel_0 * 0.001 ), 3 );
+        $power_to_home_kw = round( ( $power_channel_2 + $power_channel_3 ) * 0.001, 3 );  // sum of channels 2 and 3 supplying Home
+        $power_to_ac_kw   = round( ( $power_channel_1 * 0.001 ), 3 );                     // Supplying all ACs except in Dad's BR
+        $power_to_pump_kw = round( ( $power_channel_0 * 0.001 ), 3 );                     // channel 0 supplying Sump Pump
 
-        $power_total_to_home    = $power_channel_0 + $power_channel_1 + $power_channel_2 + $power_channel_3;
+        $power_total_to_home    = $power_channel_0 + $power_channel_1 + $power_channel_2 + $power_channel_3;  // total from Shelly 4PM
         $power_total_to_home_kw = round( ( $power_total_to_home * 0.001 ), 3 );
 
         $energy_channel_0_ts = $shelly_api_device_response->{"switch:0"}->aenergy->total;
@@ -1331,27 +1330,27 @@ class class_transindus_eco
         // Unix minute time stamp for the power and energy readings
         $minute_ts = $shelly_api_device_response->{"switch:0"}->aenergy->minute_ts;
 
-        $energy_obj = new stdClass;
+        $shelly_4pm_obj = new stdClass;
 
         // add these to returned object for later use in calling program
-        $energy_obj->power_total_to_home_kw   = $power_total_to_home_kw;
-        $energy_obj->power_total_to_home      = $power_total_to_home;
+        $shelly_4pm_obj->power_total_to_home_kw   = $power_total_to_home_kw;
+        $shelly_4pm_obj->power_total_to_home      = $power_total_to_home;
 
-        $energy_obj->power_to_home_kw         = $power_to_home_kw;
-        $energy_obj->power_to_ac_kw           = $power_to_ac_kw;
-        $energy_obj->power_to_pump_kw         = $power_to_pump_kw;
+        $shelly_4pm_obj->power_to_home_kw         = $power_to_home_kw;
+        $shelly_4pm_obj->power_to_ac_kw           = $power_to_ac_kw;
+        $shelly_4pm_obj->power_to_pump_kw         = $power_to_pump_kw;
 
-        $energy_obj->energy_total_to_home_ts  = $energy_total_to_home_ts;
-        $energy_obj->minute_ts                = $minute_ts;
-        $energy_obj->current_total_home       = $current_total_home;
-        $energy_obj->voltage_home             = $shelly_api_device_response->{"switch:3"}->voltage;
+        $shelly_4pm_obj->energy_total_to_home_ts  = $energy_total_to_home_ts;
+        $shelly_4pm_obj->minute_ts                = $minute_ts;
+        $shelly_4pm_obj->current_total_home       = $current_total_home;
+        $shelly_4pm_obj->voltage_home             = $shelly_api_device_response->{"switch:3"}->voltage;
 
         // set the state of the channel if OFF or ON. ON switch will be true and OFF will be false
-        $energy_obj->pump_switch_status_bool  = $shelly_api_device_response->{"switch:0"}->output;
-        $energy_obj->ac_switch_status_bool    = $shelly_api_device_response->{"switch:1"}->output;
-        $energy_obj->home_switch_status_bool  = $shelly_api_device_response->{"switch:2"}->output || $shelly_api_device_response->{"switch:3"}->output;
+        $shelly_4pm_obj->pump_switch_status_bool  = $shelly_api_device_response->{"switch:0"}->output;
+        $shelly_4pm_obj->ac_switch_status_bool    = $shelly_api_device_response->{"switch:1"}->output;
+        $shelly_4pm_obj->home_switch_status_bool  = $shelly_api_device_response->{"switch:2"}->output || $shelly_api_device_response->{"switch:3"}->output;
 
-        return $energy_obj;
+        return $shelly_4pm_obj;
     }
 
     /**
@@ -1372,6 +1371,7 @@ class class_transindus_eco
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin_3p'];
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_3em'];
 
+      // gen2 default pass parameter
       $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
 
       // this is $curl_response.

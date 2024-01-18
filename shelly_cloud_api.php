@@ -14,7 +14,12 @@ class shelly_cloud_api
 {
     const VERBOSE     = false;
 
-    public function __construct( string $auth_key, string $server_uri, string $shelly_device_id, string $shelly_device_static_ip, int $channel = 0 )
+    public function __construct(    string $auth_key, 
+                                    string $server_uri, 
+                                    string $shelly_device_id,
+                                    string $shelly_device_static_ip, 
+                                    string $shelly_gen = "gen2",
+                                    int $channel = 0 )
     {
       $this->verbose  = self::VERBOSE;
 
@@ -24,6 +29,7 @@ class shelly_cloud_api
       $this->shelly_device_id         = $shelly_device_id;
       $this->channel                  = $channel;         // channel of interest. Defaults to 0 if not specified
       $this->shelly_device_static_ip  = $shelly_device_static_ip;
+      $this->shelly_gen               = $shelly_gen;      // Shelly device generation. Defaults to 2 if not specified
 
     }       // end construct function
 
@@ -108,12 +114,22 @@ class shelly_cloud_api
     */
     public function get_shelly_device_status_over_lan(): ? object
     {
+        $shelly_gen = $this->shelly_gen;
+
+        if ( $shelly_gen === 'gen2' )
+        {
+            $endpoint_addon = "/rpc/Shelly.GetStatus";
+        }
+        else
+        {
+            $endpoint_addon = "/status";
+        }
       // parameters for query string
       $params     = [];
 
       $headers  = [];
 
-      $endpoint = $this->shelly_device_static_ip . "/rpc/Shelly.GetStatus";
+      $endpoint = $this->shelly_device_static_ip . $endpoint_addon;
 
       // already json decoded into object
       $curlResponse   = $this->getCurl($endpoint, $headers, $params);

@@ -1761,7 +1761,7 @@ class class_transindus_eco
             
             // $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
 
-            for ( $i = 0; $i < 10; $i++ )
+            for ( $i = 0; $i < 20; $i++ )
             {
               sleep(3);
 

@@ -298,3 +298,15 @@ $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $s
 // this is $curl_response.
 $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
 print_r($shelly_api_device_response);
+
+$shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+$shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+$shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin_3p'];
+$ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_3em'];
+
+// gen2 default pass parameter
+$shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
+
+// this is $curl_response.
+$shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
+print_r($shelly_api_device_response);

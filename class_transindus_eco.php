@@ -604,7 +604,7 @@ class class_transindus_eco
 
       $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
       $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_acin'];
+      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
       $ip_shelly_load_em  = $config['accounts'][$user_index]['ip_shelly_load_em'];
 
       $shelly_gen         = 'gen1'; // Shelly 1EM is a Gen1 device

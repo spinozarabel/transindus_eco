@@ -2281,7 +2281,7 @@ class class_transindus_eco
           {   // there is a valid response from the Shelly 4PM switch device
               
               // Also check and control pump ON duration
-              $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object);
+              // $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object);
 
               $power_total_to_home_kw = $shelly_4pm_readings_object->power_total_to_home_kw;
 

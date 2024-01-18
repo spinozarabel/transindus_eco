@@ -1496,18 +1496,18 @@ class class_transindus_eco
      *  Transient for Studer CLock offset expires every hour and gets recalculated by API call if needed.
      *  So if Studer clock was adjusted during day it will be correctly acquired by API call
      */
-    public function is_studer_time_just_pass_midnight( int $user_index, string $wp_user_name ): bool
+    public function is_time_just_pass_midnight( int $user_index, string $wp_user_name ): bool
     {
       // if not within an hour of server clocks midnight return false. Studer offset will never be allowed to be more than 1h
-      if ($this->nowIsWithinTimeLimits("00:30:00", "23:30:00") )
+      if ($this->nowIsWithinTimeLimits("00:02:00", "23:58:00") )
       {
         return false;
       }
       // if the transient is expired it means we need to check
-      if ( false === get_transient( $wp_user_name . '_' . 'is_studer_time_just_pass_midnight' ) )
+      if ( false === get_transient( 'is_time_just_pass_midnight' ) )
       {
         // this could also be leading in which case the sign will be automatically negative
-        $studer_time_offset_in_mins_lagging = $this->get_studer_clock_offset( $user_index );
+        $studer_time_offset_in_mins_lagging = (int) 0;
 
         // get current time compensated for our timezone
         $test = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
@@ -1517,10 +1517,10 @@ class class_transindus_eco
 
         // if hours are 0 and offset adjusted minutes are 0 then we are just pass midnight per Studer clock
         // we added an additional offset just to be sure to account for any seconds offset
-        if( $h == 0 && ($m - $studer_time_offset_in_mins_lagging ) > 0 ) 
+        if( $h == 0 && $m  > 0 ) 
         {
           // We are just past midnight on Studer clock, so return true after setiimg the transient
-          set_transient( $wp_user_name . '_' . 'is_studer_time_just_pass_midnight',  'yes', 2*60*60 );
+          set_transient( 'is_time_just_pass_midnight',  'yes', 5 * 60 );
           return true;
         }
       }
@@ -2215,8 +2215,7 @@ class class_transindus_eco
           $shelly1pm_acin_current           = $shelly_switch_acin_details_arr['shelly1pm_acin_current'];
           $shelly1pm_acin_power_kw          = $shelly_switch_acin_details_arr['shelly1pm_acin_power_kw'];
 
-          error_log("Shelly 1PM AC IN switch details:");
-          error_log( print_r( $shelly_switch_acin_details_arr, true ) );
+          error_log("Shelly 1PM AC IN switch: Status: $shelly1pm_acin_switch_status, AC Voltage: $shelly1pm_acin_voltage");
         }
 
         
@@ -2226,7 +2225,6 @@ class class_transindus_eco
           // check to see if SOC capture after dark happened
           // $soc_capture_after_dark_happened = $this->check_if_soc_after_dark_happened($user_index, $wp_user_name, $wp_user_ID);
 
-          
           $shelly_readings_obj = new stdClass;
           
           $now = new DateTime();
@@ -2273,10 +2271,6 @@ class class_transindus_eco
               $shelly_readings_obj->battery_soc_percentage_accumulated_since_midnight = $battery_soc_percentage_accumulated_since_midnight;
               $shelly_readings_obj->battery_ah_this_measurement                       = $battery_ah_this_measurement;
               $shelly_readings_obj->battery_accumulated_kwh_since_midnight            = $battery_accumulated_kwh_since_midnight;
-
-              error_log("battery_soc_percentage_accumulated_since_midnight: $battery_soc_percentage_accumulated_since_midnight");
-              error_log("battery_amps: $battery_amps");
-              error_log("battery_ah_this_measurement: $battery_ah_this_measurement");
             }
           }
 
@@ -2306,8 +2300,6 @@ class class_transindus_eco
                 $shelly_readings_obj->voltage_home            = $shelly_4pm_readings_object->voltage_home;
 
                 $shelly_readings_obj->pump_ON_duration_secs   = $shelly_4pm_readings_object->pump_ON_duration_secs;
-
-                error_log("power_total_to_home_kw from SHelly 4PM: $power_total_to_home_kw");
               }
           }
 
@@ -2319,7 +2311,8 @@ class class_transindus_eco
           if ( $shelly_em_readings_object )
           {   // there is a valid response from the Shelly EM home energy WH meter
             // current home energy WH counter reading
-            $shelly_readings_obj->shelly_em_home_wh = $shelly_em_readings_object->shelly_em_home_wh;
+            $shelly_em_home_wh = $shelly_em_readings_object->shelly_em_home_wh;
+            $shelly_readings_obj->shelly_em_home_wh = $shelly_em_home_wh;
 
             // current home power in KW supplied to home
             $shelly_readings_obj->shelly_em_home_kw = $shelly_em_readings_object->shelly_em_home_kw;
@@ -2332,8 +2325,6 @@ class class_transindus_eco
 
             // energy consumed in KWH by home since midnight as measured by Shelly EM 
             $shelly_readings_obj->shelly_em_home_kwh_since_midnight = $shelly_em_home_kwh_since_midnight;
-
-            error_log("shelly_em_home_kwh_since_midnight: $shelly_em_home_kwh_since_midnight");
           }
           
 
@@ -2355,7 +2346,7 @@ class class_transindus_eco
             $shelly_readings_obj->a_grid_wh_accumulated_since_midnight    = $a_grid_wh_accumulated_since_midnight;
             $shelly_readings_obj->a_grid_kwh_accumulated_since_midnight   = $a_grid_kwh_accumulated_since_midnight;
 
-            error_log("shelly_3em_Grid_kwh_since_midnight: $a_grid_kwh_accumulated_since_midnight");
+            error_log("Grid_kwh: $a_grid_kwh_accumulated_since_midnight Home KWH: $shelly_em_home_kwh_since_midnight");
           }
         }
 
@@ -2370,7 +2361,35 @@ class class_transindus_eco
 
           $shelly_readings_obj->surplus  = $surplus;
           $shelly_readings_obj->soc_percentage_now_calculated_using_shelly_bm  = round( $soc_percentage_now_calculated_using_shelly_bm, 5);
+
+          error_log("Batt(A): $battery_amps, SOC midnight: $soc_percentage_at_midnight, SOC Accumulated: $battery_soc_percentage_accumulated_since_midnight, SOC Now: $soc_percentage_now_calculated_using_shelly_bm");
         }
+
+        if ( $soc_percentage_now_calculated_using_shelly_bm > 100 )
+        { // 100% SOC clamp
+          // recalculate Battery SOC % accumulated since midnight
+          $recal_battery_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
+
+          // write this value back to the user meta
+          update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
+        }
+
+        // midnight actions
+        if ( $this->is_time_just_pass_midnight( $user_index, $wp_user_name ) )
+        {
+          // reset Shelly EM Home WH counter to present reading in WH
+          update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', $shelly_em_home_wh );
+
+          // reset Shelly 3EM Grid Energy counter to present reading 
+          update_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', $a_grid_wh_counter_now );
+
+          // reset the SOC at midnight value to current update
+          update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $soc_percentage_now_calculated_using_shelly_bm );
+
+          // reset battery soc accumulated value to o
+          update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', 0);
+        }
+
     }
 
 

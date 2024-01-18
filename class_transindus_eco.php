@@ -2299,7 +2299,8 @@ class class_transindus_eco
                 $shelly_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
                 $shelly_readings_obj->voltage_home            = $shelly_4pm_readings_object->voltage_home;
 
-                $shelly_readings_obj->pump_ON_duration_secs   = $shelly_4pm_readings_object->pump_ON_duration_secs;
+                // when pump duration control happens change the below property to actula variable
+                $shelly_readings_obj->pump_ON_duration_secs   = 0;
               }
           }
 

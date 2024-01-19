@@ -1499,7 +1499,7 @@ class class_transindus_eco
     public function is_time_just_pass_midnight( int $user_index, string $wp_user_name ): bool
     {
       // if not within an hour of server clocks midnight return false. Studer offset will never be allowed to be more than 1h
-      if ($this->nowIsWithinTimeLimits("00:02:00", "23:58:00") )
+      if ($this->nowIsWithinTimeLimits("00:03:00", "23:59:00") )
       {
         return false;
       }

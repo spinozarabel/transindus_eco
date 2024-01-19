@@ -1626,17 +1626,17 @@ class class_transindus_eco
             )
         {
           // transient has expired or doesn't exist, OR meta data also is empty
-          // Capture the after dark values
+          // Capture the after dark SOC, energy cunter and timestamp
           $timestamp_soc_capture_after_dark = time();
 
           update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $present_home_wh_reading);
           update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $timestamp_soc_capture_after_dark);
-          update_user_meta( $wp_user_ID, 'soc_update_after_dark', $SOC_percentage_now);
+          update_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark', $SOC_percentage_now);
 
           // set transient to last for 13h only
           set_transient( 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark,  13 * 3600 );
           set_transient( 'shelly_energy_counter_after_dark',  $present_home_wh_reading,           13 * 3600 );
-          set_transient( 'soc_update_after_dark',             $SOC_percentage_now,                13 * 3600 );
+          set_transient( 'soc_percentage_update_after_dark',  $SOC_percentage_now,                13 * 3600 );
 
           error_log("SOC Capture after dark Done - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $present_home_wh_reading);
 
@@ -1657,16 +1657,16 @@ class class_transindus_eco
             // looks like the transient was bad so lets do the capture after dark for SOC and Shelly EM energy counter
             $timestamp_soc_capture_after_dark = time();
 
-            set_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark,  13 * 3600 );
-            set_transient( $wp_user_name . '_' . 'shelly_energy_counter_after_dark',  $present_home_wh_reading,           13 * 3600);
-            set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now,                13 * 3600 );
+            set_transient( 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark,  13 * 3600 );
+            set_transient( 'shelly_energy_counter_after_dark',  $present_home_wh_reading,           13 * 3600);
+            set_transient( 'soc_percentage_update_after_dark',  $SOC_percentage_now,                13 * 3600 );
 
 
             update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark',  $present_home_wh_reading);
             update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark);
-            update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $SOC_percentage_now);
+            update_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  $SOC_percentage_now);
 
-            error_log("SOC Capture after dark took place - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $shelly_energy_counter_after_dark);
+            error_log("SOC Capture after dark took place - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $present_home_wh_reading);
 
             return true;
           }
@@ -2395,6 +2395,92 @@ class class_transindus_eco
           error_log("Midnight - soc_percentage_at_midnight: $soc_percentage_now_calculated_using_shelly_bm");
           error_log("Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
         }
+
+        if ( $it_is_still_dark )
+        { // Do all the SOC after Dark operations here - Capture and also SOC updation
+          
+          // check if capture happened. now-event time < 12h since event can happen at 7PM and last till 6:30AM
+          $soc_capture_after_dark_happened = $this->check_if_soc_after_dark_happened($user_index, $wp_user_name, $wp_user_ID);
+
+          if (  $soc_capture_after_dark_happened === false  && $shelly_em_home_wh && $time_window_for_soc_dark_capture_open )
+          { // event not happened yet so make it happen with valid value for the home energy EM counter reading
+            $this->capture_evening_soc_after_dark(  $user_index, 
+                                                    $wp_user_name, 
+                                                    $wp_user_ID, 
+                                                    $soc_percentage_now_calculated_using_shelly_bm, 
+                                                    $shelly_em_home_wh,
+                                                    $time_window_for_soc_dark_capture_open );
+          }
+
+          if ( $soc_capture_after_dark_happened === true )
+          { // SOC capture after dark is DONE and it is still dark, so use it to compute SOC after dark using only Shelly readings
+
+            if ( $shelly1pm_acin_switch_status == "ON" )
+            { // Grid is supplying Load and since Solar is 0, battery current is 0 so no change in battery SOC
+              
+              // update the after dark energy counter to latest value
+              update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_em_home_wh);
+
+              // SOC is unchanging due to Grid ON however set the variables using the user meta since they are undefined.
+              $soc_percentage_now_using_dark_shelly = (float) get_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  true);
+
+              
+              $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
+            }
+            else
+            { // Shelly 1PM ACIN switch is OFF so Get the captured after dark SOC and home wh counters from user meta
+              
+              $soc_percentage_after_dark        = (float) get_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  true);
+              $shelly_energy_counter_after_dark = (float) get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark',   true);
+
+              // get the difference in energy consumed since last reading
+              $home_consumption_wh_after_dark_using_shellyem = $shelly_em_home_wh - $shelly_energy_counter_after_dark;
+
+              // convert to KW and round to 3 decimal places
+              $home_consumption_kwh_after_dark_using_shellyem = round( $home_consumption_wh_after_dark_using_shellyem * 0.001, 3);
+
+              // calculate SOC percentage discharge (since battery always discharges during dark as there is no solar)
+              $soc_percentage_discharge = $home_consumption_kwh_after_dark_using_shellyem / $battery_capacity_kwh * 100;
+
+              // round it to 3 decimal places for accuracy of arithmatic for accumulation
+              $soc_percentage_now_using_dark_shelly = round( $soc_percentage_after_dark - $soc_percentage_discharge, 5);
+
+              // check the validity of the SOC using this after dark shelly method
+              $soc_after_dark_update_valid =  $soc_percentage_now_using_dark_shelly < 100 &&
+                                              $soc_percentage_now_using_dark_shelly > 30;
+
+              // update SOC only if values are reasonable
+              if ( $soc_after_dark_update_valid === true )
+              {
+                // Valid values, update user meta to get differentials for next cycle.
+                update_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark', $soc_percentage_now_using_dark_shelly);
+                update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_em_home_wh);
+
+                // update the readings object for transient and display
+                $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
+
+                error_log("SOC update after dark: $soc_percentage_now_using_dark_shelly");
+              }
+              else
+              {
+                error_log("SOC using after dark Shelly not updated due to bad value: $soc_percentage_now_using_dark_shelly");
+                error_log("shelly_energy_counter value NOW: $shelly_em_home_wh");
+              }
+            }
+
+            // check the validity of the SOC using this after dark shelly method. We need to repeat since could have come from top branch
+            $soc_after_dark_update_valid =  $soc_percentage_now_using_dark_shelly < 100 &&
+                                            $soc_percentage_now_using_dark_shelly > 30;
+          }
+        }
+        else
+        {   // it is daylight now so reset the soc_percentage_update_after_dark value.
+          update_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark', 0);
+
+          // also delete the transient so that 
+        }
+
+        
 
     }
 

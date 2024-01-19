@@ -1248,11 +1248,12 @@ class class_transindus_eco
           // update accumulated battery charge back to user meta
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $battery_soc_percentage_accumulated_since_midnight);
         }
-
+        /*
         $this->verbose ? error_log("Battery % added today: $battery_soc_percentage_accumulated_since_midnight, 
                                     % accumulated just now: $battery_soc_percent_this_measurement, 
                                     Batt Amps: $battery_amps"
                                   ) : false;
+        */
 
         
 

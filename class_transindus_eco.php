@@ -1547,7 +1547,7 @@ class class_transindus_eco
       date_default_timezone_set("Asia/Kolkata");
 
       // Get the transient if it exists
-      if (false === ($timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) )
+      if (false === ($timestamp_soc_capture_after_dark = get_transient( 'timestamp_soc_capture_after_dark' ) ) )
       {
         // if transient DOES NOT exist then read in value from user meta
         $timestamp_soc_capture_after_dark = get_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', true);
@@ -1555,7 +1555,7 @@ class class_transindus_eco
       else
       {
         // transient exists so get it
-        $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' );
+        $timestamp_soc_capture_after_dark = get_transient( 'timestamp_soc_capture_after_dark' );
       }
 
       if ( empty( $timestamp_soc_capture_after_dark ) )
@@ -1620,7 +1620,7 @@ class class_transindus_eco
       if (  $time_window_for_soc_dark_capture_open === true  ) 
       {
         // lets get the transient. The 1st time this is tried in the evening it should be false, 2nd time onwards true
-        if ( false === ( $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' ) ) 
+        if ( false === ( $timestamp_soc_capture_after_dark = get_transient( 'timestamp_soc_capture_after_dark' ) ) 
                     ||
                        empty(get_user_meta($wp_user_ID, 'timestamp_soc_capture_after_dark', true))
             )
@@ -1631,14 +1631,14 @@ class class_transindus_eco
 
           update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $present_home_wh_reading);
           update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $timestamp_soc_capture_after_dark);
-          update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $SOC_percentage_now);
+          update_user_meta( $wp_user_ID, 'soc_update_after_dark', $SOC_percentage_now);
 
           // set transient to last for 13h only
-          set_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark,  13 * 3600 );
-          set_transient( $wp_user_name . '_' . 'shelly_energy_counter_after_dark',  $present_home_wh_reading,           13 * 3600 );
-          set_transient( $wp_user_name . '_' . 'soc_update_from_studer_after_dark', $SOC_percentage_now,                13 * 3600 );
+          set_transient( 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark,  13 * 3600 );
+          set_transient( 'shelly_energy_counter_after_dark',  $present_home_wh_reading,           13 * 3600 );
+          set_transient( 'soc_update_after_dark',             $SOC_percentage_now,                13 * 3600 );
 
-          error_log("SOC Capture after dark took place - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $present_home_wh_reading);
+          error_log("SOC Capture after dark Done - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $present_home_wh_reading);
 
           return true;
         }

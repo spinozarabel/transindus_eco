@@ -2478,11 +2478,10 @@ class class_transindus_eco
         {   // it is daylight now so reset the soc_percentage_update_after_dark value.
           update_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark', 0);
 
-          // also delete the transient so that 
         }
 
-        
-
+        // update transient with new data. Validity is 10m
+        set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );
     }
 
 

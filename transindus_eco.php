@@ -40,12 +40,12 @@ add_action('wp_ajax_my_solar_cron_update',  [$transindus_eco, 'ajax_my_solar_cro
 
 add_filter( 'cron_schedules',  'shelly_studer_add_new_cron_interval' );
 
-/*
+
 if (!wp_next_scheduled('shellystuder_task_hook')) 
 {
     wp_schedule_event( time(), 'sixty_seconds', 'shellystuder_task_hook' );
 }
-*/
+
 
 
 /**
@@ -74,14 +74,16 @@ function this_plugin_init()
     // add action to load the javascripts on non-admin page
     add_action( 'wp_enqueue_scripts', 'add_my_scripts' );
 
+    /*
     $soc_shelly_over_lan = new class_transindus_eco();
-    
+
     while ( true )
     {
         $soc_shelly_over_lan->shellystuder_cron_exec();
 
         sleep(15);
     }
+    */
     
 }
 

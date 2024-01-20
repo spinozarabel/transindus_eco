@@ -1762,17 +1762,11 @@ class class_transindus_eco
             
             // $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
 
-            for ( $i = 0; $i < 5; $i++ )
+            // for ( $i = 0; $i < 5; $i++ )
             {
-              sleep(15);
-
               // disable Studer measurements. Only Shelly Battery current measurement based updates will be used
               $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
             }
-          }
-          else
-          {
-            // if do minutely updates flag is not set then nothing hapens
           }
         }
         else

@@ -2155,7 +2155,7 @@ class class_transindus_eco
         { // Get user meta for limits and controls as an array rather than 1 by 1
           $all_usermeta                           = $this->get_all_usermeta( $wp_user_ID );
           // SOC percentage needed to trigger LVDS
-          $soc_percentage_lvds_setting            = $all_usermeta['soc_percentage_lvds_setting']  ?? 50;
+          $soc_percentage_lvds_setting            = $all_usermeta['soc_percentage_lvds_setting']  ?? 40;
 
           // Avg Battery Voltage lower threshold for LVDS triggers
           $average_battery_voltage_lvds_setting   = $all_usermeta['average_battery_voltage_lvds_setting']  ?? 48.3;
@@ -2376,27 +2376,6 @@ class class_transindus_eco
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
         }
 
-        // midnight actions
-        if ( $this->is_time_just_pass_midnight( $user_index, $wp_user_name ) )
-        {
-          // reset Shelly EM Home WH counter to present reading in WH
-          update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', $shelly_em_home_wh );
-
-          // reset Shelly 3EM Grid Energy counter to present reading 
-          update_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', $a_grid_wh_counter_now );
-
-          // reset the SOC at midnight value to current update
-          update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $soc_percentage_now_calculated_using_shelly_bm );
-
-          // reset battery soc accumulated value to o
-          update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', 0);
-
-          error_log("Midnight - shelly_em_home_energy_counter_at_midnight: $shelly_em_home_wh");
-          error_log("Midnight - grid_wh_counter_at_midnight: $a_grid_wh_counter_now");
-          error_log("Midnight - soc_percentage_at_midnight: $soc_percentage_now_calculated_using_shelly_bm");
-          error_log("Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
-        }
-
         if ( $it_is_still_dark )
         { // Do all the SOC after Dark operations here - Capture and also SOC updation
           
@@ -2471,14 +2450,37 @@ class class_transindus_eco
 
             // check the validity of the SOC using this after dark shelly method. We need to repeat since could have come from top branch
             $soc_after_dark_update_valid =  $soc_percentage_now_using_dark_shelly < 100 &&
-                                            $soc_percentage_now_using_dark_shelly > 30;
+                                            $soc_percentage_now_using_dark_shelly >= 40;
           }
         }
         else
         {   // it is daylight now so reset the soc_percentage_update_after_dark value.
           update_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark', 0);
-
         }
+
+        // midnight actions
+        if ( $this->is_time_just_pass_midnight( $user_index, $wp_user_name ) )
+        {
+          // reset Shelly EM Home WH counter to present reading in WH. This is only done once in 24h, at midnight
+          update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', $shelly_em_home_wh );
+
+          // reset Shelly 3EM Grid Energy counter to present reading. This is only done once in 24h, at midnight
+          update_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', $a_grid_wh_counter_now );
+
+          // reset the SOC at midnight value to current update. This is only done once in 24h, at midnight
+          // we also have the option of using the variable: $soc_percentage_now_using_dark_shelly
+          update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $soc_percentage_now_using_dark_shelly );
+
+          // reset battery soc accumulated value to 0. This is only done once in 24h, at midnight
+          update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', 0);
+
+          error_log("Midnight - shelly_em_home_energy_counter_at_midnight: $shelly_em_home_wh");
+          error_log("Midnight - grid_wh_counter_at_midnight: $a_grid_wh_counter_now");
+          error_log("Midnight - soc_percentage_at_midnight: $soc_percentage_now_calculated_using_shelly_bm");
+          error_log("Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
+        }
+
+        
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );

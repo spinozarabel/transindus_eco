@@ -1401,6 +1401,9 @@ class class_transindus_eco
         $shelly_3p_grid_energy_measurement_obj->a_grid_wh_accumulated_since_midnight  = $a_grid_wh_accumulated_since_midnight;
         $shelly_3p_grid_energy_measurement_obj->a_grid_kwh_accumulated_since_midnight = round( $a_grid_wh_accumulated_since_midnight * 0.001, 3);
 
+        // offline so no power
+        $shelly_3p_grid_energy_measurement_obj->a_grid_kw_pwr = 0;
+
         return $shelly_3p_grid_energy_measurement_obj;
       }
       else

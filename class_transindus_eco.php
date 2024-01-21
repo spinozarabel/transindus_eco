@@ -1224,6 +1224,9 @@ class class_transindus_eco
           $battery_ah_this_measurement = 0; // accumulation of charge this cycle is 0
 
           $battery_soc_percent_this_measurement = 0;  // delta SOC% accumulated this sycle is 0
+
+          // unchanged but needed to prevent error in assignment later on
+          $battery_accumulated_ah_since_midnight = $battery_soc_percentage_accumulated_since_midnight / 100 * $battery_capacity_ah;
         }
         else
         { // Battery probably charging or discharhing so take into account

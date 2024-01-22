@@ -2363,8 +2363,6 @@ class class_transindus_eco
           $soc_percentage_at_midnight_display     = round( $soc_percentage_at_midnight, 1);
           $soc_percentage_shelly_bm_display_only  = round( $soc_percentage_now_calculated_using_shelly_bm, 1);
           $battery_soc_since_midnight_display     = round( $battery_soc_percentage_accumulated_since_midnight, 1);
-
-          error_log("Batt(A): $battery_amps, SOC midnight: $soc_percentage_at_midnight_display, SOC Accumulated: $battery_soc_since_midnight_display, SOC Now: $soc_percentage_shelly_bm_display_only");
         }
 
         if ( $soc_percentage_now_calculated_using_shelly_bm > 100 )
@@ -2517,6 +2515,8 @@ class class_transindus_eco
 
         $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;
         $shelly_readings_obj->soc_update_method   = $soc_update_method;
+
+        error_log("Batt(A): $battery_amps, SOC midnight: $soc_percentage_at_midnight_display, SOC Accumulated: $battery_soc_since_midnight_display, SOC Now: $soc_percentage_now");
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );

@@ -2157,7 +2157,7 @@ class class_transindus_eco
           $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
         }
 
-        { // Get user meta for limits and controls as an array rather than 1 by 1
+        { // Get user meta for limits and controls. These should not change inside of the for loop in cron exec
           $all_usermeta                           = $this->get_all_usermeta( $wp_user_ID );
           // SOC percentage needed to trigger LVDS
           $soc_percentage_lvds_setting            = $all_usermeta['soc_percentage_lvds_setting']  ?? 40;
@@ -2192,14 +2192,8 @@ class class_transindus_eco
 
         { // get the SOCs from the user meta.
 
-          // This is the value of the SOC from previous cycle as calculated by STUDER readings
-          $soc_percentage_previous_calculated_using_studer      = (float) get_user_meta($wp_user_ID, "soc_percentage_now_calculated_using_studer",    true);
-
-          // This is the value of the SOC from previous cycle using SHelly BM
-          $soc_percentage_previous_calculated_using_shelly_bm   = (float) get_user_meta($wp_user_ID, "soc_percentage_now_calculated_using_shelly_bm", true);
-
           // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only just past midnight once
-          $soc_percentage_at_midnight          = (float) get_user_meta($wp_user_ID, "soc_percentage_at_midnight",  true);
+          $soc_percentage_at_midnight = (float) get_user_meta($wp_user_ID, "soc_percentage_at_midnight",  true);
 
           // SOC percentage after dark. This gets captured at dark and gets updated every cycle
           // using only shelly devices and does NOT involve Battery Current based measurements.
@@ -2222,38 +2216,37 @@ class class_transindus_eco
 
         
         
-        {  // make all measurements, update SOC, set switch tree control flags, reset midnight values
+        {  // make all measurements
 
-          // check to see if SOC capture after dark happened
-          // $soc_capture_after_dark_happened = $this->check_if_soc_after_dark_happened($user_index, $wp_user_name, $wp_user_ID);
-
+          // This is the main object that we deal with  for storing and processing data gathered from our IOT devices
           $shelly_readings_obj = new stdClass;
           
           $now = new DateTime();
           $studer_measured_battery_amps_now_timestamp = $now->getTimestamp();
-          
-          {   // Measure Battery Charging current as positive using Shelly UNI
-            { // get the estimated solar power object from calculations for a clear day
+
+          { // get the estimated solar power object from calculations for a clear day
               
-              $est_solar_obj = $this->estimated_solar_power($user_index);
+            $est_solar_obj = $this->estimated_solar_power($user_index);
 
-              $est_solar_total_kw = $est_solar_obj->est_solar_total_kw;
+            $est_solar_total_kw = $est_solar_obj->est_solar_total_kw;
 
-              $total_to_west_panel_ratio = $est_solar_obj->total_to_west_panel_ratio;
+            $total_to_west_panel_ratio = $est_solar_obj->total_to_west_panel_ratio;
 
-              $est_solar_kw_arr = $est_solar_obj->est_solar_kw_arr;
+            $est_solar_kw_arr = $est_solar_obj->est_solar_kw_arr;
 
-              // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
-              $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
-            }
-
-            // get a measurement of the charging current into battery
+            // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
+            $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
+          }
+          
+          { // Measure Battery Charging current as positive using Shelly plus Add-on
+            
             $shelly_battery_measurement_object = $this->get_shelly_battery_measurement_over_lan(  $user_index, 
-                                                                                                  $wp_user_name, $wp_user_ID, 
+                                                                                                  $wp_user_name, 
+                                                                                                  $wp_user_ID, 
                                                                                                   $shelly1pm_acin_switch_status, 
                                                                                                   $it_is_still_dark );
             if ( $shelly_battery_measurement_object )
-            {
+            { // valid shelly battery measurement - load object with battery measurement data
               $battery_capacity_ah                                = $shelly_battery_measurement_object->battery_capacity_ah;
               $battery_ah_this_measurement                        = $shelly_battery_measurement_object->battery_ah_this_measurement;
               $battery_amps                                       = $shelly_battery_measurement_object->battery_amps;
@@ -2276,61 +2269,63 @@ class class_transindus_eco
             }
           }
 
-          // Now make a Shelly 4PM measurement to get individual powers for all channels
-          $shelly_4pm_readings_object = $this->get_shelly_device_status_homepwr_over_lan( $user_index );
+          { // Now make a Shelly 4PM measurement to get individual powers for all channels
+            
+            $shelly_4pm_readings_object = $this->get_shelly_device_status_homepwr_over_lan( $user_index );
 
-          if ( ! empty( $shelly_4pm_readings_object ) ) 
-          {   // there is a valid response from the Shelly 4PM switch device
-              
-              // Also check and control pump ON duration
-              // $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object);
+            if ( ! empty( $shelly_4pm_readings_object ) ) 
+            {   // there is a valid response from the Shelly 4PM switch device
+                
+                // Also check and control pump ON duration
+                // $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object);
 
-              $power_total_to_home_kw = $shelly_4pm_readings_object->power_total_to_home_kw;
+                $power_total_to_home_kw = $shelly_4pm_readings_object->power_total_to_home_kw;
 
-              { // Load the Object with properties from the Shelly 4PM object
-                $shelly_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;
-                $shelly_readings_obj->power_to_ac_kw      = $shelly_4pm_readings_object->power_to_ac_kw;
-                $shelly_readings_obj->power_to_pump_kw    = $shelly_4pm_readings_object->power_to_pump_kw;
-                $shelly_readings_obj->power_total_to_home = $shelly_4pm_readings_object->power_total_to_home;
-                $shelly_readings_obj->power_total_to_home_kw  = $shelly_4pm_readings_object->power_total_to_home_kw;
-                $shelly_readings_obj->current_total_home      = $shelly_4pm_readings_object->current_total_home;
-                $shelly_readings_obj->energy_total_to_home_ts = $shelly_4pm_readings_object->energy_total_to_home_ts;
+                { // Load the Object with properties from the Shelly 4PM object
+                  $shelly_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;
+                  $shelly_readings_obj->power_to_ac_kw      = $shelly_4pm_readings_object->power_to_ac_kw;
+                  $shelly_readings_obj->power_to_pump_kw    = $shelly_4pm_readings_object->power_to_pump_kw;
+                  $shelly_readings_obj->power_total_to_home = $shelly_4pm_readings_object->power_total_to_home;
+                  $shelly_readings_obj->power_total_to_home_kw  = $shelly_4pm_readings_object->power_total_to_home_kw;
+                  $shelly_readings_obj->current_total_home      = $shelly_4pm_readings_object->current_total_home;
+                  $shelly_readings_obj->energy_total_to_home_ts = $shelly_4pm_readings_object->energy_total_to_home_ts;
 
-                $shelly_readings_obj->pump_switch_status_bool = $shelly_4pm_readings_object->pump_switch_status_bool;
-                $shelly_readings_obj->ac_switch_status_bool   = $shelly_4pm_readings_object->ac_switch_status_bool;
-                $shelly_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
-                $shelly_readings_obj->voltage_home            = $shelly_4pm_readings_object->voltage_home;
+                  $shelly_readings_obj->pump_switch_status_bool = $shelly_4pm_readings_object->pump_switch_status_bool;
+                  $shelly_readings_obj->ac_switch_status_bool   = $shelly_4pm_readings_object->ac_switch_status_bool;
+                  $shelly_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
+                  $shelly_readings_obj->voltage_home            = $shelly_4pm_readings_object->voltage_home;
 
-                // when pump duration control happens change the below property to actula variable
-                $shelly_readings_obj->pump_ON_duration_secs   = 0;
-              }
+                  // when pump duration control happens change the below property to actula variable
+                  $shelly_readings_obj->pump_ON_duration_secs   = 0;
+                }
+            }
           }
 
-          // make an API call on the Shelly EM device and calculate energy consumed by Home since midnight
-          $shelly_em_readings_object = $this->get_shellyem_accumulated_load_wh_since_midnight_over_lan( $user_index, $wp_user_name, $wp_user_ID );
+          { // make an API call on the Shelly EM device and calculate energy consumed by Home since midnight
+            $shelly_em_readings_object = $this->get_shellyem_accumulated_load_wh_since_midnight_over_lan( $user_index, $wp_user_name, $wp_user_ID );
 
-          $shelly_em_home_kwh_since_midnight = round( $shelly_em_readings_object->shelly_em_home_wh_since_midnight * 0.001, 3 );
+            if ( $shelly_em_readings_object )
+            {   // there is a valid response from the Shelly EM home energy WH meter
+              // current home energy WH counter reading
+              $shelly_em_home_kwh_since_midnight = round( $shelly_em_readings_object->shelly_em_home_wh_since_midnight * 0.001, 3 );
 
-          if ( $shelly_em_readings_object )
-          {   // there is a valid response from the Shelly EM home energy WH meter
-            // current home energy WH counter reading
-            $shelly_em_home_wh = $shelly_em_readings_object->shelly_em_home_wh;
-            $shelly_readings_obj->shelly_em_home_wh = $shelly_em_home_wh;
+              $shelly_em_home_wh = $shelly_em_readings_object->shelly_em_home_wh;
+              $shelly_readings_obj->shelly_em_home_wh = $shelly_em_home_wh;
 
-            // current home power in KW supplied to home
-            $shelly_readings_obj->shelly_em_home_kw = $shelly_em_readings_object->shelly_em_home_kw;
-            
-            // present AC RMS phase voltage at panel, after Studer output
-            $shelly_readings_obj->shelly_em_home_voltage = $shelly_em_readings_object->shelly_em_home_voltage;
+              // current home power in KW supplied to home
+              $shelly_readings_obj->shelly_em_home_kw = $shelly_em_readings_object->shelly_em_home_kw;
+              
+              // present AC RMS phase voltage at panel, after Studer output
+              $shelly_readings_obj->shelly_em_home_voltage = $shelly_em_readings_object->shelly_em_home_voltage;
 
-            // Energy consumed in WH by home since midnight
-            $shelly_readings_obj->shelly_em_home_wh_since_midnight = $shelly_em_readings_object->shelly_em_home_wh_since_midnight;
+              // Energy consumed in WH by home since midnight
+              $shelly_readings_obj->shelly_em_home_wh_since_midnight = $shelly_em_readings_object->shelly_em_home_wh_since_midnight;
 
-            // energy consumed in KWH by home since midnight as measured by Shelly EM 
-            $shelly_readings_obj->shelly_em_home_kwh_since_midnight = $shelly_em_home_kwh_since_midnight;
+              // energy consumed in KWH by home since midnight as measured by Shelly EM 
+              $shelly_readings_obj->shelly_em_home_kwh_since_midnight = $shelly_em_home_kwh_since_midnight;
+            }
           }
           
-
           { // Make Shelly pro 3EM energy measuremnts of 3phase Grid
             $shelly_3p_grid_wh_measurement_obj = $this->get_shelly_3p_grid_wh_since_midnight_over_lan( $user_index, $wp_user_name, $wp_user_ID );
 
@@ -2349,7 +2344,7 @@ class class_transindus_eco
             $shelly_readings_obj->a_grid_wh_accumulated_since_midnight    = $a_grid_wh_accumulated_since_midnight;
             $shelly_readings_obj->a_grid_kwh_accumulated_since_midnight   = $a_grid_kwh_accumulated_since_midnight;
 
-            error_log("Grid_kwh: $a_grid_kwh_accumulated_since_midnight Home KWH: $shelly_em_home_kwh_since_midnight");
+            $this->verbose ? error_log("Grid_kwh: $a_grid_kwh_accumulated_since_midnight Home KWH: $shelly_em_home_kwh_since_midnight") : false;
           }
         }
 
@@ -3674,7 +3669,7 @@ class class_transindus_eco
                 ( $initial_switch_state === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
           {
             // esisting state is same as desired final state so return
-            error_log( "No Action in ACIN Switch done since no change is desired " );
+            error_log( "No Action in ACIN Switch - Initial Switch State: $initial_switch_state, Desired State: $desired_state" );
             return true;
           }
         }
@@ -3701,7 +3696,7 @@ class class_transindus_eco
         }
         else
         {
-          error_log( "ACIN Switch to desired state was not successful" );
+          error_log( "ACIN Switch to desired state Failed - Desired State: desired_state, Final State: $final_switch_state" );
           return false;
         }
     }

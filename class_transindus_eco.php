@@ -4185,7 +4185,7 @@ class class_transindus_eco
         // error_log('from CRON Ajax Call: wp_user_ID:' . $wp_user_ID . ' user_index:'   . $user_index);
       }
 
-      $soc_update_method = get_transient( $wp_user_name . '_' . 'soc_update_method' );
+      $soc_update_method = get_transient( 'soc_update_method' ) ?? 'shelly';
 
       // get the transient related to this user ID that stores the latest Readingss - check if from Studer or Shelly
       // $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
@@ -4358,7 +4358,7 @@ class class_transindus_eco
     {
         $config         = $this->config;
 
-        $soc_update_method = get_transient( $wp_user_name . '_' . 'soc_update_method' );
+        $soc_update_method = get_transient( 'soc_update_method' );
 
         // Initialize object to be returned
         $format_object  = new stdClass();

@@ -1813,7 +1813,7 @@ class class_transindus_eco
                 ( $pump_initial_switch_state === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
           {
             // esisting state is same as desired final state so return
-            error_log( "No Action in Pump Switch done since no change is desired " );
+            error_log( "No Action in Pump Switch done since no change is desired - Initial State: $pump_initial_switch_state, desired State: $desired_state" );
             return true;
           }
         }
@@ -1840,7 +1840,7 @@ class class_transindus_eco
         }
         else
         {
-          error_log( "Pump Switch to desired state was not successful" );
+          error_log( "Failed to switch - Initial State: $pump_initial_switch_state, desired State: $desired_state, Final State: $pump_final_switch_state" );
           return false;
         }
     }
@@ -1851,7 +1851,7 @@ class class_transindus_eco
      */
     public function control_pump_on_duration( int $wp_user_ID, int $user_index, object $shelly_4pm_readings_object )
     {
-      if (empty($shelly_4pm_readings_object))
+      if ( empty( $shelly_4pm_readings_object ) )
       {
         // bad data passed in do nothing
         error_log( "Pump bad data passed in do nothing in function control_pump_on_duration" );

@@ -57,11 +57,6 @@ function shelly_studer_add_new_cron_interval( $schedules )
                                             'interval' => 1 * 60,
                                             'display'  => esc_html__( 'Every 60 seconds' ),
                                         );
-
-    $schedules['thirty_seconds'] = array(
-                                            'interval' => 30,
-                                            'display'  => esc_html__( 'Every 30 seconds' ),
-                                        );
                                     
 
     return $schedules;

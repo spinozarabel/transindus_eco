@@ -1764,17 +1764,9 @@ class class_transindus_eco
 
           // Check if the control flag for minutely updates is TRUE. If so get the readings
           if( $do_minutely_updates ) 
-          { // get all the readings for this user. Enable Studer measurements. User Index is 0 since only one user
+          { // get all the readings for a user. User Index is 0 since only one user, this logged in admin user
             
-            // $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
-
-            for ( $i = 0; $i < 5; $i++ )
-            {
-              // disable Studer measurements. Only Shelly Battery current measurement based updates will be used
-              $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
-
-              sleep (15);
-            }
+            $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
           }
         }
         else

@@ -2482,32 +2482,37 @@ class class_transindus_eco
           error_log("Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
         }
 
-        { // Check if avasarala.in website is accessible.
-          $site_avasarala_in_is_online_bool = $this->check_if_site_avasarala_in_is_online();
+        { // LVDS only if avasarala.in site is down and local soc measurement is low
+          $site_avasarala_in_is_online = $this->check_if_site_avasarala_in_is_online();
 
-          if ( $site_avasarala_in_is_online_bool )
+          if ( $site_avasarala_in_is_online )
           {
             //reset the offline time counter to 0
             $time_site_is_offline = 0;
 
-            // set transient for soc update method for 10m
+            // set transient for timer accumulation
             set_transient( 'time_site_is_offline', $time_site_is_offline, 10 * 60 );
           }
           else
           {
-            // site is now offline
+            // site is now offline - get timer for accumulated value
             $time_site_is_offline = get_transient( 'time_site_is_offline') ?? 0;
+
             $time_site_is_offline += 15;  // add 15s to accumulate this iteration
 
+            // rewrite timer accumulated value for later recall
+            set_transient( 'time_site_is_offline', $time_site_is_offline, 10 * 60 );
+
+            // timer will be automatically reset to 0 once site comes back online
+
             if ( $time_site_is_offline > 15 * 60 && $soc_percentage_now < 35 )
-            {
+            { // Site offline very long and locally measured SOC is low
               error_log( "Avasarala site is down since past - $time_site_is_offline Secs and SOC is Low: $time_site_is_offline ");
               // switch Shelly AC IN Grid Switch ON
             }
+
+            
           }
-
-          
-
         }
 
         $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;

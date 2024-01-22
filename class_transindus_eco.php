@@ -2439,12 +2439,15 @@ class class_transindus_eco
                 // update the readings object for transient and display
                 $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
 
-                error_log("SOC update after dark: $soc_percentage_now_using_dark_shelly");
+                $soc_update_method = "shelly-after-dark";
+                $soc_percentage_now = $soc_percentage_now_using_dark_shelly;
               }
               else
               {
-                error_log("SOC using after dark Shelly not updated due to bad value: $soc_percentage_now_using_dark_shelly");
-                error_log("shelly_energy_counter value NOW: $shelly_em_home_wh");
+                $soc_update_method = "shelly";
+                $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
+
+                error_log("SOC using after dark Shelly not used due to bad value: $soc_percentage_now_using_dark_shelly");
               }
             }
           }
@@ -2452,6 +2455,9 @@ class class_transindus_eco
         else
         {   // it is daylight now so reset the soc_percentage_update_after_dark value.
           update_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark', 0);
+
+          $soc_update_method = "shelly";
+          $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
         }
 
         // midnight actions
@@ -2476,12 +2482,52 @@ class class_transindus_eco
           error_log("Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
         }
 
-        
+        { // Check if avasarala.in website is accessible.
+          $site_avasarala_in_is_online_bool = $this->check_if_site_avasarala_in_is_online();
+
+          if ( $site_avasarala_in_is_online_bool )
+          {
+            //reset the offline time counter to 0
+            $time_site_is_offline = 0;
+
+            // set transient for soc update method for 10m
+            set_transient( 'time_site_is_offline', $time_site_is_offline, 10 * 60 );
+          }
+          else
+          {
+            // site is now offline
+            $time_site_is_offline = get_transient( 'time_site_is_offline') ?? 0;
+            $time_site_is_offline += 15;  // add 15s to accumulate this iteration
+
+            if ( $time_site_is_offline > 15 * 60 && $soc_percentage_now < 35 )
+            {
+              error_log( "Avasarala site is down since past - $time_site_is_offline Secs and SOC is Low: $time_site_is_offline ");
+              // switch Shelly AC IN Grid Switch ON
+            }
+          }
+
+          
+
+        }
+
+        $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;
+        $shelly_readings_obj->soc_update_method   = $soc_update_method;
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );
+
+        // set transient for soc update method for 10m
+        set_transient( 'soc_update_method', $soc_update_method, 10 * 60 );
     }
 
+
+    /**
+     * 
+     */
+    public function check_if_site_avasarala_in_is_online() : bool
+    {
+      return true;
+    }
 
 
 

@@ -2447,10 +2447,6 @@ class class_transindus_eco
                 error_log("shelly_energy_counter value NOW: $shelly_em_home_wh");
               }
             }
-
-            // check the validity of the SOC using this after dark shelly method. We need to repeat since could have come from top branch
-            $soc_after_dark_update_valid =  $soc_percentage_now_using_dark_shelly < 100 &&
-                                            $soc_percentage_now_using_dark_shelly >= 40;
           }
         }
         else
@@ -4194,24 +4190,19 @@ class class_transindus_eco
       // get the transient related to this user ID that stores the latest Readingss - check if from Studer or Shelly
       // $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
 
-      if ( $soc_update_method === "shelly-after-dark" )
+      if ( $soc_update_method === "shelly-after-dark" || $soc_update_method === "shelly" )
       {
-        $studer_readings_obj = get_transient( $wp_user_name . '_' . 'shelly_readings_obj' );
+        $readings_obj = get_transient( 'shelly_readings_obj' );
       }
       elseif ( $soc_update_method === "studer" )
       {
-        $studer_readings_obj = get_transient( $wp_user_name . '_' . 'studer_readings_object' );
-      }
-      elseif ( $soc_update_method === "shelly" )
-      {
-        $studer_readings_obj = get_transient( $wp_user_name . '_' . 'shelly_readings_obj' );
+        $readings_obj = get_transient( 'studer_readings_object' );
       }
 
-      // error_log(print_r($studer_readings_obj, true));
-
-      if ($studer_readings_obj) {   // transient exists so we can send it
+      if ($readings_obj) 
+      {   // transient exists so we can send it
           
-          $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj );
+          $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $readings_obj );
 
           // send JSON encoded data to client browser AJAX call and then die
           wp_send_json($format_object);
@@ -4363,7 +4354,7 @@ class class_transindus_eco
      * @return stdClass:format_object contains html for all the icons to be updatd by JS on Ajax call return
      * determine the icons based on updated data
      */
-    public function prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj )
+    public function prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $readings_obj )
     {
         $config         = $this->config;
 
@@ -4373,35 +4364,35 @@ class class_transindus_eco
         $format_object  = new stdClass();
 
         // extract and process Shelly 1PM switch water heater data
-        $shelly_water_heater_data     = $studer_readings_obj->shelly_water_heater_data;     // data object
+        $shelly_water_heater_data     = $readings_obj->shelly_water_heater_data;     // data object
         $shelly_water_heater_kw       = $shelly_water_heater_data->shelly_water_heater_kw;
         $shelly_water_heater_status   = $shelly_water_heater_data->shelly_water_heater_status;  // boolean variable
         $shelly_water_heater_current  = $shelly_water_heater_data->shelly_water_heater_current; // in Amps
 
-        $psolar_kw              =   round($studer_readings_obj->psolar_kw, 2) ?? 0;
-        $solar_pv_adc           =   $studer_readings_obj->solar_pv_adc ?? 0;
+        $psolar_kw              =   round($readings_obj->psolar_kw, 2) ?? 0;
+        $solar_pv_adc           =   $readings_obj->solar_pv_adc ?? 0;
 
-        $pout_inverter_ac_kw    =   $studer_readings_obj->pout_inverter_ac_kw;
+        $pout_inverter_ac_kw    =   $readings_obj->pout_inverter_ac_kw;
 
         // changed to avg July 15 2023 was battery_voltage_vdc before that
-        $battery_voltage_vdc    =   round( (float) $studer_readings_obj->battery_voltage_avg, 1);
+        $battery_voltage_vdc    =   round( (float) $readings_obj->battery_voltage_avg, 1);
 
         // Positive is charging and negative is discharging
-        $battery_charge_adc     =   $studer_readings_obj->battery_charge_adc;
+        $battery_charge_adc     =   $readings_obj->battery_charge_adc;
 
-        $pbattery_kw            = abs(round($studer_readings_obj->pbattery_kw, 2));
+        $pbattery_kw            = abs(round($readings_obj->pbattery_kw, 2));
 
-        $grid_pin_ac_kw         =   $studer_readings_obj->grid_pin_ac_kw;
-        $grid_input_vac         =   $studer_readings_obj->grid_input_vac;
+        $grid_pin_ac_kw         =   $readings_obj->grid_pin_ac_kw;
+        $grid_input_vac         =   $readings_obj->grid_input_vac;
 
-        $shelly_api_device_status_ON      = $studer_readings_obj->shelly_api_device_status_ON;
+        $shelly_api_device_status_ON      = $readings_obj->shelly_api_device_status_ON;
 
         // This is the AC voltage of switch:0 of Shelly 4PM
-        $shelly_api_device_status_voltage = $studer_readings_obj->shelly_api_device_status_voltage;
+        $shelly_api_device_status_voltage = $readings_obj->shelly_api_device_status_voltage;
 
-        $SOC_percentage_now = round($studer_readings_obj->SOC_percentage_now, 1);
+        $SOC_percentage_now = round($readings_obj->SOC_percentage_now, 1);
 
-        $soc_percentage_now_using_dark_shelly = round($studer_readings_obj->soc_percentage_now_using_dark_shelly, 1);
+        $soc_percentage_now_using_dark_shelly = round($readings_obj->soc_percentage_now_using_dark_shelly, 1);
 
         // If power is flowing OR switch has ON status then show CHeck and Green
         $grid_arrow_size = $this->get_arrow_size_based_on_power($grid_pin_ac_kw);
@@ -4480,7 +4471,7 @@ class class_transindus_eco
         $studer_icon = '<i style="display:block; text-align: center;" class="clickableIcon fa-solid fa-3x fa-cog"></i>';
         $format_object->studer_icon = $studer_icon;
 
-        if ($studer_readings_obj->control_shelly)
+        if ($readings_obj->control_shelly)
         {
             $shelly_servo_icon = '<span style="color: Green; display:block; text-align: center;">
                                       <i class="clickableIcon fa-solid fa-2x fa-cloud"></i>
@@ -4575,18 +4566,18 @@ class class_transindus_eco
         
 
         // Shelly 4PM load breakout data
-        $power_total_to_home = $studer_readings_obj->power_total_to_home;
-        $power_total_to_home_kw = $studer_readings_obj->power_total_to_home_kw; // round( $power_total_to_home * 0.001, 2);
+        $power_total_to_home = $readings_obj->power_total_to_home;
+        $power_total_to_home_kw = $readings_obj->power_total_to_home_kw; // round( $power_total_to_home * 0.001, 2);
 
-        $power_to_home_kw = $studer_readings_obj->power_to_home_kw;
-        $power_to_ac_kw   = $studer_readings_obj->power_to_ac_kw;
-        $power_to_pump_kw = $studer_readings_obj->power_to_pump_kw;
+        $power_to_home_kw = $readings_obj->power_to_home_kw;
+        $power_to_ac_kw   = $readings_obj->power_to_ac_kw;
+        $power_to_pump_kw = $readings_obj->power_to_pump_kw;
 
-        $pump_ON_duration_mins = (int) round( $studer_readings_obj->pump_ON_duration_secs / 60, 0);
+        $pump_ON_duration_mins = (int) round( $readings_obj->pump_ON_duration_secs / 60, 0);
 
-        $pump_switch_status_bool  = $studer_readings_obj->pump_switch_status_bool;
-        $ac_switch_status_bool    = $studer_readings_obj->ac_switch_status_bool;
-        $home_switch_status_bool  = $studer_readings_obj->home_switch_status_bool;
+        $pump_switch_status_bool  = $readings_obj->pump_switch_status_bool;
+        $ac_switch_status_bool    = $readings_obj->ac_switch_status_bool;
+        $home_switch_status_bool  = $readings_obj->home_switch_status_bool;
 
 
         // $load_arrow_size = $this->get_arrow_size_based_on_power($pout_inverter_ac_kw);
@@ -4664,11 +4655,11 @@ class class_transindus_eco
                                               </span>';
 
         $format_object->power_to_home_kw = '<span style="font-size: 18px;color: Black;">
-                                                <strong>' . $studer_readings_obj->power_to_home_kw . ' KW</strong>
+                                                <strong>' . $readings_obj->power_to_home_kw . ' KW</strong>
                                             </span>';
 
         $format_object->power_to_ac_kw = '<span style="font-size: 18px;color: Black;">
-                                                <strong>' . $studer_readings_obj->power_to_ac_kw . ' KW</strong>
+                                                <strong>' . $readings_obj->power_to_ac_kw . ' KW</strong>
                                             </span>';
 
         $format_object->power_to_pump_kw = '<span style="font-size: 18px;color: Black;">
@@ -4680,26 +4671,26 @@ class class_transindus_eco
                                                   </span>';
 
         // Get Cron Exit COndition from User Meta and its time stamo
-        $json_cron_exit_condition_user_meta = get_user_meta( $wp_user_ID, 'studer_readings_object', true );
+        $json_cron_exit_condition_user_meta = get_user_meta( $wp_user_ID, 'readings_object', true );
         // decode the JSON encoded string into an Object
         $cron_exit_condition_user_meta_arr = json_decode($json_cron_exit_condition_user_meta, true);
 
         // extract the last condition saved that was NOT a No Action. Add cloudiness and Estimated Solar to message
         $saved_cron_exit_condition = $cron_exit_condition_user_meta_arr['cron_exit_condition'];
 
-        if ( ! empty( $studer_readings_obj->cloudiness_average_percentage_weighted ) )
+        if ( ! empty( $readings_obj->cloudiness_average_percentage_weighted ) )
         {
-          $saved_cron_exit_condition .= " Cloud: " . $studer_readings_obj->cloudiness_average_percentage_weighted . " %";
+          $saved_cron_exit_condition .= " Cloud: " . $readings_obj->cloudiness_average_percentage_weighted . " %";
         }
 
-        if ( ! empty( $studer_readings_obj->est_solar_kw ) )
+        if ( ! empty( $readings_obj->est_solar_kw ) )
         {
-          $saved_cron_exit_condition .= " Pest: " . $studer_readings_obj->est_solar_kw . " KW";
+          $saved_cron_exit_condition .= " Pest: " . $readings_obj->est_solar_kw . " KW";
         }
 
-        if ( ! empty( $studer_readings_obj->soc_predicted_at_6am ) )
+        if ( ! empty( $readings_obj->soc_predicted_at_6am ) )
         {
-          $saved_cron_exit_condition .= " Est. SOC 6AM: " . $studer_readings_obj->soc_predicted_at_6am . " %";
+          $saved_cron_exit_condition .= " Est. SOC 6AM: " . $readings_obj->soc_predicted_at_6am . " %";
         }
         
         
@@ -4732,7 +4723,7 @@ class class_transindus_eco
         if ( $soc_update_method === "studer" )
         {
           // display normal Studer SOC along with tuder current based SOC
-          $soc_percentage_now_disp = round($SOC_percentage_now, 1) . "-" . $studer_readings_obj->studer_current_based_soc_percentage_now;
+          $soc_percentage_now_disp = round($SOC_percentage_now, 1) . "-" . $readings_obj->studer_current_based_soc_percentage_now;
         }
         elseif ( $soc_update_method === "shelly-after-dark" )
         {   // display Shelly BM and Shelly after dark values
@@ -4748,7 +4739,7 @@ class class_transindus_eco
                                                   '</span>';
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' .
                                                     $formatted_interval   . ' ' . $saved_cron_exit_condition  . $soc_update_method .
-                                                    // $studer_readings_obj->battery_current_comparison . 
+                                                    // $readings_obj->battery_current_comparison . 
                                               '</span>';
         return $format_object;
     }

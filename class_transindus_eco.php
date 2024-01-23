@@ -1368,9 +1368,9 @@ class class_transindus_eco
 
       // check to make sure that it exists. If null API call was fruitless
       if (  empty( $shelly_api_device_response ) || 
-            empty( $shelly_api_device_response->data->device_status->{"emdata:0"}->{$phase_total_act_energy_string} ) ||
+            empty( $shelly_api_device_response->data->device_status->{"emdata:0"}->$phase_total_act_energy_string ) ||
             $shelly_api_device_response->isok !== true || 
-            (int) round($shelly_api_device_response->data->device_status->{"emdata:0"}->{$phase_total_act_energy_string}, 0) < 0
+            (int) round($shelly_api_device_response->data->device_status->{"emdata:0"}->$phase_total_act_energy_string, 0) < 0
           )
       {
         $this->verbose ? error_log("Shelly EM Grid Energy API call failed"): false;
@@ -1391,8 +1391,8 @@ class class_transindus_eco
       else
       {
         // get energy counter and power values of phase supplying home using passed in phase variable
-        $a_grid_wh_counter_now  = $shelly_api_device_response->data->device_status->{"emdata:0"}->{$phase_total_act_energy_string};
-        $a_grid_w_pwr           = $shelly_api_device_response->data->device_status->{"em:0"}->{$phase_act_power_string};
+        $a_grid_wh_counter_now  = $shelly_api_device_response->data->device_status->{"emdata:0"}->$phase_total_act_energy_string;
+        $a_grid_w_pwr           = $shelly_api_device_response->data->device_status->{"em:0"}->$phase_act_power_string;
 
         // get energy counter value and power values of phase supplying car charger, assumed b or Y phase
         $b_grid_wh_counter_now  = $shelly_api_device_response->data->device_status->{"emdata:0"}->b_total_act_energy;

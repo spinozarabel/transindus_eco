@@ -2725,7 +2725,7 @@ class class_transindus_eco
 
             $soc_update_method = "shelly-after-dark";
 
-            if ( $shelly_switch_status == "ON" )
+            if ( $shelly_switch_status == "ON" && $a_grid_kw_pwr > 0.1 )
             { // Grid is supplying Load and since Solar is 0, battery current is 0 so no change in battery SOC
               
               // update the after dark energy counter to latest value

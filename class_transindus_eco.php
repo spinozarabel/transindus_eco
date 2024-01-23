@@ -1141,7 +1141,9 @@ class class_transindus_eco
      *  Current measurements are used to update user meta for accumulated Solar AH since Studer Midnight
      *  in user meta 'battery_soc_percentage_accumulated_since_midnight'. This must be reset to 0 just aftermidnight elsewhere.
      */
-    public function get_shelly_battery_measurement_over_lan(  int     $user_index,            string  $wp_user_name,  int $wp_user_ID, 
+    public function get_shelly_battery_measurement_over_lan(  int     $user_index,            
+                                                              string  $wp_user_name,  
+                                                              int     $wp_user_ID, 
                                                               string  $shelly_switch_status,  
                                                               float   $a_grid_kw_pwr, 
                                                               bool    $it_is_still_dark) : ? object

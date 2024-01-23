@@ -2421,7 +2421,6 @@ class class_transindus_eco
               // SOC is unchanging due to Grid ON however set the variables using the user meta since they are undefined.
               $soc_percentage_now_using_dark_shelly = (float) get_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  true);
 
-              
               $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
             }
             else
@@ -2465,7 +2464,7 @@ class class_transindus_eco
                 $soc_update_method = "shelly";
                 $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
 
-                error_log("SOC using after dark Shelly not used due to bad value: $soc_percentage_now_using_dark_shelly");
+                error_log("SOC using after dark Shelly not used due to bad value of: $soc_percentage_now_using_dark_shelly");
               }
             }
           }

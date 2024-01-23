@@ -2408,7 +2408,8 @@ class class_transindus_eco
           if ( $soc_capture_after_dark_happened === true )
           { // SOC capture after dark is DONE and it is still dark, so use it to compute SOC after dark using only Shelly readings
 
-            if ( $shelly1pm_acin_switch_status == "ON" )
+            // grid is supplying power only when switch os ON and Power > 0.1KW
+            if ( $shelly1pm_acin_switch_status == "ON" && $a_grid_kw_pwr > 0.1 )
             { // Grid is supplying Load and since Solar is 0, battery current is 0 so no change in battery SOC
               
               // update the after dark energy counter to latest value

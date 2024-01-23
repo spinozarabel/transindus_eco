@@ -1142,7 +1142,9 @@ class class_transindus_eco
      *  in user meta 'battery_soc_percentage_accumulated_since_midnight'. This must be reset to 0 just aftermidnight elsewhere.
      */
     public function get_shelly_battery_measurement_over_lan(  int     $user_index,            string  $wp_user_name,  int $wp_user_ID, 
-                                                              string  $shelly_switch_status,  bool    $it_is_still_dark) : ? object
+                                                              string  $shelly_switch_status,  
+                                                              float   $a_grid_kw_pwr, 
+                                                              bool    $it_is_still_dark) : ? object
     {
         // set default timezone to Asia Kolkata
         date_default_timezone_set("Asia/Kolkata");
@@ -1212,8 +1214,8 @@ class class_transindus_eco
                                                                               'battery_soc_percentage_accumulated_since_midnight', true);
 
         if (  $it_is_still_dark               &&  // No solar
-              $shelly_switch_status === 'ON'  &&  // Grid switch is ON and supplying the Load
-              abs($battery_amps)  < 5 )           // The battery current is < 5A and probably noise
+              $shelly_switch_status === 'ON'  &&  // Grid switch is ON
+              $a_grid_kw_pwr > 0.1            )   // Power supplied by grid to home is greater than 0.1 KW
         {
           // There is no solar and the grid is supplying the load.
           // Any small battery current is just noise and so can be set to 0 for accuracy
@@ -2252,6 +2254,25 @@ class class_transindus_eco
             // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
             $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
           }
+
+          { // Make Shelly pro 3EM energy measuremnts of 3phase Grid
+            $shelly_3p_grid_wh_measurement_obj = $this->get_shelly_3p_grid_wh_since_midnight_over_lan( $user_index, $wp_user_name, $wp_user_ID );
+
+            // we have a valid Shelly Pro 3EM measurement of the Grid Supply
+            $a_grid_wh_counter_now                  = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_counter_now;
+            $b_grid_wh_counter_now                  = $shelly_3p_grid_wh_measurement_obj->b_grid_wh_counter_now;
+
+            $a_grid_wh_accumulated_since_midnight   = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_accumulated_since_midnight;
+            $a_grid_kwh_accumulated_since_midnight  = round( $a_grid_wh_accumulated_since_midnight * 0.001, 3 );
+            $a_grid_kw_pwr                          = $shelly_3p_grid_wh_measurement_obj->a_grid_kw_pwr;
+            
+            $shelly_readings_obj->a_grid_wh_counter_now   = $a_grid_wh_counter_now;
+            $shelly_readings_obj->b_grid_wh_counter_now   = $b_grid_wh_counter_now;
+            $shelly_readings_obj->a_grid_kw_pwr           = $a_grid_kw_pwr;
+
+            $shelly_readings_obj->a_grid_wh_accumulated_since_midnight    = $a_grid_wh_accumulated_since_midnight;
+            $shelly_readings_obj->a_grid_kwh_accumulated_since_midnight   = $a_grid_kwh_accumulated_since_midnight;
+          }
           
           { // Measure Battery Charging current as positive using Shelly plus Add-on
             
@@ -2259,6 +2280,7 @@ class class_transindus_eco
                                                                                                   $wp_user_name, 
                                                                                                   $wp_user_ID, 
                                                                                                   $shelly1pm_acin_switch_status, 
+                                                                                                  $a_grid_kw_pwr, 
                                                                                                   $it_is_still_dark );
             if ( $shelly_battery_measurement_object )
             { // valid shelly battery measurement - load object with battery measurement data
@@ -2340,27 +2362,6 @@ class class_transindus_eco
               $shelly_readings_obj->shelly_em_home_kwh_since_midnight = $shelly_em_home_kwh_since_midnight;
             }
           }
-          
-          { // Make Shelly pro 3EM energy measuremnts of 3phase Grid
-            $shelly_3p_grid_wh_measurement_obj = $this->get_shelly_3p_grid_wh_since_midnight_over_lan( $user_index, $wp_user_name, $wp_user_ID );
-
-            // we have a valid Shelly Pro 3EM measurement of the Grid Supply
-            $a_grid_wh_counter_now                  = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_counter_now;
-            $b_grid_wh_counter_now                  = $shelly_3p_grid_wh_measurement_obj->b_grid_wh_counter_now;
-
-            $a_grid_wh_accumulated_since_midnight   = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_accumulated_since_midnight;
-            $a_grid_kwh_accumulated_since_midnight  = round( $a_grid_wh_accumulated_since_midnight * 0.001, 3 );
-            $a_grid_kw_pwr                          = $shelly_3p_grid_wh_measurement_obj->a_grid_kw_pwr;
-            
-            $shelly_readings_obj->a_grid_wh_counter_now   = $a_grid_wh_counter_now;
-            $shelly_readings_obj->b_grid_wh_counter_now   = $b_grid_wh_counter_now;
-            $shelly_readings_obj->a_grid_kw_pwr           = $a_grid_kw_pwr;
-
-            $shelly_readings_obj->a_grid_wh_accumulated_since_midnight    = $a_grid_wh_accumulated_since_midnight;
-            $shelly_readings_obj->a_grid_kwh_accumulated_since_midnight   = $a_grid_kwh_accumulated_since_midnight;
-
-            $this->verbose ? error_log("Grid_kwh: $a_grid_kwh_accumulated_since_midnight Home KWH: $shelly_em_home_kwh_since_midnight") : false;
-          }
         }
 
         { // calculate non-studer based SOC using Shelly Battery Measurements
@@ -2422,8 +2423,9 @@ class class_transindus_eco
               $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
             }
             else
-            { // Shelly 1PM ACIN switch is OFF so Get the captured after dark SOC and home wh counters from user meta
+            { // Inverter is supplying the home since the power from Grid is <= 0.1KW as measured by Shelly 3EM
               
+              // get the accumulated SOC and energy counter values from user meta
               $soc_percentage_after_dark        = (float) get_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  true);
               $shelly_energy_counter_after_dark = (float) get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark',   true);
 

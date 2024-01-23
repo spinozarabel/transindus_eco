@@ -1359,9 +1359,16 @@ class class_transindus_eco
      * 'grid_wh_counter_midnight' user meta is set at midnight elsewhere using the current reading then
      *  At any time after, this midnight reading is subtracted from current reading to get consumption since midnight
      *  @return object:$shelly_3p_grid_energy_measurement_obj contsining all the measurements
+     *  There is a slight confusion now since the a,b,c variable names don't alwyas correspond to the actual R/Y/B phases.
+     *  Murty keeps switching the phase to the home and so we pass that in as phase for the main a based variable names
+     *  This is so we don't keep changing the code
      */
-    public function get_shelly_3p_grid_wh_since_midnight_over_lan( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
+    public function get_shelly_3p_grid_wh_since_midnight_over_lan( int $user_index, string $wp_user_name, int $wp_user_ID, string $phase = "c"): ? object
     {
+      // form the phase name which is connected to our home/inverter from the passed in variable string
+      $phase_total_act_energy_string  = $phase . "_total_act_energy"; // for example 'a_total_act_energy'
+      $phase_act_power_string         = $phase . "_act_power";        // for example 'a_act_power'
+
       // get value of Shelly Pro 3EM Red phase watt hour counter as set at midnight
       $grid_wh_counter_at_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', true), 0);
 
@@ -1383,13 +1390,14 @@ class class_transindus_eco
 
       // check to make sure that it exists. If null API call was fruitless
       if (  empty(        $shelly_api_device_response ) || 
-            empty(        $shelly_api_device_response->{"emdata:0"}->a_total_act_energy ) ||
-            (int) round(  $shelly_api_device_response->{"emdata:0"}->a_total_act_energy, 0 ) < 0
+            empty(        $shelly_api_device_response->{"emdata:0"}->$phase_total_act_energy_string )         ||
+            (int) round(  $shelly_api_device_response->{"emdata:0"}->$phase_total_act_energy_string, 0 ) < 0
           )
       {
         $this->verbose ? error_log("Shelly EM Grid Energy API call failed"): false;
 
-        // since no valid reading so lets use the reading from transient
+        // since no valid reading so lets use the reading from transient.
+        // since no AC power the readings don't change from whats in the transient anyway.
         $a_grid_wh_counter_now_from_transient = (float) get_transient('last_reading_phase_a_grid_wh_counter');
         $b_grid_wh_counter_now_from_transient = (float) get_transient('last_reading_phase_b_grid_wh_counter');
 
@@ -1408,10 +1416,17 @@ class class_transindus_eco
       }
       else
       { // we have a valid reading from SHelly 3EM device
-        $a_grid_wh_counter_now  = $shelly_api_device_response->{"emdata:0"}->a_total_act_energy;
-        $b_grid_wh_counter_now  = $shelly_api_device_response->{"emdata:0"}->b_total_act_energy;
-        $a_grid_w_pwr           = $shelly_api_device_response->{"em:0"}->a_act_power;
+
+        // main power to home. The phase is deretermined by passed in string: a/b/c corresponding to R/Y/B
+        $a_grid_wh_counter_now  = $shelly_api_device_response->{"emdata:0"}->$phase_total_act_energy_string;
+
+        // get the power values for the main phase also passed in string.
+        $a_grid_w_pwr           = $shelly_api_device_response->{"em:0"}->$phase_act_power_string;
         $a_grid_kw_pwr          = round( 0.001 * $a_grid_w_pwr, 3);
+
+        // Now get the value from phase b. This is fixed to phase b or Yellow. THis is what supplies the car charger
+        $b_grid_wh_counter_now  = $shelly_api_device_response->{"emdata:0"}->b_total_act_energy;
+        
 
         // update the transient with most recent measurement
         set_transient( 'last_reading_phase_a_grid_wh_counter', $a_grid_wh_counter_now, 24 * 60 * 60 );

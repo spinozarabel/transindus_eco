@@ -2489,6 +2489,8 @@ class class_transindus_eco
               $a_grid_wh_accumulated_since_midnight   = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_accumulated_since_midnight;
               $a_grid_kwh_accumulated_since_midnight  = round( $a_grid_wh_accumulated_since_midnight * 0.001, 3 );
               $a_grid_kw_pwr                          = $shelly_3p_grid_wh_measurement_obj->a_grid_kw_pwr;
+
+              $this->verbose ? error_log("home_phase_wh_counter_now: $a_grid_wh_counter_now, wh since midnight: $a_grid_wh_accumulated_since_midnight, PowerKW: $a_grid_kw_pwr"): false;
             }
             
           }

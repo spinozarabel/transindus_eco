@@ -309,4 +309,9 @@ $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $s
 
 // this is $curl_response.
 $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
-print_r($shelly_api_device_response);
+
+$c_power_string = "c_act_power";
+
+$c_act_power = $shelly_api_device_response->{"em:0"}->$c_power_string;
+
+echo("Home power in W = " . $c_act_power . "\n" );

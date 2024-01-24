@@ -1141,7 +1141,9 @@ class class_transindus_eco
      *  Current measurements are used to update user meta for accumulated Solar AH since Studer Midnight
      *  in user meta 'battery_soc_percentage_accumulated_since_midnight'. This must be reset to 0 just aftermidnight elsewhere.
      */
-    public function get_shelly_battery_measurement_over_lan(  int     $user_index,            string  $wp_user_name,  int $wp_user_ID, 
+    public function get_shelly_battery_measurement_over_lan(  int     $user_index,            
+                                                              string  $wp_user_name,  
+                                                              int     $wp_user_ID, 
                                                               string  $shelly_switch_status,  
                                                               float   $a_grid_kw_pwr, 
                                                               bool    $it_is_still_dark) : ? object
@@ -1360,12 +1362,16 @@ class class_transindus_eco
     /**
      * 'grid_wh_counter_midnight' user meta is set at midnight elsewhere using the current reading then
      *  At any time after, this midnight reading is subtracted from current reading to get consumption since midnight
+     *  @param string:$phase defaults to 'c' as the home is supplied by the B phase of RYB
      *  @return object:$shelly_3p_grid_energy_measurement_obj contsining all the measurements
      *  There is a slight confusion now since the a,b,c variable names don't alwyas correspond to the actual R/Y/B phases.
      *  Murty keeps switching the phase to the home and so we pass that in as phase for the main a based variable names
      *  This is so we don't keep changing the code
      */
-    public function get_shelly_3p_grid_wh_since_midnight_over_lan( int $user_index, string $wp_user_name, int $wp_user_ID, string $phase = "c"): ? object
+    public function get_shelly_3p_grid_wh_since_midnight_over_lan(  int     $user_index, 
+                                                                    string  $wp_user_name, 
+                                                                    int     $wp_user_ID, 
+                                                                    string  $phase = "c"  ): ? object
     {
       // form the phase name which is connected to our home/inverter from the passed in variable string
       $phase_total_act_energy_string  = $phase . "_total_act_energy"; // for example 'a_total_act_energy'
@@ -2419,7 +2425,6 @@ class class_transindus_eco
               // SOC is unchanging due to Grid ON however set the variables using the user meta since they are undefined.
               $soc_percentage_now_using_dark_shelly = (float) get_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  true);
 
-              
               $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
             }
             else
@@ -2463,7 +2468,7 @@ class class_transindus_eco
                 $soc_update_method = "shelly";
                 $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
 
-                error_log("SOC using after dark Shelly not used due to bad value: $soc_percentage_now_using_dark_shelly");
+                error_log("SOC using after dark Shelly not used due to bad value of: $soc_percentage_now_using_dark_shelly");
               }
             }
           }

@@ -1145,7 +1145,7 @@ class class_transindus_eco
                                                               string  $wp_user_name,  
                                                               int     $wp_user_ID, 
                                                               string  $shelly_switch_status,  
-                                                              float   $a_grid_kw_pwr, 
+                                                              float   $home_grid_kw_power, 
                                                               bool    $it_is_still_dark) : ? object
     {
         // set default timezone to Asia Kolkata
@@ -1217,7 +1217,7 @@ class class_transindus_eco
 
         if (  $it_is_still_dark               &&  // No solar
               $shelly_switch_status === 'ON'  &&  // Grid switch is ON
-              $a_grid_kw_pwr > 0.1            )   // Power supplied by grid to home is greater than 0.1 KW
+              $home_grid_kw_power > 0.1            )   // Power supplied by grid to home is greater than 0.1 KW
         {
           // There is no solar and the grid is supplying the load.
           // Any small battery current is just noise and so can be set to 0 for accuracy
@@ -1370,12 +1370,15 @@ class class_transindus_eco
      */
     public function get_shelly_3p_grid_wh_since_midnight_over_lan(  int     $user_index, 
                                                                     string  $wp_user_name, 
-                                                                    int     $wp_user_ID, 
-                                                                    string  $phase = "c"  ): ? object
+                                                                    int     $wp_user_ID     ): ? object
     {
-      // form the phase name which is connected to our home/inverter from the passed in variable string
-      $phase_total_act_energy_string  = $phase . "_total_act_energy"; // for example 'a_total_act_energy'
-      $phase_act_power_string         = $phase . "_act_power";        // for example 'a_act_power'
+      // Blue phase of RYB is assigned to home so this corresponds to c phase of abc
+      $home_total_act_energy_string  = "c_total_act_energy"; 
+      $home_act_power_string         = "c_act_power";
+
+      // Yellow phase of RYB is assigned to car charger so this corresponds to b phase of abc sequence
+      $car_charger_total_act_energy_string  = "b_total_act_energy";
+      $car_charger_act_power_string         = "b_act_power"; 
 
       // get value of Shelly Pro 3EM Red phase watt hour counter as set at midnight
       $grid_wh_counter_at_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', true), 0);
@@ -1398,27 +1401,30 @@ class class_transindus_eco
 
       // check to make sure that it exists. If null API call was fruitless
       if (  empty(        $shelly_api_device_response ) || 
-            empty(        $shelly_api_device_response->{"emdata:0"}->$phase_total_act_energy_string )         ||
-            (int) round(  $shelly_api_device_response->{"emdata:0"}->$phase_total_act_energy_string, 0 ) < 0
+            empty(        $shelly_api_device_response->{"emdata:0"}->$home_total_act_energy_string )         ||
+            (int) round(  $shelly_api_device_response->{"emdata:0"}->$home_total_act_energy_string, 0 ) < 0
           )
       {
-        $this->verbose ? error_log("Shelly EM Grid Energy API call failed"): false;
+        $this->verbose ? error_log("Shelly 3EM Grid Energy API call failed"): false;
 
         // since no valid reading so lets use the reading from transient.
         // since no AC power the readings don't change from whats in the transient anyway.
-        $a_grid_wh_counter_now_from_transient = (float) get_transient('last_reading_phase_a_grid_wh_counter');
-        $b_grid_wh_counter_now_from_transient = (float) get_transient('last_reading_phase_b_grid_wh_counter');
+        // since no valid reading so lets use the reading from transient
+        $home_grid_wh_counter_now_from_transient        = (float) get_transient('home_grid_wh_counter');
+        $car_charger_grid_wh_counter_now_from_transient = (float) get_transient('car_charger_grid_wh_counter');
 
-        $shelly_3p_grid_energy_measurement_obj->a_grid_wh_counter_now = $a_grid_wh_counter_now_from_transient;
-        $shelly_3p_grid_energy_measurement_obj->b_grid_wh_counter_now = $b_grid_wh_counter_now_from_transient;
+        $shelly_3p_grid_energy_measurement_obj->home_grid_wh_counter_now        = $home_grid_wh_counter_now_from_transient;
+        $shelly_3p_grid_energy_measurement_obj->car_charger_grid_wh_counter_now = $car_charger_grid_wh_counter_now_from_transient;
 
-        $a_grid_wh_accumulated_since_midnight = $a_grid_wh_counter_now_from_transient - $grid_wh_counter_at_midnight;
+        $home_grid_wh_accumulated_since_midnight = $home_grid_wh_counter_now_from_transient - $grid_wh_counter_at_midnight;
 
-        $shelly_3p_grid_energy_measurement_obj->a_grid_wh_accumulated_since_midnight  = $a_grid_wh_accumulated_since_midnight;
-        $shelly_3p_grid_energy_measurement_obj->a_grid_kwh_accumulated_since_midnight = round( $a_grid_wh_accumulated_since_midnight * 0.001, 3);
+
+        $shelly_3p_grid_energy_measurement_obj->home_grid_wh_accumulated_since_midnight  = $home_grid_wh_accumulated_since_midnight;
+        $shelly_3p_grid_energy_measurement_obj->home_grid_kwh_accumulated_since_midnight = round( $home_grid_wh_accumulated_since_midnight * 0.001, 3);
 
         // offline so no power
-        $shelly_3p_grid_energy_measurement_obj->a_grid_kw_pwr = 0;
+        $shelly_3p_grid_energy_measurement_obj->home_grid_kw_power        = 0;
+        $shelly_3p_grid_energy_measurement_obj->car_charger_grid_kw_power = 0;
 
         return $shelly_3p_grid_energy_measurement_obj;
       }
@@ -1426,29 +1432,31 @@ class class_transindus_eco
       { // we have a valid reading from SHelly 3EM device
 
         // main power to home. The phase is deretermined by passed in string: a/b/c corresponding to R/Y/B
-        $a_grid_wh_counter_now  = $shelly_api_device_response->{"emdata:0"}->$phase_total_act_energy_string;
+        $home_grid_wh_counter_now  = $shelly_api_device_response->{"emdata:0"}->$home_total_act_energy_string;
 
-        // get the power values for the main phase also passed in string.
-        $a_grid_w_pwr           = $shelly_api_device_response->{"em:0"}->$phase_act_power_string;
-        $a_grid_kw_pwr          = round( 0.001 * $a_grid_w_pwr, 3);
+        $home_grid_w_power           = $shelly_api_device_response->{"em:0"}->$home_act_power_string;
+        $home_grid_kw_power          = round( 0.001 * $home_grid_w_power, 3);
 
-        // Now get the value from phase b. This is fixed to phase b or Yellow. THis is what supplies the car charger
-        $b_grid_wh_counter_now  = $shelly_api_device_response->{"emdata:0"}->b_total_act_energy;
+        // get energy counter value and power values of phase supplying car charger, assumed b or Y phase
+        $car_charger_grid_wh_counter_now  = $shelly_api_device_response->{"emdata:0"}->$car_charger_total_act_energy_string;
+        $car_charger_grid_w_power         = $shelly_api_device_response->{"em:0"}->$car_charger_act_power_string;
+        $car_charger_grid_kw_power        = round( 0.001 * $car_charger_grid_w_power, 3);
         
-
         // update the transient with most recent measurement
-        set_transient( 'last_reading_phase_a_grid_wh_counter', $a_grid_wh_counter_now, 24 * 60 * 60 );
-        set_transient( 'last_reading_phase_b_grid_wh_counter', $b_grid_wh_counter_now, 24 * 60 * 60 );
+        set_transient( 'home_grid_wh_counter',        $home_grid_wh_counter_now,        24 * 60 * 60 );
+        set_transient( 'car_charger_grid_wh_counter', $car_charger_grid_wh_counter_now, 24 * 60 * 60 );
 
-        $a_grid_wh_accumulated_since_midnight = $a_grid_wh_counter_now - $grid_wh_counter_at_midnight;
+        $home_grid_wh_accumulated_since_midnight  = $home_grid_wh_counter_now - $grid_wh_counter_at_midnight;
+        $home_grid_kwh_accumulated_since_midnight = round( 0.001 * $home_grid_wh_accumulated_since_midnight, 3);
 
-        $shelly_3p_grid_energy_measurement_obj->a_grid_wh_counter_now = $a_grid_wh_counter_now;
-        $shelly_3p_grid_energy_measurement_obj->b_grid_wh_counter_now = $b_grid_wh_counter_now;
+        $shelly_3p_grid_energy_measurement_obj->home_grid_wh_counter_now        = $home_grid_wh_counter_now;
+        $shelly_3p_grid_energy_measurement_obj->car_charger_grid_wh_counter_now = $car_charger_grid_wh_counter_now;
 
-        $shelly_3p_grid_energy_measurement_obj->a_grid_kw_pwr = $a_grid_kw_pwr;
+        $shelly_3p_grid_energy_measurement_obj->home_grid_kw_power         = $home_grid_kw_power;
+        $shelly_3p_grid_energy_measurement_obj->car_charger_grid_kw_power  = $car_charger_grid_kw_power;
 
-        $shelly_3p_grid_energy_measurement_obj->a_grid_wh_accumulated_since_midnight  =         $a_grid_wh_accumulated_since_midnight;
-        $shelly_3p_grid_energy_measurement_obj->a_grid_kwh_accumulated_since_midnight = round(  $a_grid_wh_accumulated_since_midnight * 0.001, 3);
+        $shelly_3p_grid_energy_measurement_obj->home_grid_wh_accumulated_since_midnight   = $home_grid_wh_accumulated_since_midnight;
+        $shelly_3p_grid_energy_measurement_obj->home_grid_kwh_accumulated_since_midnight  = $home_grid_kwh_accumulated_since_midnight;
 
         return $shelly_3p_grid_energy_measurement_obj;
       }
@@ -2264,20 +2272,24 @@ class class_transindus_eco
           { // Make Shelly pro 3EM energy measuremnts of 3phase Grid
             $shelly_3p_grid_wh_measurement_obj = $this->get_shelly_3p_grid_wh_since_midnight_over_lan( $user_index, $wp_user_name, $wp_user_ID );
 
-            // we have a valid Shelly Pro 3EM measurement of the Grid Supply
-            $a_grid_wh_counter_now                  = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_counter_now;
-            $b_grid_wh_counter_now                  = $shelly_3p_grid_wh_measurement_obj->b_grid_wh_counter_now;
+            // we have a valid Shelly Pro 3EM measurement of the Grid Supply 
+            $home_grid_wh_counter_now               = $shelly_3p_grid_wh_measurement_obj->home_grid_wh_counter_now;
+            $car_charger_grid_wh_counter_now        = $shelly_3p_grid_wh_measurement_obj->car_charger_grid_wh_counter_now;
 
-            $a_grid_wh_accumulated_since_midnight   = $shelly_3p_grid_wh_measurement_obj->a_grid_wh_accumulated_since_midnight;
-            $a_grid_kwh_accumulated_since_midnight  = round( $a_grid_wh_accumulated_since_midnight * 0.001, 3 );
-            $a_grid_kw_pwr                          = $shelly_3p_grid_wh_measurement_obj->a_grid_kw_pwr;
+            $home_grid_wh_accumulated_since_midnight   = $shelly_3p_grid_wh_measurement_obj->home_grid_wh_accumulated_since_midnight;
+            $home_grid_kwh_accumulated_since_midnight  = round( $home_grid_wh_accumulated_since_midnight * 0.001, 3 );
+            $home_grid_kw_power                        = $shelly_3p_grid_wh_measurement_obj->home_grid_kw_power;
+            $car_charger_grid_kw_power                 = $shelly_3p_grid_wh_measurement_obj->car_charger_grid_kw_power;
             
-            $shelly_readings_obj->a_grid_wh_counter_now   = $a_grid_wh_counter_now;
-            $shelly_readings_obj->b_grid_wh_counter_now   = $b_grid_wh_counter_now;
-            $shelly_readings_obj->a_grid_kw_pwr           = $a_grid_kw_pwr;
+            $shelly_readings_obj->home_grid_wh_counter_now          = $home_grid_wh_counter_now;
+            $shelly_readings_obj->car_charger_grid_wh_counter_now   = $car_charger_grid_wh_counter_now;
+            $shelly_readings_obj->home_grid_kw_power                = $home_grid_kw_power;
+            $shelly_readings_obj->car_charger_grid_kw_power         = $car_charger_grid_kw_power;
 
-            $shelly_readings_obj->a_grid_wh_accumulated_since_midnight    = $a_grid_wh_accumulated_since_midnight;
-            $shelly_readings_obj->a_grid_kwh_accumulated_since_midnight   = $a_grid_kwh_accumulated_since_midnight;
+            $shelly_readings_obj->home_grid_wh_accumulated_since_midnight    = $home_grid_wh_accumulated_since_midnight;
+            $shelly_readings_obj->home_grid_kwh_accumulated_since_midnight   = $home_grid_kwh_accumulated_since_midnight;
+
+            $this->verbose ? error_log("home_grid_wh_counter_now: $home_grid_wh_counter_now, wh since midnight: $home_grid_wh_accumulated_since_midnight, Home Grid PowerKW: $home_grid_kw_power"): false;
           }
           
           { // Measure Battery Charging current as positive using Shelly plus Add-on
@@ -2286,7 +2298,7 @@ class class_transindus_eco
                                                                                                   $wp_user_name, 
                                                                                                   $wp_user_ID, 
                                                                                                   $shelly1pm_acin_switch_status, 
-                                                                                                  $a_grid_kw_pwr, 
+                                                                                                  $home_grid_kw_power, 
                                                                                                   $it_is_still_dark );
             if ( $shelly_battery_measurement_object )
             { // valid shelly battery measurement - load object with battery measurement data
@@ -2416,7 +2428,7 @@ class class_transindus_eco
           { // SOC capture after dark is DONE and it is still dark, so use it to compute SOC after dark using only Shelly readings
 
             // grid is supplying power only when switch os ON and Power > 0.1KW
-            if ( $shelly1pm_acin_switch_status == "ON" && $a_grid_kw_pwr > 0.1 )
+            if ( $shelly1pm_acin_switch_status == "ON" && $home_grid_kw_power > 0.1 )
             { // Grid is supplying Load and since Solar is 0, battery current is 0 so no change in battery SOC
               
               // update the after dark energy counter to latest value
@@ -2488,7 +2500,7 @@ class class_transindus_eco
           update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', $shelly_em_home_wh );
 
           // reset Shelly 3EM Grid Energy counter to present reading. This is only done once in 24h, at midnight
-          update_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', $a_grid_wh_counter_now );
+          update_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', $home_grid_wh_counter_now );
 
           // reset the SOC at midnight value to current update. This is only done once in 24h, at midnight
           // we also have the option of using the variable: $soc_percentage_now_using_dark_shelly
@@ -2498,7 +2510,7 @@ class class_transindus_eco
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', 0);
 
           error_log("Midnight - shelly_em_home_energy_counter_at_midnight: $shelly_em_home_wh");
-          error_log("Midnight - grid_wh_counter_at_midnight: $a_grid_wh_counter_now");
+          error_log("Midnight - grid_wh_counter_at_midnight: $home_grid_wh_counter_now");
           error_log("Midnight - soc_percentage_at_midnight: $soc_percentage_now_calculated_using_shelly_bm");
           error_log("Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
         }

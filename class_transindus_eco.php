@@ -2569,16 +2569,16 @@ class class_transindus_eco
     public function check_if_main_control_site_avasarala_is_offline_for_long() : bool
     {
       // get the transient value of minutes timer
-      $minutes_timer = round( (float) get_transient( 'minutes_timer') ?? 0, 1);
+      $minutes_timer = (int) get_transient( 'minutes_timer') ?? 0;
 
-      // increment counter by 1/4 minute for this iteration
-      $minutes_timer += 0.25;
+      // increment counter by 1 for this iteration
+      $minutes_timer += 1;
 
       // update transient value of counter for next check
       set_transient( 'minutes_timer', $minutes_timer, 10 * 60 );
 
-      if ( $minutes_timer >= 1 )
-      { // every 1 minutes do this check
+      if ( $minutes_timer >= 5 )
+      { // about every 1 minutes do this check
         $fp = fsockopen("www.avasarala.in", 80, $errno, $errstr, 5);
 
         if ( $fp )
@@ -2605,15 +2605,15 @@ class class_transindus_eco
           fclose($fp);
 
           // get timer for accumulated value
-          $minutes_that_site_avasarala_in_is_offline = (float) get_transient( 'minutes_that_site_avasarala_in_is_offline') ?? 0;
+          $minutes_that_site_avasarala_in_is_offline = (int) get_transient( 'minutes_that_site_avasarala_in_is_offline') ?? 0;
 
           $minutes_that_site_avasarala_in_is_offline += $minutes_timer;
 
           // rewrite timer accumulated value for later recall
           set_transient( 'minutes_that_site_avasarala_in_is_offline', $minutes_that_site_avasarala_in_is_offline, 10 * 60 );
 
-          if ( $minutes_that_site_avasarala_in_is_offline > 15 )
-          { // Site offline for at least 15m
+          if ( $minutes_that_site_avasarala_in_is_offline > 60 )
+          { // Site offline for at least 15m as each tick is about 1/4 min
             error_log( "Avasarala site is down for the at least - $minutes_that_site_avasarala_in_is_offline minutes");
 
             // check elsewhere if the soc is also low. If so switch on the Shelly 1PM ACIN switch elsewhere

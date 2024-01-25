@@ -2518,43 +2518,42 @@ class class_transindus_eco
           error_log("Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
         }
 
-        { // LVDS only if avasarala.in site is down and local soc measurement is low
-          $site_avasarala_in_is_online = $this->check_if_site_avasarala_in_is_online();
-
-          if ( $site_avasarala_in_is_online )
-          {
-            //reset the offline time counter to 0
-            $time_site_is_offline = 0;
-
-            // set transient for timer accumulation
-            set_transient( 'time_site_is_offline', $time_site_is_offline, 10 * 60 );
-          }
-          else
-          {
-            // site is now offline - get timer for accumulated value
-            $time_site_is_offline = get_transient( 'time_site_is_offline') ?? 0;
-
-            $time_site_is_offline += 15;  // add 15s to accumulate this iteration
-
-            // rewrite timer accumulated value for later recall
-            set_transient( 'time_site_is_offline', $time_site_is_offline, 10 * 60 );
-
-            // timer will be automatically reset to 0 once site comes back online
-
-            if ( $time_site_is_offline > 15 * 60 && $soc_percentage_now < 35 )
-            { // Site offline very long and locally measured SOC is low
-              error_log( "Avasarala site is down since past - $time_site_is_offline Secs and SOC is Low: $time_site_is_offline ");
-              // switch Shelly AC IN Grid Switch ON
-            }
-
-            
-          }
-        }
-
         $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;
         $shelly_readings_obj->soc_update_method   = $soc_update_method;
 
-        error_log("Batt(A): $battery_amps, SOC midnight: $soc_percentage_at_midnight_display, SOC Accumulated: $battery_soc_since_midnight_display, SOC Now: $soc_percentage_now");
+        $soc_percentage_now_display = round( $soc_percentage_now, 1);
+
+        { // LVDS only if avasarala.in site is down for long and local soc measurement is low
+          if (  $soc_percentage_now < 50 )
+          {
+            $main_control_site_avasarala_is_offline_for_long = $this->check_if_main_control_site_avasarala_is_offline_for_long();
+
+            if (  $main_control_site_avasarala_is_offline_for_long  && 
+                  $soc_percentage_now < 35                          &&
+                  $$helly1pm_acin_switch_status !== "ON"            &&
+                  $control_shelly === true                              )
+            {
+              // local command to turn ON Shelly 1PM Grid Switch
+              error_log("Main control site is down for more than 15m and SOC ls low, commanded to turn ON Shelly 1PM Grid switch");
+            }
+          }
+          
+        }
+
+        { // switch release if control site is down for long and it is daylight and soc is above limit and Grid switch is ON still
+          if (  $main_control_site_avasarala_is_offline_for_long  && 
+                $soc_percentage_now > 50                          &&
+                $$helly1pm_acin_switch_status === "ON"            &&
+                $control_shelly === true                              )
+          {
+            // local command to turn OFF Shelly 1PM Grid Switch
+          }
+
+        }
+
+        
+
+        error_log("Batt(A): $battery_amps, SOC midnight: $soc_percentage_at_midnight_display, SOC Accumulated: $battery_soc_since_midnight_display, SOC Now: $soc_percentage_now_display");
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );
@@ -2567,9 +2566,63 @@ class class_transindus_eco
     /**
      * 
      */
-    public function check_if_site_avasarala_in_is_online() : bool
+    public function check_if_main_control_site_avasarala_is_offline_for_long() : bool
     {
-      return true;
+      // get the transient value of minutes timer
+      $minutes_timer = round( (float) get_transient( 'minutes_timer') ?? 0, 1);
+
+      // increment counter by 1/4 minute for this iteration
+      $minutes_timer += 0.25;
+
+      // update transient value of counter for next check
+      set_transient( 'minutes_timer', $minutes_timer, 10 * 60 );
+
+      if ( (int) $minutes_timer >= 1 )
+      { // every 1 minutes do this check
+        $fp = fsockopen("www.avasarala.in", 80, $errno, $errstr, 5);
+
+        if ( $fp )
+        { // control site is up reset counter and return alse
+          // connection was open
+          fclose($fp);
+
+          $this->verbose ?  error_log("control site www.avasarala.in is reacheale from home, no need for intervention"): false;
+
+          set_transient( 'minutes_that_site_avasarala_in_is_offline', 0, 10 * 60 );
+
+          // control site being offline is false
+          return false;
+        }
+        else
+        { // connection not open
+          // echo "$errstr ($errno)<br />\n";
+          error_log("control site www.avasarala.in is NOT reachable, so local intervention may be required");
+          error_log("This is the error message: $errstr ($errno)");
+
+          // close the connection
+          fclose($fp);
+
+          // get timer for accumulated value
+          $minutes_that_site_avasarala_in_is_offline = (float) get_transient( 'minutes_that_site_avasarala_in_is_offline') ?? 0;
+
+          $minutes_that_site_avasarala_in_is_offline += $minutes_timer;
+
+          // rewrite timer accumulated value for later recall
+          set_transient( 'minutes_that_site_avasarala_in_is_offline', $minutes_that_site_avasarala_in_is_offline, 10 * 60 );
+
+          if ( $minutes_that_site_avasarala_in_is_offline > 15 )
+          { // Site offline for at least 15m
+            error_log( "Avasarala site is down for the at least - $minutes_that_site_avasarala_in_is_offline minutes");
+
+            // check elsewhere if the soc is also low. If so switch on the Shelly 1PM ACIN switch elsewhere
+            return true;
+          }
+        }
+      }
+      else
+      {
+        return false;
+      }
     }
 
 

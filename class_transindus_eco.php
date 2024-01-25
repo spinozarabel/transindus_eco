@@ -2438,6 +2438,9 @@ class class_transindus_eco
               $soc_percentage_now_using_dark_shelly = (float) get_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  true);
 
               $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
+
+              $soc_update_method = "shelly-after-dark";
+              $soc_percentage_now = $soc_percentage_now_using_dark_shelly;
             }
             else
             { // Inverter is supplying the home since the power from Grid is <= 0.1KW as measured by Shelly 3EM

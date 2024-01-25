@@ -2524,19 +2524,18 @@ class class_transindus_eco
         $soc_percentage_now_display = round( $soc_percentage_now, 1);
 
         { // LVDS only if avasarala.in site is down for long and local soc measurement is low
-          if (  $soc_percentage_now < 50 )
-          {
-            $main_control_site_avasarala_is_offline_for_long = $this->check_if_main_control_site_avasarala_is_offline_for_long();
+        
+          $main_control_site_avasarala_is_offline_for_long = $this->check_if_main_control_site_avasarala_is_offline_for_long();
 
-            if (  $main_control_site_avasarala_is_offline_for_long  && 
-                  $soc_percentage_now < 35                          &&
-                  $$helly1pm_acin_switch_status !== "ON"            &&
-                  $control_shelly === true                              )
-            {
-              // local command to turn ON Shelly 1PM Grid Switch
-              error_log("Main control site is down for more than 15m and SOC ls low, commanded to turn ON Shelly 1PM Grid switch");
-            }
+          if (  $main_control_site_avasarala_is_offline_for_long  && 
+                $soc_percentage_now < 35                          &&
+                $$helly1pm_acin_switch_status !== "ON"            &&
+                $control_shelly === true                              )
+          {
+            // local command to turn ON Shelly 1PM Grid Switch
+            error_log("Main control site is down for more than 15m and SOC ls low, commanded to turn ON Shelly 1PM Grid switch");
           }
+          
           
         }
 

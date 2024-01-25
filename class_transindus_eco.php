@@ -2546,6 +2546,7 @@ class class_transindus_eco
                 $control_shelly === true                              )
           {
             // local command to turn OFF Shelly 1PM Grid Switch
+            error_log("Main control site is down for more than 15m and SOC ls high, commanded to turn OFF Shelly 1PM Grid switch");
           }
 
         }
@@ -2585,7 +2586,7 @@ class class_transindus_eco
           // connection was open
           fclose($fp);
 
-          $this->verbose ?  error_log("control site www.avasarala.in is reacheale from home, no need for intervention"): false;
+          error_log("control site www.avasarala.in is reacheale from home, no need for intervention");
 
           set_transient( 'minutes_that_site_avasarala_in_is_offline', 0, 10 * 60 );
 

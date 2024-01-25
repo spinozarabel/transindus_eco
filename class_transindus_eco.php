@@ -2577,7 +2577,7 @@ class class_transindus_eco
       // update transient value of counter for next check
       set_transient( 'minutes_timer', $minutes_timer, 10 * 60 );
 
-      if ( (int) $minutes_timer >= 1 )
+      if ( $minutes_timer >= 1 )
       { // every 1 minutes do this check
         $fp = fsockopen("www.avasarala.in", 80, $errno, $errstr, 5);
 
@@ -2589,6 +2589,8 @@ class class_transindus_eco
           error_log("control site www.avasarala.in is reacheale from home, no need for intervention");
 
           set_transient( 'minutes_that_site_avasarala_in_is_offline', 0, 10 * 60 );
+
+          set_transient( 'minutes_timer', 0, 10 * 60 );
 
           // control site being offline is false
           return false;

@@ -2553,7 +2553,7 @@ class class_transindus_eco
 
         
 
-        error_log("Batt(A): $battery_amps, SOC midnight: $soc_percentage_at_midnight_display, SOC Accumulated: $battery_soc_since_midnight_display, SOC Now: $soc_percentage_now_display");
+        error_log("Batt(A): $battery_amps, SOC midnight: $soc_percentage_at_midnight_display, SOC Accumulated: $battery_soc_since_midnight_display, Grid Switch: $helly1pm_acin_switch_status, SOC Now: $soc_percentage_now_display");
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );

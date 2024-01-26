@@ -2242,7 +2242,7 @@ class class_transindus_eco
           $shelly1pm_acin_current           = $shelly_switch_acin_details_arr['shelly1pm_acin_current'];
           $shelly1pm_acin_power_kw          = $shelly_switch_acin_details_arr['shelly1pm_acin_power_kw'];
 
-          error_log("Shelly 1PM AC IN switch: Status: $shelly1pm_acin_switch_status, AC Voltage: $shelly1pm_acin_voltage");
+          // error_log("Shelly 1PM AC IN switch: Status: $shelly1pm_acin_switch_status, AC Voltage: $shelly1pm_acin_voltage");
         }
 
         
@@ -2529,7 +2529,7 @@ class class_transindus_eco
 
           if (  $main_control_site_avasarala_is_offline_for_long  && 
                 $soc_percentage_now < 35                          &&
-                $$helly1pm_acin_switch_status !== "ON"            &&
+                $shelly1pm_acin_switch_status !== "ON"            &&
                 $control_shelly === true                              )
           {
             // local command to turn ON Shelly 1PM Grid Switch
@@ -2553,7 +2553,7 @@ class class_transindus_eco
 
         
 
-        error_log("Batt(A): $battery_amps, SOC midnight: $soc_percentage_at_midnight_display, SOC Accumulated: $battery_soc_since_midnight_display, Grid Switch: $helly1pm_acin_switch_status, SOC Now: $soc_percentage_now_display");
+        error_log("Batt(A): $battery_amps, SOC midnight: $soc_percentage_at_midnight_display, SOC Accumulated: $battery_soc_since_midnight_display, Grid Switch: $shelly1pm_acin_switch_status, SOC Now: $soc_percentage_now_display");
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );

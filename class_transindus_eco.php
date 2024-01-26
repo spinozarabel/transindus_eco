@@ -2371,7 +2371,8 @@ class class_transindus_eco
               $shelly_readings_obj->shelly_em_home_kw = $shelly_em_readings_object->shelly_em_home_kw;
               
               // present AC RMS phase voltage at panel, after Studer output
-              $shelly_readings_obj->shelly_em_home_voltage = $shelly_em_readings_object->shelly_em_home_voltage;
+              $shelly_em_home_voltage = $shelly_em_readings_object->shelly_em_home_voltage;
+              $shelly_readings_obj->shelly_em_home_voltage = $shelly_em_home_voltage;
 
               // Energy consumed in WH by home since midnight
               $shelly_readings_obj->shelly_em_home_wh_since_midnight = $shelly_em_readings_object->shelly_em_home_wh_since_midnight;
@@ -2553,7 +2554,7 @@ class class_transindus_eco
 
         
 
-        error_log("Batt(A): $battery_amps, SOC midnight: $soc_percentage_at_midnight_display, SOC Accumulated: $battery_soc_since_midnight_display, Grid Switch: $shelly1pm_acin_switch_status, SOC Now: $soc_percentage_now_display");
+        error_log("Batt(A): $battery_amps, SOC midnight: $soc_percentage_at_midnight_display, SOC Accumulated: $battery_soc_since_midnight_display, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, SOC Now: $soc_percentage_now_display");
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );

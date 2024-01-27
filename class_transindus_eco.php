@@ -1896,13 +1896,13 @@ class class_transindus_eco
       $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
 
       // get webpshr subscriber id for this user
-      $webpushr_subscriber_id = $all_usermeta['webpushr_subscriber_id'];
+      // $webpushr_subscriber_id = $all_usermeta['webpushr_subscriber_id'];
 
       // Webpushr Push notifications API Key
-      $webpushrKey            = $this->config['accounts'][$user_index]['webpushrKey'];
+      // $webpushrKey            = $this->config['accounts'][$user_index]['webpushrKey'];
 
       // Webpushr Token
-      $webpushrAuthToken      = $this->config['accounts'][$user_index]['webpushrAuthToken'];
+      // $webpushrAuthToken      = $this->config['accounts'][$user_index]['webpushrAuthToken'];
 
       // pump_duration_secs_max
       $pump_duration_secs_max           = $all_usermeta['pump_duration_secs_max'];

@@ -659,6 +659,7 @@ class class_transindus_eco
 
 
     /**
+     *  LEGACY - NOT USED HERE
      *  @param float:energy_total_to_home_ts is the total energy measured by Shelly4PM energy meter upto this point
      *  @param int:user_index
      *  @param int:wp_user_ID
@@ -1195,8 +1196,10 @@ class class_transindus_eco
         // Convert Volts to Amps using the value above. SUbtract an offest of 8A noticed, probably due to DC offset
         $battery_amps_raw_measurement = ($delta_voltage / $volts_per_amp);
 
-        // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign.
-        $battery_amps = -1.0 * round( $battery_amps_raw_measurement, 1);
+        // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign and educe the current by 5%
+        // This is because the battery SOC numbers tend about 4 points more from about a value of 40% which indicates about 10^ over measurement
+        // so to be conservative we are using a 5% reduction to see if this corrects the tendency.
+        $battery_amps = -1.0 * round( $battery_amps_raw_measurement * 0.95, 1);
 
         // get the previous reading's timestamp from transient. If transient doesnt exist set the value to current measurement
         $previous_timestamp = get_transient( 'timestamp_battery_last_measurement' ) ?? $timestamp;
@@ -1817,7 +1820,7 @@ class class_transindus_eco
     /**
      *  Assumes pump is channel 0 of the Shelly Pro 4PM supplying the entire Home Load
      */
-    public function turn_pump_on_off( int $user_index, string $desired_state ) : bool
+    public function turn_pump_on_off_over_lan( int $user_index, string $desired_state ) : bool
     {
         // get the config array from the object properties
         $config = $this->config;
@@ -1916,17 +1919,20 @@ class class_transindus_eco
       // set default timezone
       date_default_timezone_set("Asia/Kolkata");
 
+      // Is the pump enabled or not?
       $power_to_pump_is_enabled = $shelly_4pm_readings_object->pump_switch_status_bool;
 
+      // Pump power consumption in watts
       $pump_power_watts = (int) round(  $shelly_4pm_readings_object->power_to_pump_kw * 1000, 0 );
 
+      // determine if pump is drawing power or not
       $pump_is_drawing_power = ( $pump_power_watts > 50 );
 
       // if we are here it means pump is ON or power is disabled
       // check if required transients exist
       if ( false === ( $pump_already_ON = get_transient( 'pump_already_ON' ) ) )
       {
-        // the transient does NOT exist so lets initialize the transients valid for 12 hours
+        // the transient does NOT exist so lets initialize the transients to state that pump is OFF
         // This happens rarely, when transients get wiped out or 1st time code is run
         set_transient( 'pump_already_ON', 0,  3600 );
 
@@ -1945,13 +1951,13 @@ class class_transindus_eco
 
       switch (true)
       {
-        // pump power is Enabled by Shelly 4PM but pump is OFF due to controller
+        // pump power is Enabled by Shelly 4PM but pump is OFF due to tank level controller
         case ( ! $pump_is_drawing_power && $power_to_pump_is_enabled ):
 
           // Check to see if pump just got auto turned OFF by pump controller  as it normally should when tank is full
           if ( ! empty( $pump_already_ON ) )
           {
-            // reset the transient so next time it wont come here
+            // reset the transient so next time it wont come here due to above if condition
             set_transient( 'pump_already_ON', 0,  3600 );
 
             // calculate pump ON duration time. This will be used for notifications
@@ -1974,7 +1980,7 @@ class class_transindus_eco
 
             $this->verbose ? error_log("Pump ON for: $pump_ON_duration_secs Seconds") : false;
 
-            // set pump start time as curreny time stamp. So the duration will be small from now on
+            // set pump start time as current time stamp. So the duration will be small from now on
             set_transient( 'timestamp_pump_ON_start',  $timestamp,  1 * 60 * 60 );
 
             $notification_title = "Pump Auto OFF";
@@ -1986,7 +1992,7 @@ class class_transindus_eco
           }
           else
           {
-            // Pump is OFF long back so we just need to reset the transients
+            // Pump was OFF long back so we just need to reset the transients
             set_transient( 'pump_already_ON', 0,  3600 );
 
             $now = new DateTime();
@@ -2055,17 +2061,18 @@ class class_transindus_eco
           $this->verbose ? error_log("Pump ON for: $pump_ON_duration_secs Seconds") : false;
 
           // if pump ON duration is more than 1h then switch the pump power OFF in Shelly 4PM channel 0
-          if ( $pump_ON_duration_secs > 3600 )
+          if ( $pump_ON_duration_secs > 3600 && $this->check_if_main_control_site_avasarala_is_offline_for_long() && $pump_duration_control)
           {
-            // turn shelly power for pump OFF and update transients
-            $status_turn_pump_off = $this->turn_pump_on_off( $user_index, 'off' );
+            // turn shelly power for pump OFF and update transients but only if control site is offline for more than 15m
+            $status_turn_pump_off = $this->turn_pump_on_off_over_lan( $user_index, 'off' );
+
 
             $pump_notification_count = get_transient( 'pump_notification_count' );
 
             if ( $status_turn_pump_off )
             {
               // the pump was tuneed off per status
-              $this->verbose ? error_log("Pump turned OFF after duration of: $pump_ON_duration_secs Seconds") : false;
+              error_log("Pump turned OFF after duration of: $pump_ON_duration_secs Seconds");
 
               // pump is not ON anymore so set the flag to false
               set_transient( 'pump_already_ON', 0, 12 * 3600 );
@@ -2097,9 +2104,9 @@ class class_transindus_eco
               if ( empty( $pump_notification_count ) )
               {
                 // the pump was ordered to turn off but it did not
-                $this->verbose ? error_log("Problem - Pump could NOT be turned OFF after duration of: $pump_ON_duration_secs Seconds") : false;
+                error_log("Problem - Pump could NOT be turned OFF after duration of: $pump_ON_duration_secs Seconds");
                 
-                $notification_title = "Pump OFF problem";
+                $notification_title   = "Pump OFF problem";
                 $notification_message = "Tank maybe overflowing!";
                 /*
                 $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
@@ -2126,12 +2133,21 @@ class class_transindus_eco
 
           $pump_OFF_duration_secs = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 );
 
-          if ( $pump_OFF_duration_secs >= 120 && $pump_OFF_duration_secs <= 360 )
+          if ( $pump_OFF_duration_secs >= 120 && $pump_OFF_duration_secs <= 360 && $pump_duration_control )
           {
             // turn the shelly 4PM pump control back ON after 2m
-            $status_turn_pump_on = $this->turn_pump_on_off( $user_index, 'on' );
+            $status_turn_pump_on = $this->turn_pump_on_off_over_lan( $user_index, 'on' );
 
-            $this->verbose ? error_log("Pump turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF"): false;
+            if ( ! $status_turn_pump_on )
+            {
+              error_log("Pump could NOT be turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF - investigate");
+            }
+            else
+            {
+              error_log("Pump turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF");
+            }
+
+            
 
             $notification_title = "Pump Pwr Back ON";
             $notification_message = "Pump Power back ON";
@@ -2553,6 +2569,8 @@ class class_transindus_eco
 
         }
 
+        $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object );
+
         
 
         error_log("Batt(A): $battery_amps, SOC_0: $soc_percentage_at_midnight_display, SOC Acc: $battery_soc_since_midnight_display, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, SOC: $soc_percentage_now_display");
@@ -2570,21 +2588,21 @@ class class_transindus_eco
      */
     public function check_if_main_control_site_avasarala_is_offline_for_long() : bool
     {
-      // get the transient value of minutes timer
+      // get the transient value of minutes timer. This should really be called iteration counter
       $minutes_timer = (int) get_transient( 'minutes_timer') ?? 0;
 
       // increment counter by 1 for this iteration
       $minutes_timer += 1;
 
-      // update transient value of counter for next check
+      // update transient value of iteration counter for next check
       set_transient( 'minutes_timer', $minutes_timer, 10 * 60 );
 
       if ( $minutes_timer >= 5 )
-      { // about every 1 minutes do this check
+      { // For every 5 iterations or about 1 min, do this internet check
         $fp = fsockopen("www.avasarala.in", 80, $errno, $errstr, 5);
 
         if ( $fp )
-        { // control site is up reset counter and return alse
+        { // control site is up so reset iteration counter and return false
           // connection was open
           fclose($fp);
 
@@ -2615,10 +2633,9 @@ class class_transindus_eco
           set_transient( 'minutes_that_site_avasarala_in_is_offline', $minutes_that_site_avasarala_in_is_offline, 10 * 60 );
 
           if ( $minutes_that_site_avasarala_in_is_offline > 60 )
-          { // Site offline for at least 15m as each tick is about 1/4 min
-            error_log( "Avasarala site is down for the at least - $minutes_that_site_avasarala_in_is_offline minutes");
+          { // Site offline for 60 iterations or about 15m as each tick is about 1/4 of a minute
+            error_log( "Avasarala site is down for about - $minutes_that_site_avasarala_in_is_offline continuous loops");
 
-            // check elsewhere if the soc is also low. If so switch on the Shelly 1PM ACIN switch elsewhere
             return true;
           }
         }

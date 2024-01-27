@@ -2571,9 +2571,11 @@ class class_transindus_eco
 
         $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object );
 
+        $pump_ON_duration_secs = $shelly_4pm_readings_object->pump_ON_duration_secs;
+
         
 
-        error_log("Batt(A): $battery_amps, SOC_0: $soc_percentage_at_midnight_display, SOC Acc: $battery_soc_since_midnight_display, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, SOC: $soc_percentage_now_display");
+        error_log("Batt(A): $battery_amps, SOC_0: $soc_percentage_at_midnight_display, SOC Acc: $battery_soc_since_midnight_display, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, pump ON for: $pump_ON_duration_secs, SOC: $soc_percentage_now_display");
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );

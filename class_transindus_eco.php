@@ -2573,9 +2573,19 @@ class class_transindus_eco
 
         $pump_ON_duration_secs = $shelly_4pm_readings_object->pump_ON_duration_secs;
 
+        $shelly_water_heater_data       = $this->get_shelly_device_status_water_heater_over_lan($user_index);
+
+        if ( $shelly_water_heater_data )
+        {
+          $shelly_water_heater_status_ON  = $shelly_water_heater_data->shelly_water_heater_status_ON;
+          $shelly_water_heater_voltage    = $shelly_water_heater_data->shelly_water_heater_voltage;
+          $shelly_water_heater_kw         = $shelly_water_heater_data->shelly_water_heater_kw;
+
+          $shelly_readings_obj->shelly_water_heater_data = $shelly_water_heater_data;
+        }
         
 
-        error_log("Batt(A): $battery_amps, SOC_0: $soc_percentage_at_midnight_display, SOC Acc: $battery_soc_since_midnight_display, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, pump ON for: $pump_ON_duration_secs, SOC: $soc_percentage_now_display");
+        error_log("Batt(A): $battery_amps, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, pump ON for: $pump_ON_duration_secs, Water Heater: $shelly_water_heater_status_ON, SOC: $soc_percentage_now_display");
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );
@@ -3863,7 +3873,10 @@ class class_transindus_eco
     }
 
 
-    public function get_shelly_device_status_water_heater(int $user_index): ? object
+    /**
+     * 
+     */
+    public function get_shelly_device_status_water_heater_over_lan(int $user_index): ? object
     {
       // get API and device ID from config based on user index
       $config = $this->config;
@@ -3884,7 +3897,7 @@ class class_transindus_eco
         return null;
       }
       else 
-      {  // Switch is ONLINE - Get its status, VOltage, and Power
+      {  // Switch is ONLINE - Get its status, Voltage, and Power
           // switch ON is true OFF is false boolean variable
           $shelly_water_heater_status         = $shelly_api_device_response->{'switch:0'}->output;
           
@@ -4837,6 +4850,7 @@ class class_transindus_eco
 
         // Get Cron Exit COndition from User Meta and its time stamo
         $json_cron_exit_condition_user_meta = get_user_meta( $wp_user_ID, 'readings_object', true );
+
         // decode the JSON encoded string into an Object
         $cron_exit_condition_user_meta_arr = json_decode($json_cron_exit_condition_user_meta, true);
 

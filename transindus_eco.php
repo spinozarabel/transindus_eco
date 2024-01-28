@@ -74,18 +74,6 @@ function this_plugin_init()
     // add_action('init','custom_login');
     // add action to load the javascripts on non-admin page
     add_action( 'wp_enqueue_scripts', 'add_my_scripts' );
-
-    /*
-    $soc_shelly_over_lan = new class_transindus_eco();
-
-    while ( true )
-    {
-        $soc_shelly_over_lan->shellystuder_cron_exec();
-
-        sleep(15);
-    }
-    */
-    
 }
 
 

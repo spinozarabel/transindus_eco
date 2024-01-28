@@ -1378,6 +1378,7 @@ class class_transindus_eco
       // Blue phase of RYB is assigned to home so this corresponds to c phase of abc
       $home_total_act_energy_string  = "c_total_act_energy"; 
       $home_act_power_string         = "c_act_power";
+      $home_voltage_string               = "c_voltage";
 
       // Yellow phase of RYB is assigned to car charger so this corresponds to b phase of abc sequence
       $car_charger_total_act_energy_string  = "b_total_act_energy";
@@ -1440,6 +1441,8 @@ class class_transindus_eco
         $home_grid_w_power           = $shelly_api_device_response->{"em:0"}->$home_act_power_string;
         $home_grid_kw_power          = round( 0.001 * $home_grid_w_power, 3);
 
+        $home_grid_voltage           = $shelly_api_device_response->{"em:0"}->$home_voltage_string;
+
         // get energy counter value and power values of phase supplying car charger, assumed b or Y phase
         $car_charger_grid_wh_counter_now  = $shelly_api_device_response->{"emdata:0"}->$car_charger_total_act_energy_string;
         $car_charger_grid_w_power         = $shelly_api_device_response->{"em:0"}->$car_charger_act_power_string;
@@ -1457,6 +1460,8 @@ class class_transindus_eco
 
         $shelly_3p_grid_energy_measurement_obj->home_grid_kw_power         = $home_grid_kw_power;
         $shelly_3p_grid_energy_measurement_obj->car_charger_grid_kw_power  = $car_charger_grid_kw_power;
+
+        $shelly_3p_grid_energy_measurement_obj->home_grid_voltage         = $home_grid_voltage;
 
         $shelly_3p_grid_energy_measurement_obj->home_grid_wh_accumulated_since_midnight   = $home_grid_wh_accumulated_since_midnight;
         $shelly_3p_grid_energy_measurement_obj->home_grid_kwh_accumulated_since_midnight  = $home_grid_kwh_accumulated_since_midnight;
@@ -2300,6 +2305,7 @@ class class_transindus_eco
             $shelly_readings_obj->home_grid_wh_counter_now          = $home_grid_wh_counter_now;
             $shelly_readings_obj->car_charger_grid_wh_counter_now   = $car_charger_grid_wh_counter_now;
             $shelly_readings_obj->home_grid_kw_power                = $home_grid_kw_power;
+            $shelly_readings_obj->home_grid_voltage                 = $home_grid_voltage;
             $shelly_readings_obj->car_charger_grid_kw_power         = $car_charger_grid_kw_power;
 
             $shelly_readings_obj->home_grid_wh_accumulated_since_midnight    = $home_grid_wh_accumulated_since_midnight;
@@ -2331,7 +2337,9 @@ class class_transindus_eco
               $shelly_readings_obj->total_to_west_panel_ratio = $total_to_west_panel_ratio;
 
               $shelly_readings_obj->battery_capacity_ah       = $battery_capacity_ah;
-              $shelly_readings_obj->battery_amps              = $shelly_battery_measurement_object->battery_amps;
+              $shelly_readings_obj->battery_amps              = $battery_amps;  
+              $shelly_readings_obj->battery_power_kw          = round( 49.8 * 0.001 * $battery_amps, 3 );
+
 
               $shelly_readings_obj->battery_accumulated_ah_since_midnight             = $battery_accumulated_ah_since_midnight;
               $shelly_readings_obj->battery_soc_percentage_accumulated_since_midnight = $battery_soc_percentage_accumulated_since_midnight;
@@ -2583,6 +2591,20 @@ class class_transindus_eco
 
           $shelly_readings_obj->shelly_water_heater_data = $shelly_water_heater_data;
         }
+
+        // Since we calculate Psolar indirectly, that depends on conditions as below
+        if ($it_is_still_dark)
+        { // solar power is 0 as it is still dark
+          $shelly_readings_obj->psolar_kw = 0;
+        }
+        elseif ( $shelly_switch_status == "OFF" && ! $it_is_still_dark )
+        { // As it is daylight, solar is rpovising both battery charge and home load. Note that battery power can be negative
+          $shelly_readings_obj->psolar_kw = ($shelly_readings_obj->battery_power_kw + 1.07 * $shelly_em_home_kw) / 0.96;
+        }
+        elseif ( $shelly_switch_status == "ON" && ! $it_is_still_dark )
+        { // Grid is supplying the load so all of solar supplies the battery charging power
+          $shelly_readings_obj->psolar_kw = $shelly_readings_obj->battery_power_kw  / 0.96;
+        }
         
         $log_string = "";
         $log_string .= "Batt(A): " . number_format($battery_amps, 1) . " Grid: " . $shelly1pm_acin_switch_status;
@@ -2624,7 +2646,7 @@ class class_transindus_eco
           // connection was open
           fclose($fp);
 
-          error_log("control site www.avasarala.in is reacheale from home, no need for intervention");
+          // error_log("control site www.avasarala.in is reacheale from home, no need for intervention");
 
           set_transient( 'minutes_that_site_avasarala_in_is_offline', 0, 10 * 60 );
 
@@ -4544,6 +4566,9 @@ class class_transindus_eco
 
         $soc_update_method = get_transient( 'soc_update_method' );
 
+        // last time when the battery was measured
+        $previous_timestamp = get_transient("timestamp_battery_last_measurement");
+
         // Initialize object to be returned
         $format_object  = new stdClass();
 
@@ -4553,33 +4578,35 @@ class class_transindus_eco
         $shelly_water_heater_status   = $shelly_water_heater_data->shelly_water_heater_status;  // boolean variable
         $shelly_water_heater_current  = $shelly_water_heater_data->shelly_water_heater_current; // in Amps
 
-        $psolar_kw              =   round($readings_obj->psolar_kw, 2) ?? 0;
-        $solar_pv_adc           =   $readings_obj->solar_pv_adc ?? 0;
+        // solar power calculated from Shelly measurements of battery Grid and Load
+        $psolar_kw              =   round($readings_obj->psolar_kw, 2);
 
-        $pout_inverter_ac_kw    =   $readings_obj->pout_inverter_ac_kw;
+      // approximate solar current into battery
+        $solar_amps_at_49V      =   round($psolar_kw/48.9, 1);
+
+        // 
+        $shelly_em_home_kw          =   $readings_obj->shelly_em_home_kw;
 
         // changed to avg July 15 2023 was battery_voltage_vdc before that
-        $battery_voltage_vdc    =   round( (float) $readings_obj->battery_voltage_avg, 1);
+        // $battery_voltage_vdc    =   round( (float) $readings_obj->battery_voltage_avg, 1);
 
         // Positive is charging and negative is discharging
-        $battery_charge_adc     =   $readings_obj->battery_charge_adc;
+        $battery_amps           =   $readings_obj->battery_amps;
 
-        $pbattery_kw            = abs(round($readings_obj->pbattery_kw, 2));
+        $battery_power_kw       = abs(round($readings_obj->battery_power_kw, 2));
 
-        $grid_pin_ac_kw         =   $readings_obj->grid_pin_ac_kw;
-        $grid_input_vac         =   $readings_obj->grid_input_vac;
+        $home_grid_kw_power     =   $readings_obj->home_grid_kw_power;
+        $home_grid_voltage      =   $readings_obj->home_grid_voltage;
 
         $shelly_api_device_status_ON      = $readings_obj->shelly_api_device_status_ON;
 
         // This is the AC voltage of switch:0 of Shelly 4PM
         $shelly_api_device_status_voltage = $readings_obj->shelly_api_device_status_voltage;
 
-        $SOC_percentage_now = round($readings_obj->SOC_percentage_now, 1);
-
-        $soc_percentage_now_using_dark_shelly = round($readings_obj->soc_percentage_now_using_dark_shelly, 1);
+        $soc_percentage_now = round($readings_obj->soc_percentage_now, 1);
 
         // If power is flowing OR switch has ON status then show CHeck and Green
-        $grid_arrow_size = $this->get_arrow_size_based_on_power($grid_pin_ac_kw);
+        $grid_arrow_size = $this->get_arrow_size_based_on_power($home_grid_kw_power);
 
         switch (true)
         {   // choose grid icon info based on switch status
@@ -4599,8 +4626,8 @@ class class_transindus_eco
                 $grid_arrow_icon  = '<i class="fa-solid' . $grid_arrow_size .  'fa-arrow-right-long fa-rotate-by"
                                                                                   style="--fa-rotate-angle: 45deg;">
                                     </i>';
-                $grid_info = '<span style="font-size: 18px;color: Red;"><strong>' . $grid_pin_ac_kw . 
-                              ' KW</strong><br>' . $shelly_api_device_status_voltage . ' V</span>';
+                $grid_info = '<span style="font-size: 18px;color: Red;"><strong>' . $home_grid_kw_power . 
+                              ' KW</strong><br>' . $home_grid_voltage . ' V</span>';
                 break;
 
 
@@ -4609,8 +4636,8 @@ class class_transindus_eco
 
                 $grid_arrow_icon = ''; //'<i class="fa-solid fa-1x fa-circle-xmark"></i>';
     
-                $grid_info = '<span style="font-size: 18px;color: Red;">' . $grid_pin_ac_kw . 
-                        ' KW<br>' . $shelly_api_device_status_voltage . ' V</span>';
+                $grid_info = '<span style="font-size: 18px;color: Red;">' . $home_grid_kw_power . 
+                        ' KW<br>' . $home_grid_voltage . ' V</span>';
                 break;
 
             default:  
@@ -4635,12 +4662,12 @@ class class_transindus_eco
                                                                            style="--fa-rotate-angle: 45deg;
                                                                                               color: Green;"></i>';
             $psolar_info =  '<span style="font-size: 18px;color: Green;"><strong>' . $psolar_kw . 
-                            ' KW</strong><br>' . $solar_pv_adc . ' A</span>';
+                            ' KW</strong><br>' . $solar_amps_at_49V . ' A</span>';
         }
         else {
             $pv_arrow_icon = ''; //'<i class="fa-solid fa-1x fa-circle-xmark"></i>';
             $psolar_info =  '<span style="font-size: 18px;">' . $psolar_kw . 
-                            ' KW<br>' . $solar_pv_adc . ' A</span>';
+                            ' KW<br>' . $solar_amps_at_49V . ' A</span>';
         }
 
         $pv_panel_icon =  '<span style="color: Green;">
@@ -4672,26 +4699,26 @@ class class_transindus_eco
         // battery status icon: select battery icon based on charge level
         switch(true)
         {
-            case ($SOC_percentage_now < 25):
+            case ($soc_percentage_now < 25):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-empty";
             break;
 
-            case ($SOC_percentage_now >= 25 &&
-                  $SOC_percentage_now <  37.5 ):
+            case ($soc_percentage_now >= 25 &&
+                  $soc_percentage_now <  37.5 ):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-quarter";
             break;
 
-            case ($SOC_percentage_now >= 37.5 &&
-                  $SOC_percentage_now <  50 ):
+            case ($soc_percentage_now >= 37.5 &&
+                  $soc_percentage_now <  50 ):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-half";
             break;
 
-            case ($SOC_percentage_now >= 50 &&
-                  $SOC_percentage_now <  77.5):
+            case ($soc_percentage_now >= 50 &&
+                  $soc_percentage_now <  77.5):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-three-quarters";
             break;
 
-            case ($SOC_percentage_now >= 77.5):
+            case ($soc_percentage_now >= 77.5):
               $battery_icon_class = "fa fa-3x fa-solid fa-battery-full";
             break;
         }
@@ -4715,9 +4742,8 @@ class class_transindus_eco
             $battery_color_style = 'greeniconcolor';
 
             // battery info shall be green in color
-            $battery_info =  '<span style="font-size: 18px;color: Green;"><strong>' . $pbattery_kw  . ' KW</strong><br>' 
-                                                                            . abs($battery_charge_adc)  . 'A<br>'
-                                                                            . $battery_voltage_vdc      . ' V<br></span>';
+            $battery_info =  '<span style="font-size: 18px;color: Green;"><strong>' . $battery_power_kw  . ' KW</strong><br>' 
+                                                                            . abs($battery_amps)  . 'A</span>';
         }
         else
         {
@@ -4733,12 +4759,11 @@ class class_transindus_eco
           $battery_color_style = 'rediconcolor';
 
           // battery info shall be red in color
-          $battery_info =  '<span style="font-size: 18px;color: Red;"><strong>' . $pbattery_kw . ' KW</strong><br>' 
-                                                                        . abs($battery_charge_adc)  . 'A<br>'
-                                                                        . $battery_voltage_vdc      . ' V<br></span>';
+          $battery_info =  '<span style="font-size: 18px;color: Red;"><strong>' . $battery_power_kw . ' KW</strong><br>' 
+                                                                        . abs($battery_amps)  . 'A</span>';
         }
 
-        if  ($pbattery_kw < 0.01 ) $battery_arrow_icon = ''; // '<i class="fa-solid fa-1x fa-circle-xmark"></i>';
+        if  ($battery_power_kw < 0.01 ) $battery_arrow_icon = ''; // '<i class="fa-solid fa-1x fa-circle-xmark"></i>';
 
         $format_object->battery_arrow_icon  = $battery_arrow_icon;
 
@@ -4750,7 +4775,7 @@ class class_transindus_eco
         
 
         // Shelly 4PM load breakout data
-        $power_total_to_home = $readings_obj->power_total_to_home;
+        $power_total_to_home    = $readings_obj->power_total_to_home;
         $power_total_to_home_kw = $readings_obj->power_total_to_home_kw; // round( $power_total_to_home * 0.001, 2);
 
         $power_to_home_kw = $readings_obj->power_to_home_kw;
@@ -4854,42 +4879,31 @@ class class_transindus_eco
                                                     <strong>' . $shelly_water_heater_kw . ' KW</strong>
                                                   </span>';
 
-        // Get Cron Exit COndition from User Meta and its time stamo
-        $json_cron_exit_condition_user_meta = get_user_meta( $wp_user_ID, 'readings_object', true );
-
-        // decode the JSON encoded string into an Object
-        $cron_exit_condition_user_meta_arr = json_decode($json_cron_exit_condition_user_meta, true);
-
-        // extract the last condition saved that was NOT a No Action. Add cloudiness and Estimated Solar to message
-        $saved_cron_exit_condition = $cron_exit_condition_user_meta_arr['cron_exit_condition'];
-
         if ( ! empty( $readings_obj->cloudiness_average_percentage_weighted ) )
         {
-          $saved_cron_exit_condition .= " Cloud: " . $readings_obj->cloudiness_average_percentage_weighted . " %";
+          $status .= " Cloud: " . $readings_obj->cloudiness_average_percentage_weighted . " %";
         }
 
         if ( ! empty( $readings_obj->est_solar_kw ) )
         {
-          $saved_cron_exit_condition .= " Pest: " . $readings_obj->est_solar_kw . " KW";
+          $status .= " Pest: " . $readings_obj->est_solar_kw . " KW";
         }
 
-        if ( ! empty( $readings_obj->soc_predicted_at_6am ) )
-        {
-          $saved_cron_exit_condition .= " Est. SOC 6AM: " . $readings_obj->soc_predicted_at_6am . " %";
-        }
         
         
 
         // present time
         $now = new DateTime();
         // timestamp at last measurement exit
-        $past_unixdatetime = $cron_exit_condition_user_meta_arr['unixdatetime'];
+        // $past_unixdatetime = $cron_exit_condition_user_meta_arr['unixdatetime'];
         // get datetime object from timestamp
-        $past = (new DateTime('@' . $past_unixdatetime))->setTimezone(new DateTimeZone("Asia/Kolkata"));
+        $past = (new DateTime('@' . $previous_timestamp))->setTimezone(new DateTimeZone("Asia/Kolkata"));
         // get the interval object
         $interval_since_last_change = $now->diff($past);
         // format the interval for display
         $formatted_interval = $this->format_interval($interval_since_last_change);
+
+        $status .= " " . $formatted_interval;
 
         /*
         $format_object->cron_exit_condition = '<span style="font-size: 18px;color: Blue; display:block; text-align: center;">' . 
@@ -4901,31 +4915,17 @@ class class_transindus_eco
                                               '</span>';
         */
 
-        // we want the SOC display as follows:
-        // When Studer measurements are valid, display Studer SOC along with Studer current measured SOC
-        // When Studer is not valid display Shelly BM SOC in daylight
-        // At night when Studer measurements are not made display Shelly dark and Shelly BM values
-        if ( $soc_update_method === "studer" )
-        {
-          // display normal Studer SOC along with tuder current based SOC
-          $soc_percentage_now_disp = round($SOC_percentage_now, 1) . "-" . $readings_obj->studer_current_based_soc_percentage_now;
-        }
-        elseif ( $soc_update_method === "shelly-after-dark" )
-        {   // display Shelly BM and Shelly after dark values
-          $soc_percentage_now_disp = round($SOC_percentage_now, 1) . "-" . $soc_percentage_now_using_dark_shelly;
-        }
-        elseif ( $soc_update_method === "shelly" )
-        {   // display Shelly BM values only
-          $soc_percentage_now_disp = round($SOC_percentage_now, 1);
-        }
+        
         
         $format_object->soc_percentage_now_html = '<span style="font-size: 20px;color: Blue; display:block; text-align: center;">' . 
-                                                      '<strong>' . $soc_percentage_now_disp  . ' %' . '</strong><br>' .
+                                                      '<strong>' . $soc_percentage_now  . ' %' . '</strong><br>' .
                                                   '</span>';
+        /*
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' .
                                                     $formatted_interval   . ' ' . $saved_cron_exit_condition  . $soc_update_method .
                                                     // $readings_obj->battery_current_comparison . 
                                               '</span>';
+        */
         return $format_object;
     }
 

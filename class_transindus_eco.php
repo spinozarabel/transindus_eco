@@ -4386,26 +4386,15 @@ class class_transindus_eco
       {    // get user_index based on user_name
         $current_user = get_user_by('id', $wp_user_ID);
         $wp_user_name = $current_user->user_login;
-        $user_index   = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ;
+        $user_index   = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ?? 0;
 
         // error_log('from CRON Ajax Call: wp_user_ID:' . $wp_user_ID . ' user_index:'   . $user_index);
       }
 
-      $soc_update_method = get_transient( 'soc_update_method' ) ?? 'shelly';
 
-      // get the transient related to this user ID that stores the latest Readingss - check if from Studer or Shelly
-      // $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
-
-      if ( $soc_update_method === "shelly-after-dark" || $soc_update_method === "shelly" )
-      {
-        $readings_obj = get_transient( 'shelly_readings_obj' );
-      }
-      elseif ( $soc_update_method === "studer" )
-      {
-        $readings_obj = get_transient( 'studer_readings_object' );
-      }
-
-      if ($readings_obj) 
+      
+      // assignment inside conditional check, not an equibvalence operator
+      if ( $readings_obj = get_transient( 'shelly_readings_obj' ) )
       {   // transient exists so we can send it
           
           $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $readings_obj );
@@ -4413,7 +4402,8 @@ class class_transindus_eco
           // send JSON encoded data to client browser AJAX call and then die
           wp_send_json($format_object);
       }
-      else {    // transient does not exist so send null
+      else 
+      {   // transient does not exist so send null
         wp_send_json(null);
       }
     }

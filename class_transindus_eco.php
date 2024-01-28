@@ -2584,8 +2584,14 @@ class class_transindus_eco
           $shelly_readings_obj->shelly_water_heater_data = $shelly_water_heater_data;
         }
         
+        $log_string = "";
+        $log_string .= "Batt(A):" . number_format($battery_amps, 1) . " Grid: " . $shelly1pm_acin_switch_status;
+        $log_string .= " ShellyEM(V): " . number_format($shelly_em_home_voltage, 1) . " Load(KW): " . number_format($shelly_em_home_kw, 3);
+        $log_string .= " pump ON for: " . $pump_ON_duration_secs . "Water Heater: " . $shelly_water_heater_status_ON;
+        $log_string .= "SOC: " . number_format($soc_percentage_now_display, 1);
 
-        error_log("Batt(A): $battery_amps, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, pump ON for: $pump_ON_duration_secs, Water Heater: $shelly_water_heater_status_ON, SOC: $soc_percentage_now_display");
+        // error_log("Batt(A): $battery_amps, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, pump ON for: $pump_ON_duration_secs, Water Heater: $shelly_water_heater_status_ON, SOC: $soc_percentage_now_display");
+        error_log($log_string);
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );

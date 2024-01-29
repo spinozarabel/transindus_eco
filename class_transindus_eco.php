@@ -3511,13 +3511,13 @@ class class_transindus_eco
         // extract the control flag as set in user meta
         $do_shelly  = get_user_meta($wp_user_ID, "do_shelly", true) ?? false;
 
-        // get the Studer status using the minimal set of readings. At night this is the object from the Shelly readings
-        $studer_readings_obj  = $this->get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly);
+        //
+        $readings_obj  = $this->get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly, false);
 
         $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
 
         // check for valid studer values. Return if empty.
-        if( empty(  $studer_readings_obj ) )
+        if( empty(  $readings_obj ) )
         {
             if ( $it_is_still_dark )
             {
@@ -3532,7 +3532,7 @@ class class_transindus_eco
         }
 
         // get the format of all the information for the table in the page
-        $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj );
+        $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $readings_obj );
 
         // define all the icon styles and colors based on STuder and Switch values
         $output .= '

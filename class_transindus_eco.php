@@ -4550,6 +4550,11 @@ class class_transindus_eco
      */
     public function prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $readings_obj )
     {
+        if ( empty($readings_obj))
+        {
+          error_log("Readings object passed into format data is empty");
+          return null;
+        }
         $config         = $this->config;
 
         $soc_update_method = get_transient( 'soc_update_method' );

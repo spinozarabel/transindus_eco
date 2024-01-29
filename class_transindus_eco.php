@@ -3591,7 +3591,7 @@ class class_transindus_eco
         </table>';
 
 
-        $output .= '<div id="cron_exit_condition">'. $status     . '</div>';
+        $output .= '<div id="cron_exit_condition">'. $format_object->status     . '</div>';
 
         return $output;
     }
@@ -4887,9 +4887,6 @@ class class_transindus_eco
           $status .= " Pest: " . $readings_obj->est_solar_kw . " KW";
         }
 
-        
-        
-
         // present time
         $now = new DateTime();
         // timestamp at last measurement exit
@@ -4924,6 +4921,8 @@ class class_transindus_eco
                                                     // $readings_obj->battery_current_comparison . 
                                               '</span>';
         */
+        $format_object->status = $status;
+        
         return $format_object;
     }
 

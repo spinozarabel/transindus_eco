@@ -2597,11 +2597,11 @@ class class_transindus_eco
         { // solar power is 0 as it is still dark
           $shelly_readings_obj->psolar_kw = 0;
         }
-        elseif ( $shelly_switch_status == "OFF" && ! $it_is_still_dark )
+        elseif ( $shelly1pm_acin_switch_status == "OFF" && ! $it_is_still_dark )
         { // As it is daylight, solar is rpovising both battery charge and home load. Note that battery power can be negative
           $shelly_readings_obj->psolar_kw = ($shelly_readings_obj->battery_power_kw + 1.07 * $shelly_em_home_kw) / 0.96;
         }
-        elseif ( $shelly_switch_status == "ON" && ! $it_is_still_dark )
+        elseif ( $shelly1pm_acin_switch_status == "ON" && ! $it_is_still_dark )
         { // Grid is supplying the load so all of solar supplies the battery charging power
           $shelly_readings_obj->psolar_kw = $shelly_readings_obj->battery_power_kw  / 0.96;
         }

@@ -2641,7 +2641,7 @@ class class_transindus_eco
       { // For every 5 iterations or about 1 min, do this internet check
         $fp = fsockopen("www.avasarala.in", 80, $errno, $errstr, 5);
 
-        if ( $fp )
+        if ( $fp !== false )
         { // control site is up so reset iteration counter and return false
           // connection was open
           fclose($fp);
@@ -2656,13 +2656,12 @@ class class_transindus_eco
           return false;
         }
         else
-        { // connection not open
+        { // connection not open returned false nit handle
           // echo "$errstr ($errno)<br />\n";
           error_log("control site www.avasarala.in is NOT reachable, so local intervention may be required");
           error_log("This is the error message: $errstr ($errno)");
 
-          // close the connection
-          fclose($fp);
+          // no need to close the connection
 
           // get timer for accumulated value
           $minutes_that_site_avasarala_in_is_offline = (int) get_transient( 'minutes_that_site_avasarala_in_is_offline') ?? 0;

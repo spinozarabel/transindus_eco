@@ -4594,7 +4594,7 @@ class class_transindus_eco
         $home_grid_kw_power     =   $readings_obj->home_grid_kw_power;
         $home_grid_voltage      =   $readings_obj->home_grid_voltage;
 
-        $shelly1pm_acin_switch_status = $readings_obj->shelly1pm_acin_switch_status;
+        $shelly1pm_acin_switch_status = $shelly_switch_acin_details_arr['shelly1pm_acin_switch_status'];
 
         // This is the AC voltage of switch:0 of Shelly 4PM
         $shelly1pm_acin_voltage = $shelly_switch_acin_details_arr['shelly1pm_acin_voltage'];
@@ -4678,7 +4678,7 @@ class class_transindus_eco
         $studer_icon = '<i style="display:block; text-align: center;" class="clickableIcon fa-solid fa-3x fa-cog"></i>';
         $format_object->studer_icon = $studer_icon;
 
-        if ($readings_obj->control_shelly)
+        if ($shelly_switch_acin_details_arr['control_shelly'])
         {
             $shelly_servo_icon = '<span style="color: Green; display:block; text-align: center;">
                                       <i class="clickableIcon fa-solid fa-2x fa-cloud"></i>

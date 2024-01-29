@@ -4586,10 +4586,10 @@ class class_transindus_eco
         $home_grid_kw_power     =   $readings_obj->home_grid_kw_power;
         $home_grid_voltage      =   $readings_obj->home_grid_voltage;
 
-        $shelly_api_device_status_ON      = $readings_obj->shelly_api_device_status_ON;
+        $shelly1pm_acin_switch_status = $readings_obj->shelly1pm_acin_switch_status;
 
         // This is the AC voltage of switch:0 of Shelly 4PM
-        $shelly_api_device_status_voltage = $readings_obj->shelly_api_device_status_voltage;
+        $shelly1pm_acin_voltage = $readings_obj->shelly1pm_acin_voltage;
 
         $soc_percentage_now = round($readings_obj->soc_percentage_now, 1);
 
@@ -4598,7 +4598,7 @@ class class_transindus_eco
 
         switch (true)
         {   // choose grid icon info based on switch status
-            case ( is_null($shelly_api_device_status_ON) ): // No Grid OR switch is OFFLINE
+            case ( $shelly1pm_acin_switch_status === "OFFLINE" ): // No Grid OR switch is OFFLINE
                 $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Yellow;"></i>';
 
                 $grid_arrow_icon = ''; //'<i class="fa-solid fa-3x fa-circle-xmark"></i>';
@@ -4608,7 +4608,7 @@ class class_transindus_eco
                 break;
 
 
-            case ( $shelly_api_device_status_ON): // Switch is ON
+            case ( $shelly1pm_acin_switch_status === "ON" ): // Switch is ON
                 $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Blue;"></i>';
 
                 $grid_arrow_icon  = '<i class="fa-solid' . $grid_arrow_size .  'fa-arrow-right-long fa-rotate-by"
@@ -4619,7 +4619,7 @@ class class_transindus_eco
                 break;
 
 
-            case ( ! $shelly_api_device_status_ON):   // Switch is online and OFF
+            case ( $shelly1pm_acin_switch_status === "OFF" ):   // Switch is online and OFF
                 $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Red;"></i>';
 
                 $grid_arrow_icon = ''; //'<i class="fa-solid fa-1x fa-circle-xmark"></i>';

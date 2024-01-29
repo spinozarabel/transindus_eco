@@ -4580,7 +4580,7 @@ class class_transindus_eco
         $psolar_kw              =   round($readings_obj->psolar_kw, 2);
 
       // approximate solar current into battery
-        $solar_amps_at_49V      =   round($psolar_kw/48.9, 1);
+        $solar_amps_at_49V      =   round($psolar_kw * 1000 / 48.9, 1);
 
         // 
         $shelly_em_home_kw          =   $readings_obj->shelly_em_home_kw;
@@ -4922,7 +4922,7 @@ class class_transindus_eco
                                               '</span>';
         */
         $format_object->status = $status;
-        
+
         return $format_object;
     }
 

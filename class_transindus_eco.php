@@ -2252,6 +2252,9 @@ class class_transindus_eco
           $soc_percentage_after_dark  = (float) get_user_meta( $wp_user_ID, 'soc_percentage_after_dark',  true);
         }
 
+        // This is the main object that we deal with  for storing and processing data gathered from our IOT devices
+        $shelly_readings_obj = new stdClass;
+
         { // --------------------- Shelly1PM ACIN SWITCH data after making a Shelly API call -------------------
 
           $shelly_switch_acin_details_arr = $this->get_shelly_switch_acin_details_over_lan( $user_index );
@@ -2263,15 +2266,13 @@ class class_transindus_eco
           $shelly1pm_acin_current           = $shelly_switch_acin_details_arr['shelly1pm_acin_current'];
           $shelly1pm_acin_power_kw          = $shelly_switch_acin_details_arr['shelly1pm_acin_power_kw'];
 
+          $shelly_readings_obj->shelly_switch_acin_details_arr = $shelly_switch_acin_details_arr;
           // error_log("Shelly 1PM AC IN switch: Status: $shelly1pm_acin_switch_status, AC Voltage: $shelly1pm_acin_voltage");
         }
 
         
         
         {  // make all measurements
-
-          // This is the main object that we deal with  for storing and processing data gathered from our IOT devices
-          $shelly_readings_obj = new stdClass;
           
           $now = new DateTime();
           $studer_measured_battery_amps_now_timestamp = $now->getTimestamp();
@@ -4565,6 +4566,8 @@ class class_transindus_eco
         // Initialize object to be returned
         $format_object  = new stdClass();
 
+        $shelly_switch_acin_details_arr = $readings_obj->shelly_switch_acin_details_arr;
+
         // extract and process Shelly 1PM switch water heater data
         $shelly_water_heater_data     = $readings_obj->shelly_water_heater_data;     // data object
         $shelly_water_heater_kw       = $shelly_water_heater_data->shelly_water_heater_kw;
@@ -4594,7 +4597,7 @@ class class_transindus_eco
         $shelly1pm_acin_switch_status = $readings_obj->shelly1pm_acin_switch_status;
 
         // This is the AC voltage of switch:0 of Shelly 4PM
-        $shelly1pm_acin_voltage = $readings_obj->shelly1pm_acin_voltage;
+        $shelly1pm_acin_voltage = $shelly_switch_acin_details_arr['shelly1pm_acin_voltage'];
 
         $soc_percentage_now = round($readings_obj->soc_percentage_now, 1);
 

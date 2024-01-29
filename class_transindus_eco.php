@@ -2639,29 +2639,27 @@ class class_transindus_eco
 
       if ( $minutes_timer >= 5 )
       { // For every 5 iterations or about 1 min, do this internet check
-        $fp = fsockopen("www.avasarala.in", 80, $errno, $errstr, 5);
+        $fp = fsockopen("www.avasarala.in", 80, $errno, $errstr, 5);  // returns handle if successful or bool false if fail
 
         if ( $fp !== false )
         { // control site is up so reset iteration counter and return false
-          // connection was open
+          // use the returned handle to close the connection
           fclose($fp);
 
-          // error_log("control site www.avasarala.in is reacheale from home, no need for intervention");
-
+          // reset timers to 0
           set_transient( 'minutes_that_site_avasarala_in_is_offline', 0, 10 * 60 );
 
           set_transient( 'minutes_timer', 0, 10 * 60 );
 
-          // control site being offline is false
+          // control site being offline for long is false
           return false;
         }
         else
-        { // connection not open returned false nit handle
-          // echo "$errstr ($errno)<br />\n";
+        { // connection not open returned bool false not handle
           error_log("control site www.avasarala.in is NOT reachable, so local intervention may be required");
           error_log("This is the error message: $errstr ($errno)");
 
-          // no need to close the connection
+          // no need to close the connection that did not open anyway
 
           // get timer for accumulated value
           $minutes_that_site_avasarala_in_is_offline = (int) get_transient( 'minutes_that_site_avasarala_in_is_offline') ?? 0;

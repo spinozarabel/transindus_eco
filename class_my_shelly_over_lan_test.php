@@ -315,3 +315,4 @@ $c_power_string = "c_act_power";
 $c_act_power = $shelly_api_device_response->{"em:0"}->$c_power_string;
 
 echo("Home power in W = " . $c_act_power . "\n" );
+print_r($shelly_api_device_response);

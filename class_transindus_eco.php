@@ -1378,7 +1378,7 @@ class class_transindus_eco
       // Blue phase of RYB is assigned to home so this corresponds to c phase of abc
       $home_total_act_energy_string  = "c_total_act_energy"; 
       $home_act_power_string         = "c_act_power";
-      $home_voltage_string               = "c_voltage";
+      $home_voltage_string           = "c_voltage";
 
       // Yellow phase of RYB is assigned to car charger so this corresponds to b phase of abc sequence
       $car_charger_total_act_energy_string  = "b_total_act_energy";

@@ -4566,6 +4566,8 @@ class class_transindus_eco
         // Initialize object to be returned
         $format_object  = new stdClass();
 
+        $status = "";
+
         $shelly_switch_acin_details_arr = $readings_obj->shelly_switch_acin_details_arr;
 
         // extract and process Shelly 1PM switch water heater data
@@ -4721,9 +4723,9 @@ class class_transindus_eco
 
         // now determione battery arrow direction and battery color based on charge or discharge
         // conditional class names for battery charge down or up arrow
-        $battery_arrow_size = $this->get_arrow_size_based_on_power($pbattery_kw);
+        $battery_arrow_size = $this->get_arrow_size_based_on_power($battery_power_kw);
 
-        if ($battery_charge_adc > 0.0)
+        if ($battery_amps > 0.0)
         {
             // current is positive so battery is charging so arrow is down and to left. Also arrow shall be red to indicate charging
             $battery_arrow_icon = '<i class="fa-solid' .  $battery_arrow_size . 'fa-arrow-down-long fa-rotate-by"

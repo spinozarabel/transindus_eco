@@ -2505,6 +2505,13 @@ class class_transindus_eco
 
                 $soc_update_method = "shelly-after-dark";
                 $soc_percentage_now = $soc_percentage_now_using_dark_shelly;
+
+                // Since the soc after dark method is more accurate than the SOC shely BM
+                // calibrate the shelly BM method using the SOC after dark value and soc midnight value
+                $recal_battery_soc_percentage_accumulated_since_midnight = $soc_percentage_now_using_dark_shelly - $soc_percentage_at_midnight;
+
+                // update recalibrated value of accumulated battery charge back to user meta
+                update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
               }
               else
               {

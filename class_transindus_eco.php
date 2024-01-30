@@ -1199,7 +1199,7 @@ class class_transindus_eco
         // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign and educe the current by 5%
         // This is because the battery SOC numbers tend about 4 points more from about a value of 40% which indicates about 10^ over measurement
         // so to be conservative we are using a 5% reduction to see if this corrects the tendency.
-        $battery_amps = -1.0 * round( $battery_amps_raw_measurement * 0.95, 1);
+        $battery_amps = -1.0 * round( $battery_amps_raw_measurement * 0.90, 1);
 
         // get the previous reading's timestamp from transient. If transient doesnt exist set the value to current measurement
         $previous_timestamp = get_transient( 'timestamp_battery_last_measurement' ) ?? $timestamp;

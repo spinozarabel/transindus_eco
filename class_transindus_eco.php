@@ -4684,7 +4684,7 @@ class class_transindus_eco
         $format_object->psolar_info   = $psolar_info;
 
         // Studer Inverter icon
-        $studer_icon = '<i style="display:block; text-align: center;" class="clickableIcon fa-solid fa-3x fa-cog"></i>';
+        $studer_icon = '<i style="display:block; text-align: center;" class="clickableIcon fa-solid fa-3x fa-cog" style="color: red;"></i>';
         $format_object->studer_icon = $studer_icon;
 
         if ($shelly_switch_acin_details_arr['control_shelly'])

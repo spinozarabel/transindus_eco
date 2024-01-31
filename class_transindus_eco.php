@@ -4212,6 +4212,7 @@ class class_transindus_eco
               <td id=B-phase-voltage">'     . $c_phase_grid_voltage   . '</td>
             </tr>
       </table>';
+      return $output;
     }
     /**
      *  This function defined the shortcode to a page called mysolar that renders a user's solar system readings

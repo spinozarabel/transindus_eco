@@ -1347,10 +1347,16 @@ class class_transindus_eco
       // Blue phase of RYB is assigned to home so this corresponds to c phase of abc
       $home_total_act_energy_string  = "c_total_act_energy"; 
       $home_act_power_string         = "c_act_power";
+      $home_voltage_string           = "c_voltage";
 
       // Yellow phase of RYB is assigned to car charger so this corresponds to b phase of abc sequence
       $car_charger_total_act_energy_string  = "b_total_act_energy";
       $car_charger_act_power_string         = "b_act_power"; 
+      $car_charger_voltage_string           = "b_voltage";
+
+      $car_charger_7p2kw_total_act_energy_string  = "a_total_act_energy";
+      $car_charger_7p2kw_act_power_string         = "a_act_power"; 
+      $car_charger_7p2kw_voltage_string           = "a_voltage";
 
       // get value of Shelly Pro 3EM Red phase watt hour counter as set at midnight
       $grid_wh_counter_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true), 0);
@@ -1400,13 +1406,22 @@ class class_transindus_eco
         // get energy counter and power values of phase supplying home using passed in phase variable
         $home_grid_wh_counter_now  = $shelly_api_device_response->data->device_status->{"emdata:0"}->$home_total_act_energy_string;
         $home_grid_w_pwr           = $shelly_api_device_response->data->device_status->{"em:0"}->$home_act_power_string;
+        $home_grid_voltage         = $shelly_api_device_response->data->device_status->{"em:0"}->$home_voltage_string;
 
         // get energy counter value and power values of phase supplying car charger, assumed b or Y phase
         $car_charger_grid_wh_counter_now  = $shelly_api_device_response->data->device_status->{"emdata:0"}->$car_charger_total_act_energy_string;
         $car_charger_grid_w_pwr           = $shelly_api_device_response->data->device_status->{"em:0"}->$car_charger_act_power_string;
+        $car_charger_grid_voltage         = $shelly_api_device_response->data->device_status->{"em:0"}->$car_charger_voltage_string;
+
+        $car_charger_7p2kw_grid_wh_counter_now  = $shelly_api_device_response->data->device_status->{"emdata:0"}->$car_charger_7p2kw_total_act_energy_string;
+        $car_charger_7p2kw_grid_w_pwr           = $shelly_api_device_response->data->device_status->{"em:0"}->$car_charger_7p2kw_act_power_string;
+        $car_charger_7p2kw_grid_voltage         = $shelly_api_device_response->data->device_status->{"em:0"}->$car_charger_7p2kw_voltage_string;
+
+
         
-        $home_grid_kw_power        = round( 0.001 * $home_grid_w_pwr,        3);
-        $car_charger_grid_kw_power = round( 0.001 * $car_charger_grid_w_pwr, 3);
+        $home_grid_kw_power             = round( 0.001 * $home_grid_w_pwr,        3);
+        $car_charger_grid_kw_power      = round( 0.001 * $car_charger_grid_w_pwr, 3);
+        $car_charger_7p2kw_grid_kw_pwr  = round( 0.001 * $car_charger_7p2kw_grid_w_pwr, 3);
 
         // update the transient with most recent measurement
         set_transient( 'home_grid_wh_counter',        $home_grid_wh_counter_now,        24 * 60 * 60 );
@@ -1414,11 +1429,25 @@ class class_transindus_eco
 
         $home_grid_wh_accumulated_since_midnight = $home_grid_wh_counter_now - $grid_wh_counter_midnight;
 
-        $shelly_3p_grid_wh_measurement_obj->home_grid_wh_counter_now        = $home_grid_wh_counter_now;
-        $shelly_3p_grid_wh_measurement_obj->car_charger_grid_wh_counter_now = $car_charger_grid_wh_counter_now;
+        $shelly_3p_grid_wh_measurement_obj->home_grid_wh_counter_now              = $home_grid_wh_counter_now;
+        $shelly_3p_grid_wh_measurement_obj->car_charger_grid_wh_counter_now       = $car_charger_grid_wh_counter_now;
+        $shelly_3p_grid_wh_measurement_obj->car_charger_7p2kw_grid_wh_counter_now = $car_charger_7p2kw_grid_wh_counter_now;
 
-        $shelly_3p_grid_wh_measurement_obj->home_grid_kw_power         = $home_grid_kw_power;
-        $shelly_3p_grid_wh_measurement_obj->car_charger_grid_kw_power  = $car_charger_grid_kw_power;
+        $shelly_3p_grid_wh_measurement_obj->home_grid_kw_power            = $home_grid_kw_power;
+        $shelly_3p_grid_wh_measurement_obj->car_charger_grid_kw_power     = $car_charger_grid_kw_power;
+        $shelly_3p_grid_wh_measurement_obj->car_charger_7p2kw_grid_kw_pwr = $car_charger_7p2kw_grid_kw_pwr;
+
+        $shelly_3p_grid_wh_measurement_obj->home_grid_voltage               = $home_grid_voltage;
+        $shelly_3p_grid_wh_measurement_obj->car_charger_grid_voltage        = $car_charger_grid_voltage;
+        $shelly_3p_grid_wh_measurement_obj->car_charger_7p2kw_grid_voltage  = $car_charger_7p2kw_grid_voltage;
+
+        $shelly_3p_grid_wh_measurement_obj->a_phase_grid_voltage  = $home_grid_voltage;
+        $shelly_3p_grid_wh_measurement_obj->b_phase_grid_voltage  = $car_charger_grid_voltage;
+        $shelly_3p_grid_wh_measurement_obj->c_phase_grid_voltage  = $car_charger_7p2kw_grid_voltage;
+
+        set_transient( 'a_phase_grid_voltage', $home_grid_voltage,              5 * 60 );
+        set_transient( 'b_phase_grid_voltage', $car_charger_grid_voltage,       5 * 60 );
+        set_transient( 'c_phase_grid_voltage', $car_charger_7p2kw_grid_voltage, 5 * 60 );
 
         $shelly_3p_grid_wh_measurement_obj->home_grid_wh_accumulated_since_midnight = $home_grid_wh_accumulated_since_midnight;
 
@@ -4162,9 +4191,27 @@ class class_transindus_eco
       </style>';
 
       // readin the transient object.
-      $shelly1pm_acin_voltage = (int) round( (float) get_transient( 'shelly1pm-acin-voltage' ), 0 );
-      $output .= "AC Voltage (RMS) at FB16 fed by FP7 feeder = " . $shelly1pm_acin_voltage;
+      $a_phase_grid_voltage = (int) round( (float) get_transient( 'a_phase_grid_voltage' ), 0 );
+      $b_phase_grid_voltage = (int) round( (float) get_transient( 'b_phase_grid_voltage' ), 0 );
+      $c_phase_grid_voltage = (int) round( (float) get_transient( 'c_phase_grid_voltage' ), 0 );
 
+      // define all the icon styles and colors based on STuder and Switch values
+      $output .= '<div id="my-desscription">'. '3P AC voltages at FP7 feeder'     . '</div>';
+      $output .= '
+      <table id="my-grid-voltage-readings-table">
+          <tr>
+              <th>'   . 'Red Phase Volts'     . '</th>
+              <th>'   . 'Yellow Phase Volts'  . '</th>
+              <th>'   . 'Blue Phase Volts'    . '</th>
+          </tr>
+          <tr>
+              <td id="R-phase-voltage">'    . $a_phase_grid_voltage   . '</td>
+              <td></td>
+              <td id="Y-phase-voltage">'    . $b_phase_grid_voltage   . '</td>
+              <td></td>
+              <td id=B-phase-voltage">'     . $c_phase_grid_voltage   . '</td>
+            </tr>
+      </table>';
     }
     /**
      *  This function defined the shortcode to a page called mysolar that renders a user's solar system readings

@@ -1179,8 +1179,8 @@ class class_transindus_eco
         // Convert Volts to Amps using the value above. SUbtract an offest of 8A noticed, probably due to DC offset
         $battery_amps_raw_measurement = ($delta_voltage / $volts_per_amp);
 
-        // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign. 1.06 is empirical correction 
-        $battery_amps = -1.0 * round( $battery_amps_raw_measurement, 1);
+        // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign. 0.9 is empirical correction
+        $battery_amps = -1.0 * round( $battery_amps_raw_measurement * 0.9, 1);
 
         // get the unix time stamp when measurement was made
         $now = new DateTime();

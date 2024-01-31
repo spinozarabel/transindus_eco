@@ -4206,9 +4206,7 @@ class class_transindus_eco
           </tr>
           <tr>
               <td id="R-phase-voltage">'    . $a_phase_grid_voltage   . '</td>
-              <td></td>
               <td id="Y-phase-voltage">'    . $b_phase_grid_voltage   . '</td>
-              <td></td>
               <td id=B-phase-voltage">'     . $c_phase_grid_voltage   . '</td>
             </tr>
       </table>';

@@ -1187,10 +1187,10 @@ class class_transindus_eco
         $timestamp = $now->getTimestamp();
 
         // get the previous reading's timestamp from transient. If transient doesnt exist set the value to current measurement
-        $previous_timestamp = get_transient(  $wp_user_name . '_' . 'timestamp_battery_last_measurement' ) ?? $timestamp;
+        $previous_timestamp = get_transient( 'timestamp_battery_last_measurement' ) ?? $timestamp;
 
         // get the previous reading from transient. If doesnt exist set it to current measurement
-        $previous_battery_amps = (float) get_transient(  $wp_user_name . '_' . 'amps_battery_last_measurement' ) ?? $battery_amps;
+        $previous_battery_amps = (float) get_transient(  'amps_battery_last_measurement' ) ?? $battery_amps;
 
         $prev_datetime_obj = new DateTime();
         $prev_datetime_obj->setTimeStamp($previous_timestamp);
@@ -1241,8 +1241,8 @@ class class_transindus_eco
                                   ) : false;
 
         // update transients with current measurements. These will be used as previous measurements for next cycle
-        set_transient( $wp_user_name . '_' . 'timestamp_battery_last_measurement',  $timestamp,   60 * 60 );
-        set_transient( $wp_user_name . '_' . 'amps_battery_last_measurement',       $battery_amps,  60 * 60 );
+        set_transient(  'timestamp_battery_last_measurement',  $timestamp,      60 * 60 );
+        set_transient(  'amps_battery_last_measurement',       $battery_amps,   60 * 60 );
 
         // write variables as properties to returned object
         $battery_measurements_object->battery_ah_this_measurement                = $battery_ah_this_measurement;
@@ -4190,6 +4190,14 @@ class class_transindus_eco
          }
       </style>';
 
+      $timestamp = get_transient( 'timestamp_battery_last_measurement' );
+
+      // get datetime object from timestamp
+      $datetime_battery_last_measured = (new DateTime('@' . $timestamp))->setTimezone(new DateTimeZone("Asia/Kolkata"));
+
+      $time_formatted_string = $datetime_battery_last_measured->format('Y-m-d H:i:s');
+
+
       if (  false !== $a_phase_grid_voltage = get_transient( 'a_phase_grid_voltage' ) && 
             false !== $b_phase_grid_voltage = get_transient( 'b_phase_grid_voltage' ) &&
             false !== $c_phase_grid_voltage = get_transient( 'c_phase_grid_voltage' )
@@ -4210,6 +4218,7 @@ class class_transindus_eco
 
       // define all the icon styles and colors based on STuder and Switch values
       $output .= '<div id="my-desscription"><h3>'. '3P AC voltages at FP7 feeder'     . '</h3></div>';
+      $output .= $time_formatted_string;
       $output .= '
       <table id="my-grid-voltage-readings-table">
           <tr>

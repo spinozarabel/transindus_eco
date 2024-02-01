@@ -4434,6 +4434,10 @@ class class_transindus_eco
       {
         $c_peak_percentage = 0;
       }
+
+      error_log(print_r($a_array, true));
+
+      error_log("Average Phase Voltages: $a_average, $b_average, $c_average");
       
       return [ $a_peak_percentage, $b_peak_percentage, $c_peak_percentage ];
     }

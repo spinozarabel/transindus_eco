@@ -70,11 +70,11 @@ jQuery(document).ready(function($) {
             // update the Grid  Switch Icon
             $('#a_phase_grid_voltage').html( data.a_phase_grid_voltage_html);
         }
-        if( data.b_phase_grid_voltage ) {
+        if( data.b_phase_grid_voltage_html ) {
             // update the Grid  Switch Icon
             $('#b_phase_grid_voltage').html( data.b_phase_grid_voltage_html);
         }
-        if( data.c_phase_grid_voltage ) {
+        if( data.c_phase_grid_voltage_html ) {
             // update the Grid  Switch Icon
             $('#c_phase_grid_voltage').html( data.c_phase_grid_voltage_html);
         }

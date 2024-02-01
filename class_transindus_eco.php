@@ -4209,7 +4209,7 @@ class class_transindus_eco
         }
 
       // define all the icon styles and colors based on STuder and Switch values
-      $output .= '<div id="my-desscription">'. '3P AC voltages at FP7 feeder'     . '</div>';
+      $output .= '<div id="my-desscription"><h3>'. '3P AC voltages at FP7 feeder'     . '</h3></div>';
       $output .= '
       <table id="my-grid-voltage-readings-table">
           <tr>

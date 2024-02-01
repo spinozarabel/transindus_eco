@@ -4239,10 +4239,10 @@ class class_transindus_eco
               <td id="c_phase_grid_voltage">'    . $c_phase_grid_voltage_html   . '</td>
           </tr>
           <tr>
-              <td id="voltage_peak_percent">'       . 'Voltage Variation Pk'                    . '%</td>
-              <td id="a_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[0]   . '%</td>
-              <td id="b_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[1]   . '%</td>
-              <td id="c_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[2]   . '%</td>
+              <td id="voltage_peak_percent">'       . 'Voltage Variation Pk %'                  . '</td>
+              <td id="a_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[0]   . '</td>
+              <td id="b_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[1]   . '</td>
+              <td id="c_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[2]   . '</td>
           </tr>
 
       </table>';
@@ -4435,9 +4435,9 @@ class class_transindus_eco
         $c_peak_percentage = 0;
       }
 
-      error_log(print_r($a_array, true));
+      // error_log(print_r($a_array, true));
 
-      error_log("Average Phase Voltages: $a_average, $b_average, $c_average");
+      // error_log("Average Phase Voltages: $a_average, $b_average, $c_average");
       
       return [ $a_peak_percentage, $b_peak_percentage, $c_peak_percentage ];
     }

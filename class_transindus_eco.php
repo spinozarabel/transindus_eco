@@ -4198,7 +4198,7 @@ class class_transindus_eco
 
       $datetime_battery_last_measured->setTimeStamp($timestamp);
 
-      $time_formatted_string = '<span> id="time_formatted_string" ' . $datetime_battery_last_measured->format("H:i:s") . ' </span>';
+      $time_formatted_string = '<span id="time_formatted_string">' . $datetime_battery_last_measured->format("H:i:s") . '</span>';
 
 
       if (  false !== $a_phase_grid_voltage = get_transient( 'a_phase_grid_voltage' ) && 

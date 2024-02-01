@@ -37,7 +37,7 @@ add_action('wp_ajax_my_solar_update',       [$transindus_eco, 'ajax_my_solar_upd
 // This is action for Ajax handler for updating screen using data from minutely cron readings
 add_action('wp_ajax_my_solar_cron_update',  [$transindus_eco, 'ajax_my_solar_cron_update_handler'] );
 
-add_action('wp_ajax_my_grid_cron_update',  [$transindus_eco, 'ajax_my_grid_cron_update_handler'] );
+add_action('wp_ajax_nopriv_my_grid_cron_update',  [$transindus_eco, 'ajax_my_grid_cron_update_handler'] );
 
 
 add_filter( 'cron_schedules',  'shelly_studer_add_new_cron_interval' );

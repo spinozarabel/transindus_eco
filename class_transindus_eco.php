@@ -5904,7 +5904,8 @@ class class_transindus_eco
         // The error log time stamp was showing as UTC so I added the below statement
       date_default_timezone_set("Asia/Kolkata");
 
-      // Ensures nonce is correct for security
+      // Ensures nonce is correct for security. The below function looks for _ajax_nonce in the data to check
+      // default option is to stop the script if check fails builtin to function below.
       check_ajax_referer('my_solar_app_script');
 
       if ($_POST['data']) {   // extract data from POST sent by the Ajax Call and Sanitize
@@ -5919,10 +5920,15 @@ class class_transindus_eco
       }
 
       {    // get user_index based on user_name
-        $current_user = get_user_by('id', $wp_user_ID);
-        $wp_user_name = $current_user->user_login;
+        $ajax_user    = get_user_by('id', $wp_user_ID);
+        $wp_user_name = $ajax_user->user_login;
         $user_index   = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ;
 
+        if ( $user_index !=  0 )
+        {
+          // illegal user so die
+          wp_send_json('Illegal User'); // dies after this
+        }
         // error_log('from CRON Ajax Call: wp_user_ID:' . $wp_user_ID . ' user_index:'   . $user_index);
       }
 

@@ -83,6 +83,10 @@ jQuery(document).ready(function($) {
             // update the Grid  Switch Icon
             $('#time_formatted_string').html( data.time_formatted_string);
         }
+
+        $('#a_phase_voltage_pk_percent').html( data.a_phase_voltage_peak_percentage);
+        $('#b_phase_voltage_pk_percent').html( data.b_phase_voltage_peak_percentage);
+        $('#c_phase_voltage_pk_percent').html( data.c_phase_voltage_peak_percentage);
     };
 
     function round(value, exp) {

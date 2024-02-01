@@ -4210,7 +4210,10 @@ class class_transindus_eco
             $b_phase_grid_voltage = (int) round( (float) $b_phase_grid_voltage, 0 );
             $c_phase_grid_voltage = (int) round( (float) $c_phase_grid_voltage, 0 );
 
-            // check range and format each number individually for html color
+            // voltage processing for fluctuations and averages
+            $phase_voltage_peak_percentage_array = $this->grid_voltage_processing(  $a_phase_grid_voltage, 
+                                                                                    $b_phase_grid_voltage, 
+                                                                                    $c_phase_grid_voltage );
           }
         else
         {
@@ -4225,15 +4228,24 @@ class class_transindus_eco
       $output .= '
       <table id="my-grid-voltage-readings-table">
           <tr>
-              <th>'   . 'Red Phase Volts'     . '</th>
+              <th>'   . 'Item'                . '</th>
+              <th>'   . 'Red Phase Volts'     . '</th>  
               <th>'   . 'Yellow Phase Volts'  . '</th>
               <th>'   . 'Blue Phase Volts'    . '</th>
           </tr>
           <tr>
+              <td id="now_reading">'             . 'Now'                        . '</td>
               <td id="a_phase_grid_voltage">'    . $a_phase_grid_voltage_html   . '</td>
               <td id="b_phase_grid_voltage">'    . $b_phase_grid_voltage_html   . '</td>
               <td id="c_phase_grid_voltage">'    . $c_phase_grid_voltage_html   . '</td>
-            </tr>
+          </tr>
+          <tr>
+              <td id="voltage_peak_percent">'       . 'Voltage Variation %'                     . '</td>
+              <td id="a_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[0]   . '</td>
+              <td id="b_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[1]   . '</td>
+              <td id="c_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[2]   . '</td>
+          </tr>
+
       </table>';
       return $output;
     }
@@ -4246,6 +4258,8 @@ class class_transindus_eco
     public function ajax_my_grid_cron_update_handler()
     {
       date_default_timezone_set("Asia/Kolkata");
+
+      $data = new stdclass;
 
       $datetime_battery_last_measured = new DateTime();
 
@@ -4271,25 +4285,52 @@ class class_transindus_eco
         {
           // in range and so color is green
           $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Green;"><strong>' . $a_phase_grid_voltage . '</span>';
-          $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Green;"><strong>' . $b_phase_grid_voltage . '</span>';
-          $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Green;"><strong>' . $c_phase_grid_voltage . '</span>';
         }
         else 
         {
           // cnot in range olor is red
           $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Red;"><strong>' . $a_phase_grid_voltage . '</span>';
+        }
+
+        // p phase range check
+        if ( $b_phase_grid_voltage < 245 && $b_phase_grid_voltage > 190 )
+        {
+          $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Green;"><strong>' . $b_phase_grid_voltage . '</span>';
+        }
+        else 
+        {
           $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Red;"><strong>' . $b_phase_grid_voltage . '</span>';
+        }
+
+        if ( $c_phase_grid_voltage < 245 && $c_phase_grid_voltage > 190 )
+        {
+          $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Green;"><strong>' . $c_phase_grid_voltage . '</span>';
+        }
+        else 
+        {
           $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Red;"><strong>' . $c_phase_grid_voltage . '</span>';
         }
+
+        // voltage processing for fluctuations and averages
+        $phase_voltage_peak_percentage_array = $this->grid_voltage_processing(  $a_phase_grid_voltage, 
+                                                                                $b_phase_grid_voltage, 
+                                                                                $c_phase_grid_voltage );
+
+        $a_phase_voltage_peak_percentage = $phase_voltage_peak_percentage_array[0];
+        $b_phase_voltage_peak_percentage = $phase_voltage_peak_percentage_array[1];
+        $c_phase_voltage_peak_percentage = $phase_voltage_peak_percentage_array[2];
+
       }
       else
       {
         $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . $a_phase_grid_voltage . '</span>';
         $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . $b_phase_grid_voltage . '</span>';
         $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . $c_phase_grid_voltage . '</span>';
-      }
 
-      $data = new stdclass;
+        $a_phase_voltage_peak_percentage = 'NA';
+        $b_phase_voltage_peak_percentage = 'NA';
+        $c_phase_voltage_peak_percentage = 'NA';
+      }
 
       $data->a_phase_grid_voltage_html = $a_phase_grid_voltage_html;
       $data->b_phase_grid_voltage_html = $b_phase_grid_voltage_html;
@@ -4297,9 +4338,80 @@ class class_transindus_eco
 
       $data->time_formatted_string = $time_formatted_string;
 
+      $data->a_phase_voltage_peak_percentage = $a_phase_voltage_peak_percentage;
+      $data->b_phase_voltage_peak_percentage = $b_phase_voltage_peak_percentage;
+      $data->c_phase_voltage_peak_percentage = $c_phase_voltage_peak_percentage;
+
       wp_send_json($data);
     }
 
+
+    /**
+     * 
+     */
+    public function grid_voltage_processing( $a, $b, $c )  : array
+    {
+      // Load the voltage array for each phase
+      $a_array = get_transient(  'a_array' ); 
+      $b_array = get_transient(  'b_array' ); 
+      $c_array = get_transient(  'c_array' ); 
+
+      // If transient doesnt exist rebuild
+      if ( ! is_array( $a_array ) ||  ! is_array( $b_array ) || ! is_array( $c_array ) )
+      {
+        $a_array = [];
+        $b_array = [];
+        $c_array = [];
+      }
+      
+      
+      // push the new voltage reading to the holding array
+      array_push( $a_array, $a );
+      array_push( $b_array, $b );
+      array_push( $c_array, $c );
+
+      // If the array has more than 30 elements then drop the earliest one
+      // We are averaging for only 30 minutes
+      if ( sizeof($a_array) > 20 )   array_shift($a_array);
+      if ( sizeof($b_array) > 20 )   array_shift($b_array);
+      if ( sizeof($c_array) > 20 )   array_shift($c_array);
+
+      // Write it to this object for access elsewhere easily
+      $this->a_array = $a_array;
+      $this->b_array = $b_array;
+      $this->c_array = $c_array;
+
+      // Setup transiet to keep previous state for averaging
+      set_transient( 'a_array', $a_array, 200 );
+
+      // get average value of Red phase array
+      $a_array = array_filter($a_array);
+      if(count($a_array)) 
+      {
+         $a_average = array_sum($a_array)/count($a_array);
+      } 
+
+      // get average value of Yellow Phase array
+      $b_array = array_filter($b_array);
+      if(count($b_array)) 
+      {
+         $b_average = array_sum($b_array)/count($b_array);
+      }
+      
+      // get average of Blue phase array values
+      // get average value of Yellow Phase array
+      $c_array = array_filter($c_array);
+      if(count($c_array)) 
+      {
+         $c_average = array_sum($c_array)/count($c_array);
+      }
+
+      $a_peak_percentage = (int) round( ( max( $a_array ) - min( $a_array ) ) / $a_average * 100, 0);
+      $b_peak_percentage = (int) round( ( max( $b_array ) - min( $b_array ) ) / $b_average * 100, 0);
+      $c_peak_percentage = (int) round( ( max( $c_array ) - min( $c_array ) ) / $c_average * 100, 0);
+
+      return [ $a_peak_percentage, $b_peak_percentage, $c_peak_percentage ];
+    }
 
 
 

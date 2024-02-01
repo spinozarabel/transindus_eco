@@ -46,9 +46,9 @@ jQuery(document).ready(function($) {
 
       var data =  "no data";
 
-      $.post(my_ajax_obj.ajax_url,
+      $.post(my_ajax_obj_grid_view.ajax_url,
         {                                 //POST request
-          _ajax_nonce: my_ajax_obj.nonce, //nonce extracted and sent
+          _ajax_nonce: my_ajax_obj_grid_view.nonce, //nonce extracted and sent
           action: "my_grid_cron_update",  // hook added for action wp_ajax_my_solar_cron_update in php file
           data: data
         },

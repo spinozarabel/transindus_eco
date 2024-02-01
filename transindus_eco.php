@@ -81,10 +81,9 @@ function this_plugin_init()
 *   register and enque jquery scripts with nonce for ajax calls. Load only for desired page
 *   called by add_action( 'wp_enqueue_scripts', 'add_my_scripts' );
 */
-function add_mysolar_script($hook)
+function add_mysolar_script()
 // register and enque jquery scripts wit nonce for ajax calls
 {
-    error_log( "The hook for mysolar page is: $hook");
     // if not the intended page then return and do nothing.
     if ( ! is_page( 'mysolar' ) ) return;
 
@@ -108,9 +107,8 @@ function add_mysolar_script($hook)
 /**
  * 
  */
-function add_mygrid_script($hook)
+function add_mygrid_script()
 {
-    error_log( "The hook for mysolar page is: $hook");
     // if not the intended page then return and do nothing.
     if ( ! is_page( 'grid' ) ) return;
 
@@ -123,10 +121,10 @@ function add_mygrid_script($hook)
     $my_grid_app_nonce = wp_create_nonce('my_grid_app_script');
     // note the key here is the global my_ajax_obj that will be referenced by our Jquery in update.js
     //  wp_localize_script( string $handle,       string $object_name, associative array )
-    wp_localize_script('my_grid_app_script', 'my_ajax_obj', array(
-                                                                   'ajax_url' => admin_url( 'admin-ajax.php' ),
-                                                                   'nonce'    => $my_grid_app_nonce,
-                                                                   )
+    wp_localize_script('my_grid_app_script', 'my_ajax_obj_grid_view', array(
+                                                                                'ajax_url' => admin_url( 'admin-ajax.php' ),
+                                                                                'nonce'    => $my_grid_app_nonce,
+                                                                            )
                       );
 }
 

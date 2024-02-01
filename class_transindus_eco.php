@@ -4218,9 +4218,9 @@ class class_transindus_eco
               <th>'   . 'Blue Phase Volts'    . '</th>
           </tr>
           <tr>
-              <td id="a_phase_grid_voltage">'    . $a_phase_grid_voltage   . '</td>
-              <td id="b_phase_grid_voltage">'    . $b_phase_grid_voltage   . '</td>
-              <td id="c_phase_grid_voltage">'    . $c_phase_grid_voltage   . '</td>
+              <td id="a_phase_grid_voltage">'    . $a_phase_grid_voltage_html   . '</td>
+              <td id="b_phase_grid_voltage">'    . $b_phase_grid_voltage_html   . '</td>
+              <td id="c_phase_grid_voltage">'    . $c_phase_grid_voltage_html   . '</td>
             </tr>
       </table>';
       return $output;

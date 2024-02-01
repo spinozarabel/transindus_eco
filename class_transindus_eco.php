@@ -4235,9 +4235,9 @@ class class_transindus_eco
     {
       // this is an AJAX call
       // get grid voltages from transients if they exist
-      if (  false !== $a_phase_grid_voltage = get_transient( 'a_phase_grid_voltage' ) && 
-            false !== $b_phase_grid_voltage = get_transient( 'b_phase_grid_voltage' ) &&
-            false !== $c_phase_grid_voltage = get_transient( 'c_phase_grid_voltage' )
+      if (  false !== ( $a_phase_grid_voltage = get_transient( 'a_phase_grid_voltage' ) ) && 
+            false !== ( $b_phase_grid_voltage = get_transient( 'b_phase_grid_voltage' ) ) &&
+            false !== ( $c_phase_grid_voltage = get_transient( 'c_phase_grid_voltage' ) )
           )
       {
         $a_phase_grid_voltage = (int) round( (float) $a_phase_grid_voltage, 0 );

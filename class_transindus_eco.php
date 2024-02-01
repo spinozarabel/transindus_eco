@@ -4198,7 +4198,7 @@ class class_transindus_eco
 
       $datetime_battery_last_measured->setTimeStamp($timestamp);
 
-      $time_formatted_string = '<span id="time_formatted_string">' . $datetime_battery_last_measured->format("H:i:s") . '</span>';
+      $time_formatted_string = $datetime_battery_last_measured->format("H:i:s");
 
 
       if (  false !== $a_phase_grid_voltage = get_transient( 'a_phase_grid_voltage' ) && 
@@ -4224,7 +4224,6 @@ class class_transindus_eco
 
       // define all the icon styles and colors based on STuder and Switch values
       $output .= '<div id="my-desscription"><h3>'. '3P AC voltages at FP7 feeder'     . '</h3></div>';
-      $output .= $time_formatted_string;
       $output .= '
       <table id="my-grid-voltage-readings-table">
           <tr>
@@ -4234,16 +4233,16 @@ class class_transindus_eco
               <th>'   . 'Blue Phase Volts'    . '</th>
           </tr>
           <tr>
-              <td id="now_reading">'             . 'Now'                        . '</td>
+              <td id="time_formatted_string">'   . $time_formatted_string       . '</td>
               <td id="a_phase_grid_voltage">'    . $a_phase_grid_voltage_html   . '</td>
               <td id="b_phase_grid_voltage">'    . $b_phase_grid_voltage_html   . '</td>
               <td id="c_phase_grid_voltage">'    . $c_phase_grid_voltage_html   . '</td>
           </tr>
           <tr>
-              <td id="voltage_peak_percent">'       . 'Voltage Variation %'                     . '</td>
-              <td id="a_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[0]   . '</td>
-              <td id="b_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[1]   . '</td>
-              <td id="c_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[2]   . '</td>
+              <td id="voltage_peak_percent">'       . 'Voltage Variation Pk'                    . '%</td>
+              <td id="a_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[0]   . '%</td>
+              <td id="b_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[1]   . '%</td>
+              <td id="c_phase_voltage_pk_percent">' . $phase_voltage_peak_percentage_array[2]   . '%</td>
           </tr>
 
       </table>';
@@ -4406,10 +4405,34 @@ class class_transindus_eco
          $c_average = array_sum($c_array)/count($c_array);
       }
 
-      $a_peak_percentage = (int) round( ( max( $a_array ) - min( $a_array ) ) / $a_average * 100, 0);
-      $b_peak_percentage = (int) round( ( max( $b_array ) - min( $b_array ) ) / $b_average * 100, 0);
-      $c_peak_percentage = (int) round( ( max( $c_array ) - min( $c_array ) ) / $c_average * 100, 0);
+      if ( ! empty( $a_average ) )
+      {
+        $a_peak_percentage = (int) round( ( max( $a_array ) - min( $a_array ) ) / $a_average * 100, 0);
+      }
+      else
+      {
+        $a_peak_percentage = 0;
+      }
 
+      if ( ! empty( $b_average ) )
+      {
+        $b_peak_percentage = (int) round( ( max( $b_array ) - min( $b_array ) ) / $b_average * 100, 0);
+      }
+      else
+      {
+        $b_peak_percentage = 0;
+      }
+
+
+      if ( ! empty( $c_average ) )
+      {
+        $c_peak_percentage = (int) round( ( max( $c_array ) - min( $c_array ) ) / $c_average * 100, 0);
+      }
+      else
+      {
+        $c_peak_percentage = 0;
+      }
+      
       return [ $a_peak_percentage, $b_peak_percentage, $c_peak_percentage ];
     }
 

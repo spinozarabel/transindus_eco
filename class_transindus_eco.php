@@ -4409,7 +4409,7 @@ class class_transindus_eco
 
       if ( ! empty( $a_average ) )
       {
-        $a_peak_percentage = (int) round( ( max( $a_array ) - min( $a_array ) ) / $a_average * 100, 0);
+        $a_peak_percentage = round( ( max( $a_array ) - min( $a_array ) ) / $a_average * 100, 2);
       }
       else
       {
@@ -4418,7 +4418,7 @@ class class_transindus_eco
 
       if ( ! empty( $b_average ) )
       {
-        $b_peak_percentage = (int) round( ( max( $b_array ) - min( $b_array ) ) / $b_average * 100, 0);
+        $b_peak_percentage = round( ( max( $b_array ) - min( $b_array ) ) / $b_average * 100, 2);
       }
       else
       {
@@ -4428,7 +4428,7 @@ class class_transindus_eco
 
       if ( ! empty( $c_average ) )
       {
-        $c_peak_percentage = (int) round( ( max( $c_array ) - min( $c_array ) ) / $c_average * 100, 0);
+        $c_peak_percentage = round( ( max( $c_array ) - min( $c_array ) ) / $c_average * 100, 2);
       }
       else
       {

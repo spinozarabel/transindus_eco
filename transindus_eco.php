@@ -37,6 +37,8 @@ add_action('wp_ajax_my_solar_update',       [$transindus_eco, 'ajax_my_solar_upd
 // This is action for Ajax handler for updating screen using data from minutely cron readings
 add_action('wp_ajax_my_solar_cron_update',  [$transindus_eco, 'ajax_my_solar_cron_update_handler'] );
 
+add_action('wp_ajax_my_grid_cron_update',  [$transindus_eco, 'ajax_my_grid_cron_update_handler'] );
+
 
 add_filter( 'cron_schedules',  'shelly_studer_add_new_cron_interval' );
 
@@ -70,7 +72,8 @@ function this_plugin_init()
 {
     // add_action('init','custom_login');
     // add action to load the javascripts on non-admin page
-    add_action( 'wp_enqueue_scripts', 'add_my_scripts' );
+    add_action( 'wp_enqueue_scripts', 'add_mysolar_script' );
+    add_action( 'wp_enqueue_scripts', 'add_mygrid_script' );
 }
 
 
@@ -78,9 +81,10 @@ function this_plugin_init()
 *   register and enque jquery scripts with nonce for ajax calls. Load only for desired page
 *   called by add_action( 'wp_enqueue_scripts', 'add_my_scripts' );
 */
-function add_my_scripts($hook)
+function add_mysolar_script($hook)
 // register and enque jquery scripts wit nonce for ajax calls
 {
+    error_log( "The hook for mysolar page is: $hook");
     // if not the intended page then return and do nothing.
     if ( ! is_page( 'mysolar' ) ) return;
 
@@ -97,6 +101,31 @@ function add_my_scripts($hook)
                                                                    'ajax_url' => admin_url( 'admin-ajax.php' ),
                                                                    'nonce'    => $my_solar_app_nonce,
                                                                    'wp_user_ID' => wp_get_current_user()->ID,
+                                                                   )
+                      );
+}
+
+/**
+ * 
+ */
+function add_mygrid_script($hook)
+{
+    error_log( "The hook for mysolar page is: $hook");
+    // if not the intended page then return and do nothing.
+    if ( ! is_page( 'grid' ) ) return;
+
+    // https://developer.wordpress.org/plugins/javascript/enqueuing/
+    //wp_register_script($handle            , $src                                 , $deps         , $ver, $in_footer)
+    wp_register_script('my_grid_app_script', plugins_url('grid_update.js', __FILE__), array('jquery'),'1.0', true);
+
+    wp_enqueue_script('my_grid_app_script');
+
+    $my_grid_app_nonce = wp_create_nonce('my_grid_app_script');
+    // note the key here is the global my_ajax_obj that will be referenced by our Jquery in update.js
+    //  wp_localize_script( string $handle,       string $object_name, associative array )
+    wp_localize_script('my_grid_app_script', 'my_ajax_obj', array(
+                                                                   'ajax_url' => admin_url( 'admin-ajax.php' ),
+                                                                   'nonce'    => $my_grid_app_nonce,
                                                                    )
                       );
 }

@@ -1445,9 +1445,9 @@ class class_transindus_eco
         $shelly_3p_grid_wh_measurement_obj->b_phase_grid_voltage  = $car_charger_grid_voltage;
         $shelly_3p_grid_wh_measurement_obj->c_phase_grid_voltage  = $car_charger_7p2kw_grid_voltage;
 
-        set_transient( 'a_phase_grid_voltage', $home_grid_voltage,              5 * 60 );
-        set_transient( 'b_phase_grid_voltage', $car_charger_grid_voltage,       5 * 60 );
-        set_transient( 'c_phase_grid_voltage', $car_charger_7p2kw_grid_voltage, 5 * 60 );
+        set_transient( 'a_phase_grid_voltage', $home_grid_voltage,              20 );
+        set_transient( 'b_phase_grid_voltage', $car_charger_grid_voltage,       20 );
+        set_transient( 'c_phase_grid_voltage', $car_charger_7p2kw_grid_voltage, 20 );
 
         $shelly_3p_grid_wh_measurement_obj->home_grid_wh_accumulated_since_midnight = $home_grid_wh_accumulated_since_midnight;
 
@@ -4190,10 +4190,23 @@ class class_transindus_eco
          }
       </style>';
 
-      // readin the transient object.
-      $a_phase_grid_voltage = (int) round( (float) get_transient( 'a_phase_grid_voltage' ), 0 );
-      $b_phase_grid_voltage = (int) round( (float) get_transient( 'b_phase_grid_voltage' ), 0 );
-      $c_phase_grid_voltage = (int) round( (float) get_transient( 'c_phase_grid_voltage' ), 0 );
+      if (  false !== $a_phase_grid_voltage = get_transient( 'a_phase_grid_voltage' ) && 
+            false !== $b_phase_grid_voltage = get_transient( 'b_phase_grid_voltage' ) &&
+            false !== $c_phase_grid_voltage = get_transient( 'c_phase_grid_voltage' )
+          )
+          {
+            $a_phase_grid_voltage = (int) round( (float) $a_phase_grid_voltage, 0 );
+            $b_phase_grid_voltage = (int) round( (float) $b_phase_grid_voltage, 0 );
+            $c_phase_grid_voltage = (int) round( (float) $c_phase_grid_voltage, 0 );
+
+            // check range and format each number individually for html color
+          }
+        else
+        {
+            $a_phase_grid_voltage = 'Offline';
+            $b_phase_grid_voltage = 'Offline';
+            $c_phase_grid_voltage = 'Offline';
+        }
 
       // define all the icon styles and colors based on STuder and Switch values
       $output .= '<div id="my-desscription">'. '3P AC voltages at FP7 feeder'     . '</div>';
@@ -4205,13 +4218,66 @@ class class_transindus_eco
               <th>'   . 'Blue Phase Volts'    . '</th>
           </tr>
           <tr>
-              <td id="R-phase-voltage">'    . $a_phase_grid_voltage   . '</td>
-              <td id="Y-phase-voltage">'    . $b_phase_grid_voltage   . '</td>
-              <td id=B-phase-voltage">'     . $c_phase_grid_voltage   . '</td>
+              <td id="a_phase_grid_voltage">'    . $a_phase_grid_voltage   . '</td>
+              <td id="b_phase_grid_voltage">'    . $b_phase_grid_voltage   . '</td>
+              <td id="c_phase_grid_voltage">'    . $c_phase_grid_voltage   . '</td>
             </tr>
       </table>';
       return $output;
     }
+
+
+
+    /**
+     * 
+     */
+    public function ajax_my_grid_cron_update_handler()
+    {
+      // this is an AJAX call
+      // get grid voltages from transients if they exist
+      if (  false !== $a_phase_grid_voltage = get_transient( 'a_phase_grid_voltage' ) && 
+            false !== $b_phase_grid_voltage = get_transient( 'b_phase_grid_voltage' ) &&
+            false !== $c_phase_grid_voltage = get_transient( 'c_phase_grid_voltage' )
+          )
+      {
+        $a_phase_grid_voltage = (int) round( (float) $a_phase_grid_voltage, 0 );
+        $b_phase_grid_voltage = (int) round( (float) $b_phase_grid_voltage, 0 );
+        $c_phase_grid_voltage = (int) round( (float) $c_phase_grid_voltage, 0 );
+
+        // check range and format each number individually for html color
+        if ( $a_phase_grid_voltage < 245 && $a_phase_grid_voltage > 195 )
+        {
+          // in range and so color is green
+          $a_phase_grid_voltage_html = 
+        }
+        else 
+        {
+          // color is red
+        }
+      }
+      else
+      {
+          $a_phase_grid_voltage = 'Offline';
+          $b_phase_grid_voltage = 'Offline';
+          $c_phase_grid_voltage = 'Offline';
+
+          // all colors are Yellow
+      }
+
+      $data = new stdclass;
+
+      $data->a_phase_grid_voltage = $a_phase_grid_voltage;
+      $data->b_phase_grid_voltage = $b_phase_grid_voltage;
+      $data->c_phase_grid_voltage = $c_phase_grid_voltage;
+
+      wp_send_json($data);
+    }
+
+
+
+
+
+
     /**
      *  This function defined the shortcode to a page called mysolar that renders a user's solar system readings
      *  The HTML is created in a string variable and returned as is typical of a shortcode function

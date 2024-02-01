@@ -4245,30 +4245,33 @@ class class_transindus_eco
         $c_phase_grid_voltage = (int) round( (float) $c_phase_grid_voltage, 0 );
 
         // check range and format each number individually for html color
-        if ( $a_phase_grid_voltage < 245 && $a_phase_grid_voltage > 195 )
+        if ( $a_phase_grid_voltage < 245 && $a_phase_grid_voltage > 190 )
         {
           // in range and so color is green
-          $a_phase_grid_voltage_html = 
+          $a_phase_grid_voltage_html = '<span style="font-size: 18px;color: Green;"><strong>' . $a_phase_grid_voltage . '</span>';
+          $b_phase_grid_voltage_html = '<span style="font-size: 18px;color: Green;"><strong>' . $b_phase_grid_voltage . '</span>';
+          $c_phase_grid_voltage_html = '<span style="font-size: 18px;color: Green;"><strong>' . $c_phase_grid_voltage . '</span>';
         }
         else 
         {
-          // color is red
+          // cnot in range olor is red
+          $a_phase_grid_voltage_html = '<span style="font-size: 18px;color: Red;"><strong>' . $a_phase_grid_voltage . '</span>';
+          $b_phase_grid_voltage_html = '<span style="font-size: 18px;color: Red;"><strong>' . $b_phase_grid_voltage . '</span>';
+          $c_phase_grid_voltage_html = '<span style="font-size: 18px;color: Red;"><strong>' . $c_phase_grid_voltage . '</span>';
         }
       }
       else
       {
-          $a_phase_grid_voltage = 'Offline';
-          $b_phase_grid_voltage = 'Offline';
-          $c_phase_grid_voltage = 'Offline';
-
-          // all colors are Yellow
+        $a_phase_grid_voltage_html = '<span style="font-size: 18px;color: Yellow;"><strong>' . $a_phase_grid_voltage . '</span>';
+        $b_phase_grid_voltage_html = '<span style="font-size: 18px;color: Yellow;"><strong>' . $b_phase_grid_voltage . '</span>';
+        $c_phase_grid_voltage_html = '<span style="font-size: 18px;color: Yellow;"><strong>' . $c_phase_grid_voltage . '</span>';
       }
 
       $data = new stdclass;
 
-      $data->a_phase_grid_voltage = $a_phase_grid_voltage;
-      $data->b_phase_grid_voltage = $b_phase_grid_voltage;
-      $data->c_phase_grid_voltage = $c_phase_grid_voltage;
+      $data->a_phase_grid_voltage_html = $a_phase_grid_voltage_html;
+      $data->b_phase_grid_voltage_html = $b_phase_grid_voltage_html;
+      $data->c_phase_grid_voltage_html = $c_phase_grid_voltage_html;
 
       wp_send_json($data);
     }

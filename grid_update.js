@@ -66,17 +66,17 @@ jQuery(document).ready(function($) {
     function updateScreenWithNewData(data) {
 
         // update only if desired page elements exist. So check for some of them:
-        if( data.a_phase_grid_voltage ) {
+        if( data.a_phase_grid_voltage_html ) {
             // update the Grid  Switch Icon
-            $('#a_phase_grid_voltage').html( data.a_phase_grid_voltage);
+            $('#a_phase_grid_voltage').html( data.a_phase_grid_voltage_html);
         }
         if( data.b_phase_grid_voltage ) {
             // update the Grid  Switch Icon
-            $('#b_phase_grid_voltage').html( data.b_phase_grid_voltage);
+            $('#b_phase_grid_voltage').html( data.b_phase_grid_voltage_html);
         }
         if( data.c_phase_grid_voltage ) {
             // update the Grid  Switch Icon
-            $('#c_phase_grid_voltage').html( data.c_phase_grid_voltage);
+            $('#c_phase_grid_voltage').html( data.c_phase_grid_voltage_html);
         }
     };
 

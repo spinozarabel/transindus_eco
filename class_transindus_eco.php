@@ -4248,23 +4248,23 @@ class class_transindus_eco
         if ( $a_phase_grid_voltage < 245 && $a_phase_grid_voltage > 190 )
         {
           // in range and so color is green
-          $a_phase_grid_voltage_html = '<span style="font-size: 18px;color: Green;"><strong>' . $a_phase_grid_voltage . '</span>';
-          $b_phase_grid_voltage_html = '<span style="font-size: 18px;color: Green;"><strong>' . $b_phase_grid_voltage . '</span>';
-          $c_phase_grid_voltage_html = '<span style="font-size: 18px;color: Green;"><strong>' . $c_phase_grid_voltage . '</span>';
+          $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Green;"><strong>' . $a_phase_grid_voltage . '</span>';
+          $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Green;"><strong>' . $b_phase_grid_voltage . '</span>';
+          $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Green;"><strong>' . $c_phase_grid_voltage . '</span>';
         }
         else 
         {
           // cnot in range olor is red
-          $a_phase_grid_voltage_html = '<span style="font-size: 18px;color: Red;"><strong>' . $a_phase_grid_voltage . '</span>';
-          $b_phase_grid_voltage_html = '<span style="font-size: 18px;color: Red;"><strong>' . $b_phase_grid_voltage . '</span>';
-          $c_phase_grid_voltage_html = '<span style="font-size: 18px;color: Red;"><strong>' . $c_phase_grid_voltage . '</span>';
+          $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Red;"><strong>' . $a_phase_grid_voltage . '</span>';
+          $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Red;"><strong>' . $b_phase_grid_voltage . '</span>';
+          $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Red;"><strong>' . $c_phase_grid_voltage . '</span>';
         }
       }
       else
       {
-        $a_phase_grid_voltage_html = '<span style="font-size: 18px;color: Yellow;"><strong>' . $a_phase_grid_voltage . '</span>';
-        $b_phase_grid_voltage_html = '<span style="font-size: 18px;color: Yellow;"><strong>' . $b_phase_grid_voltage . '</span>';
-        $c_phase_grid_voltage_html = '<span style="font-size: 18px;color: Yellow;"><strong>' . $c_phase_grid_voltage . '</span>';
+        $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . $a_phase_grid_voltage . '</span>';
+        $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . $b_phase_grid_voltage . '</span>';
+        $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . $c_phase_grid_voltage . '</span>';
       }
 
       $data = new stdclass;

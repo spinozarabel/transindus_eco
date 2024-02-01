@@ -4190,12 +4190,15 @@ class class_transindus_eco
          }
       </style>';
 
+      date_default_timezone_set("Asia/Kolkata");
+
+      $datetime_battery_last_measured = new DateTime();
+
       $timestamp = get_transient( 'timestamp_battery_last_measurement' );
 
-      // get datetime object from timestamp
-      $datetime_battery_last_measured = (new DateTime('@' . $timestamp))->setTimezone(new DateTimeZone("Asia/Kolkata"));
+      $datetime_battery_last_measured->setTimeStamp($timestamp);
 
-      $time_formatted_string = $datetime_battery_last_measured->format('Y-m-d H:i:s');
+      $time_formatted_string = $datetime_battery_last_measured->format('H:i:s');
 
 
       if (  false !== $a_phase_grid_voltage = get_transient( 'a_phase_grid_voltage' ) && 

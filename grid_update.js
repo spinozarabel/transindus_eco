@@ -78,6 +78,11 @@ jQuery(document).ready(function($) {
             // update the Grid  Switch Icon
             $('#c_phase_grid_voltage').html( data.c_phase_grid_voltage_html);
         }
+
+        if( data.time_formatted_string ) {
+            // update the Grid  Switch Icon
+            $('#time_formatted_string').html( data.time_formatted_string);
+        }
     };
 
     function round(value, exp) {

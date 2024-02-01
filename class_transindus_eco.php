@@ -4198,7 +4198,7 @@ class class_transindus_eco
 
       $datetime_battery_last_measured->setTimeStamp($timestamp);
 
-      $time_formatted_string = $datetime_battery_last_measured->format('H:i:s');
+      $time_formatted_string = '<span> id="time_formatted_string" ' . $datetime_battery_last_measured->format("H:i:s") . ' </span>';
 
 
       if (  false !== $a_phase_grid_voltage = get_transient( 'a_phase_grid_voltage' ) && 
@@ -4245,6 +4245,16 @@ class class_transindus_eco
      */
     public function ajax_my_grid_cron_update_handler()
     {
+      date_default_timezone_set("Asia/Kolkata");
+
+      $datetime_battery_last_measured = new DateTime();
+
+      $timestamp = get_transient( 'timestamp_battery_last_measurement' );
+
+      $datetime_battery_last_measured->setTimeStamp($timestamp);
+
+      $time_formatted_string = $datetime_battery_last_measured->format('H:i:s');
+
       // this is an AJAX call
       // get grid voltages from transients if they exist
       if (  false !== ( $a_phase_grid_voltage = get_transient( 'a_phase_grid_voltage' ) ) && 
@@ -4284,6 +4294,8 @@ class class_transindus_eco
       $data->a_phase_grid_voltage_html = $a_phase_grid_voltage_html;
       $data->b_phase_grid_voltage_html = $b_phase_grid_voltage_html;
       $data->c_phase_grid_voltage_html = $c_phase_grid_voltage_html;
+
+      $data->time_formatted_string = $time_formatted_string;
 
       wp_send_json($data);
     }

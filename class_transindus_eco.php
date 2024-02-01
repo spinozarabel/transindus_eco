@@ -4256,6 +4256,9 @@ class class_transindus_eco
      */
     public function ajax_my_grid_cron_update_handler()
     {
+      // check if nonce is OK
+      check_ajax_referer( 'my_grid_app_script' );
+
       date_default_timezone_set("Asia/Kolkata");
 
       $data = new stdclass;
@@ -4342,6 +4345,8 @@ class class_transindus_eco
       $data->c_phase_voltage_peak_percentage = $c_phase_voltage_peak_percentage;
 
       wp_send_json($data);
+
+      // die is implicit
     }
 
 

@@ -4382,6 +4382,8 @@ class class_transindus_eco
 
       // Setup transiet to keep previous state for averaging
       set_transient( 'a_array', $a_array, 200 );
+      set_transient( 'b_array', $b_array, 200 );
+      set_transient( 'c_array', $c_array, 200 );
 
       // get average value of Red phase array
       $a_array = array_filter($a_array);

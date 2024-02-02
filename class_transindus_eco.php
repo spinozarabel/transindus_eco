@@ -2558,33 +2558,34 @@ class class_transindus_eco
 
         $soc_percentage_now_display = round( $soc_percentage_now, 1);
 
-        { // LVDS only if avasarala.in site is down for long and local soc measurement is low
+        { // local control of LVDS and switch release only if control site is down for long
         
           $main_control_site_avasarala_is_offline_for_long = $this->check_if_main_control_site_avasarala_is_offline_for_long();
 
-          if (  $main_control_site_avasarala_is_offline_for_long  && 
-                $soc_percentage_now < 35                          &&
-                $shelly1pm_acin_switch_status !== "ON"            &&
-                $control_shelly === true                              )
+          $shelly_readings_obj->main_control_site_avasarala_is_offline_for_long   = $main_control_site_avasarala_is_offline_for_long;
+
+          if (  $main_control_site_avasarala_is_offline_for_long  &&    // Main control site avasarala.in is offline for more than 15m
+                $soc_percentage_now < 35                          &&    // local SOC measurement is low
+                $shelly1pm_acin_switch_status !== "ON"            &&    // Grid switch is OFF
+                $control_shelly === true                              ) // servo control flag is enabled
           {
             // local command to turn ON Shelly 1PM Grid Switch
             error_log("Main control site is down for more than 15m and SOC ls low, commanded to turn ON Shelly 1PM Grid switch");
-          }
-          
-          
-        }
 
-        { // switch release if control site is down for long and it is daylight and soc is above limit and Grid switch is ON still
-          if (  $main_control_site_avasarala_is_offline_for_long  && 
-                $soc_percentage_now > 50                          &&
-                $$helly1pm_acin_switch_status === "ON"            &&
-                $control_shelly === true                              )
-          {
-            // local command to turn OFF Shelly 1PM Grid Switch
+            // $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
+          }
+          elseif (  $main_control_site_avasarala_is_offline_for_long  && 
+                    $soc_percentage_now > 50                          &&
+                    $$helly1pm_acin_switch_status === "ON"            &&
+                    $control_shelly === true                              )
+          {   // switch release if control site is down for long and it is daylight and soc is above limit and Grid switch is ON still
+            
             error_log("Main control site is down for more than 15m and SOC ls high, commanded to turn OFF Shelly 1PM Grid switch");
-          }
 
+            // $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'off' );
+          }
         }
+
 
         $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object );
 
@@ -2622,7 +2623,7 @@ class class_transindus_eco
         $log_string .= " SOC: " . number_format($soc_percentage_now_display, 1);
 
         // error_log("Batt(A): $battery_amps, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, pump ON for: $pump_ON_duration_secs, Water Heater: $shelly_water_heater_status_ON, SOC: $soc_percentage_now_display");
-        error_log($log_string);
+        // error_log($log_string);
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );
@@ -2633,61 +2634,83 @@ class class_transindus_eco
 
 
     /**
-     * 
+     *  @param int:$number_of_loops each loop is roughly 10s.
+     *  counts the number of loops. Each time a loop completes a counter is incremented
+     *  increment happens only when the remote control site is not accessible.
+     *  WHen the site is accessible the counter is reset to 0. The counter is stored as a transient
+     *  This function must be called on every iteration of the main cron loop
      */
-    public function check_if_main_control_site_avasarala_is_offline_for_long() : bool
+    public function check_if_main_control_site_avasarala_is_offline_for_long( int $number_of_loops = 60 ) : bool
     {
-      // get the transient value of minutes timer. This should really be called iteration counter
-      $minutes_timer = (int) get_transient( 'minutes_timer') ?? 0;
+
+      if ( false === ( $main_cron_loop_counter = (int) get_transient( 'main_cron_loop_counter') ) )
+      { // if 1st time or transient has expired, reset the counter
+        $main_cron_loop_counter = 0;
+      }
 
       // increment counter by 1 for this iteration
-      $minutes_timer += 1;
+      $main_cron_loop_counter += 1;
 
-      // update transient value of iteration counter for next check
-      set_transient( 'minutes_timer', $minutes_timer, 10 * 60 );
+      // update transient value of iteration counter for next check. The transient duration is 10 mins
+      set_transient( 'main_cron_loop_counter', $main_cron_loop_counter, 10 * 60 );
 
-      if ( $minutes_timer >= 5 )
-      { // For every 5 iterations or about 1 min, do this internet check
+      if ( $main_cron_loop_counter >= 10 )
+      { // For every 10 iterations or about 200 secs, do this internet check
         $fp = fsockopen("www.avasarala.in", 80, $errno, $errstr, 5);  // returns handle if successful or bool false if fail
 
         if ( $fp !== false )
-        { // control site is up so reset iteration counter and return false
+        { // control site is up so reset counters and transients and return false
           // use the returned handle to close the connection
           fclose($fp);
 
-          // reset timers to 0
+          // reset timers to 0 since site is online
           set_transient( 'minutes_that_site_avasarala_in_is_offline', 0, 10 * 60 );
 
-          set_transient( 'minutes_timer', 0, 10 * 60 );
+          // reset the counter to 0 since we just finished checking if contrl site is alive
+          set_transient( 'main_cron_loop_counter', 0, 10 * 60 );
 
           // control site being offline for long is false
           return false;
         }
         else
-        { // connection not open returned bool false not handle
+        { // connection not open returned bool false. Log the error
           error_log("control site www.avasarala.in is NOT reachable, so local intervention may be required");
           error_log("This is the error message: $errstr ($errno)");
 
           // no need to close the connection that did not open anyway
 
-          // get timer for accumulated value
-          $minutes_that_site_avasarala_in_is_offline = (int) get_transient( 'minutes_that_site_avasarala_in_is_offline') ?? 0;
+          // get counter value from transient
+          if( false === ( $minutes_that_site_avasarala_in_is_offline = (int) get_transient( 'minutes_that_site_avasarala_in_is_offline') ) )
+          {
+            // 1st time or transient has expired so reset the counter
+            $minutes_that_site_avasarala_in_is_offline = 0;
+          }
 
-          $minutes_that_site_avasarala_in_is_offline += $minutes_timer;
+          // accumulate the counter
+          $minutes_that_site_avasarala_in_is_offline += $main_cron_loop_counter;
 
           // rewrite timer accumulated value for later recall
           set_transient( 'minutes_that_site_avasarala_in_is_offline', $minutes_that_site_avasarala_in_is_offline, 10 * 60 );
 
-          if ( $minutes_that_site_avasarala_in_is_offline > 60 )
-          { // Site offline for 60 iterations or about 15m as each tick is about 1/4 of a minute
+          // reset loop counter for site check
+          set_transient( 'main_cron_loop_counter', 0, 10 * 60 );
+
+          if ( $minutes_that_site_avasarala_in_is_offline > $number_of_loops )
+          { // Site offline for 60 iterations or about 10m as each tick is about 1/4 of a minute
             error_log( "Avasarala site is down for about - $minutes_that_site_avasarala_in_is_offline continuous loops");
 
             return true;
+          }
+          else
+          {
+            // site is offline but not long enough
+            return false;
           }
         }
       }
       else
       {
+        // not 10 loops yet to check the control site
         return false;
       }
     }
@@ -3847,7 +3870,7 @@ class class_transindus_eco
      *  @param string:$shelly_switch_name is the name of the switch used to index its shelly_device_id in the config array
      *  @return object:$shelly_device_data is the curl response stdclass object from Shelly device
      */
-    public function turn_on_off_shelly1pm_acin_switch( int $user_index, string $desired_state ) : ? bool
+    public function turn_on_off_shelly1pm_acin_switch_over_lan( int $user_index, string $desired_state ) : ? bool
     {
         // get the config array from the object properties
         $config = $this->config;

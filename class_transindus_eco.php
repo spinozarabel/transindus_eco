@@ -1673,7 +1673,8 @@ class class_transindus_eco
         {
           // transient has expired or doesn't exist, OR meta data also is empty
           // Capture the after dark SOC, energy cunter and timestamp
-          $timestamp_soc_capture_after_dark = time();
+          $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $timestamp_soc_capture_after_dark = $now->getTimestamp();
 
           update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $present_home_wh_reading);
           update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $timestamp_soc_capture_after_dark);
@@ -1701,7 +1702,8 @@ class class_transindus_eco
           else
           {
             // looks like the transient was bad so lets do the capture after dark for SOC and Shelly EM energy counter
-            $timestamp_soc_capture_after_dark = time();
+            $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+            $timestamp_soc_capture_after_dark = $now->getTimestamp();
 
             set_transient( 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark,  13 * 3600 );
             set_transient( 'shelly_energy_counter_after_dark',  $present_home_wh_reading,           13 * 3600);

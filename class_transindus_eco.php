@@ -4368,6 +4368,8 @@ class class_transindus_eco
       {
         $c_array = [];
       } 
+
+      error_log("a: $a, b: $b, c: $c");
       
       
       // push the new voltage reading to the holding array

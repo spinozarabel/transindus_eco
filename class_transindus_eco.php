@@ -4395,14 +4395,14 @@ class class_transindus_eco
       $a_array = array_filter($a_array);
       if(count($a_array)) 
       {
-         $a_average = array_sum($a_array)/count($a_array);
+         $a_average = array_sum($a_array) / count($a_array);
       } 
 
       // get average value of Yellow Phase array
       $b_array = array_filter($b_array);
       if(count($b_array)) 
       {
-         $b_average = array_sum($b_array)/count($b_array);
+         $b_average = array_sum($b_array) / count($b_array);
       }
       
       // get average of Blue phase array values
@@ -4410,7 +4410,7 @@ class class_transindus_eco
       $c_array = array_filter($c_array);
       if(count($c_array)) 
       {
-         $c_average = array_sum($c_array)/count($c_array);
+         $c_average = array_sum($c_array) / count($c_array);
       }
 
       if ( ! empty( $a_average ) )
@@ -4441,7 +4441,9 @@ class class_transindus_eco
         $c_peak_percentage = 0;
       }
 
-      // error_log(print_r($a_array, true));
+      error_log(print_r($a_array, true));
+
+      error_log(print_r($c_array, true));
 
       // error_log("Average Phase Voltages: $a_average, $b_average, $c_average");
       

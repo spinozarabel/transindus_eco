@@ -4328,9 +4328,9 @@ class class_transindus_eco
       }
       else
       { // measurements don't exist
-        $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Grid OFF' . '</span>';
-        $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Grid OFF' . '</span>';
-        $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Grid OFF' . '</span>';
+        $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Grid DOWN' . '</span>';
+        $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Grid DOWN' . '</span>';
+        $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Grid DOWN' . '</span>';
 
         $a_phase_voltage_peak_percentage = 'NA';
         $b_phase_voltage_peak_percentage = 'NA';

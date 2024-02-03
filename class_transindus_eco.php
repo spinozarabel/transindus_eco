@@ -4259,14 +4259,17 @@ class class_transindus_eco
       // check if nonce is OK
       check_ajax_referer( 'my_grid_app_script' );
 
-      date_default_timezone_set("Asia/Kolkata");
-
       $data = new stdclass;
 
+      // create a now datetime object with local timezone
       $datetime_battery_last_measured = new DateTime();
+      $newTimezone = new DateTimeZone("Asia/Kolkata");
+      $datetime_battery_last_measured->setTimezone($newTimezone);
 
+      // This is already available and so is being used as time of measurement to display on screen
       $timestamp = get_transient( 'timestamp_battery_last_measurement' );
 
+      // set the timestamp for the datetime object
       $datetime_battery_last_measured->setTimeStamp($timestamp);
 
       $time_formatted_string = $datetime_battery_last_measured->format('H:i:s');
@@ -4277,7 +4280,7 @@ class class_transindus_eco
             false !== ( $b_phase_grid_voltage = get_transient( 'b_phase_grid_voltage' ) ) &&
             false !== ( $c_phase_grid_voltage = get_transient( 'c_phase_grid_voltage' ) )
           )
-      {
+      { // valid transients exist presumable from recent measurements
         $a_phase_grid_voltage = (int) round( (float) $a_phase_grid_voltage, 0 );
         $b_phase_grid_voltage = (int) round( (float) $b_phase_grid_voltage, 0 );
         $c_phase_grid_voltage = (int) round( (float) $c_phase_grid_voltage, 0 );
@@ -4324,10 +4327,10 @@ class class_transindus_eco
 
       }
       else
-      {
-        $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . $a_phase_grid_voltage . '</span>';
-        $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . $b_phase_grid_voltage . '</span>';
-        $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . $c_phase_grid_voltage . '</span>';
+      { // measurements don't exist
+        $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Grid OFF' . '</span>';
+        $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Grid OFF' . '</span>';
+        $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Grid OFF' . '</span>';
 
         $a_phase_voltage_peak_percentage = 'NA';
         $b_phase_voltage_peak_percentage = 'NA';

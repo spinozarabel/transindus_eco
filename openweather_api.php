@@ -147,7 +147,7 @@ class openweathermap_api
       // already json decoded into object
       $curlResponse   = $this->getCurl($endpoint, $headers, $params);
       
-      if ( $curlResponse->cod = '200' )
+      if ( $curlResponse->cod == '200' )
       {
           return $curlResponse;
       }
@@ -183,7 +183,7 @@ class openweathermap_api
       // already json decoded into object
       $curlResponse   = $this->getCurl($endpoint, $headers, $params);
 
-      if ( $curlResponse->cod = '200' )
+      if ( $curlResponse->cod == '200' )
           {
               return $curlResponse;
           }

@@ -4356,17 +4356,18 @@ class class_transindus_eco
     public function grid_voltage_processing( $a, $b, $c )  : array
     {
       // Load the voltage array for each phase
-      $a_array = get_transient(  'a_array' ); 
-      $b_array = get_transient(  'b_array' ); 
-      $c_array = get_transient(  'c_array' ); 
-
-      // If transient doesnt exist rebuild
-      if ( ! is_array( $a_array ) ||  ! is_array( $b_array ) || ! is_array( $c_array ) )
+      if ( false === ( $a_array = get_transient(  'a_array' ) ) )
       {
         $a_array = [];
-        $b_array = [];
-        $c_array = [];
       }
+      if ( false === ( $b_array = get_transient(  'b_array' ) ) )
+      {
+        $b_array = [];
+      }
+      if ( false === ( $c_array = get_transient(  'c_array' ) ) )
+      {
+        $c_array = [];
+      } 
       
       
       // push the new voltage reading to the holding array

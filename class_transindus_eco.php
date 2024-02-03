@@ -17,7 +17,7 @@
 /**
  * The core plugin class.
  *
- * This is used to define internationalization, admin-specific hooks, and
+ * This is used to define internationalization, admin-specific hooks, andF
  * public-facing site hooks.
  *
  * Also maintains the unique identifier of this plugin as well as the current
@@ -161,7 +161,7 @@ class class_transindus_eco
      */
     public function init()
     {
-      date_default_timezone_set("Asia/Kolkata");
+      //
 
       // set the logging
       $this->verbose = false;
@@ -204,15 +204,15 @@ class class_transindus_eco
 
       // we either got the forecast from API between 05-0500 or read it from the transient at other times.
       $sunset_timestamp = $this->cloudiness_forecast->sunset_timestamp;
-      $sunset_datetime_obj = new DateTime();
+      $sunset_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
       $sunset_datetime_obj->setTimeStamp($sunset_timestamp);
 
       $sunset_plus_10_minutes_timestamp = $sunset_timestamp + 10 * 60;
-      $sunset_plus_10_minutes_datetime_object = new DateTime();
+      $sunset_plus_10_minutes_datetime_object = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
       $sunset_plus_10_minutes_datetime_object->setTimeStamp($sunset_plus_10_minutes_timestamp);
 
       $sunset_plus_15_minutes_timestamp = $sunset_timestamp + 15 * 60;
-      $sunset_plus_15_minutes_datetime_object = new DateTime();
+      $sunset_plus_15_minutes_datetime_object = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
       $sunset_plus_15_minutes_datetime_object->setTimeStamp($sunset_plus_15_minutes_timestamp);
 
 
@@ -225,7 +225,7 @@ class class_transindus_eco
 
       $sunrise_timestamp = $this->cloudiness_forecast->sunrise_timestamp;
       $sunrise_timestamp_delayed = $sunrise_timestamp + 20 * 60;
-      $sunrise_datetime_obj = new DateTime();
+      $sunrise_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
       $sunrise_datetime_obj->setTimeStamp($sunrise_timestamp);
       $sunrise_hms_format = $sunrise_datetime_obj->format('H:i:s');
 
@@ -247,7 +247,7 @@ class class_transindus_eco
      */
     public static function set_default_timezone()
     {
-      date_default_timezone_set("Asia/Kolkata");
+      //
     }
 
     /**
@@ -478,7 +478,7 @@ class class_transindus_eco
       $all_usermeta = [];
 
       // set default timezone to Asia Kolkata
-      date_default_timezone_set("Asia/Kolkata");
+      //
 
       $all_usermeta = array_map( function( $a ){ return $a[0]; }, get_user_meta( $wp_user_ID ) );
 
@@ -501,7 +501,7 @@ class class_transindus_eco
       $return_array = [];
 
       // set default timezone to Asia Kolkata
-      date_default_timezone_set("Asia/Kolkata");
+      //
 
       $config     = $this->config;
 
@@ -668,7 +668,7 @@ class class_transindus_eco
     public function get_accumulated_wh_since_midnight_shelly4pm_over_lan(  float $energy_total_to_home_ts, int $user_index, int $wp_user_ID ) : ? int
     {
       // set default timezone to Asia Kolkata
-      date_default_timezone_set("Asia/Kolkata");
+      //
 
       // read in the config array from the class property
       $config = $this->config;
@@ -747,7 +747,7 @@ class class_transindus_eco
                                                               string  $shelly_switch_status ) : ? object
     {
       // set default timezone to Asia Kolkata
-      date_default_timezone_set("Asia/Kolkata");
+      //
 
       // instantiate the return object
       $return_obj = new stdClass;
@@ -1073,9 +1073,9 @@ class class_transindus_eco
      */
     public function minutes_now_to_future( $future_time ) : float
     {
-      date_default_timezone_set("Asia/Kolkata");
+      //
 
-      $now = new DateTime();
+      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
 
       if ( $this->nowIsWithinTimeLimits( '00:00', $future_time ) )
       {
@@ -1110,11 +1110,11 @@ class class_transindus_eco
      */
     public function minutes_from_reference_to_now( int $timestamp ) : float
     {
-      date_default_timezone_set("Asia/Kolkata");
+      //
 
-      $now = new DateTime();
+      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
 
-      $reference_datetime_obj = new DateTime();
+      $reference_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
 
       // This should be in the past
       $reference_datetime_obj->setTimeStamp( $timestamp );
@@ -1150,7 +1150,7 @@ class class_transindus_eco
                                                               bool    $it_is_still_dark) : ? object
     {
         // set default timezone to Asia Kolkata
-        date_default_timezone_set("Asia/Kolkata");
+        //
 
         // initialize the object to be returned
         $battery_measurements_object = new stdClass;
@@ -1181,7 +1181,7 @@ class class_transindus_eco
         }
 
         // get the unix time stamp when measurement was made
-        $now = new DateTime();
+        $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
         $timestamp = $now->getTimestamp();
 
         // The measure ADC voltage is in percent of 10V. So a 25% reading indicates 2.5V measured
@@ -1211,7 +1211,7 @@ class class_transindus_eco
         set_transient( 'timestamp_battery_last_measurement',  $timestamp,     60 * 60 );
         set_transient( 'amps_battery_last_measurement',       $battery_amps,  60 * 60 );
 
-        $prev_datetime_obj = new DateTime();
+        $prev_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
         $prev_datetime_obj->setTimeStamp($previous_timestamp);
 
         // get Battery SOC percentage accumulated till last measurement
@@ -1504,10 +1504,10 @@ class class_transindus_eco
         if ( empty( $studer_clock_unix_timestamp_with_utc_offset )) return;
 
         // create datetime object from studer timestamp. Note that this already has the UTC offeset for India
-        $rcc_datetime_obj = new DateTime();
+        $rcc_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
         $rcc_datetime_obj->setTimeStamp($studer_clock_unix_timestamp_with_utc_offset);
 
-        $now = new DateTime();
+        $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
 
         // form interval object between now and Studer's time stamp under investigation
         $diff = $now->diff( $rcc_datetime_obj );
@@ -1590,7 +1590,7 @@ class class_transindus_eco
      */
     public function check_if_soc_after_dark_happened( int $user_index, string $wp_user_name, int $wp_user_ID ) :bool
     {
-      date_default_timezone_set("Asia/Kolkata");
+      //
 
       // Get the transient if it exists
       if (false === ($timestamp_soc_capture_after_dark = get_transient( 'timestamp_soc_capture_after_dark' ) ) )
@@ -1614,9 +1614,9 @@ class class_transindus_eco
 
       // we have a non-emtpy timestamp. We have to check its validity.
       // It is valid if the timestamp is after sunset and is within 12h of it
-      $now = new DateTime();
+      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
 
-      $datetimeobj_from_timestamp = new DateTime();
+      $datetimeobj_from_timestamp = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
       $datetimeobj_from_timestamp->setTimestamp($timestamp_soc_capture_after_dark);
 
       // form the intervel object from now to the timestamp last on record for SOC capture after dark
@@ -1658,7 +1658,7 @@ class class_transindus_eco
                                                     bool    $time_window_for_soc_dark_capture_open )  : bool
     {
       // set default timezone to Asia Kolkata
-      date_default_timezone_set("Asia/Kolkata");
+      //
 
 
       // check if it is after dark and before midnightdawn annd that the transient has not been set yet
@@ -1775,7 +1775,7 @@ class class_transindus_eco
         // $this->count_5s_cron_cycles_modulo_12();
 
         // set default timezone to Asia Kolkata
-        date_default_timezone_set("Asia/Kolkata");
+        //
 
         $config = $this->get_config();
 
@@ -1922,7 +1922,7 @@ class class_transindus_eco
       $shelly_4pm_readings_object->pump_ON_duration_secs = 0;
 
       // set default timezone
-      date_default_timezone_set("Asia/Kolkata");
+      //
 
       // Is the pump enabled or not?
       $power_to_pump_is_enabled = $shelly_4pm_readings_object->pump_switch_status_bool;
@@ -1942,7 +1942,7 @@ class class_transindus_eco
         set_transient( 'pump_already_ON', 0,  3600 );
 
         // lets also initialize the pump start time to now since this is the 1st time ever
-        // $now = new DateTime();
+        // $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
         // $timestamp = $now->getTimestamp();
 
         // set pump start time as curreny time stamp
@@ -1966,13 +1966,13 @@ class class_transindus_eco
             set_transient( 'pump_already_ON', 0,  3600 );
 
             // calculate pump ON duration time. This will be used for notifications
-            $now = new DateTime();
+            $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
             $timestamp = $now->getTimestamp();
 
             // we are pretty sure the transient exists because pump is already ON
             $previous_timestamp = get_transient(  'timestamp_pump_ON_start' );
 
-            $prev_datetime_obj = new DateTime();
+            $prev_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
             $prev_datetime_obj->setTimeStamp($previous_timestamp);
 
             // find out the time interval between the start timestamp and the present one in seconds
@@ -2000,7 +2000,7 @@ class class_transindus_eco
             // Pump was OFF long back so we just need to reset the transients
             set_transient( 'pump_already_ON', 0,  3600 );
 
-            $now = new DateTime();
+            $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
             $timestamp = $now->getTimestamp();
 
             // set pump start time as curreny time stamp
@@ -2028,7 +2028,7 @@ class class_transindus_eco
 
           // capture pump ON start time as now
           // get the unix time stamp when measurement was made
-          $now = new DateTime();
+          $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $timestamp = $now->getTimestamp();
 
           // set pump start time as curreny time stamp
@@ -2046,13 +2046,13 @@ class class_transindus_eco
         case ( $pump_is_drawing_power &&  ( ! empty( $pump_already_ON ) ) ):
 
           // calculate pump ON duration time. If greater than 60 minutes switch power to pump OFF
-          $now = new DateTime();
+          $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $timestamp = $now->getTimestamp();
 
           // we are pretty sure the transient exists because pump is already ON
           $previous_timestamp = get_transient(  'timestamp_pump_ON_start' );
 
-          $prev_datetime_obj = new DateTime();
+          $prev_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $prev_datetime_obj->setTimeStamp($previous_timestamp);
 
           // find out the time interval between the start timestamp and the present one in seconds
@@ -2082,7 +2082,7 @@ class class_transindus_eco
               // pump is not ON anymore so set the flag to false
               set_transient( 'pump_already_ON', 0, 12 * 3600 );
 
-              $now = new DateTime();
+              $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
               $timestamp = $now->getTimestamp();
 
               // set pump STOP time as curreny time stamp
@@ -2126,11 +2126,11 @@ class class_transindus_eco
 
         //  pump was switched off after timer and needs to be ON again
         case ( ! $power_to_pump_is_enabled ):
-          $now = new DateTime();
+          $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $timestamp = $now->getTimestamp();
 
           $previous_timestamp = get_transient(  'timestamp_pump_OFF' );
-          $prev_datetime_obj = new DateTime();
+          $prev_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $prev_datetime_obj->setTimeStamp($previous_timestamp);
 
           // find out the time interval between the last timestamp and the present one in seconds
@@ -2183,7 +2183,7 @@ class class_transindus_eco
                                                         bool    $make_studer_api_call = true ) : void
     {
         { // Define boolean control variables for various time intervals
-          date_default_timezone_set("Asia/Kolkata");
+          //
           
           $sunset_hms_format  = $this->cloudiness_forecast->sunset_hms_format   ?? "18:00:00";
           $sunrise_hms_format = $this->cloudiness_forecast->sunrise_hms_format  ?? "06:00:00";
@@ -2274,7 +2274,7 @@ class class_transindus_eco
         
         {  // make all measurements
           
-          $now = new DateTime();
+          $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $studer_measured_battery_amps_now_timestamp = $now->getTimestamp();
 
           { // get the estimated solar power object from calculations for a clear day
@@ -3416,9 +3416,9 @@ class class_transindus_eco
      */
     public function nowIsWithinTimeLimits(string $start_time, string $stop_time): bool
     {
-        date_default_timezone_set("Asia/Kolkata");
+        //
 
-        $now =  new DateTime();
+        $now =  new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
         $begin = new DateTime($start_time);
         $end   = new DateTime($stop_time);
 
@@ -4373,7 +4373,7 @@ class class_transindus_eco
     public function ajax_my_solar_cron_update_handler()     
     {   // service AJax Call for minutely cron updates to my solar screen
         // The error log time stamp was showing as UTC so I added the below statement
-      date_default_timezone_set("Asia/Kolkata");
+      //
 
       // Ensures nonce is correct for security
       check_ajax_referer('my_solar_app_script');
@@ -4423,7 +4423,7 @@ class class_transindus_eco
     public function ajax_my_solar_update_handler()     
     {   // service AJax Call
         // The error log time stamp was showing as UTC so I added the below statement
-      date_default_timezone_set("Asia/Kolkata");
+      //
 
         // Ensures nonce is correct for security
         check_ajax_referer('my_solar_app_script');
@@ -4895,7 +4895,7 @@ class class_transindus_eco
         }
 
         // present time
-        $now = new DateTime();
+        $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
         // timestamp at last measurement exit
         // $past_unixdatetime = $cron_exit_condition_user_meta_arr['unixdatetime'];
         // get datetime object from timestamp

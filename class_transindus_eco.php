@@ -4368,8 +4368,6 @@ class class_transindus_eco
       {
         $c_array = [];
       } 
-
-      error_log("a: $a, b: $b, c: $c");
       
       
       // push the new voltage reading to the holding array
@@ -4394,14 +4392,14 @@ class class_transindus_eco
       set_transient( 'c_array', $c_array, 200 );
 
       // get average value of Red phase array
-      $a_array = array_filter($a_array);
+      $a_array = array_filter($a_array,  fn($n) => $n > 10 );
       if(count($a_array)) 
       {
          $a_average = array_sum($a_array) / count($a_array);
       } 
 
       // get average value of Yellow Phase array
-      $b_array = array_filter($b_array);
+      $b_array = array_filter($b_array, fn($n) => $n > 10);
       if(count($b_array)) 
       {
          $b_average = array_sum($b_array) / count($b_array);
@@ -4409,7 +4407,7 @@ class class_transindus_eco
       
       // get average of Blue phase array values
       // get average value of Yellow Phase array
-      $c_array = array_filter($c_array);
+      $c_array = array_filter($c_array, fn($n) => $n > 10);
       if(count($c_array)) 
       {
          $c_average = array_sum($c_array) / count($c_array);

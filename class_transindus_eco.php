@@ -3444,8 +3444,8 @@ class class_transindus_eco
         //
 
         $now =  new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-        $begin = new DateTime($start_time);
-        $end   = new DateTime($stop_time);
+        $begin = new DateTime($start_time, new DateTimeZone('Asia/Kolkata'));
+        $end   = new DateTime($stop_time,  new DateTimeZone('Asia/Kolkata'));
 
         if ($now >= $begin && $now <= $end)
         {

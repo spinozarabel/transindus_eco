@@ -1625,7 +1625,7 @@ class class_transindus_eco
      *  This is done in the main cron driven service loop itself.
      *  No other check is made in the function
      */
-    public function check_if_soc_after_dark_happened( int $user_index, string $wp_user_name, int $wp_user_ID ) :bool
+    public function check_if_soc_after_dark_happened( int $user_index, string $wp_user_name, int $wp_user_ID ) : bool
     {
       //
 
@@ -1637,13 +1637,13 @@ class class_transindus_eco
       }
       else
       {
-        // transient exists so get it
+        // transient exists so get it. This is redundant, the top statement already takes care of this
         $timestamp_soc_capture_after_dark = get_transient( $wp_user_name . '_' . 'timestamp_soc_capture_after_dark' );
       }
 
       if ( empty( $timestamp_soc_capture_after_dark ) )
       {
-        // timestamp is not valid
+        // timestamp does not exist. Log and return false
         $this->verbose ? error_log( "Time stamp for SOC capture after dark is empty or not valid") : false;
 
         return false;
@@ -1653,6 +1653,7 @@ class class_transindus_eco
       // It is valid if the timestamp is after sunset and is within 12h of it
       $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
 
+      // create a datetime object correesponding to the timestamp of SOC dark capture
       $datetimeobj_from_timestamp = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
       $datetimeobj_from_timestamp->setTimestamp($timestamp_soc_capture_after_dark);
 
@@ -2178,11 +2179,10 @@ class class_transindus_eco
                                                         bool    $make_studer_api_call = true ) : ? object
     {
         { // Define boolean control variables for various time intervals
-          //
           
-          $sunset_hms_format  = $this->cloudiness_forecast->sunset_hms_format   ?? "18:00:00";
           $sunrise_hms_format = $this->cloudiness_forecast->sunrise_hms_format  ?? "06:00:00";
 
+          $sunset_hms_format  = $this->cloudiness_forecast->sunset_hms_format   ?? "18:00:00";
           $sunset_plus_10_minutes_hms_format  = $this->cloudiness_forecast->sunset_plus_10_minutes_hms_format ?? "18:10:00";
           $sunset_plus_15_minutes_hms_format  = $this->cloudiness_forecast->sunset_plus_15_minutes_hms_format ?? "18:15:00";
 
@@ -2277,9 +2277,6 @@ class class_transindus_eco
           $shelly_switch_status             = $shelly_switch_acin_details_arr['shelly_switch_status'];
           $shelly_api_device_status_voltage = $shelly_switch_acin_details_arr['shelly_api_device_status_voltage'];
           $shelly_api_device_status_ON      = $shelly_switch_acin_details_arr['shelly_api_device_status_ON'];
-
-          // remember the voltage is set to 'NA' if the API call failed
-          set_transient( 'shelly1pm-acin-voltage', $shelly_api_device_status_voltage,  300);
         }
 
         { // get the SOCs from the user meta. These will be used to calculate new updates
@@ -2303,7 +2300,9 @@ class class_transindus_eco
         
         {  // make all measurements, update SOC, set switch tree control flags, reset midnight values
 
-          // check to see if 
+          // check to see if soc_capture_after_dark_happened.
+          // we do this check now to determine if Studer Calls are to be permitted at all if SOC after dark capture happened
+          // This signifies that it is dark
           $soc_capture_after_dark_happened = $this->check_if_soc_after_dark_happened($user_index, $wp_user_name, $wp_user_ID);
 
           // define conditions for Studer API call to be made
@@ -2318,7 +2317,7 @@ class class_transindus_eco
                 (   $it_is_still_dark &&    $soc_capture_after_dark_happened && empty( $soc_update_from_studer_after_dark ) ) ||
                   // it is dark, Studer flag is enabled, soc after dark capture happened but soc after dark values are bad
                 (   $it_is_still_dark &&    $soc_capture_after_dark_happened && 
-                    $soc_update_from_studer_after_dark < 20 && $soc_update_from_studer_after_dark > 102 ) );
+                    $soc_update_from_studer_after_dark < 30 && $soc_update_from_studer_after_dark > 102 ) );
  
           // make Studer API call when flag is let in main cron loop to do so
           if ( $conditions_satisfied_to_make_studer_api_call === true )
@@ -2390,7 +2389,7 @@ class class_transindus_eco
 
               $battery_accumulated_percent_since_midnight = $shelly_battery_measurement_object->battery_accumulated_percent_since_midnight;
 
-              $battery_accumulated_ah_since_midnight  = $battery_accumulated_percent_since_midnight /100 * $battery_capacity_ah;
+              $battery_accumulated_ah_since_midnight  = $battery_accumulated_percent_since_midnight / 100 * $battery_capacity_ah;
 
               $battery_kwh_since_midnight = round( 49.8 * 0.001 * $battery_accumulated_ah_since_midnight, 3 );
 
@@ -2481,7 +2480,7 @@ class class_transindus_eco
             }
           }
 
-          // make an API call on the Grid Power Shelly EM device and calculate the accumulated WH since midnight
+          // make an API call on the Shelly EM device and calculate the accumulated WH Home load consumption since midnight
           $shelly_em_readings_object = $this->get_shelly_em_home_load_measurements( $user_index, $wp_user_name, $wp_user_ID );
 
           if ( $shelly_em_readings_object )

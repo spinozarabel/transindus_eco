@@ -1079,7 +1079,7 @@ class class_transindus_eco
 
       if ( $this->nowIsWithinTimeLimits( '00:00', $future_time ) )
       {
-        $future_datetime_object = new DateTime($future_time);
+        $future_datetime_object = new DateTime($future_time, new DateTimeZone('Asia/Kolkata'));
 
         // we are past midnight so we just calulcate mins from now to future time
         // form interval object between now and  time stamp under investigation
@@ -1092,7 +1092,7 @@ class class_transindus_eco
       else
       {
         // we are not past midnight of today so future time is past 23:59:59 into tomorrow
-        $future_datetime_object = new DateTime( "tomorrow " . $future_time );
+        $future_datetime_object = new DateTime( "tomorrow " . $future_time, new DateTimeZone('Asia/Kolkata'));
 
         $diff = $now->diff( $future_datetime_object );
 

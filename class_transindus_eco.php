@@ -2250,8 +2250,8 @@ class class_transindus_eco
             $sunrise_decimal_hours  = $est_solar_obj->sunrise;
             $sunset_decimal_hours   = $est_solar_obj->sunset;
 
-            $sunrise_hms_format_solarcalc = gmdate('H:i:s', floor( $sunrise_decimal_hours * 3600 ) );
-            $sunset_hms_format_solarcalc  = gmdate('H:i:s', floor( $sunset_decimal_hours * 3600  ) );
+            $sunrise_hms_format_solarcalc = gmdate('H:i:s', floor( $sunrise_decimal_hours * 3600  ) );
+            $sunset_hms_format_solarcalc  = gmdate('H:i:s', floor( $sunset_decimal_hours  * 3600  ) );
 
             $sunset_plus_10_minutes_hms_format_solarcalc = gmdate('H:i:s', floor( $sunset_decimal_hours * 3600 + 10 * 60  ) );
             $sunset_plus_15_minutes_hms_format_solarcalc = gmdate('H:i:s', floor( $sunset_decimal_hours * 3600 + 15 * 60  ) );
@@ -2413,9 +2413,7 @@ class class_transindus_eco
               $battery_accumulated_ah_since_midnight              = $shelly_battery_measurement_object->battery_accumulated_ah_since_midnight;
               $battery_accumulated_kwh_since_midnight             = round( 49.8 * 0.001 * $battery_accumulated_ah_since_midnight, 3 );
 
-              $shelly_readings_obj->est_solar_total_kw        = $est_solar_total_kw;
-              $shelly_readings_obj->est_solar_kw_arr          = $est_solar_kw_arr;
-              $shelly_readings_obj->total_to_west_panel_ratio = $total_to_west_panel_ratio;
+              
 
               $shelly_readings_obj->battery_capacity_ah       = $battery_capacity_ah;
               $shelly_readings_obj->battery_amps              = $battery_amps;  

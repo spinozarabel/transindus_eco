@@ -4999,7 +4999,7 @@ class class_transindus_eco
 
         if ( ! empty( $readings_obj->cloudiness_average_percentage_weighted ) )
         {
-          $status .= " Cloud: " . round($readings_obj->cloudiness_average_percentage_weighted,1) . " %";
+          $status .= " Cloud: " . round($readings_obj->cloudiness_average_percentage_weighted,1) . "%";
         }
 
         if ( ! empty( $readings_obj->est_solar_total_kw ) )

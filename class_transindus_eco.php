@@ -3707,7 +3707,7 @@ class class_transindus_eco
         </table>';
 
 
-        $output .= '<div id="status">'. $format_object->status     . '</div>';
+        $output .= '<div id="status_html">'. $format_object->status     . '</div>';
 
         return $output;
     }

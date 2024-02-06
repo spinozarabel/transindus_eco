@@ -2251,19 +2251,22 @@ class class_transindus_eco
             $sunrise_hms_format_solarcalc = gmdate('H:i:s', floor( $sunrise_decimal_hours * 3600 ) );
             $sunset_hms_format_solarcalc  = gmdate('H:i:s', floor( $sunset_decimal_hours * 3600  ) );
 
-            error_log("Sunrise: $sunrise_hms_format_solarcalc, Sunset: $sunset_hms_format_solarcalc");
+            $sunset_plus_10_minutes_hms_format_solarcalc = gmdate('H:i:s', floor( $sunset_decimal_hours * 3600 + 10 * 60  ) );
+            $sunset_plus_15_minutes_hms_format_solarcalc = gmdate('H:i:s', floor( $sunset_decimal_hours * 3600 + 15 * 60  ) );
 
             // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
             $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
           }
           
-          $sunrise_hms_format  = '06:00:00';
-          $sunset_hms_format = '18:00:00';
+          $sunrise_hms_format   = $sunrise_hms_format_solarcalc ?? '06:00:00';
+          $sunset_hms_format    = $sunset_hms_format_solarcalc  ?? '18:00:00';
 
           error_log("Sunrise: $sunrise_hms_format, Sunset: $sunset_hms_format");
 
-          $sunset_plus_10_minutes_hms_format  = $this->cloudiness_forecast->sunset_plus_10_minutes_hms_format ?? "18:10:00";
-          $sunset_plus_15_minutes_hms_format  = $this->cloudiness_forecast->sunset_plus_15_minutes_hms_format ?? "18:15:00";
+          $sunset_plus_10_minutes_hms_format  = $sunset_plus_10_minutes_hms_format_solarcalc ?? "18:10:00";
+          $sunset_plus_15_minutes_hms_format  = $sunset_plus_15_minutes_hms_format_solarcalc ?? "18:15:00";
+
+          error_log("Sunset0: $sunset_plus_10_minutes_hms_format, Sunset15: $sunset_plus_15_minutes_hms_format");
 
           // From sunset to 15m after, the total time window for SOC after Dark Capture
           $time_window_for_soc_dark_capture_open = $this->nowIsWithinTimeLimits( $sunset_hms_format, $sunset_plus_15_minutes_hms_format );

@@ -5019,10 +5019,10 @@ class class_transindus_eco
         // format the interval for display
         $formatted_interval = $this->format_interval($interval_since_last_change);
 
-        $status .= " " . $now_format . " ";
+        $status .= " " . $now_format;
 
         
-        $status .= '<span style="color: Blue; display:block; text-align: center;">' .
+        $status = '<span style="color: Blue; display:block; text-align: center;">' .
                                                   $status   . '<br>' . 
                                                   'sunrise: ' . $readings_obj->sunrise  . 'sunset: ' . $readings_obj->sunset .
                                   '</span>';

@@ -2240,7 +2240,7 @@ class class_transindus_eco
           { // get the estimated solar power object from calculations for a clear day
               
             $est_solar_obj = $this->estimated_solar_power($user_index);
-            error_log(print_r($est_solar_obj, true));
+            // error_log(print_r($est_solar_obj, true));
 
             $est_solar_total_kw = $est_solar_obj->est_solar_total_kw;
 

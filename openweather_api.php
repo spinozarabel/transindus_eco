@@ -22,7 +22,7 @@ class openweathermap_api
 		  $this->lat        = $lat;     // The server uri can be obtained 
       $this->lon        = $lon;
       $this->server_uri = 'https://api.openweathermap.org/data/2.5';
-      $this->cnt        =  $cnt ??  4;      // used to be 3. Changed on 10/20/2020
+      $this->cnt        =  $cnt ??  3;   
     }       // end construct function
 
     /**
@@ -33,13 +33,19 @@ class openweathermap_api
      *  $cloudiness_forecast->cloudiness_average_percentage  Percentage average cloudiness with no weighting
      *  $cloudiness_forecast->cloudiness_average_percentage_weighted  Weighted percentage average cloudiness
      */
-    public function forecast_is_cloudy()
+    public function forecast_is_cloudy() : ? object
     {
       // initialize stdclass object that is to be returned by the function
       $cloudiness_forecast = new stdClass;
 
-      // get the details using API from external vendor service
+      // get the details using API from external vendor service. a null is possible if API call failed
       $forecast = $this->get_weather_forecast();
+
+      if ( empty( $forecast ) )
+      {
+        // the API call did fail
+        return null;
+      }
 
       // initialize the variale that accumuates the cloudiness percentage over 'cnt' number of periods
       $clouds_all = 0;
@@ -88,7 +94,7 @@ class openweathermap_api
       }
 
       // Divide to get the average cloudiness over the day starting from 0600 and ending after 3h x cnt or by 1800
-      $cloudiness_average_percentage = $clouds_all /  $forecast->cnt;
+      $cloudiness_average_percentage = $clouds_all / ( $forecast->cnt + 0.001 );
 
       // Calculate the average weighted cloudpercentage as follows
       $cloudiness_average_percentage_weighted = $clouds_all_weighted / $divider_weighted;
@@ -111,16 +117,48 @@ class openweathermap_api
         $it_is_a_cloudy_day_weighted_average = false;
       }
 
-      // get sunrise and sunset unix time stamps
-      $cloudiness_forecast->sunrise_timestamp = $forecast->city->sunrise;
-      $cloudiness_forecast->sunset_timestamp  = $forecast->city->sunset;
-
       $cloudiness_forecast->it_is_a_cloudy_day                      = $it_is_a_cloudy_day;
       $cloudiness_forecast->it_is_a_cloudy_day_weighted_average     = $it_is_a_cloudy_day_weighted_average;
       $cloudiness_forecast->cloudiness_average_percentage           = $cloudiness_average_percentage;
       $cloudiness_forecast->cloudiness_average_percentage_weighted  = $cloudiness_average_percentage_weighted;
 
-      // error_log(print_r($cloudiness_forecast, true));
+      $sunset_timestamp = $forecast->city->sunset;
+      $sunset_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+      $sunset_datetime_obj->setTimeStamp($sunset_timestamp);
+
+      $sunset_plus_10_minutes_timestamp = $sunset_timestamp + 10 * 60;
+      $sunset_plus_10_minutes_datetime_object = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+      $sunset_plus_10_minutes_datetime_object->setTimeStamp($sunset_plus_10_minutes_timestamp);
+
+      $sunset_plus_15_minutes_timestamp = $sunset_timestamp + 15 * 60;
+      $sunset_plus_15_minutes_datetime_object = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+      $sunset_plus_15_minutes_datetime_object->setTimeStamp($sunset_plus_15_minutes_timestamp);
+
+
+      // sunset time in hours:minutes:seconds format
+      $sunset_hms_format                  = $sunset_datetime_obj->format('H:i:s');
+      $sunset_plus_10_minutes_hms_format  = $sunset_plus_10_minutes_datetime_object->format('H:i:s');
+      $sunset_plus_15_minutes_hms_format  = $sunset_plus_15_minutes_datetime_object->format('H:i:s');
+
+      // error_log ("Sunset: $sunset_hms_format, Sunset plus 10m: $sunset_plus_10_minutes_hms_format, Sunset plus 15m: $sunset_plus_15_minutes_hms_format");
+
+      $sunrise_timestamp = $forecast->city->sunrise;
+      $sunrise_timestamp_delayed = $sunrise_timestamp + 20 * 60;
+      $sunrise_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+      $sunrise_datetime_obj->setTimeStamp($sunrise_timestamp);
+      $sunrise_hms_format = $sunrise_datetime_obj->format('H:i:s');
+
+      $cloudiness_forecast->sunrise_timestamp                 = $sunrise_timestamp;
+      $cloudiness_forecast->sunset_timestamp                  = $sunset_timestamp;
+      $cloudiness_forecast->sunset_plus_10_minutes_timestamp  = $sunset_plus_10_minutes_timestamp;
+      $cloudiness_forecast->sunset_plus_15_minutes_timestamp  = $sunset_plus_15_minutes_timestamp;
+
+      $cloudiness_forecast->sunrise_hms_format                = $sunrise_hms_format;
+      $cloudiness_forecast->sunset_hms_format                 = $sunset_hms_format;
+      $cloudiness_forecast->sunset_plus_10_minutes_hms_format = $sunset_plus_10_minutes_hms_format;
+      $cloudiness_forecast->sunset_plus_15_minutes_hms_format = $sunset_plus_15_minutes_hms_format;
+
+      $this->cloudiness_forecast = $cloudiness_forecast;
 
       return $cloudiness_forecast;
     }
@@ -152,11 +190,8 @@ class openweathermap_api
           return $curlResponse;
       }
       else
-      {
-          if ($this->verbose)
-          {
-              error_log( "This is the response while querying for openweathermap weather" . print_r($curlResponse, true) );
-          }
+      {   // did not get a proper API response so log error and return error
+          error_log( "This is the response while querying for openweathermap weather" . print_r($curlResponse, true) );
           return null;
       }
     }

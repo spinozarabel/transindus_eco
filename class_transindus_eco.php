@@ -2248,8 +2248,8 @@ class class_transindus_eco
             $sunrise_decimal_hours  = $est_solar_obj->sunrise;
             $sunset_decimal_hours   = $est_solar_obj->sunset;
 
-            $sunrise_hms_format_solarcalc = Date('H:i:s', floor( $sunrise_decimal_hours) );
-            $sunset_hms_format_solarcalc  = Date('H:i:s', floor( $sunset_decimal_hours)  );
+            $sunrise_hms_format_solarcalc = gmdate('H:i:s', floor( $sunrise_decimal_hours * 3600 ) );
+            $sunset_hms_format_solarcalc  = gmdate('H:i:s', floor( $sunset_decimal_hours * 3600  ) );
 
             error_log("Sunrise: $sunrise_hms_format_solarcalc, Sunset: $sunset_hms_format_solarcalc");
 

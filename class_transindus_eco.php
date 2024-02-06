@@ -2260,8 +2260,7 @@ class class_transindus_eco
             $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
 
             // copy variables to shelly readings pobject properties
-            $shelly_readings_obj->sunrise = $sunrise_hms_format_solarcalc;
-            $shelly_readings_obj->sunset  = $sunset_hms_format_solarcalc;
+            
 
             $shelly_readings_obj->est_solar_total_kw          = $est_solar_total_kw;
             $shelly_readings_obj->total_to_west_panel_ratio   = $total_to_west_panel_ratio;
@@ -2274,6 +2273,9 @@ class class_transindus_eco
           
           $sunrise_hms_format   = $sunrise_hms_format_solarcalc ?? '06:00:00';
           $sunset_hms_format    = $sunset_hms_format_solarcalc  ?? '18:00:00';
+
+          $shelly_readings_obj->sunrise = $sunrise_hms_format;
+          $shelly_readings_obj->sunset  = $sunset_hms_format;
 
           // error_log("Sunrise: $sunrise_hms_format, Sunset: $sunset_hms_format");
 

@@ -2255,8 +2255,8 @@ class class_transindus_eco
             $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
           }
           
-          $sunset_hms_format  = $sunrise_hms_format_solarcalc   ?? '06:00:00';
-          $sunrise_hms_format = $sunset_hms_format_solarcalc    ?? '18:00:00';
+          $sunrise_hms_format  = '06:00:00';
+          $sunset_hms_format = '18:00:00';
 
           error_log("Sunrise: $sunrise_hms_format, Sunset: $sunset_hms_format");
 

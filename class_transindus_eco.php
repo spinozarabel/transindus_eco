@@ -5023,7 +5023,7 @@ class class_transindus_eco
         
         $status_html = '<span style="color: Blue; display:block; text-align: center;">' .
                                                   $status   . '<br>' . 
-                                                  'sunrise: ' . $readings_obj->sunrise  . 'sunset: ' . $readings_obj->sunset .
+                                                  'sunrise: ' . $readings_obj->sunrise  . ' sunset: ' . $readings_obj->sunset .
                                   '</span>';
 
         

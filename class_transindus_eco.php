@@ -2245,7 +2245,7 @@ class class_transindus_eco
 
             $est_solar_kw_arr = $est_solar_obj->est_solar_kw_arr;
 
-            $sunrise_decimal_hours  =  $est_solar_obj->sunrise;
+            $sunrise_decimal_hours  = $est_solar_obj->sunrise;
             $sunset_decimal_hours   = $est_solar_obj->sunset;
 
             $sunrise_hms_format_solarcalc = gmdate('H:i:s', floor( $sunrise_decimal_hours) );
@@ -2255,8 +2255,8 @@ class class_transindus_eco
             $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
           }
           
-          $sunset_hms_format  = $this->cloudiness_forecast->sunset_hms_format   ?? $sunrise_hms_format_solarcalc;
-          $sunrise_hms_format = $this->cloudiness_forecast->sunrise_hms_format  ?? $sunset_hms_format_solarcalc;
+          $sunset_hms_format  = $sunrise_hms_format_solarcalc   ?? '06:00:00';
+          $sunrise_hms_format = $sunset_hms_format_solarcalc    ?? '18:00:00';
 
           error_log("Sunrise: $sunrise_hms_format, Sunset: $sunset_hms_format");
 

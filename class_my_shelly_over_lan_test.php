@@ -284,8 +284,8 @@ class my_shelly_over_lan_test
 
         $est_solar_obj->total_to_west_panel_ratio =  $total_to_west_panel_ratio;
 
-        $est_solar_obj->sunrise =  $solar_calc-sunrise();
-        $est_solar_obj->sunset =  $solar_calc-sunset();
+        $est_solar_obj->sunrise =  $solar_calc->sunrise();
+        $est_solar_obj->sunset =  $solar_calc->sunset();
 
 
         return $est_solar_obj;

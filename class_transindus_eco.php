@@ -2234,9 +2234,29 @@ class class_transindus_eco
     {
         { // Define boolean control variables for various time intervals
           //
+
+          { // get the estimated solar power object from calculations for a clear day
+              
+            $est_solar_obj = $this->estimated_solar_power($user_index);
+
+            $est_solar_total_kw = $est_solar_obj->est_solar_total_kw;
+
+            $total_to_west_panel_ratio = $est_solar_obj->total_to_west_panel_ratio;
+
+            $est_solar_kw_arr = $est_solar_obj->est_solar_kw_arr;
+
+            $sunrise_decimal_hours  =  $est_solar_obj->sunrise;
+            $sunset_decimal_hours   = $est_solar_obj->sunset;
+
+            $sunrise_hms_format_solarcalc = gmdate('H:i:s', floor( $sunrise_decimal_hours) );
+            $sunset_hms_format_solarcalc  = gmdate('H:i:s', floor( $sunset_decimal_hours)  );
+
+            // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
+            $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
+          }
           
-          $sunset_hms_format  = $this->cloudiness_forecast->sunset_hms_format   ?? "18:00:00";
-          $sunrise_hms_format = $this->cloudiness_forecast->sunrise_hms_format  ?? "06:00:00";
+          $sunset_hms_format  = $this->cloudiness_forecast->sunset_hms_format   ?? $sunrise_hms_format_solarcalc;
+          $sunrise_hms_format = $this->cloudiness_forecast->sunrise_hms_format  ?? $sunset_hms_format_solarcalc;
 
           error_log("Sunrise: $sunrise_hms_format, Sunset: $sunset_hms_format");
 
@@ -2328,20 +2348,6 @@ class class_transindus_eco
           
           $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $studer_measured_battery_amps_now_timestamp = $now->getTimestamp();
-
-          { // get the estimated solar power object from calculations for a clear day
-              
-            $est_solar_obj = $this->estimated_solar_power($user_index);
-
-            $est_solar_total_kw = $est_solar_obj->est_solar_total_kw;
-
-            $total_to_west_panel_ratio = $est_solar_obj->total_to_west_panel_ratio;
-
-            $est_solar_kw_arr = $est_solar_obj->est_solar_kw_arr;
-
-            // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
-            $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
-          }
 
           { // Make Shelly pro 3EM energy measuremnts of 3phase Grid
             $shelly_3p_grid_wh_measurement_obj = $this->get_shelly_3p_grid_wh_since_midnight_over_lan( $user_index, $wp_user_name, $wp_user_ID );
@@ -5073,4 +5079,5 @@ class class_transindus_eco
 
       return round( $result, 2);
     }
+    
 }

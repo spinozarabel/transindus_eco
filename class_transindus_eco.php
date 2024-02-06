@@ -2233,7 +2233,9 @@ class class_transindus_eco
                                                         bool    $make_studer_api_call = true ) : void
     {
         { // Define boolean control variables for various time intervals
-          //
+
+          // This is the main object that we deal with  for storing and processing data gathered from our IOT devices
+          $shelly_readings_obj = new stdClass;
 
           { // get the estimated solar power object from calculations for a clear day
               
@@ -2256,6 +2258,18 @@ class class_transindus_eco
 
             // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
             $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
+
+            // copy variables to shelly readings pobject properties
+            $shelly_readings_obj->sunrise = $sunrise_hms_format_solarcalc;
+            $shelly_readings_obj->sunset  = $sunset_hms_format_solarcalc;
+
+            $shelly_readings_obj->est_solar_total_kw          = $est_solar_total_kw;
+            $shelly_readings_obj->total_to_west_panel_ratio   = $total_to_west_panel_ratio;
+            $shelly_readings_obj->est_solar_kw_arr            = $est_solar_kw_arr;
+
+            $shelly_readings_obj->it_is_a_cloudy_day            = $it_is_a_cloudy_day;
+            $shelly_readings_obj->cloudiness_average_percentage = $this->cloudiness_forecast->cloudiness_average_percentage;
+            $shelly_readings_obj->cloudiness_average_percentage_weighted = $this->cloudiness_forecast->cloudiness_average_percentage_weighted;
           }
           
           $sunrise_hms_format   = $sunrise_hms_format_solarcalc ?? '06:00:00';
@@ -2269,13 +2283,16 @@ class class_transindus_eco
           // error_log("Sunset0: $sunset_plus_10_minutes_hms_format, Sunset15: $sunset_plus_15_minutes_hms_format");
 
           // From sunset to 15m after, the total time window for SOC after Dark Capture
-          $time_window_for_soc_dark_capture_open = $this->nowIsWithinTimeLimits( $sunset_hms_format, $sunset_plus_15_minutes_hms_format );
+          $time_window_for_soc_dark_capture_open = 
+                              $this->nowIsWithinTimeLimits( $sunset_hms_format, $sunset_plus_15_minutes_hms_format );
 
           // From sunset to 10m after is the time window alloted for SOC capture after dark, using Studder 1st.
-          $time_window_open_for_soc_capture_after_dark_using_studer = $this->nowIsWithinTimeLimits( $sunset_hms_format, $sunset_plus_10_minutes_hms_format );
+          $time_window_open_for_soc_capture_after_dark_using_studer = 
+                              $this->nowIsWithinTimeLimits( $sunset_hms_format, $sunset_plus_10_minutes_hms_format );
 
           // From 10m after sunset to 5m after is the time window for SOC capture after dark using Shelly, if Studer fails in 1st window
-          $time_window_open_for_soc_capture_after_dark_using_shelly = $this->nowIsWithinTimeLimits( $sunset_plus_10_minutes_hms_format, $sunset_plus_15_minutes_hms_format );
+          $time_window_open_for_soc_capture_after_dark_using_shelly = 
+                              $this->nowIsWithinTimeLimits( $sunset_plus_10_minutes_hms_format, $sunset_plus_15_minutes_hms_format );
 
           // it is still dark if now is after sunset to midnight and from midnight to sunrise.
           $it_is_still_dark = $this->nowIsWithinTimeLimits( $sunset_hms_format, "23:59:59" ) || 
@@ -2328,9 +2345,6 @@ class class_transindus_eco
           // using only shelly devices and does NOT involve Battery Current based measurements.
           $soc_percentage_after_dark  = (float) get_user_meta( $wp_user_ID, 'soc_percentage_after_dark',  true);
         }
-
-        // This is the main object that we deal with  for storing and processing data gathered from our IOT devices
-        $shelly_readings_obj = new stdClass;
 
         { // --------------------- Shelly1PM ACIN SWITCH data after making a Shelly API call -------------------
 
@@ -4440,7 +4454,7 @@ class class_transindus_eco
 
       //update the object with Inverter Load details
       $studer_readings_obj->pout_inverter_ac_kw         = $pout_inverter_ac_kw;
-      $studer_readings_obj->inverter_current_amps        = $inverter_current_amps;
+      $studer_readings_obj->inverter_current_amps       = $inverter_current_amps;
 
       // update the Grid input values
       $studer_readings_obj->transfer_relay_state        = $transfer_relay_state;
@@ -4686,7 +4700,7 @@ class class_transindus_eco
         $solar_amps_at_49V      =   round($psolar_kw * 1000 / 48.9, 1);
 
         // 
-        $shelly_em_home_kw          =   $readings_obj->shelly_em_home_kw;
+        $shelly_em_home_kw      =   $readings_obj->shelly_em_home_kw;
 
         // changed to avg July 15 2023 was battery_voltage_vdc before that
         // $battery_voltage_vdc    =   round( (float) $readings_obj->battery_voltage_avg, 1);
@@ -4992,6 +5006,8 @@ class class_transindus_eco
 
         // present time
         $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+
+        $now_format = $now->format("H:i:s");
         // timestamp at last measurement exit
         // $past_unixdatetime = $cron_exit_condition_user_meta_arr['unixdatetime'];
         // get datetime object from timestamp
@@ -5001,17 +5017,16 @@ class class_transindus_eco
         // format the interval for display
         $formatted_interval = $this->format_interval($interval_since_last_change);
 
-        $status .= " " . $formatted_interval;
+        $status .= " " . $now_format;
 
-        /*
-        $format_object->cron_exit_condition = '<span style="font-size: 18px;color: Blue; display:block; text-align: center;">' . 
+        
+        $format_object->status = '<span style="font-size: 18px;color: Blue; display:block; text-align: center;">' . 
                                                   'SOC: <strong>' . $SOC_percentage_now . ' %' . '</strong><br>
-                                               </span>' .
-                                              '<span style="color: Blue; display:block; text-align: center;">' .
-                                                  $formatted_interval   . '<br>' . 
-                                                  $saved_cron_exit_condition  .
-                                              '</span>';
-        */
+                                  </span>' .
+                                  '<span style="color: Blue; display:block; text-align: center;">' .
+                                                  $status   . '<br>' . 
+                                                  'sunrise: ' . $readings_obj->sunrise  . 'sunset: ' . $readings_obj->sunset .
+                                  '</span>';
 
         
         

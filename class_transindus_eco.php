@@ -5000,9 +5000,9 @@ class class_transindus_eco
           $status .= " Cloud: " . round($readings_obj->cloudiness_average_percentage_weighted,1) . " %";
         }
 
-        if ( ! empty( $readings_obj->est_solar_kw ) )
+        if ( ! empty( $readings_obj->est_total_solar_kw ) )
         {
-          $status .= " Pest: " . $readings_obj->est_solar_kw . " KW";
+          $status .= " Pest: " . $readings_obj->est_total_solar_kw . " KW";
         }
 
         // present time

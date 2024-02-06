@@ -366,7 +366,7 @@ $sunrise  = $ret->sunrise;
 $sunset   = $ret->sunset;
 
 echo("SUurise = " . $sunrise . "\n" );
-echo("Sunset = " . $sunrise . "\n" );
+echo("Sunset = " . $sunset . "\n" );
 
 
 

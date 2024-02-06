@@ -29,7 +29,7 @@ class solar_calculation
         $this->lat_rad              =   $lat_long_array[0] * pi()/180;
 
         $this_utc_offset            =   $utc_offset;
-        $this->timezone             =   'Asia/Kolkata';
+        $this->timezone             =   new DateTimeZone('Asia/Kolkata');
 
         $this->now                  =   $this->now();
         $this->d                    =   $this->days_into_year();
@@ -47,6 +47,10 @@ class solar_calculation
         // declination
         $this->delta_rad            =   $this->delta_rad();
 
+        $this->sunrise              =   $this->sunrise();
+
+        $this->sunset              =   $this->sunset();
+
     }
 
     public function est_power()
@@ -60,20 +64,30 @@ class solar_calculation
         return $est_solar_kw;
     }
 
+
+
+    /**
+     * 
+     */
     public function now()
     {
-        date_default_timezone_set($this->timezone);
-
-        $now = new DateTime();
+        $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
 
         return $now;
     }
 
+
+
+    /**
+     * 
+     */
     public function days_into_year()
     {
-        date_default_timezone_set($this->timezone);
-        
+        // get a new datetime object for 1st midnight GMT
         $year_begin = DateTime::createFromFormat('Y-m-d', '2022-01-01');
+
+        // now set the timezone to the local one
+        $year_begin->setTimezone($this->timezone);
 
         $datediff = date_diff($this->now, $year_begin);
 
@@ -84,6 +98,11 @@ class solar_calculation
         return $d;
     }
 
+
+
+    /**
+     * 
+     */
     public function B_rad()
     {
         $B_rad = 360/365*($this->d - 81) * pi()/180; 
@@ -91,6 +110,9 @@ class solar_calculation
         return $B_rad;
     }
 
+    /**
+     * 
+     */
     public function eot()
     {
         $B_rad  =   $this->B_rad;
@@ -99,6 +121,9 @@ class solar_calculation
         return $eot;
     }
 
+    /**
+     * 
+     */
     public function hra_rad()
     {
         // correct time for longitude and eot in minutes
@@ -106,7 +131,13 @@ class solar_calculation
         
         $tcf = $time_correction_factor . " minutes";
 
-        $local_solar_time = new DateTime($tcf);
+        $local_solar_time = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+        $lt_timestamp = $local_solar_time->getTimestamp();
+
+        $lst_timestamp = $lt_timestamp + $time_correction_factor * 60;
+
+        $lst = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+        $lst->setTimestamp($lst_timestamp);
 
         $formatted_lst = $local_solar_time->format('H:i:s');
 
@@ -114,7 +145,7 @@ class solar_calculation
 
         $hours = $arr[0] + $arr[1]/60;
 
-        // calculate hour angle based on time. Hour angle is negaitive in AM and positive in PM and 0 at local solar noon
+        // calculate hour angle based on local solar time. Hour angle is negaitive in AM and positive in PM and 0 at local solar noon
         $hra = 15 * ($hours - 12);
 
         $hra_rad = $hra * pi()/180;
@@ -122,6 +153,9 @@ class solar_calculation
         return $hra_rad;
     }
 
+    /**
+     * 
+     */
     public function delta_rad()
     {
         //  calculate declination based on days from start of year
@@ -132,6 +166,9 @@ class solar_calculation
         return $delta_rad;
     }
 
+    /**
+     * 
+     */
     public function reductionfactor()
     {
         // calculate elevation angle of the Sun from the Horizon
@@ -156,6 +193,30 @@ class solar_calculation
                             sin($alpha_rad) * cos($panel_beta_rad);
 
         return $reductionfactor;
+    }
+
+    /**
+     * 
+     */
+    public function sunrise()
+    {
+        $time_correction_factor = round(4 * ($this->long_deg - $this->long_time_zone_deg) + $this->eot ,  0);
+
+        $sunrise = 12 - (1 / 15) * (180 / pi()) * acos(-1 * tan($lat_rad) * tan($delta_rad) ) - $time_correction_factor/60;
+
+        return $sunrise;
+    }
+
+    /**
+     * 
+     */
+    public function sunset()
+    {
+        $time_correction_factor = round(4 * ($this->long_deg - $this->long_time_zone_deg) + $this->eot ,  0);
+
+        $sunset = 12 + (1 / 15) * (180 / pi()) * acos(-1 * tan($lat_rad) * tan($delta_rad) ) - $time_correction_factor/60;
+
+        return $sunset;
     }
 }
 

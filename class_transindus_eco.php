@@ -4998,7 +4998,7 @@ class class_transindus_eco
 
         if ( ! empty( $readings_obj->cloudiness_average_percentage_weighted ) )
         {
-          $status .= " Cloud: " . $readings_obj->cloudiness_average_percentage_weighted . " %";
+          $status .= " Cloud: " . round($readings_obj->cloudiness_average_percentage_weighted,1) . " %";
         }
 
         if ( ! empty( $readings_obj->est_solar_kw ) )
@@ -5019,10 +5019,10 @@ class class_transindus_eco
         // format the interval for display
         $formatted_interval = $this->format_interval($interval_since_last_change);
 
-        $status .= " " . $now_format;
+        $status .= " " . $now_format . " ";
 
         
-        $format_object->status = '<span style="color: Blue; display:block; text-align: center;">' .
+        $status .= '<span style="color: Blue; display:block; text-align: center;">' .
                                                   $status   . '<br>' . 
                                                   'sunrise: ' . $readings_obj->sunrise  . 'sunset: ' . $readings_obj->sunset .
                                   '</span>';

@@ -2245,11 +2245,13 @@ class class_transindus_eco
 
             $est_solar_kw_arr = $est_solar_obj->est_solar_kw_arr;
 
-            $sunrise_decimal_hours  = $est_solar_obj->sunrise + 5.5;
-            $sunset_decimal_hours   = $est_solar_obj->sunset  + 5.5;
+            $sunrise_decimal_hours  = $est_solar_obj->sunrise;
+            $sunset_decimal_hours   = $est_solar_obj->sunset;
 
-            $sunrise_hms_format_solarcalc = gmdate('H:i:s', floor( $sunrise_decimal_hours) );
-            $sunset_hms_format_solarcalc  = gmdate('H:i:s', floor( $sunset_decimal_hours)  );
+            $sunrise_hms_format_solarcalc = Date('H:i:s', floor( $sunrise_decimal_hours) );
+            $sunset_hms_format_solarcalc  = Date('H:i:s', floor( $sunset_decimal_hours)  );
+
+            error_log("Sunrise: $sunrise_hms_format_solarcalc, Sunset: $sunset_hms_format_solarcalc");
 
             // Boolean Variable to designate it is a cloudy day. This is derived from a free external API service
             $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;

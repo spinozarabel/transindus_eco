@@ -225,6 +225,65 @@ class my_shelly_over_lan_test
 
       return $return_array;
     }
+
+
+     /**
+     *
+     */
+    public function estimated_solar_power( $user_index ): object
+    {
+      // initialize to prevent warning after dark
+       $total_to_west_panel_ratio = 0;
+
+        $est_solar_obj = new stdClass;
+
+        $est_solar_kw_arr = [];
+
+        $config = $this->config;
+
+        $panel_sets = $config['accounts'][$user_index]['panels'];
+
+        foreach ($panel_sets as $key => $panel_set)
+        {
+          // 5.5 is the UTC offset of 5h 30 mins in decimal.
+          $transindus_lat_long_array = [$this->lat, $this->lon];
+
+          $solar_calc = new solar_calculation($panel_set, $transindus_lat_long_array, $this->utc_offset);
+
+          $est_solar_kw_arr[$key] =  round($solar_calc->est_power(), 1);
+        }
+
+        $est_solar_obj->est_solar_total_kw = array_sum( $est_solar_kw_arr );
+
+        $est_solar_obj->est_solar_kw_arr =  $est_solar_kw_arr;
+
+        if ( $this->nowIsWithinTimeLimits( '06:00', '12:00' ) )
+        {
+          // west Panel Solar Amps is lower than East Panel
+          // reduce by factor of 1.2 based on AM measurements
+          $west_panel_est_kw = min( $est_solar_kw_arr ) * 1.0;
+        }
+        else 
+        {
+          // it is afternoon and West panel has maximum solar power
+          // increase by factor of 1.2 in PM based on comparison with Studer measurements
+          $west_panel_est_kw = max( $est_solar_kw_arr ) / 1.0;
+        }
+
+        if ( $west_panel_est_kw > 0 )
+        {
+          // in morning the ratio will be greater than 2
+          // at noon it will be around 2
+          // after noon it will be less than 2 and greater than 1
+          $total_to_west_panel_ratio = $est_solar_obj->est_solar_total_kw / $west_panel_est_kw;
+        }
+
+        if ( $total_to_west_panel_ratio > 3 ) $total_to_west_panel_ratio = 3;
+
+        $est_solar_obj->total_to_west_panel_ratio =  $total_to_west_panel_ratio;
+
+        return $est_solar_obj;
+    }
 }
 
 $test = new my_shelly_over_lan_test();

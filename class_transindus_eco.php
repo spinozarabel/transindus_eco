@@ -2261,12 +2261,12 @@ class class_transindus_eco
           $sunrise_hms_format   = $sunrise_hms_format_solarcalc ?? '06:00:00';
           $sunset_hms_format    = $sunset_hms_format_solarcalc  ?? '18:00:00';
 
-          error_log("Sunrise: $sunrise_hms_format, Sunset: $sunset_hms_format");
+          // error_log("Sunrise: $sunrise_hms_format, Sunset: $sunset_hms_format");
 
           $sunset_plus_10_minutes_hms_format  = $sunset_plus_10_minutes_hms_format_solarcalc ?? "18:10:00";
           $sunset_plus_15_minutes_hms_format  = $sunset_plus_15_minutes_hms_format_solarcalc ?? "18:15:00";
 
-          error_log("Sunset0: $sunset_plus_10_minutes_hms_format, Sunset15: $sunset_plus_15_minutes_hms_format");
+          // error_log("Sunset0: $sunset_plus_10_minutes_hms_format, Sunset15: $sunset_plus_15_minutes_hms_format");
 
           // From sunset to 15m after, the total time window for SOC after Dark Capture
           $time_window_for_soc_dark_capture_open = $this->nowIsWithinTimeLimits( $sunset_hms_format, $sunset_plus_15_minutes_hms_format );
@@ -2670,7 +2670,7 @@ class class_transindus_eco
         { // solar power is 0 as it is still dark
           $shelly_readings_obj->psolar_kw = 0;
         }
-        elseif ( $shelly1pm_acin_switch_status == "OFF" && ! $it_is_still_dark )
+        elseif ( $shelly1pm_acin_switch_status != "ON" && ! $it_is_still_dark )
         { // As it is daylight, solar is rpovising both battery charge and home load. Note that battery power can be negative
           $shelly_readings_obj->psolar_kw = ($shelly_readings_obj->battery_power_kw + 1.07 * $shelly_em_home_kw) / 0.96;
         }

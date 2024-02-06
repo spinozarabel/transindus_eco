@@ -1482,6 +1482,8 @@ class class_transindus_eco
         $shelly_3p_grid_energy_measurement_obj->home_grid_kw_power        = 0;
         $shelly_3p_grid_energy_measurement_obj->car_charger_grid_kw_power = 0;
 
+        $shelly_3p_grid_energy_measurement_obj->offline = true;
+
         return $shelly_3p_grid_energy_measurement_obj;
       }
       else
@@ -5018,7 +5020,7 @@ class class_transindus_eco
         // format the interval for display
         $formatted_interval = $this->format_interval($interval_since_last_change);
 
-        $status .= " " . $now_format;
+        $status .= " " . $now_format . " " . $readings_obj->soc_update_method;
 
         
         $status_html = '<span style="color: Blue; display:block; text-align: center;">' .

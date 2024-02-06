@@ -26,6 +26,8 @@ defined( 'MyConst' ) or die( 'No script kiddies please!' );
 
  // require __DIR__ . '/vendor/autoload.php';
  require __DIR__ . '/shelly_cloud_api.php';
+ require __DIR__ . '/class_solar_calculation.php';
+ require __DIR__ . '/openweather_api.php';
  
  
 
@@ -329,49 +331,13 @@ echo("Battery Amps = " . $battery_amps . "\n" );
   print_r($shelly_switch_acin_details_arr);
 }
 
+$solar = new solar_calculation();
 
-$test->turn_pump_on_off( 0, "on");
+$sunrise  = $solar->sunrise();
+$sunset   = $solar->sunset();
+
+echo("SUurise = " . $sunrise . "\n" );
+cho("Sunset = " . $sunrise . "\n" );
 
 
-$shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-$shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-$shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
-$ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_em'];
 
-$shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'gen1' );
-
-// this is $curl_response.
-$shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
-$energy = $shelly_api_device_response->emeters[0]->total;
-
-echo("Home Shelly EM WH counter = " . $energy . "\n" );
-
-// test Shelly Pro 4PM to see how it works
-$shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-$shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-$shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_homepwr'];
-$ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_4pm'];
-
-$shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'gen2' );
-
-// this is $curl_response.
-$shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
-print_r($shelly_api_device_response);
-
-$shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-$shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-$shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin_3p'];
-$ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_3em'];
-
-// gen2 default pass parameter
-$shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
-
-// this is $curl_response.
-$shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
-
-$c_power_string = "c_act_power";
-
-$c_act_power = $shelly_api_device_response->{"em:0"}->$c_power_string;
-
-echo("Home power in W = " . $c_act_power . "\n" );
-print_r($shelly_api_device_response);

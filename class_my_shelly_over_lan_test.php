@@ -248,9 +248,9 @@ class my_shelly_over_lan_test
         foreach ($panel_sets as $key => $panel_set)
         {
           // 5.5 is the UTC offset of 5h 30 mins in decimal.
-          $transindus_lat_long_array = [$this->lat, $this->lon];
+          $transindus_lat_long_array = [12.83463, 77.49814];
 
-          $solar_calc = new solar_calculation($panel_set, $transindus_lat_long_array, $this->utc_offset);
+          $solar_calc = new solar_calculation($panel_set, $transindus_lat_long_array, 5.5);
 
           $est_solar_kw_arr[$key] =  round($solar_calc->est_power(), 1);
         }
@@ -284,7 +284,34 @@ class my_shelly_over_lan_test
 
         $est_solar_obj->total_to_west_panel_ratio =  $total_to_west_panel_ratio;
 
+        $est_solar_obj->sunrise =  $solar_calc-sunrise();
+        $est_solar_obj->sunset =  $solar_calc-sunset();
+
+
         return $est_solar_obj;
+    }
+
+    /**
+     *  @param string:$start
+     *  @param string:$stop
+     *  @return bool true if current time is within the time limits specified otherwise false
+     */
+    public function nowIsWithinTimeLimits(string $start_time, string $stop_time): bool
+    {
+        //
+
+        $now    = new DateTime('NOW',        new DateTimeZone('Asia/Kolkata'));
+        $begin  = new DateTime($start_time,  new DateTimeZone('Asia/Kolkata'));
+        $end    = new DateTime($stop_time,   new DateTimeZone('Asia/Kolkata'));
+
+        if ($now >= $begin && $now <= $end)
+        {
+          return true;
+        }
+        else
+        {
+          return false;
+        }
     }
 }
 
@@ -331,10 +358,12 @@ echo("Battery Amps = " . $battery_amps . "\n" );
   print_r($shelly_switch_acin_details_arr);
 }
 
-$solar = new solar_calculation();
+$ret = $this->estimated_solar_power(0);
 
-$sunrise  = $solar->sunrise();
-$sunset   = $solar->sunset();
+
+
+$sunrise  = $ret->sunrise();
+$sunset   = $ret->sunset();
 
 echo("SUurise = " . $sunrise . "\n" );
 cho("Sunset = " . $sunrise . "\n" );

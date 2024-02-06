@@ -360,13 +360,17 @@ echo("Battery Amps = " . $battery_amps . "\n" );
 
 $ret = $test->estimated_solar_power(0);
 
-
+$total_power_kw = $ret->est_solar_total_kw;
 
 $sunrise  = $ret->sunrise;
 $sunset   = $ret->sunset;
 
 echo("SUurise = " . $sunrise . "\n" );
 echo("Sunset = " . $sunset . "\n" );
+echo("Toyal SOlar KW " . $total_power_kw . "\n" );
+
+
+
 
 
 

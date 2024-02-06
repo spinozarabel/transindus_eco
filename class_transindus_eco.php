@@ -5022,7 +5022,7 @@ class class_transindus_eco
         $status .= " " . $now_format;
 
         
-        $status = '<span style="color: Blue; display:block; text-align: center;">' .
+        $status_html = '<span style="color: Blue; display:block; text-align: center;">' .
                                                   $status   . '<br>' . 
                                                   'sunrise: ' . $readings_obj->sunrise  . 'sunset: ' . $readings_obj->sunset .
                                   '</span>';
@@ -5038,7 +5038,7 @@ class class_transindus_eco
                                                     // $readings_obj->battery_current_comparison . 
                                               '</span>';
         */
-        $format_object->status = $status;
+        $format_object->status = $status_html;
 
         return $format_object;
     }

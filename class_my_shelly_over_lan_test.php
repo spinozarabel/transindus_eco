@@ -358,7 +358,7 @@ echo("Battery Amps = " . $battery_amps . "\n" );
   print_r($shelly_switch_acin_details_arr);
 }
 
-$ret = $this->estimated_solar_power(0);
+$ret = $test->estimated_solar_power(0);
 
 
 

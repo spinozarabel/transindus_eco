@@ -362,8 +362,8 @@ $ret = $test->estimated_solar_power(0);
 
 
 
-$sunrise  = $ret->sunrise();
-$sunset   = $ret->sunset();
+$sunrise  = $ret->sunrise;
+$sunset   = $ret->sunset;
 
 echo("SUurise = " . $sunrise . "\n" );
 cho("Sunset = " . $sunrise . "\n" );

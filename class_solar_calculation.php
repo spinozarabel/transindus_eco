@@ -200,6 +200,9 @@ class solar_calculation
      */
     public function sunrise()
     {
+        $delta_rad  =       $this->delta_rad;
+        $lat_rad    =       $this->lat_rad;
+
         $time_correction_factor = round(4 * ($this->long_deg - $this->long_time_zone_deg) + $this->eot ,  0);
 
         $sunrise = 12 - (1 / 15) * (180 / pi()) * acos(-1 * tan($lat_rad) * tan($delta_rad) ) - $time_correction_factor/60;
@@ -212,6 +215,9 @@ class solar_calculation
      */
     public function sunset()
     {
+        $delta_rad  =       $this->delta_rad;
+        $lat_rad    =       $this->lat_rad;
+        
         $time_correction_factor = round(4 * ($this->long_deg - $this->long_time_zone_deg) + $this->eot ,  0);
 
         $sunset = 12 + (1 / 15) * (180 / pi()) * acos(-1 * tan($lat_rad) * tan($delta_rad) ) - $time_correction_factor/60;

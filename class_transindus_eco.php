@@ -3429,7 +3429,7 @@ class class_transindus_eco
         if ($current_weather_obj)
         {
           $cloud_cover_percentage = $current_weather_obj->clouds->all;
-          return $current_cloud_cover_percentage;
+          return $cloud_cover_percentage;
         }
         else
         {
@@ -3705,7 +3705,7 @@ class class_transindus_eco
         </table>';
 
 
-        $output .= '<div id="cron_exit_condition">'. $format_object->status     . '</div>';
+        $output .= '<div id="status">'. $format_object->status     . '</div>';
 
         return $output;
     }
@@ -5020,10 +5020,7 @@ class class_transindus_eco
         $status .= " " . $now_format;
 
         
-        $format_object->status = '<span style="font-size: 18px;color: Blue; display:block; text-align: center;">' . 
-                                                  'SOC: <strong>' . $SOC_percentage_now . ' %' . '</strong><br>
-                                  </span>' .
-                                  '<span style="color: Blue; display:block; text-align: center;">' .
+        $format_object->status = '<span style="color: Blue; display:block; text-align: center;">' .
                                                   $status   . '<br>' . 
                                                   'sunrise: ' . $readings_obj->sunrise  . 'sunset: ' . $readings_obj->sunset .
                                   '</span>';

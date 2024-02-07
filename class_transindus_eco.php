@@ -590,7 +590,7 @@ class class_transindus_eco
       if ( is_null($shelly_api_device_response) ) 
       { // switch status is unknown
 
-          error_log("Shelly Grid Switch API call failed - Grid power failure Assumed");
+          // error_log("Shelly Grid Switch API call failed - Grid power failure Assumed");
 
           $shelly_api_device_status_ON = null;
 
@@ -2384,7 +2384,15 @@ class class_transindus_eco
             $home_grid_kwh_accumulated_since_midnight  = round( $home_grid_wh_accumulated_since_midnight * 0.001, 3 );
             $home_grid_kw_power                        = $shelly_3p_grid_wh_measurement_obj->home_grid_kw_power;
             $car_charger_grid_kw_power                 = $shelly_3p_grid_wh_measurement_obj->car_charger_grid_kw_power;
-            $home_grid_voltage                         = $shelly_3p_grid_wh_measurement_obj->home_grid_voltage;
+            
+            if ( empty($shelly_3p_grid_wh_measurement_obj->home_grid_voltage))
+            {
+              $home_grid_voltage = 0;
+            }
+            else
+            {
+              $home_grid_voltage                         = $shelly_3p_grid_wh_measurement_obj->home_grid_voltage;
+            }
             
             $shelly_readings_obj->home_grid_wh_counter_now          = $home_grid_wh_counter_now;
             $shelly_readings_obj->car_charger_grid_wh_counter_now   = $car_charger_grid_wh_counter_now;

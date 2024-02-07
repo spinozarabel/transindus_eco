@@ -207,7 +207,7 @@ class class_transindus_eco
             set_transient( 'timestamp_of_last_weather_forecast_acquisition',  $ts,                  20 * 60 );
             set_transient( 'cloudiness_forecast',                             $cloudiness_forecast, 27*60*60 );
 
-            error_log(" Captured cloudiness forecast");
+            error_log("Log-Captured cloudiness forecast");
             error_log( print_r( $cloudiness_forecast, true ) );
           }
           else
@@ -254,7 +254,7 @@ class class_transindus_eco
             // now save the madeup one as a transient
             set_transient( 'cloudiness_forecast', $cloudiness_forecast, 27*60*60 );
 
-            error_log(" made up cloudiness forecast due to API failure over time window and lack of yesterdays forecast");
+            error_log("Log-made up cloudiness forecast due to API failure over time window and lack of yesterdays forecast");
             error_log( print_r( $cloudiness_forecast, true ) );
           }
         break;  
@@ -756,7 +756,7 @@ class class_transindus_eco
       // That is not being handled currently
       if ( $delta_increase_wh < 0 || $delta_increase_wh > 500 )
       {
-        error_log( "Delta Increase in shelly_energy_counter_midnight is Bad: " . $delta_increase_wh . "And was ignored");
+        error_log( "Danger-Delta Increase in shelly_energy_counter_midnight is Bad: " . $delta_increase_wh . "And was ignored");
         // we ignore this accumulation
         // update the current energy counter with current reading for next cycle
         update_user_meta( $wp_user_ID, 'shelly_energy_counter_now', $current_energy_counter_wh );
@@ -1227,7 +1227,7 @@ class class_transindus_eco
         // check to make sure that it exists. If null call was fruitless
         if ( empty( $shelly_api_device_response ) )
         {
-          error_log("Shelly Battery Measurement API call over LAN failed");
+          error_log("Danger-Shelly Battery Measurement API call over LAN failed");
 
           return null;
         }
@@ -1740,7 +1740,7 @@ class class_transindus_eco
           set_transient( 'shelly_energy_counter_after_dark',  $present_home_wh_reading,           13 * 3600 );
           set_transient( 'soc_percentage_update_after_dark',  $SOC_percentage_now,                13 * 3600 );
 
-          error_log("SOC Capture after dark Done - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $present_home_wh_reading);
+          error_log("Cal-SOC Capture after dark Done - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $present_home_wh_reading);
 
           return true;
         }
@@ -1769,7 +1769,7 @@ class class_transindus_eco
             update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark',  $timestamp_soc_capture_after_dark);
             update_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  $SOC_percentage_now);
 
-            error_log("SOC Capture after dark took place - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $present_home_wh_reading);
+            error_log("Cal-SOC Capture after dark took place - SOC: " . $SOC_percentage_now . " % Energy Counter: " . $present_home_wh_reading);
 
             return true;
           }
@@ -1869,7 +1869,7 @@ class class_transindus_eco
         }
         else
         {
-          error_log("WP user ID: $wp_user_ID is not valid");
+          error_log("Log-WP user ID: $wp_user_ID is not valid");
         }
     }
 
@@ -1904,7 +1904,7 @@ class class_transindus_eco
                 ( $pump_initial_switch_state === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
           {
             // esisting state is same as desired final state so return
-            error_log( "No Action in Pump Switch done since no change is desired - Initial State: $pump_initial_switch_state, desired State: $desired_state" );
+            error_log( "Log-No Action in Pump Switch done since no change is desired - Initial State: $pump_initial_switch_state, desired State: $desired_state" );
             return true;
           }
         }
@@ -1931,7 +1931,7 @@ class class_transindus_eco
         }
         else
         {
-          error_log( "Failed to switch - Initial State: $pump_initial_switch_state, desired State: $desired_state, Final State: $pump_final_switch_state" );
+          error_log( "Danger-Failed to switch - Initial State: $pump_initial_switch_state, desired State: $desired_state, Final State: $pump_final_switch_state" );
           return false;
         }
     }
@@ -1945,7 +1945,7 @@ class class_transindus_eco
       if ( empty( $shelly_4pm_readings_object ) )
       {
         // bad data passed in do nothing
-        error_log( "Pump bad data passed in do nothing in function control_pump_on_duration" );
+        error_log( "Log-Pump bad data passed in do nothing in function control_pump_on_duration" );
         return null;
       }
 
@@ -2035,7 +2035,7 @@ class class_transindus_eco
             // Write the duration time as property of the object
             $shelly_4pm_readings_object->pump_ON_duration_secs = $pump_ON_duration_secs;
 
-            $this->verbose ? error_log("Pump ON for: $pump_ON_duration_secs Seconds") : false;
+            $this->verbose ? error_log("Log-Pump ON for: $pump_ON_duration_secs Seconds") : false;
 
             // set pump start time as current time stamp. So the duration will be small from now on
             set_transient( 'timestamp_pump_ON_start',  $timestamp,  1 * 60 * 60 );
@@ -2070,7 +2070,7 @@ class class_transindus_eco
         // pump was just ON. So we set the flag and start timer
         case ( $pump_is_drawing_power &&  empty( $pump_already_ON ) ) :
 
-          $this->verbose ? error_log("Pump Just turned ON") : false;
+          $this->verbose ? error_log("Log-Pump Just turned ON") : false;
 
           // set the flag to indicate that pump is already on for next cycle check
           $pump_already_ON = 1;
@@ -2115,7 +2115,7 @@ class class_transindus_eco
           // Write the duration time as property of the object
           $shelly_4pm_readings_object->pump_ON_duration_secs = $pump_ON_duration_secs;
 
-          $this->verbose ? error_log("Pump ON for: $pump_ON_duration_secs Seconds") : false;
+          $this->verbose ? error_log("Log-Pump ON for: $pump_ON_duration_secs Seconds") : false;
 
           // if pump ON duration is more than 1h then switch the pump power OFF in Shelly 4PM channel 0
           if ( $pump_ON_duration_secs > 3600 && $this->check_if_main_control_site_avasarala_is_offline_for_long() && $pump_duration_control)
@@ -2129,7 +2129,7 @@ class class_transindus_eco
             if ( $status_turn_pump_off )
             {
               // the pump was tuneed off per status
-              error_log("Pump turned OFF after duration of: $pump_ON_duration_secs Seconds");
+              error_log("Log-Pump turned OFF after duration of: $pump_ON_duration_secs Seconds");
 
               // pump is not ON anymore so set the flag to false
               set_transient( 'pump_already_ON', 0, 12 * 3600 );
@@ -2161,7 +2161,7 @@ class class_transindus_eco
               if ( empty( $pump_notification_count ) )
               {
                 // the pump was ordered to turn off but it did not
-                error_log("Problem - Pump could NOT be turned OFF after duration of: $pump_ON_duration_secs Seconds");
+                error_log("Danger-Problem - Pump could NOT be turned OFF after duration of: $pump_ON_duration_secs Seconds");
                 
                 $notification_title   = "Pump OFF problem";
                 $notification_message = "Tank maybe overflowing!";
@@ -2197,11 +2197,11 @@ class class_transindus_eco
 
             if ( ! $status_turn_pump_on )
             {
-              error_log("Pump could NOT be turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF - investigate");
+              error_log("Danger-Pump could NOT be turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF - investigate");
             }
             else
             {
-              error_log("Pump turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF");
+              error_log("Danger-Pump turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF");
             }
 
             
@@ -2395,7 +2395,7 @@ class class_transindus_eco
             $shelly_readings_obj->home_grid_wh_accumulated_since_midnight    = $home_grid_wh_accumulated_since_midnight;
             $shelly_readings_obj->home_grid_kwh_accumulated_since_midnight   = $home_grid_kwh_accumulated_since_midnight;
 
-            $this->verbose ? error_log("home_grid_wh_counter_now: $home_grid_wh_counter_now, wh since midnight: $home_grid_wh_accumulated_since_midnight, Home Grid PowerKW: $home_grid_kw_power"): false;
+            $this->verbose ? error_log("Log-home_grid_wh_counter_now: $home_grid_wh_counter_now, wh since midnight: $home_grid_wh_accumulated_since_midnight, Home Grid PowerKW: $home_grid_kw_power"): false;
           }
           
           { // Measure Battery Charging current as positive using Shelly plus Add-on
@@ -2571,7 +2571,8 @@ class class_transindus_eco
 
               // check the validity of the SOC using this after dark shelly method
               $soc_after_dark_update_valid =  $soc_percentage_now_using_dark_shelly < 100 &&
-                                              $soc_percentage_now_using_dark_shelly > 30;
+                                              $soc_percentage_now_using_dark_shelly > 40  &&
+                                              abs( $soc_percentage_now_using_dark_shelly - $soc_percentage_now_calculated_using_shelly_bm ) < 5;
 
               // update SOC only if values are reasonable
               if ( $soc_after_dark_update_valid === true )
@@ -2590,22 +2591,22 @@ class class_transindus_eco
                 // calibrate the shelly BM method using the SOC after dark value and soc midnight value
                 $recal_battery_soc_percentage_accumulated_since_midnight = $soc_percentage_now_using_dark_shelly - $soc_percentage_at_midnight;
 
-                // update recalibrated value of accumulated battery charge back to user meta
                 update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
+
               }
               else
-              {
+              { // 
                 $soc_update_method = "shelly";
                 $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
 
-                error_log("SOC using after dark Shelly not used due to bad value of: $soc_percentage_now_using_dark_shelly");
+                error_log("Log-SOC using after dark Shelly not used due to bad value of: $soc_percentage_now_using_dark_shelly");
               }
             }
           }
         }
         else
         {   // it is daylight now so reset the soc_percentage_update_after_dark value.
-          update_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark', 0);
+            // update_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark', 0);
 
           $soc_update_method = "shelly";
           $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
@@ -2627,10 +2628,10 @@ class class_transindus_eco
           // reset battery soc accumulated value to 0. This is only done once in 24h, at midnight
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', 0);
 
-          error_log("Midnight - shelly_em_home_energy_counter_at_midnight: $shelly_em_home_wh");
-          error_log("Midnight - grid_wh_counter_at_midnight: $home_grid_wh_counter_now");
-          error_log("Midnight - soc_percentage_at_midnight: $soc_percentage_now_calculated_using_shelly_bm");
-          error_log("Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
+          error_log("Cal-Midnight - shelly_em_home_energy_counter_at_midnight: $shelly_em_home_wh");
+          error_log("Cal-Midnight - grid_wh_counter_at_midnight: $home_grid_wh_counter_now");
+          error_log("Cal-Midnight - soc_percentage_at_midnight: $soc_percentage_now_calculated_using_shelly_bm");
+          error_log("Cal-Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
         }
 
         $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;
@@ -2650,7 +2651,7 @@ class class_transindus_eco
                 $control_shelly === true                              ) // servo control flag is enabled
           {
             // local command to turn ON Shelly 1PM Grid Switch
-            error_log("Main control site is down for more than 15m and SOC ls low, commanded to turn ON Shelly 1PM Grid switch");
+            error_log("Danger-Main control site is down for more than 15m and SOC ls low, commanded to turn ON Shelly 1PM Grid switch");
 
             // $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
           }
@@ -2660,7 +2661,7 @@ class class_transindus_eco
                     $control_shelly === true                              )
           {   // switch release if control site is down for long and it is daylight and soc is above limit and Grid switch is ON still
             
-            error_log("Main control site is down for more than 15m and SOC ls high, commanded to turn OFF Shelly 1PM Grid switch");
+            error_log("Danger-Main control site is down for more than 15m and SOC ls high, commanded to turn OFF Shelly 1PM Grid switch");
 
             // $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'off' );
           }
@@ -4614,11 +4615,11 @@ class class_transindus_eco
           {
             update_user_meta( $wp_user_ID, 'keep_shelly_switch_closed_always', false);
 
-            error_log('Changed keep always ON flag from true-->false due to Ajax Request');
+            error_log('Log-Changed keep always ON flag from true-->false due to Ajax Request');
           }
           else {
             update_user_meta( $wp_user_ID, 'keep_shelly_switch_closed_always', true);
-            error_log('Changed keep always ON flag from false-->true due to Ajax Request');
+            error_log('Log-Changed keep always ON flag from false-->true due to Ajax Request');
           }
           // Grid ON/OFF is determoned in the CRON loop as usual. 
           return;
@@ -4675,7 +4676,7 @@ class class_transindus_eco
     {
         if ( empty($readings_obj))
         {
-          error_log("Readings object passed into format data is empty");
+          error_log("Log-Readings object passed into format data is empty");
           return null;
         }
         $config         = $this->config;

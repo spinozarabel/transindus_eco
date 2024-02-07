@@ -3428,7 +3428,7 @@ class class_transindus_eco
 
         if ($current_weather_obj)
         {
-          $cloud_cover_percentage = $current_weather_obj->clouds->all;
+          $current_cloud_cover_percentage = $current_weather_obj->clouds->all;
           return $current_cloud_cover_percentage;
         }
         else

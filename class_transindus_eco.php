@@ -2711,6 +2711,8 @@ class class_transindus_eco
         // error_log("Batt(A): $battery_amps, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, pump ON for: $pump_ON_duration_secs, Water Heater: $shelly_water_heater_status_ON, SOC: $soc_percentage_now_display");
         error_log($log_string);
 
+        if ( empty($soc_capture_after_dark_happened)) $soc_capture_after_dark_happened = false;
+
         $log_string = "Log-";
         $log_string .= "it_is_still_dark: $it_is_still_dark soc_capture_after_dark_happened: $soc_capture_after_dark_happened";
         $log_string .= " offsite_LVDS: $offsite_LVDS offsite_LVDS_release: $offsite_LVDS_release";

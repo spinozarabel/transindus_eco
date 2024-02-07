@@ -2645,20 +2645,25 @@ class class_transindus_eco
 
           $shelly_readings_obj->main_control_site_avasarala_is_offline_for_long   = $main_control_site_avasarala_is_offline_for_long;
 
-          if (  $main_control_site_avasarala_is_offline_for_long  &&    // Main control site avasarala.in is offline for more than 15m
-                $soc_percentage_now < 40                          &&    // local SOC measurement is low
-                $shelly1pm_acin_switch_status !== "ON"            &&    // Grid switch is OFF
-                $control_shelly === true                              ) // servo control flag is enabled
+          $offsite_LVDS = $main_control_site_avasarala_is_offline_for_long  &&    // Main control site avasarala.in is offline for more than 15m
+                          $soc_percentage_now < 40                          &&    // local SOC measurement is low
+                          $shelly1pm_acin_switch_status === "OFF"           &&    // Grid switch is OFF. If FFLINE or ON this won't care
+                          $control_shelly === true;
+
+          $offsite_LVDS_release = $main_control_site_avasarala_is_offline_for_long  &&    // Main control site avasarala.in is offline for more than 15m
+                                  $soc_percentage_now > 50                          &&    // local SOC measurement is normal
+                                  $battery_amps > 6                                 &&    // battery is charging with at least 0.3KW surplus from solar
+                                  $shelly1pm_acin_switch_status === "ON"            &&    // Grid switch is ON. Anyother state won't matter
+                                  $control_shelly === true;
+
+          if ( $offsite_LVDS ) // servo control flag is enabled
           {
             // local command to turn ON Shelly 1PM Grid Switch
             error_log("Danger-Main control site is down for more than 15m and SOC ls low, commanded to turn ON Shelly 1PM Grid switch");
 
             // $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
           }
-          elseif (  $main_control_site_avasarala_is_offline_for_long  && 
-                    $soc_percentage_now > 50                          &&
-                    $$helly1pm_acin_switch_status === "ON"            &&
-                    $control_shelly === true                              )
+          elseif ( $offsite_LVDS_release  )
           {   // switch release if control site is down for long and it is daylight and soc is above limit and Grid switch is ON still
             
             error_log("Danger-Main control site is down for more than 15m and SOC ls high, commanded to turn OFF Shelly 1PM Grid switch");
@@ -2707,7 +2712,8 @@ class class_transindus_eco
         error_log($log_string);
 
         $log_string = "Log-";
-        $log_string .= "it_is_still_dark: $it_is_still_dark, soc_capture_after_dark_happened: $soc_capture_after_dark_happened";
+        $log_string .= "it_is_still_dark: $it_is_still_dark soc_capture_after_dark_happened: $soc_capture_after_dark_happened";
+        $log_string .= " offsite_LVDS: $offsite_LVDS offsite_LVDS_release: $offsite_LVDS_release";
         error_log($log_string);
 
         // update transient with new data. Validity is 10m

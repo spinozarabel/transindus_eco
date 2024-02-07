@@ -1482,6 +1482,8 @@ class class_transindus_eco
         $shelly_3p_grid_energy_measurement_obj->home_grid_kw_power        = 0;
         $shelly_3p_grid_energy_measurement_obj->car_charger_grid_kw_power = 0;
 
+        $shelly_3p_grid_energy_measurement_obj->offline = true;
+
         return $shelly_3p_grid_energy_measurement_obj;
       }
       else
@@ -2240,6 +2242,7 @@ class class_transindus_eco
           { // get the estimated solar power object from calculations for a clear day
               
             $est_solar_obj = $this->estimated_solar_power($user_index);
+            // error_log(print_r($est_solar_obj, true));
 
             $est_solar_total_kw = $est_solar_obj->est_solar_total_kw;
 
@@ -2250,8 +2253,8 @@ class class_transindus_eco
             $sunrise_decimal_hours  = $est_solar_obj->sunrise;
             $sunset_decimal_hours   = $est_solar_obj->sunset;
 
-            $sunrise_hms_format_solarcalc = gmdate('H:i:s', floor( $sunrise_decimal_hours * 3600 ) );
-            $sunset_hms_format_solarcalc  = gmdate('H:i:s', floor( $sunset_decimal_hours * 3600  ) );
+            $sunrise_hms_format_solarcalc = gmdate('H:i:s', floor( $sunrise_decimal_hours * 3600  ) );
+            $sunset_hms_format_solarcalc  = gmdate('H:i:s', floor( $sunset_decimal_hours  * 3600  ) );
 
             $sunset_plus_10_minutes_hms_format_solarcalc = gmdate('H:i:s', floor( $sunset_decimal_hours * 3600 + 10 * 60  ) );
             $sunset_plus_15_minutes_hms_format_solarcalc = gmdate('H:i:s', floor( $sunset_decimal_hours * 3600 + 15 * 60  ) );
@@ -2260,8 +2263,7 @@ class class_transindus_eco
             $it_is_a_cloudy_day   = $this->cloudiness_forecast->it_is_a_cloudy_day_weighted_average;
 
             // copy variables to shelly readings pobject properties
-            $shelly_readings_obj->sunrise = $sunrise_hms_format_solarcalc;
-            $shelly_readings_obj->sunset  = $sunset_hms_format_solarcalc;
+            
 
             $shelly_readings_obj->est_solar_total_kw          = $est_solar_total_kw;
             $shelly_readings_obj->total_to_west_panel_ratio   = $total_to_west_panel_ratio;
@@ -2274,6 +2276,9 @@ class class_transindus_eco
           
           $sunrise_hms_format   = $sunrise_hms_format_solarcalc ?? '06:00:00';
           $sunset_hms_format    = $sunset_hms_format_solarcalc  ?? '18:00:00';
+
+          $shelly_readings_obj->sunrise = $sunrise_hms_format;
+          $shelly_readings_obj->sunset  = $sunset_hms_format;
 
           // error_log("Sunrise: $sunrise_hms_format, Sunset: $sunset_hms_format");
 
@@ -2411,9 +2416,7 @@ class class_transindus_eco
               $battery_accumulated_ah_since_midnight              = $shelly_battery_measurement_object->battery_accumulated_ah_since_midnight;
               $battery_accumulated_kwh_since_midnight             = round( 49.8 * 0.001 * $battery_accumulated_ah_since_midnight, 3 );
 
-              $shelly_readings_obj->est_solar_total_kw        = $est_solar_total_kw;
-              $shelly_readings_obj->est_solar_kw_arr          = $est_solar_kw_arr;
-              $shelly_readings_obj->total_to_west_panel_ratio = $total_to_west_panel_ratio;
+              
 
               $shelly_readings_obj->battery_capacity_ah       = $battery_capacity_ah;
               $shelly_readings_obj->battery_amps              = $battery_amps;  
@@ -2693,14 +2696,14 @@ class class_transindus_eco
           $shelly_readings_obj->psolar_kw = $shelly_readings_obj->battery_power_kw  / 0.96;
         }
         
-        $log_string = "";
+        $log_string = "log-";
         $log_string .= "Batt(A): " . number_format($battery_amps, 1) . " Grid: " . $shelly1pm_acin_switch_status;
         $log_string .= " ShellyEM(V): " . number_format($shelly_em_home_voltage, 0) . " Load(KW): " . number_format($shelly_em_home_kw, 3);
-        $log_string .= " pump secs: " . $pump_ON_duration_secs . " Water Heater: " . $shelly_water_heater_status_ON;
-        $log_string .= " SOC: " . number_format($soc_percentage_now_display, 1);
+        // $log_string .= " pump secs: " . $pump_ON_duration_secs . " Water Heater: " . $shelly_water_heater_status_ON;
+        $log_string .= " SOC: " . number_format($soc_percentage_now_display, 1) . " SOC method: " . $soc_update_method;
 
         // error_log("Batt(A): $battery_amps, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, pump ON for: $pump_ON_duration_secs, Water Heater: $shelly_water_heater_status_ON, SOC: $soc_percentage_now_display");
-        // error_log($log_string);
+        error_log($log_string);
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );
@@ -3430,6 +3433,8 @@ class class_transindus_eco
         {
           $current_cloud_cover_percentage = $current_weather_obj->clouds->all;
           return $current_cloud_cover_percentage;
+          $cloud_cover_percentage = $current_weather_obj->clouds->all;
+          return $cloud_cover_percentage;
         }
         else
         {
@@ -3705,7 +3710,7 @@ class class_transindus_eco
         </table>';
 
 
-        $output .= '<div id="cron_exit_condition">'. $format_object->status     . '</div>';
+        $output .= '<div id="status_html">'. $format_object->status     . '</div>';
 
         return $output;
     }
@@ -4996,12 +5001,12 @@ class class_transindus_eco
 
         if ( ! empty( $readings_obj->cloudiness_average_percentage_weighted ) )
         {
-          $status .= " Cloud: " . $readings_obj->cloudiness_average_percentage_weighted . " %";
+          $status .= " Cloud: " . round($readings_obj->cloudiness_average_percentage_weighted,1) . "%";
         }
 
-        if ( ! empty( $readings_obj->est_solar_kw ) )
+        if ( ! empty( $readings_obj->est_solar_total_kw ) )
         {
-          $status .= " Pest: " . $readings_obj->est_solar_kw . " KW";
+          $status .= " Pest: " . $readings_obj->est_solar_total_kw . " KW";
         }
 
         // present time
@@ -5017,15 +5022,12 @@ class class_transindus_eco
         // format the interval for display
         $formatted_interval = $this->format_interval($interval_since_last_change);
 
-        $status .= " " . $now_format;
+        $status .= " " . $now_format . " " . $readings_obj->soc_update_method;
 
         
-        $format_object->status = '<span style="font-size: 18px;color: Blue; display:block; text-align: center;">' . 
-                                                  'SOC: <strong>' . $SOC_percentage_now . ' %' . '</strong><br>
-                                  </span>' .
-                                  '<span style="color: Blue; display:block; text-align: center;">' .
+        $status_html = '<span style="color: Blue; display:block; text-align: center;">' .
                                                   $status   . '<br>' . 
-                                                  'sunrise: ' . $readings_obj->sunrise  . 'sunset: ' . $readings_obj->sunset .
+                                                  'sunrise: ' . $readings_obj->sunrise  . ' sunset: ' . $readings_obj->sunset .
                                   '</span>';
 
         
@@ -5039,7 +5041,7 @@ class class_transindus_eco
                                                     // $readings_obj->battery_current_comparison . 
                                               '</span>';
         */
-        $format_object->status = $status;
+        $format_object->status = $status_html;
 
         return $format_object;
     }

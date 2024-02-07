@@ -4224,9 +4224,9 @@ class class_transindus_eco
       <table id="my-grid-voltage-readings-table">
           <tr>
               <th>'   . 'Item'                . '</th>
-              <th>'   . 'Red Phase Volts'     . '</th>  
-              <th>'   . 'Yellow Phase Volts'  . '</th>
-              <th>'   . 'Blue Phase Volts'    . '</th>
+              <th>'   . 'Red'     . '</th>  
+              <th>'   . 'Yellow'  . '</th>
+              <th>'   . 'Blue'    . '</th>
           </tr>
           <tr>
               <td id="time_formatted_string">'   . $time_formatted_string       . '</td>

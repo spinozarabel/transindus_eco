@@ -2707,20 +2707,22 @@ class class_transindus_eco
           {
             // local command to turn ON Shelly 1PM Grid Switch
             error_log("Danger-Main control site is down for more than 15m and SOC ls low, commanded to turn ON Shelly 1PM Grid switch");
-
-            $success_0n = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
+            $success_on = false;
+            
+            $success_on = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
           }
           elseif ( $local_LVDS_release  )
           {   // switch release if control site is down for long and it is daylight and soc is above limit and Grid switch is ON still
             
             error_log("Danger-Main control site is down for more than 15m and SOC ls high, commanded to turn OFF Shelly 1PM Grid switch");
+            $success_off = false;
 
             $success_off = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'off' );
           }
 
           { // record for possible switch flap
             
-            if ( $success_0n || $success_off )
+            if ( $success_on || $success_off )
             {
               // push a value of 1 switch event into the holding array
               array_push( $switch_flap_array, 1 );

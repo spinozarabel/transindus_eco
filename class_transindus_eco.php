@@ -2234,7 +2234,7 @@ class class_transindus_eco
                                                         bool    $do_shelly,
                                                         bool    $make_studer_api_call = true ) : void
     {
-        { // Define boolean control variables for various time intervals
+        { // Define boolean control variables required time intervals
 
           // This is the main object that we deal with  for storing and processing data gathered from our IOT devices
           $shelly_readings_obj = new stdClass;
@@ -2465,8 +2465,25 @@ class class_transindus_eco
                   $shelly_readings_obj->voltage_home            = $shelly_4pm_readings_object->voltage_home;
 
                   // when pump duration control happens change the below property to actula variable
-                  $shelly_readings_obj->pump_ON_duration_secs   = 0;
+                  $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object );
+
+                  $pump_ON_duration_secs = $shelly_4pm_readings_object->pump_ON_duration_secs;
+
+                  $shelly_readings_obj->pump_ON_duration_secs   = $pump_ON_duration_secs;
                 }
+            }
+          }
+
+          { // water heater data acquisition
+            $shelly_water_heater_data       = $this->get_shelly_device_status_water_heater_over_lan($user_index);
+
+            if ( $shelly_water_heater_data )
+            {
+              $shelly_water_heater_status_ON  = $shelly_water_heater_data->shelly_water_heater_status_ON;
+              $shelly_water_heater_voltage    = $shelly_water_heater_data->shelly_water_heater_voltage;
+              $shelly_water_heater_kw         = $shelly_water_heater_data->shelly_water_heater_kw;
+
+              $shelly_readings_obj->shelly_water_heater_data = $shelly_water_heater_data;
             }
           }
 
@@ -2498,7 +2515,7 @@ class class_transindus_eco
           }
         }
 
-        { // calculate non-studer based SOC using Shelly Battery Measurements
+        { // calculate the battery current measurement based SOC
           $soc_percentage_now_calculated_using_shelly_bm = $soc_percentage_at_midnight + $battery_soc_percentage_accumulated_since_midnight;
           
           // lets update the user meta for updated SOC
@@ -2525,7 +2542,7 @@ class class_transindus_eco
         }
 
         if ( $it_is_still_dark )
-        { // Do all the SOC after Dark operations here - Capture and also SOC updation
+        { // Do all the SOC after Dark operations here - Capture and also update SOC
           
           // check if capture happened. now-event time < 12h since event can happen at 7PM and last till 6:30AM
           $soc_capture_after_dark_happened = $this->check_if_soc_after_dark_happened($user_index, $wp_user_name, $wp_user_ID);
@@ -2613,7 +2630,7 @@ class class_transindus_eco
           }
         }
         else
-        {   // it is daylight now so reset the soc_percentage_update_after_dark value.
+        {   // it is daylight now
             // update_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark', 0);
 
           $soc_update_method = "shelly";
@@ -2648,83 +2665,117 @@ class class_transindus_eco
         $soc_percentage_now_display = round( $soc_percentage_now, 1);
 
         { // local control of LVDS and switch release only if control site is down for long
+
+          // Get flap transient - If transient doesnt exist rebuild
+          $switch_flap_array = get_transient( 'switch_flap_array' ); 
+
+          if ( ! is_array($switch_flap_array))
+          {
+            $switch_flap_array = [];
+          }
+
+          $switch_flap_amount = array_sum( $switch_flap_array);
+
+          if ( $switch_flap_amount  > 2 )
+            {
+              // This means that over a 10m running average, there are more than 2 switch operations from ON->OFF or from OFF->ON
+              $switch_is_flapping = true;
+            }
+          else
+            {
+              $switch_is_flapping = false;
+            }
         
           $main_control_site_avasarala_is_offline_for_long = $this->check_if_main_control_site_avasarala_is_offline_for_long();
 
           $shelly_readings_obj->main_control_site_avasarala_is_offline_for_long   = $main_control_site_avasarala_is_offline_for_long;
 
-          $local_LVDS = $main_control_site_avasarala_is_offline_for_long  &&    // Main control site avasarala.in is offline for more than 15m
-                          $soc_percentage_now < 40                          &&    // local SOC measurement is low
-                          $shelly1pm_acin_switch_status === "OFF"           &&    // Grid switch is OFF. If FFLINE or ON this won't care
-                          $control_shelly === true;
+          $local_LVDS = $main_control_site_avasarala_is_offline_for_long  && 
+                          $soc_percentage_now           < 40              &&    // local SOC measurement is low
+                          $shelly1pm_acin_switch_status === "OFF"         &&    // Grid switch is OFF. If FFLINE or ON this won't care
+                          $control_shelly               === true          &&    // controllable by config
+                          $switch_is_flapping           === false;
 
           $local_LVDS_release = $main_control_site_avasarala_is_offline_for_long  &&    // Main control site avasarala.in is offline for more than 15m
-                                  $soc_percentage_now > 50                          &&    // local SOC measurement is normal
-                                  $battery_amps > 6                                 &&    // battery is charging with at least 0.3KW surplus from solar
-                                  $shelly1pm_acin_switch_status === "ON"            &&    // Grid switch is ON. Anyother state won't matter
-                                  $control_shelly === true;
+                          $soc_percentage_now           > 50                &&    // local SOC measurement is normal
+                          $battery_amps                 > 6                 &&    // battery is charging with at least 0.3KW surplus from solar
+                          $shelly1pm_acin_switch_status === "ON"            &&    // Grid switch is ON. Anyother state won't matter
+                          $control_shelly               === true            &&    // Ccontrollable by config
+                          $switch_is_flapping           === false;
 
-          if ( $local_LVDS ) // servo control flag is enabled
+          if ( $local_LVDS )
           {
             // local command to turn ON Shelly 1PM Grid Switch
             error_log("Danger-Main control site is down for more than 15m and SOC ls low, commanded to turn ON Shelly 1PM Grid switch");
 
-            // $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
+            $success_0n = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
           }
           elseif ( $local_LVDS_release  )
           {   // switch release if control site is down for long and it is daylight and soc is above limit and Grid switch is ON still
             
             error_log("Danger-Main control site is down for more than 15m and SOC ls high, commanded to turn OFF Shelly 1PM Grid switch");
 
-            // $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'off' );
+            $success_off = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'off' );
+          }
+
+          { // record for possible switch flap
+            
+            if ( $success_0n || $success_off )
+            {
+              // push a value of 1 switch event into the holding array
+              array_push( $switch_flap_array, 1 );
+            }
+            else
+            {
+              // push a zero this iteration to record no witch
+              array_push( $switch_flap_array, 0 );
+            }
+
+            
+            // If the array has more than 100 items then drop the earliest one
+            // We are averaging over 100 loops or about 100 x 5 = 500s or about 10m
+            if ( sizeof($switch_flap_array) > 100 )  
+            {   // drop the earliest reading
+                array_shift($switch_flap_array);
+            }
+
+            // Setup transiet to keep previous state for averaging
+            set_transient( 'switch_flap_array', $switch_flap_array, 60 * 60 );
           }
         }
 
-
-        $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object );
-
-        $pump_ON_duration_secs = $shelly_4pm_readings_object->pump_ON_duration_secs;
-
-        $shelly_water_heater_data       = $this->get_shelly_device_status_water_heater_over_lan($user_index);
-
-        if ( $shelly_water_heater_data )
-        {
-          $shelly_water_heater_status_ON  = $shelly_water_heater_data->shelly_water_heater_status_ON;
-          $shelly_water_heater_voltage    = $shelly_water_heater_data->shelly_water_heater_voltage;
-          $shelly_water_heater_kw         = $shelly_water_heater_data->shelly_water_heater_kw;
-
-          $shelly_readings_obj->shelly_water_heater_data = $shelly_water_heater_data;
-        }
-
-        // Since we calculate Psolar indirectly, that depends on conditions as below
-        if ($it_is_still_dark)
-        { // solar power is 0 as it is still dark
-          $shelly_readings_obj->psolar_kw = 0;
-        }
-        elseif ( $shelly1pm_acin_switch_status != "ON" && ! $it_is_still_dark )
-        { // As it is daylight, solar is rpovising both battery charge and home load. Note that battery power can be negative
-          $shelly_readings_obj->psolar_kw = ($shelly_readings_obj->battery_power_kw + 1.07 * $shelly_em_home_kw) / 0.96;
-        }
-        elseif ( $shelly1pm_acin_switch_status == "ON" && ! $it_is_still_dark )
-        { // Grid is supplying the load so all of solar supplies the battery charging power
-          $shelly_readings_obj->psolar_kw = $shelly_readings_obj->battery_power_kw  / 0.96;
+        { // Since we calculate Psolar indirectly, that depends on conditions as below
+          if ($it_is_still_dark)
+          { // solar power is 0 as it is still dark
+            $shelly_readings_obj->psolar_kw = 0;
+          }
+          elseif ( $shelly1pm_acin_switch_status != "ON" && ! $it_is_still_dark )
+          { // As it is daylight, solar is rpovising both battery charge and home load. Note that battery power can be negative
+            $shelly_readings_obj->psolar_kw = ($shelly_readings_obj->battery_power_kw + 1.07 * $shelly_em_home_kw) / 0.96;
+          }
+          elseif ( $shelly1pm_acin_switch_status == "ON" && ! $it_is_still_dark )
+          { // Grid is supplying the load so all of solar supplies the battery charging power
+            $shelly_readings_obj->psolar_kw = $shelly_readings_obj->battery_power_kw  / 0.96;
+          }
         }
         
-        $log_string = "Log-";
-        $log_string .= "Batt(A): " . number_format($battery_amps, 1) . " Grid: " . $shelly1pm_acin_switch_status;
-        $log_string .= " ShellyEM(V): " . number_format($shelly_em_home_voltage, 0) . " Load(KW): " . number_format($shelly_em_home_kw, 3);
-        // $log_string .= " pump secs: " . $pump_ON_duration_secs . " Water Heater: " . $shelly_water_heater_status_ON;
-        $log_string .= " SOC: " . number_format($soc_percentage_now_display, 1) . " SOC method: " . $soc_update_method;
+        { // logging
+          $log_string = "Log-";
+          $log_string .= "Batt(A): " . number_format($battery_amps, 1) . " Grid: " . $shelly1pm_acin_switch_status;
+          $log_string .= " ShellyEM(V): " . number_format($shelly_em_home_voltage, 0) . " Load(KW): " . number_format($shelly_em_home_kw, 3);
+          // $log_string .= " pump secs: " . $pump_ON_duration_secs . " Water Heater: " . $shelly_water_heater_status_ON;
+          $log_string .= " SOC: " . number_format($soc_percentage_now_display, 1) . " SOC method: " . $soc_update_method;
 
-        // error_log("Batt(A): $battery_amps, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, pump ON for: $pump_ON_duration_secs, Water Heater: $shelly_water_heater_status_ON, SOC: $soc_percentage_now_display");
-        error_log($log_string);
+          // error_log("Batt(A): $battery_amps, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, pump ON for: $pump_ON_duration_secs, Water Heater: $shelly_water_heater_status_ON, SOC: $soc_percentage_now_display");
+          error_log($log_string);
 
-        if ( empty($soc_capture_after_dark_happened)) $soc_capture_after_dark_happened = false;
+          if ( empty($soc_capture_after_dark_happened)) $soc_capture_after_dark_happened = false;
 
-        $log_string = "Log-";
-        $log_string .= "it_is_still_dark: $it_is_still_dark soc_capture_after_dark_happened: $soc_capture_after_dark_happened";
-        $log_string .= " local_LVDS: $local_LVDS local_LVDS_release: $local_LVDS_release";
-        error_log($log_string);
+          $log_string = "Log-";
+          $log_string .= "it_is_still_dark: $it_is_still_dark soc_capture_after_dark_happened: $soc_capture_after_dark_happened";
+          $log_string .= " local_LVDS: $local_LVDS local_LVDS_release: $local_LVDS_release";
+          error_log($log_string);
+        }
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );
@@ -3978,12 +4029,13 @@ class class_transindus_eco
 
 
     /**
+     *  @return bool returns true if actual state is same as desired state, returns false otherwise or if api call failed
      *  @param int:$user_index
      *  @param string:$desired_state can be either 'on' or 'off' to turn on the switch to ON or OFF respectively
      *  @param string:$shelly_switch_name is the name of the switch used to index its shelly_device_id in the config array
-     *  @return object:$shelly_device_data is the curl response stdclass object from Shelly device
+     *  
      */
-    public function turn_on_off_shelly1pm_acin_switch_over_lan( int $user_index, string $desired_state ) : ? bool
+    public function turn_on_off_shelly1pm_acin_switch_over_lan( int $user_index, string $desired_state ) :  bool
     {
         // get the config array from the object properties
         $config = $this->config;
@@ -4010,7 +4062,7 @@ class class_transindus_eco
                 ( $initial_switch_state === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
           {
             // esisting state is same as desired final state so return
-            error_log( "No Action in ACIN Switch - Initial Switch State: $initial_switch_state, Desired State: $desired_state" );
+            error_log( "Log-No Action in ACIN Switch - Initial Switch State: $initial_switch_state, Desired State: $desired_state" );
             return true;
           }
         }
@@ -4027,6 +4079,13 @@ class class_transindus_eco
         // lets get the new state of the ACIN shelly switch
         $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
 
+        If ( empty( $shelly_api_device_response ) )
+        {
+          error_log( "Danger-we didn't get a valid response for switch turn on/off" );
+
+          return false;
+        }
+        // we do have a valid response from the switch
         $final_switch_state = $shelly_api_device_response->{'switch:0'}->output;
 
         if (  ( $final_switch_state === true  &&  ( strtolower( $desired_state) === "on"  || $desired_state === true  || $desired_state == 1) ) || 
@@ -4037,7 +4096,7 @@ class class_transindus_eco
         }
         else
         {
-          error_log( "ACIN Switch to desired state Failed - Desired State: desired_state, Final State: $final_switch_state" );
+          error_log( "Danger-ACIN Switch to desired state Failed - Desired State: $desired_state, Final State: $final_switch_state" );
           return false;
         }
     }

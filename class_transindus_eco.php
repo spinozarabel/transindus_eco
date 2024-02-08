@@ -2767,13 +2767,14 @@ class class_transindus_eco
           $log_string .= " SOC: " . number_format($soc_percentage_now_display, 1) . " SOC method: " . $soc_update_method;
 
           // error_log("Batt(A): $battery_amps, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, pump ON for: $pump_ON_duration_secs, Water Heater: $shelly_water_heater_status_ON, SOC: $soc_percentage_now_display");
-          error_log($log_string);
+          // error_log($log_string);
 
           if ( empty($soc_capture_after_dark_happened)) $soc_capture_after_dark_happened = false;
 
           $log_string = "Log-";
-          $log_string .= "it_is_still_dark: $it_is_still_dark soc_capture_after_dark_happened: $soc_capture_after_dark_happened";
-          $log_string .= " local_LVDS: $local_LVDS local_LVDS_release: $local_LVDS_release";
+          $log_string .= "dark?: $it_is_still_dark soc_dark_capture?: $soc_capture_after_dark_happened";
+          $log_string .= " SwFlpAmt: $switch_flap_amount local_LVDS: $local_LVDS local_LVDS_release: $local_LVDS_release SocUpdateMthd: $soc_update_method";
+          $log_string .= " SOC%: $soc_percentage_now_display";
           error_log($log_string);
         }
 

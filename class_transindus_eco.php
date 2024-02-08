@@ -2703,19 +2703,20 @@ class class_transindus_eco
                           $control_shelly               === true            &&    // Ccontrollable by config
                           $switch_is_flapping           === false;
 
+          $success_on = false;
+          $success_off = false;
+
           if ( $local_LVDS )
           {
             // local command to turn ON Shelly 1PM Grid Switch
             error_log("Danger-Main control site is down for more than 15m and SOC ls low, commanded to turn ON Shelly 1PM Grid switch");
-            $success_on = false;
-            
+
             $success_on = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
           }
           elseif ( $local_LVDS_release  )
           {   // switch release if control site is down for long and it is daylight and soc is above limit and Grid switch is ON still
             
             error_log("Danger-Main control site is down for more than 15m and SOC ls high, commanded to turn OFF Shelly 1PM Grid switch");
-            $success_off = false;
 
             $success_off = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'off' );
           }
@@ -2774,8 +2775,8 @@ class class_transindus_eco
           if ( empty($soc_capture_after_dark_happened)) $soc_capture_after_dark_happened = false;
 
           $log_string = "Log-";
-          $log_string .= "dark?: $it_is_still_dark soc_dark_capture?: $soc_capture_after_dark_happened";
-          $log_string .= " SwFlpAmt: $switch_flap_amount local_LVDS: $local_LVDS local_LVDS_release: $local_LVDS_release SocUpdateMthd: $soc_update_method";
+          $log_string .= " dark?: $it_is_still_dark dark_capture?: $soc_capture_after_dark_happened";
+          $log_string .= " Flap: $switch_flap_amount LVDS: $local_LVDS LVDS_release: $local_LVDS_release SocUpdateMthd: $soc_update_method";
           $log_string .= " SOC%: $soc_percentage_now_display";
           error_log($log_string);
         }

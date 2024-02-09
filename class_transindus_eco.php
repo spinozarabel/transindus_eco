@@ -4891,13 +4891,14 @@ class class_transindus_eco
         if ( $main_control_site_avasarala_is_offline_for_long === false )
         {
             // main control site is ONLINE and is what will be controlling the ACIN switch
+            // a green cloud icon signifies that the main site is in control
             $shelly_servo_icon = '<span style="color: Green; display:block; text-align: center;">
                                       <i class="clickableIcon fa-solid fa-2x fa-cloud"></i>
                                   </span>';
         }
         else
         {
-            // main control site is OFFLINE for long. So local control maybe necessary
+            // main control site is OFFLINE for long. A red cloud icon indicates that local control is in sway
             $shelly_servo_icon = '<span style="color: Red; display:block; text-align: center;">
                                       <i class="clickableIcon fa-solid fa-2x fa-cloud"></i>
                                   </span>';

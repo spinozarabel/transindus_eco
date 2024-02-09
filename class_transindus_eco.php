@@ -4782,6 +4782,8 @@ class class_transindus_eco
         $shelly_water_heater_status   = $shelly_water_heater_data->shelly_water_heater_status;  // boolean variable
         $shelly_water_heater_current  = $shelly_water_heater_data->shelly_water_heater_current; // in Amps
 
+        $main_control_site_avasarala_is_offline_for_long = $readings_obj->main_control_site_avasarala_is_offline_for_long;
+
         // solar power calculated from Shelly measurements of battery Grid and Load
         $psolar_kw              =   round($readings_obj->psolar_kw, 2);
 
@@ -4886,14 +4888,16 @@ class class_transindus_eco
         $studer_icon = '<i style="display:block; text-align: center;" class="clickableIcon fa-solid fa-3x fa-cog" style="color: Green;"></i>';
         $format_object->studer_icon = $studer_icon;
 
-        if ($shelly_switch_acin_details_arr['control_shelly'])
+        if ( $main_control_site_avasarala_is_offline_for_long === false )
         {
+            // main control site is ONLINE and is what will be controlling the ACIN switch
             $shelly_servo_icon = '<span style="color: Green; display:block; text-align: center;">
                                       <i class="clickableIcon fa-solid fa-2x fa-cloud"></i>
                                   </span>';
         }
         else
         {
+            // main control site is OFFLINE for long. So local control maybe necessary
             $shelly_servo_icon = '<span style="color: Red; display:block; text-align: center;">
                                       <i class="clickableIcon fa-solid fa-2x fa-cloud"></i>
                                   </span>';

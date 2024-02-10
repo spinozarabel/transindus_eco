@@ -2772,12 +2772,36 @@ class class_transindus_eco
           // error_log("Batt(A): $battery_amps, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, pump ON for: $pump_ON_duration_secs, Water Heater: $shelly_water_heater_status_ON, SOC: $soc_percentage_now_display");
           // error_log($log_string);
 
-          if ( empty($soc_capture_after_dark_happened)) $soc_capture_after_dark_happened = false;
-
           $log_string = "Log-";
-          $log_string .= " dark?: $it_is_still_dark dark_capture?: $soc_capture_after_dark_happened";
-          $log_string .= " Flap: $switch_flap_amount LVDS: $local_LVDS LVDS_release: $local_LVDS_release SocUpdateMthd: $soc_update_method";
+
+          if ( $it_is_still_dark === true )
+          {
+            $log_string .= " It is dark: Yes";
+          }
+
+          if ( $soc_capture_after_dark_happened === true )
+          {
+            $log_string .= " SOC dark: Captured";
+          }
+
+          if ( $switch_flap_amount > 0 )
+          {
+            $log_string .= " Sw Flap: $switch_flap_amount";
+          }
+
+          if ( $local_LVDS === true )
+          {
+            $log_string .= " LVDS: TRUE";
+          }
+
+          if ( $local_LVDS_release === true )
+          {
+            $log_string .= " LVDS_release: TRUE";
+          }
+
+          $log_string .= " SocUpdateMthd: $soc_update_method";
           $log_string .= " SOC%: $soc_percentage_now_display";
+          
           error_log($log_string);
         }
 

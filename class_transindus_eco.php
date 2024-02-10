@@ -2779,7 +2779,7 @@ class class_transindus_eco
             $log_string .= " It is dark: Yes";
           }
 
-          if ( $soc_capture_after_dark_happened === true )
+          if ( ! empty( $soc_capture_after_dark_happened ) && $soc_capture_after_dark_happened === true )
           {
             $log_string .= " SOC dark: Captured";
           }
@@ -2801,7 +2801,7 @@ class class_transindus_eco
 
           $log_string .= " SocUpdateMthd: $soc_update_method";
           $log_string .= " SOC%: $soc_percentage_now_display";
-          
+
           error_log($log_string);
         }
 

@@ -51,6 +51,8 @@ class solar_calculation
 
         $this->sunset              =   $this->sunset();
 
+        error_log(print_r($this, true));
+
     }
 
     public function est_power()

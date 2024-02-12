@@ -2804,7 +2804,7 @@ class class_transindus_eco
             $log_string .= " LVDS_release: TRUE";
           }
 
-          $log_string .= " SocUpdateMthd: $soc_update_method";
+          $log_string .= " UpMthd: $soc_update_method";
           $log_string .= " SOC%: $soc_percentage_now_display";
 
           error_log($log_string);

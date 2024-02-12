@@ -2780,7 +2780,7 @@ class class_transindus_eco
           }
           else
           {
-            $log_string .= " E.Panel KW: number_format( $est_solar_kw_arr[0],1 ) W.Panel KW: $est_solar_kw_arr[1] ElevDeg: number_format( $est_solar_obj->sun_elevation_deg, 1)";
+            $log_string .= " E.Panel KW: $est_solar_kw_arr[0] W.Panel KW: $est_solar_kw_arr[1] ElevDeg: $est_solar_obj->sun_elevation_deg";
             $log_string .= " AzmthDeg: $est_solar_obj->sun_azimuth_deg DeclDeg: $est_solar_obj->declination_deg";
           }
 

@@ -195,9 +195,9 @@ class solar_calculation
         $this->theta_rad = $theta_rad;
         $this->alpha_rad = $alpha_rad;
 
-        $this->sun_azimuth_deg = $theta_rad * 180 / pi();
-        $this->sun_elevation_deg = $alpha_rad * 180 / pi();
-        $this->declination_deg = $delta_rad * 180 / pi();
+        $this->sun_azimuth_deg      = round( $theta_rad * 180 / pi(), 1);
+        $this->sun_elevation_deg    = round( $alpha_rad * 180 / pi(), 1);
+        $this->declination_deg      = round( $delta_rad * 180 / pi(), 1);
 
 
 

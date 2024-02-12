@@ -2780,7 +2780,7 @@ class class_transindus_eco
           }
           else
           {
-            $log_string .= " E. KW: $est_solar_kw_arr[0] W. KW: $est_solar_kw_arr[1] Elev: $est_solar_obj->sun_elevation_deg";
+            $log_string .= " E: $est_solar_kw_arr[0]KW. W: $est_solar_kw_arr[1]KW Elev: $est_solar_obj->sun_elevation_deg";
             $log_string .= " Azmth: $est_solar_obj->sun_azimuth_deg Decl: $est_solar_obj->declination_deg";
           }
 
@@ -2804,7 +2804,7 @@ class class_transindus_eco
             $log_string .= " LVDS_release: TRUE";
           }
 
-          $log_string .= " UpMthd: $soc_update_method";
+          $log_string .= " $soc_update_method";
           $log_string .= " SOC%: $soc_percentage_now_display";
 
           error_log($log_string);

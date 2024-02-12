@@ -2778,6 +2778,10 @@ class class_transindus_eco
           {
             $log_string .= " It is dark: Yes";
           }
+          else
+          {
+            $log_string .= " E.Panel KW: $est_solar_kw_arr[0] W.Panel KW: $est_solar_kw_arr[1]";
+          }
 
           if ( ! empty( $soc_capture_after_dark_happened ) && $soc_capture_after_dark_happened === true )
           {

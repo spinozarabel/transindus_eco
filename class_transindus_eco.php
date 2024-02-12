@@ -2776,11 +2776,12 @@ class class_transindus_eco
 
           if ( $it_is_still_dark === true )
           {
-            $log_string .= " It is dark: Yes";
+            $log_string .= " It is dark: Yes"; 
           }
           else
           {
-            $log_string .= " E.Panel KW: $est_solar_kw_arr[0] W.Panel KW: $est_solar_kw_arr[1]";
+            $log_string .= " E.Panel KW: $est_solar_kw_arr[0] W.Panel KW: $est_solar_kw_arr[1] ElevDeg: $est_solar_obj->sun_elevation_deg";
+            $log_string .= " AzmthDeg: $est_solar_obj->sun_azimuth_deg DeclDeg: $est_solar_obj->declination_deg";
           }
 
           if ( ! empty( $soc_capture_after_dark_happened ) && $soc_capture_after_dark_happened === true )
@@ -4055,6 +4056,14 @@ class class_transindus_eco
 
         $est_solar_obj->sunrise =  $solar_calc->sunrise();
         $est_solar_obj->sunset  =  $solar_calc->sunset();
+
+        $est_solar_obj->time_correction_factor  = $solar_calc->time_correction_factor;
+        $est_solar_obj->hra_degs                = $solar_calc->hra_degs;
+        $est_solar_obj->sun_azimuth_deg         = $solar_calc->sun_azimuth_deg;
+        $est_solar_obj->sun_elevation_deg       = $solar_calc->sun_elevation_deg;
+        $est_solar_obj->declination_deg         = $solar_calc->declination_deg;
+        $est_solar_obj->lat_deg                 = $solar_calc->lat_deg;
+        $est_solar_obj->long_deg                = $solar_calc->long_deg;
 
         return $est_solar_obj;
     }

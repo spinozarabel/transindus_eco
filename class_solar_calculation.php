@@ -128,6 +128,8 @@ class solar_calculation
     {
         // correct time for longitude and eot in minutes
         $time_correction_factor = round(4 * ($this->long_deg - $this->long_time_zone_deg) + $this->eot ,  0);
+
+        $this->time_correction_factor = $time_correction_factor;
         
         $tcf = $time_correction_factor . " minutes";
 
@@ -147,6 +149,8 @@ class solar_calculation
 
         // calculate hour angle based on local solar time. Hour angle is negaitive in AM and positive in PM and 0 at local solar noon
         $hra = 15 * ($hours - 12);
+
+        $this->hra_degs = $hra;
 
         $hra_rad = $hra * pi()/180;
 
@@ -188,6 +192,14 @@ class solar_calculation
         // calculate the Azimuth angle of the SUn from the North. Ideally it should be 90 +- 23.5 deg
         $theta_rad =    acos( ( sin($delta_rad) * cos($lat_rad) - 
                                 cos($delta_rad) * sin($lat_rad) * cos($hra_rad) ) / cos($alpha_rad) ) ;
+        $this->theta_rad = $theta_rad;
+        $this->alpha_rad = $alpha_rad;
+
+        $this->sun_azimuth_deg = $theta_rad * 180 / pi();
+        $this->sun_elevation_deg = $alpha_rad * 180 / pi();
+        $this->declination_deg = $delta_rad * 180 / pi();
+
+
 
         $reductionfactor =  cos($alpha_rad) * sin($panel_beta_rad) * cos($panel_tsi_rad - $theta_rad) + 
                             sin($alpha_rad) * cos($panel_beta_rad);

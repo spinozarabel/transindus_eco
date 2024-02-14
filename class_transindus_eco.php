@@ -2805,7 +2805,7 @@ class class_transindus_eco
           }
 
           $log_string .= " $soc_update_method";
-          $log_string .= " SOC%: $soc_percentage_now_display";
+          $log_string .= " SOC: $soc_percentage_now_display";
 
           error_log($log_string);
         }
@@ -4022,7 +4022,7 @@ class class_transindus_eco
 
           $solar_calc = new solar_calculation($panel_set, $transindus_lat_long_array, $this->utc_offset);
 
-          $est_solar_kw_arr[$key] =  round($solar_calc->est_power(), 1);
+          $est_solar_kw_arr[$key] =  round($solar_calc->est_power(), 2);
         }
 
         $est_solar_obj->est_solar_total_kw = array_sum( $est_solar_kw_arr );

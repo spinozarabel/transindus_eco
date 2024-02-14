@@ -199,7 +199,12 @@ class solar_calculation
         $this->sun_elevation_deg    = round( $alpha_rad * 180 / pi(), 1);
         $this->declination_deg      = round( $delta_rad * 180 / pi(), 1);
 
-
+        // check that sum of elevation and panel slope angle is greater tna 0.
+        if ( ( $alpha_rad + $panel_beta_rad ) <= 0 || ( $alpha_rad + $panel_beta_rad ) > pi()/2 )
+        {
+            $reductionfactor = 0.0001;
+            return;
+        }
 
         $reductionfactor =  cos($panel_tsi_rad - $theta_rad) * ( cos($alpha_rad) * sin($panel_beta_rad)  + 
                             sin($alpha_rad) * cos($panel_beta_rad) );

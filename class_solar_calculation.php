@@ -203,7 +203,7 @@ class solar_calculation
         if ( ( $alpha_rad + $panel_beta_rad ) <= 0 || ( $alpha_rad + $panel_beta_rad ) > pi()/2 )
         {
             $reductionfactor = 0.0001;
-            return;
+            return $reductionfactor;
         }
 
         $reductionfactor =  cos($panel_tsi_rad - $theta_rad) * ( cos($alpha_rad) * sin($panel_beta_rad)  + 

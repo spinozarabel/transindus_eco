@@ -91,7 +91,7 @@ class solar_calculation
         // now set the timezone to the local one
         $year_begin->setTimezone($this->timezone);
 
-        $year_begin->setDate($year->format('Y'), 1, 1);     
+        $year_begin->setDate($year_begin->format('Y'), 1, 1);     
         $year_begin->setTime(0, 0, 0);  
 
         $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));

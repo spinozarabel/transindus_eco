@@ -2805,7 +2805,7 @@ class class_transindus_eco
           }
 
           $log_string .= " $soc_update_method";
-          $log_string .= " SOC%: $soc_percentage_now_display";
+          $log_string .= " SOC: $soc_percentage_now_display";
 
           error_log($log_string);
         }

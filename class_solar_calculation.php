@@ -168,7 +168,7 @@ class solar_calculation
     public function delta_rad()
     {
         //  calculate declination based on days from start of year
-        $delta = -23.45 * sin( 360/365 * (284 + $this->d) * pi()/180 );
+        $delta = 23.5 * cos( 360/365*($this->d - 172)* pi() / 180 );
 
         $delta_rad = $delta * pi()/180;
 

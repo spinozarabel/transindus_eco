@@ -15,20 +15,21 @@ if (!defined( "ABSPATH" ) && !defined( "MOODLE_INTERNAL" ) )
 class solar_calculation
 {
     public function __construct(array $panel_array_info, 
-                                array $lat_long_array,
-                                float $utc_offset)
+                                array $lat_long_array = [12.83463, 77.49814],
+                                float $utc_offset = 5.5 )
     {
         $this->panel_array_info     =   $panel_array_info;
-        $this->panel_kw_peak        =   $panel_array_info[0];
-        $this->panel_azimuth_deg    =   $panel_array_info[1];
-        $this->panel_slope_deg      =   $panel_array_info[2];
+        $this->panel_kw_peak        =   $panel_array_info[0];   // peak power rating of panel array
+        $this->panel_azimuth_deg    =   $panel_array_info[1];   // azimuth degrees from South. East is +90 and West is -90
+        $this->panel_slope_deg      =   $panel_array_info[2];   // slope of panel with horizontal
 
         $this->lat_deg              =   $lat_long_array[0];
-        $this->long_deg             =   $lat_long_array[1];
-
         $this->lat_rad              =   $lat_long_array[0] * pi()/180;
 
-        $this_utc_offset            =   $utc_offset;
+        $this->long_deg             =   $lat_long_array[1];
+        $this->long_rad              =  $lat_long_array[1] * pi()/180;
+
+        $this_utc_offset            =   $utc_offset;    // this defaults to 5.5h or 5h 30m
         $this->timezone             =   new DateTimeZone('Asia/Kolkata');
 
         $this->now                  =   $this->now();
@@ -46,6 +47,7 @@ class solar_calculation
 
         // declination
         $this->delta_rad            =   $this->delta_rad();
+        $this->delta_deg            =   $this->delta_rad * 180 / pi();
 
         $this->sunrise              =   $this->sunrise();
 
@@ -84,16 +86,19 @@ class solar_calculation
     public function days_into_year()
     {
         // get a new datetime object for 1st midnight GMT
-        $year_begin = DateTime::createFromFormat('Y-m-d', '2022-01-01');
+        $year_begin = new DateTime();
 
         // now set the timezone to the local one
         $year_begin->setTimezone($this->timezone);
 
-        $datediff = date_diff($this->now, $year_begin);
+        $year_begin->setDate($year->format('Y'), 1, 1);     
+        $year_begin->setTime(0, 0, 0);  
+
+        $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+
+        $datediff = date_diff($now, $year_begin);
 
         $d = $datediff->format('%a');
-
-        if ($d > 365) $d = $d-365;
 
         return $d;
     }
@@ -145,7 +150,7 @@ class solar_calculation
 
         $arr = explode(":", $formatted_lst);
 
-        $hours = $arr[0] + $arr[1]/60;
+        $hours = $arr[0] + $arr[1] / 60;
 
         // calculate hour angle based on local solar time. Hour angle is negaitive in AM and positive in PM and 0 at local solar noon
         $hra = 15 * ($hours - 12);
@@ -163,7 +168,7 @@ class solar_calculation
     public function delta_rad()
     {
         //  calculate declination based on days from start of year
-        $delta = -23.45 * cos(360/365 * ($this->d + 10) * pi()/180);
+        $delta = -23.45 * sin( 360/365 * (284 + $this->d) * pi()/180 );
 
         $delta_rad = $delta * pi()/180;
 
@@ -183,7 +188,7 @@ class solar_calculation
         // panel tilt to horizon
         $panel_beta_rad =   $this->panel_slope_deg      * pi()/180;
 
-        // panel facing direction whose Azimuth from North is
+        // panel facing direction whose Azimuth from South is
         $panel_tsi_rad  =   $this->panel_azimuth_deg    * pi()/180;
 
         // Sun's elevation
@@ -201,8 +206,9 @@ class solar_calculation
 
 
 
-        $reductionfactor =  cos($alpha_rad) * sin($panel_beta_rad) * cos($panel_tsi_rad - $theta_rad) + 
-                            sin($alpha_rad) * cos($panel_beta_rad);
+        $reductionfactor =      sin($lat_rad) * ( sin($delta_rad) * cos($panel_beta_rad) + cos($delta_rad) * cos($panel_tsi_rad) * cos($hra_rad) * sin($panel_beta_rad) ) 
+                            +   cos($lat_rad) * ( cos($delta_rad) * cos($hra_rad) * cos($panel_beta_rad) - sin($delta_rad) * cos($panel_tsi_rad) * sin($panel_beta_rad) ) 
+                            +   cos($delta_rad) * sin($panel_tsi_rad) * sin($hra_rad) * sin($panel_beta_rad);
 
         return $reductionfactor;
     }

@@ -201,8 +201,8 @@ class solar_calculation
 
 
 
-        $reductionfactor =  cos($alpha_rad) * sin($panel_beta_rad) * cos($panel_tsi_rad - $theta_rad) + 
-                            sin($alpha_rad) * cos($panel_beta_rad);
+        $reductionfactor =  cos($panel_tsi_rad - $theta_rad) * ( cos($alpha_rad) * sin($panel_beta_rad)  + 
+                            sin($alpha_rad) * cos($panel_beta_rad) );
 
         return $reductionfactor;
     }

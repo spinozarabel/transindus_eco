@@ -206,7 +206,7 @@ class solar_calculation
         // Sun's elevation
         $alpha_rad = asin(sin($delta_rad) * sin($lat_phi_rad) + cos($delta_rad) * cos($lat_phi_rad) * cos($hra_rad));
 
-        // calculate the Azimuth angle of the SUn from the North. Ideally it should be 90 +- 23.5 deg
+        // Sun's Azimuth angle of the SUn from the North. Ideally it should be 90 +- 23.5 deg
         $theta_rad =    acos( ( sin($delta_rad) * cos($lat_phi_rad) - 
                                 cos($delta_rad) * sin($lat_phi_rad) * cos($hra_rad) ) / cos($alpha_rad) ) ;
         $this->theta_rad = $theta_rad;

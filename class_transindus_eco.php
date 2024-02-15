@@ -4920,37 +4920,35 @@ class class_transindus_eco
 
           $solar_calc = new solar_calculation($panel_set, $transindus_lat_long_array, $this->utc_offset);
 
-          $est_solar_kw_arr[$key] =  round($solar_calc->est_power(), 1);
+          $est_solar_kw_arr[$key] =  round($solar_calc->est_power(), 2);
         }
 
         $est_solar_obj->est_solar_total_kw = array_sum( $est_solar_kw_arr );
 
         $est_solar_obj->est_solar_kw_arr =  $est_solar_kw_arr;
 
-        if ( $this->nowIsWithinTimeLimits( '06:00', '12:00' ) )
+        // ensure that division by 0 doesn not happen
+        if ( $est_solar_kw_arr[1] > 0 )
         {
-          // west Panel Solar Amps is lower than East Panel
-          // reduce by factor of 1.2 based on AM measurements
-          $west_panel_est_kw = min( $est_solar_kw_arr ) * 1.0;
-        }
-        else 
-        {
-          // it is afternoon and West panel has maximum solar power
-          // increase by factor of 1.2 in PM based on comparison with Studer measurements
-          $west_panel_est_kw = max( $est_solar_kw_arr ) / 1.0;
+
+          $total_to_west_panel_ratio = $est_solar_obj->est_solar_total_kw / $est_solar_kw_arr[1];
         }
 
-        if ( $west_panel_est_kw > 0 )
-        {
-          // in morning the ratio will be greater than 2
-          // at noon it will be around 2
-          // after noon it will be less than 2 and greater than 1
-          $total_to_west_panel_ratio = $est_solar_obj->est_solar_total_kw / $west_panel_est_kw;
-        }
-
-        if ( $total_to_west_panel_ratio > 3 ) $total_to_west_panel_ratio = 3;
+        if ( $total_to_west_panel_ratio > 10 ) $total_to_west_panel_ratio = 10;
 
         $est_solar_obj->total_to_west_panel_ratio =  $total_to_west_panel_ratio;
+
+        $est_solar_obj->sunrise =  $solar_calc->sunrise();
+        $est_solar_obj->sunset  =  $solar_calc->sunset();
+
+        $est_solar_obj->time_correction_factor  = $solar_calc->time_correction_factor;
+        $est_solar_obj->hra_degs                = $solar_calc->hra_degs;
+        $est_solar_obj->sun_azimuth_deg         = $solar_calc->sun_azimuth_deg;
+        $est_solar_obj->sun_elevation_deg       = $solar_calc->sun_elevation_deg;
+        $est_solar_obj->declination_deg         = $solar_calc->declination_deg;
+        $est_solar_obj->lat_deg                 = $solar_calc->lat_deg;
+        $est_solar_obj->long_deg                = $solar_calc->long_deg;
+        $est_solar_obj->zenith_theta_s_deg      = $solar_calc->zenith_theta_s_deg;
 
         return $est_solar_obj;
     }

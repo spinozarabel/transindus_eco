@@ -4816,7 +4816,7 @@ class class_transindus_eco
         $shelly_switch_acin_details_arr = $readings_obj->shelly_switch_acin_details_arr;
 
         $shelly_water_heater_kw       = 0;
-        $shelly_water_heater_status   = false;
+        $shelly_water_heater_status   = null;
 
         // extract and process Shelly 1PM switch water heater data
         if ( ! empty($readings_obj->shelly_water_heater_data) )
@@ -5091,13 +5091,13 @@ class class_transindus_eco
         {
           $water_heater_icon_color = 'blue';
         }
-        elseif ( ! $shelly_water_heater_status )
+        elseif ( $shelly_water_heater_status === false )
         {
           $water_heater_icon_color = 'red';
         }
         else
         {
-          $water_heater_icon_color = 'black';
+          $water_heater_icon_color = 'yellow';
         }
 
 

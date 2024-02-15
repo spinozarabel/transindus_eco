@@ -210,8 +210,8 @@ class shelly_cloud_api
       curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
       curl_setopt($ch, CURLOPT_TIMEOUT, 10);
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 1);
-      curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+      curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
 
       $returnData = curl_exec($ch);
       $this->verbose ? error_log("curl response Shelly Device" . print_r($returnData,true)) : false;

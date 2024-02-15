@@ -4030,28 +4030,14 @@ class class_transindus_eco
 
         $est_solar_obj->est_solar_kw_arr =  $est_solar_kw_arr;
 
-        if ( $this->nowIsWithinTimeLimits( '06:00', '12:00' ) )
+        // ensure that division by 0 doesn not happen
+        if ( $est_solar_kw_arr[1] > 0 )
         {
-          // west Panel Solar Amps is lower than East Panel
-          // reduce by factor of 1.2 based on AM measurements
-          $west_panel_est_kw = min( $est_solar_kw_arr ) * 1.0;
-        }
-        else 
-        {
-          // it is afternoon and West panel has maximum solar power
-          // increase by factor of 1.2 in PM based on comparison with Studer measurements
-          $west_panel_est_kw = max( $est_solar_kw_arr ) / 1.0;
+
+          $total_to_west_panel_ratio = $est_solar_obj->est_solar_total_kw / $est_solar_kw_arr[1];
         }
 
-        if ( $west_panel_est_kw > 0 )
-        {
-          // in morning the ratio will be greater than 2
-          // at noon it will be around 2
-          // after noon it will be less than 2 and greater than 1
-          $total_to_west_panel_ratio = $est_solar_obj->est_solar_total_kw / $west_panel_est_kw;
-        }
-
-        if ( $total_to_west_panel_ratio > 3 ) $total_to_west_panel_ratio = 3;
+        if ( $total_to_west_panel_ratio > 10 ) $total_to_west_panel_ratio = 10;
 
         $est_solar_obj->total_to_west_panel_ratio =  $total_to_west_panel_ratio;
 

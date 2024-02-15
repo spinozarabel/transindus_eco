@@ -4165,7 +4165,7 @@ class class_transindus_eco
       if ( is_null($shelly_api_device_response) ) 
       { // No response for Shelly water heater switch API call
 
-        error_log("Shelly Water Heater Switch over LAN call failed - Reason unknown");
+        // error_log("Shelly Water Heater Switch over LAN call failed - Reason unknown");
         return null;
       }
       else 

@@ -4819,7 +4819,13 @@ class class_transindus_eco
         // solar power calculated from Shelly measurements of battery Grid and Load
         $psolar_kw              =   round($readings_obj->psolar_kw, 2);
 
-      // approximate solar current into battery
+        // Esimated total solar power available now assuming a cloudless sky
+        $est_solar_total_kw = $readings_obj->est_solar_total_kw;
+
+        // Potentially available solar power not being consumed right now
+        $psolar_potentially_available = $est_solar_total_kw - $psolar_kw;
+
+        // approximate solar current into battery
         $solar_amps_at_49V      =   round($psolar_kw * 1000 / 48.9, 1);
 
         // 
@@ -4895,12 +4901,22 @@ class class_transindus_eco
         // PV arrow icon psolar_info
         $pv_arrow_size = $this->get_arrow_size_based_on_power($psolar_kw);
 
-        if ($psolar_kw > 0.1) {
+        if ($psolar_kw > 0.1) 
+        {
             $pv_arrow_icon = '<i class="fa-solid' . $pv_arrow_size . 'fa-arrow-down-long fa-rotate-by"
                                                                            style="--fa-rotate-angle: 45deg;
                                                                                               color: Green;"></i>';
-            $psolar_info =  '<span style="font-size: 18px;color: Green;"><strong>' . $psolar_kw . 
-                            ' KW</strong><br>' . $solar_amps_at_49V . ' A</span>';
+            if ($psolar_potentially_available > 0.3 && $psolar_kw > 1.5 )
+            {
+              // we potentially have solar power available for consumption that is being thrown away now
+              $psolar_info =  '<span style="font-size: 18px;color: Green;"><strong>' . $psolar_kw . 
+                              ' KW</strong><br>' . $psolar_potentially_available . ' KW</span>';
+            }
+            else
+            {
+              $psolar_info =  '<span style="font-size: 18px;color: Green;"><strong>' . $psolar_kw . 
+                              ' KW</strong><br>' . $solar_amps_at_49V . ' A</span>';
+            }
         }
         else {
             $pv_arrow_icon = ''; //'<i class="fa-solid fa-1x fa-circle-xmark"></i>';

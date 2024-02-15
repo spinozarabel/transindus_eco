@@ -2406,7 +2406,8 @@ class class_transindus_eco
             // Also update the Studer object with battery amps
             if ( ! empty ( $studer_readings_obj ) )
             {
-              $studer_readings_obj->battery_amps                = $shelly_battery_measurement_object->battery_amps;
+              $studer_readings_obj->battery_amps              = $shelly_battery_measurement_object->battery_amps;
+              $studer_readings_obj->est_solar_total_kw        = $est_solar_total_kw;
             }
           }
 

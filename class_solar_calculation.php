@@ -15,21 +15,22 @@ if (!defined( "ABSPATH" ) && !defined( "MOODLE_INTERNAL" ) )
 class solar_calculation
 {
     public function __construct(array $panel_array_info, 
-                                array $lat_long_array,
-                                float $utc_offset)
+                                array $lat_long_array = [12.83463, 77.49814],
+                                float $utc_offset = 5.5 )
     {
         $this->panel_array_info     =   $panel_array_info;
-        $this->panel_kw_peak        =   $panel_array_info[0];
-        $this->panel_azimuth_deg    =   $panel_array_info[1];
-        $this->panel_slope_deg      =   $panel_array_info[2];
+        $this->panel_kw_peak        =   $panel_array_info[0];   // peak power rating of panel array
+        $this->panel_azimuth_deg    =   $panel_array_info[1];   // azimuth degrees from South. East is +90 and West is -90
+        $this->panel_slope_deg      =   $panel_array_info[2];   // slope of panel with horizontal
 
         $this->lat_deg              =   $lat_long_array[0];
-        $this->long_deg             =   $lat_long_array[1];
-
         $this->lat_rad              =   $lat_long_array[0] * pi()/180;
 
-        $this_utc_offset            =   $utc_offset;
-        $this->timezone             =   'Asia/Kolkata';
+        $this->long_deg             =   $lat_long_array[1];
+        $this->long_rad              =  $lat_long_array[1] * pi()/180;
+
+        $this_utc_offset            =   $utc_offset;    // this defaults to 5.5h or 5h 30m
+        $this->timezone             =   new DateTimeZone('Asia/Kolkata');
 
         $this->now                  =   $this->now();
         $this->d                    =   $this->days_into_year();
@@ -46,12 +47,17 @@ class solar_calculation
 
         // declination
         $this->delta_rad            =   $this->delta_rad();
+        $this->delta_deg            =   $this->delta_rad * 180 / pi();
+
+        $this->sunrise              =   $this->sunrise();
+
+        $this->sunset              =   $this->sunset();
 
     }
 
     public function est_power()
     {
-        $efficiency = 0.93;
+        $efficiency = 0.8;
 
         $est_solar_kw   = $efficiency * $this->panel_kw_peak * $this->reductionfactor();
 
@@ -60,30 +66,48 @@ class solar_calculation
         return $est_solar_kw;
     }
 
+
+
+    /**
+     * 
+     */
     public function now()
     {
-        date_default_timezone_set($this->timezone);
-
-        $now = new DateTime();
+        $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
 
         return $now;
     }
 
+
+
+    /**
+     * 
+     */
     public function days_into_year()
     {
-        date_default_timezone_set($this->timezone);
-        
-        $year_begin = DateTime::createFromFormat('Y-m-d', '2022-01-01');
+        // get a new datetime object for 1st midnight GMT
+        $year_begin = new DateTime();
 
-        $datediff = date_diff($this->now, $year_begin);
+        // now set the timezone to the local one
+        $year_begin->setTimezone($this->timezone);
+
+        $year_begin->setDate($year_begin->format('Y'), 1, 1);     
+        $year_begin->setTime(0, 0, 0);  
+
+        $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+
+        $datediff = date_diff($now, $year_begin);
 
         $d = $datediff->format('%a');
-
-        if ($d > 365) $d = $d-365;
 
         return $d;
     }
 
+
+
+    /**
+     * 
+     */
     public function B_rad()
     {
         $B_rad = 360/365*($this->d - 81) * pi()/180; 
@@ -91,6 +115,9 @@ class solar_calculation
         return $B_rad;
     }
 
+    /**
+     * 
+     */
     public function eot()
     {
         $B_rad  =   $this->B_rad;
@@ -99,63 +126,138 @@ class solar_calculation
         return $eot;
     }
 
+    /**
+     * 
+     */
     public function hra_rad()
     {
         // correct time for longitude and eot in minutes
+        // The longitude of place varies from local timezone as the longitudes are slightly different.
+        // The time correction also due to fluctuations in Earth's orbit etc.
         $time_correction_factor = round(4 * ($this->long_deg - $this->long_time_zone_deg) + $this->eot ,  0);
+
+        $this->time_correction_factor = $time_correction_factor;
         
         $tcf = $time_correction_factor . " minutes";
 
-        $local_solar_time = new DateTime($tcf);
+        $local_solar_time = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+        $lt_timestamp = $local_solar_time->getTimestamp();
+
+        $lst_timestamp = $lt_timestamp + $time_correction_factor * 60;
+
+        $lst = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+        $lst->setTimestamp($lst_timestamp);
 
         $formatted_lst = $local_solar_time->format('H:i:s');
 
         $arr = explode(":", $formatted_lst);
 
-        $hours = $arr[0] + $arr[1]/60;
+        $hours = $arr[0] + $arr[1] / 60;
 
-        // calculate hour angle based on time. Hour angle is negaitive in AM and positive in PM and 0 at local solar noon
-        $hra = 15 * ($hours - 12);
+        // calculate hour angle based on local solar time. Hour angle is positive in AM and negative in PM and 0 at local solar noon
+        // This is the book's convention. The PV website is opposite to this.
+        $hra = 15 * (12 - $hours);
+
+        $this->hra_degs = $hra;
 
         $hra_rad = $hra * pi()/180;
 
         return $hra_rad;
     }
 
+    /**
+     * 
+     */
     public function delta_rad()
     {
-        //  calculate declination based on days from start of year
-        $delta = -23.45 * cos(360/365 * ($this->d + 10) * pi()/180);
+        //  calculate declination based on days from start of year. The declination is 23.5deg on June21 and 0 on March 21st.
+        // Check for that. It is a sinewave inbetween
+        $delta_deg = 23.5 * cos( 360/365*($this->d - 172)* pi() / 180 );
 
-        $delta_rad = $delta * pi()/180;
+        $delta_rad = $delta_deg * pi()/180;
 
         return $delta_rad;
     }
 
+    /**
+     *  This is from Equation 3.3 of book on page 74. by S. P. Sukhatme
+     */
     public function reductionfactor()
     {
         // calculate elevation angle of the Sun from the Horizon
         $delta_rad  =       $this->delta_rad;
-        $lat_rad    =       $this->lat_rad;
+        $lat_phi_rad    =   $this->lat_rad;
         $hra_rad    =       $this->hra_rad;
 
         // panel tilt to horizon
         $panel_beta_rad =   $this->panel_slope_deg      * pi()/180;
 
-        // panel facing direction whose Azimuth from North is
-        $panel_tsi_rad  =   $this->panel_azimuth_deg    * pi()/180;
+        // panel facing direction whose Azimuth from South is. Convention is +90 if facing East and -90 if facing West and 0 if South
+        $panel_gamma_rad  = $this->panel_azimuth_deg    * pi()/180;
+
+        // sun's zenith angle in degrees
+        $zenith_theta_s_deg = 180 / pi() * acos(    sin($lat_phi_rad) * sin($delta_rad) + 
+                                                    cos($lat_phi_rad) * cos($delta_rad) * cos($hra_rad)
+                                                );
+        $zenith_theta_s_rad = $zenith_theta_s_deg * pi() / 180;
+
+        
 
         // Sun's elevation
-        $alpha_rad = asin(sin($delta_rad) * sin($lat_rad) + cos($delta_rad) * cos($lat_rad) * cos($hra_rad));
+        $alpha_rad = asin(sin($delta_rad) * sin($lat_phi_rad) + cos($delta_rad) * cos($lat_phi_rad) * cos($hra_rad));
 
-        // calculate the Azimuth angle of the SUn from the North. Ideally it should be 90 +- 23.5 deg
-        $theta_rad =    acos( ( sin($delta_rad) * cos($lat_rad) - 
-                                cos($delta_rad) * sin($lat_rad) * cos($hra_rad) ) / cos($alpha_rad) ) ;
+        // Sun's Azimuth angle of the SUn from the North. Ideally it should be 90 +- 23.5 deg
+        $theta_rad =    acos( ( sin($delta_rad) * cos($lat_phi_rad) - 
+                                cos($delta_rad) * sin($lat_phi_rad) * cos($hra_rad) ) / cos($alpha_rad) ) ;
+        $this->theta_rad = $theta_rad;
+        $this->alpha_rad = $alpha_rad;
 
-        $reductionfactor =  cos($alpha_rad) * sin($panel_beta_rad) * cos($panel_tsi_rad - $theta_rad) + 
-                            sin($alpha_rad) * cos($panel_beta_rad);
+        $this->sun_azimuth_deg      = round( $theta_rad * 180 / pi(), 1);
+        $this->sun_elevation_deg    = round( $alpha_rad * 180 / pi(), 1);
+        $this->declination_deg      = round( $delta_rad * 180 / pi(), 1);
+        $this->zenith_theta_s_deg   = round( $zenith_theta_s_deg, 1);
+
+
+
+        $reductionfactor =      sin($lat_phi_rad) * (   sin($delta_rad) * cos($panel_beta_rad) + 
+                                                        cos($delta_rad) * cos($panel_gamma_rad) * cos($hra_rad) * sin($panel_beta_rad)
+                                                    ) 
+                            +   cos($lat_phi_rad) * (   cos($delta_rad) * cos($hra_rad) * cos($panel_beta_rad) - 
+                                                        sin($delta_rad) * cos($panel_gamma_rad) * sin($panel_beta_rad) 
+                                                    ) 
+                            +   cos($delta_rad) * sin($panel_gamma_rad) * sin($hra_rad) * sin($panel_beta_rad);
 
         return $reductionfactor;
+    }
+
+    /**
+     * 
+     */
+    public function sunrise()
+    {
+        $delta_rad      =       $this->delta_rad;
+        $lat_phi_rad    =       $this->lat_rad;
+
+        $time_correction_factor = round(4 * ($this->long_deg - $this->long_time_zone_deg) + $this->eot ,  0);
+
+        $sunrise = 12 - (1 / 15) * (180 / pi()) * acos(-1 * tan($lat_phi_rad) * tan($delta_rad) ) - $time_correction_factor/60;
+
+        return $sunrise;
+    }
+
+    /**
+     * 
+     */
+    public function sunset()
+    {
+        $delta_rad  =       $this->delta_rad;
+        $lat_phi_rad    =       $this->lat_rad;
+        
+        $time_correction_factor = round(4 * ($this->long_deg - $this->long_time_zone_deg) + $this->eot ,  0);
+
+        $sunset = 12 + (1 / 15) * (180 / pi()) * acos(-1 * tan($lat_phi_rad) * tan($delta_rad) ) - $time_correction_factor/60;
+
+        return $sunset;
     }
 }
 

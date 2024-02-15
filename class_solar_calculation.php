@@ -22,6 +22,7 @@ class solar_calculation
         $this->panel_kw_peak        =   $panel_array_info[0];   // peak power rating of panel array
         $this->panel_azimuth_deg    =   $panel_array_info[1];   // azimuth degrees from South. East is +90 and West is -90
         $this->panel_slope_deg      =   $panel_array_info[2];   // slope of panel with horizontal
+        $this->panel_efficiency     =   $panel_array_info[3];   // Fractional efficiency
 
         $this->lat_deg              =   $lat_long_array[0];
         $this->lat_rad              =   $lat_long_array[0] * pi()/180;
@@ -57,9 +58,9 @@ class solar_calculation
 
     public function est_power()
     {
-        $efficiency = 0.8;
+        $panel_efficiency = $this->panel_efficiency;
 
-        $est_solar_kw   = $efficiency * $this->panel_kw_peak * $this->reductionfactor();
+        $est_solar_kw   = $panel_efficiency * $this->panel_kw_peak * $this->reductionfactor();
 
         if ($est_solar_kw < 0 ) return 0;
 

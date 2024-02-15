@@ -6431,9 +6431,9 @@ class class_transindus_eco
           $saved_cron_exit_condition .= " Cloud: " . $studer_readings_obj->cloudiness_average_percentage_weighted . " %";
         }
 
-        if ( ! empty( $studer_readings_obj->est_solar_kw ) )
+        if ( ! empty( $studer_readings_obj->est_solar_total_kw ) )
         {
-          $saved_cron_exit_condition .= " Pest: " . $studer_readings_obj->est_solar_kw . " KW";
+          $saved_cron_exit_condition .= " Pest: " . $studer_readings_obj->est_solar_total_kw . " KW";
         }
 
         if ( ! empty( $studer_readings_obj->soc_predicted_at_6am ) )

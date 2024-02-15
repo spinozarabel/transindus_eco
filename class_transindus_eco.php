@@ -4815,11 +4815,18 @@ class class_transindus_eco
 
         $shelly_switch_acin_details_arr = $readings_obj->shelly_switch_acin_details_arr;
 
+        $shelly_water_heater_kw       = 0;
+        $shelly_water_heater_status   = false;
+
         // extract and process Shelly 1PM switch water heater data
-        $shelly_water_heater_data     = $readings_obj->shelly_water_heater_data;     // data object
-        $shelly_water_heater_kw       = $shelly_water_heater_data->shelly_water_heater_kw;
-        $shelly_water_heater_status   = $shelly_water_heater_data->shelly_water_heater_status;  // boolean variable
-        $shelly_water_heater_current  = $shelly_water_heater_data->shelly_water_heater_current; // in Amps
+        if ( ! empty($readings_obj->shelly_water_heater_data) )
+        {
+          $shelly_water_heater_data     = $readings_obj->shelly_water_heater_data;     // data object
+          $shelly_water_heater_kw       = $shelly_water_heater_data->shelly_water_heater_kw;
+          $shelly_water_heater_status   = $shelly_water_heater_data->shelly_water_heater_status;  // boolean variable
+          $shelly_water_heater_current  = $shelly_water_heater_data->shelly_water_heater_current; // in Amps
+        }
+        
 
         $main_control_site_avasarala_is_offline_for_long = $readings_obj->main_control_site_avasarala_is_offline_for_long;
 

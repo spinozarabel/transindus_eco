@@ -2782,6 +2782,7 @@ class class_transindus_eco
           {
             $log_string .= " E: $est_solar_kw_arr[0] KW. W: $est_solar_kw_arr[1] KW Elev: $est_solar_obj->sun_elevation_deg";
             $log_string .= " Azm: $est_solar_obj->sun_azimuth_deg Decl: $est_solar_obj->declination_deg HRA: $est_solar_obj->hra_degs ";
+            $log_string .= " ZenThetaSDeg: $est_solar_obj->zenith_theta_s_deg";
           }
 
           if ( ! empty( $soc_capture_after_dark_happened ) && $soc_capture_after_dark_happened === true )
@@ -4064,6 +4065,7 @@ class class_transindus_eco
         $est_solar_obj->declination_deg         = $solar_calc->declination_deg;
         $est_solar_obj->lat_deg                 = $solar_calc->lat_deg;
         $est_solar_obj->long_deg                = $solar_calc->long_deg;
+        $est_solar_obj->zenith_theta_s_deg      = $solar_calc->zenith_theta_s_deg;
 
         return $est_solar_obj;
     }

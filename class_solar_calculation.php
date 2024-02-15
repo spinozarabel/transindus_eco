@@ -199,7 +199,7 @@ class solar_calculation
         $zenith_theta_s_deg = 180 / pi() * acos(    sin($lat_phi_rad) * sin($delta_rad) + 
                                                     cos($lat_phi_rad) * cos($delta_rad) * cos($hra_rad)
                                                 );
-        $zenith_theta_s_rad = $zenith_theta_s_rad * pi() / 180;
+        $zenith_theta_s_rad = $zenith_theta_s_deg * pi() / 180;
 
         
 
@@ -215,7 +215,7 @@ class solar_calculation
         $this->sun_azimuth_deg      = round( $theta_rad * 180 / pi(), 1);
         $this->sun_elevation_deg    = round( $alpha_rad * 180 / pi(), 1);
         $this->declination_deg      = round( $delta_rad * 180 / pi(), 1);
-        $this->zenith_theta_s_deg   = round( $zenith_theta_s_rad, 1);
+        $this->zenith_theta_s_deg   = round( $zenith_theta_s_deg, 1);
 
 
 

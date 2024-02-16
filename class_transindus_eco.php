@@ -2792,8 +2792,7 @@ class class_transindus_eco
           else
           {
             $log_string .= " E: $est_solar_kw_arr[0] KW. W: $est_solar_kw_arr[1] KW Elev: $est_solar_obj->sun_elevation_deg";
-            $log_string .= " Azm: $est_solar_obj->sun_azimuth_deg Decl: $est_solar_obj->declination_deg HRA: $est_solar_obj->hra_degs ";
-            $log_string .= " ZenThetaSDeg: $est_solar_obj->zenith_theta_s_deg";
+            $log_string .= " Azm: $est_solar_obj->sun_azimuth_deg HRA: $est_solar_obj->hra_degs ";
           }
 
           if ( ! empty( $soc_capture_after_dark_happened ) && $soc_capture_after_dark_happened === true )

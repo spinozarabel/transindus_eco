@@ -2761,6 +2761,17 @@ class class_transindus_eco
             $shelly_readings_obj->psolar_kw = $shelly_readings_obj->battery_power_kw  / 0.96;
           }
 
+          if (false !== ($excess_solar_available_avg = get_transient('excess_solar_available_avg')))
+          {
+            // the transient exists and is alreay loaded into the variable for processing
+          }
+          else
+          {
+            // the transient does not exist so create a fresh one
+            set_transient('excess_solar_available_avg', 0, 5 * 60);
+            $excess_solar_available_loop_count = 0;
+          }
+
           $excess_solar_kw = $est_solar_total_kw - $shelly_readings_obj->psolar_kw;
 
           $excess_solar_available = 
@@ -2769,8 +2780,31 @@ class class_transindus_eco
                 $excess_solar_kw > 1                        &&    // estimated excess is greater than 1KW
                 $soc_percentage_now > 80;
 
-                $shelly_readings_obj->excess_solar_available  = $excess_solar_available;
-                $shelly_readings_obj->excess_solar_kw         = $excess_solar_kw;
+          if ( $excess_solar_available === true )
+          {
+            $excess_solar_available_loop_count += 1;    // increment averaging counter by 1
+          }
+          else
+          {
+            $excess_solar_available_loop_count = 0;     // reset the averaging count to 0 to start aeraging all over again
+          }
+
+          // write updated aeraging count back to transient for use in next cycle
+          set_transient( 'excess_solar_available_avg', $excess_solar_available_loop_count, 5 * 60 );
+          
+          // revaluate excess solar availability based on average count
+          if ( $excess_solar_available === true && $excess_solar_available_loop_count >=150 )
+          {
+            // excess availability is true this loop and past 149 loops
+            $excess_solar_available = true;
+          }
+          else
+          {     // for all other cases ecess available is false
+            $excess_solar_available = false;
+          }
+
+          $shelly_readings_obj->excess_solar_available  = $excess_solar_available;
+          $shelly_readings_obj->excess_solar_kw         = $excess_solar_kw;
         }
         
         { // logging

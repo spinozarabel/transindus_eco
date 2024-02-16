@@ -2747,7 +2747,7 @@ class class_transindus_eco
           }
         }
 
-        { // Since we calculate Psolar indirectly, that depends on conditions as below
+        { // ----------------->   Psolar and Psolar excess available ------------------------------------------
           if ($it_is_still_dark)
           { // solar power is 0 as it is still dark
             $shelly_readings_obj->psolar_kw = 0;
@@ -2760,6 +2760,17 @@ class class_transindus_eco
           { // Grid is supplying the load so all of solar supplies the battery charging power
             $shelly_readings_obj->psolar_kw = $shelly_readings_obj->battery_power_kw  / 0.96;
           }
+
+          $excess_solar_kw = $est_solar_total_kw - $shelly_readings_obj->psolar_kw;
+
+          $excess_solar_available = 
+                $shelly_readings_obj->psolar_kw > 0.5       &&    // at least 0.5KW of solar being consumed
+                $est_solar_total_kw > 1.5                   &&    // ensure the estimation is valid and not close to sunrise/set
+                $excess_solar_kw > 1                        &&    // estimated excess is greater than 1KW
+                $soc_percentage_now > 80;
+
+                $shelly_readings_obj->excess_solar_available  = $excess_solar_available;
+                $shelly_readings_obj->excess_solar_kw         = $excess_solar_kw;
         }
         
         { // logging
@@ -2804,6 +2815,12 @@ class class_transindus_eco
           {
             $log_string .= " LVDS_release: TRUE";
           }
+
+          if ( $excess_solar_available === true )
+          {
+            $log_string .= " ExSolKW: $excess_solar_kw";
+          }
+          
 
           $log_string .= " $soc_update_method";
           $log_string .= " SOC: $soc_percentage_now_display";

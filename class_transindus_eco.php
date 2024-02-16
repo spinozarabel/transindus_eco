@@ -2761,14 +2761,14 @@ class class_transindus_eco
             $shelly_readings_obj->psolar_kw = $shelly_readings_obj->battery_power_kw  / 0.96;
           }
 
-          if (false !== ($excess_solar_available_avg = get_transient('excess_solar_available_avg')))
+          if (false !== ($excess_solar_available_loop_count = get_transient('excess_solar_available_loop_count')))
           {
             // the transient exists and is alreay loaded into the variable for processing
           }
           else
           {
             // the transient does not exist so create a fresh one
-            set_transient('excess_solar_available_avg', 0, 5 * 60);
+            set_transient('excess_solar_available_loop_count', 0, 5 * 60);
             $excess_solar_available_loop_count = 0;
           }
 
@@ -2808,7 +2808,7 @@ class class_transindus_eco
           }
 
           // write updated aeraging count back to transient for use in next cycle
-          set_transient( 'excess_solar_available_avg', $excess_solar_available_loop_count, 5 * 60 );
+          set_transient( 'excess_solar_available_loop_count', $excess_solar_available_loop_count, 5 * 60 );
 
           $shelly_readings_obj->excess_solar_available  = $excess_solar_available;
           $shelly_readings_obj->excess_solar_kw         = $excess_solar_kw;

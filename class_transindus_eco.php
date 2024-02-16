@@ -2783,15 +2783,19 @@ class class_transindus_eco
           if ( $excess_solar_available === true )
           {
             $excess_solar_available_loop_count += 1;    // increment averaging counter by 1
+
+            // make sure the count never goes beyond 155.
+            if ( $excess_solar_available_loop_count >155 ) $excess_solar_available_loop_count = 155;
           }
           else
           {
-            $excess_solar_available_loop_count = 0;     // reset the averaging count to 0 to start aeraging all over again
+            $excess_solar_available_loop_count += -1;     // decrement averaging count by 1
+
+            // make sure the count never goes negative.
+            if ( $excess_solar_available_loop_count < 0 ) $excess_solar_available_loop_count = 0;
           }
 
-          // write updated aeraging count back to transient for use in next cycle
-          set_transient( 'excess_solar_available_avg', $excess_solar_available_loop_count, 5 * 60 );
-          
+          // if excess is available for >=150 then we have average excess available
           // revaluate excess solar availability based on average count
           if ( $excess_solar_available === true && $excess_solar_available_loop_count >=150 )
           {
@@ -2802,6 +2806,9 @@ class class_transindus_eco
           {     // for all other cases ecess available is false
             $excess_solar_available = false;
           }
+
+          // write updated aeraging count back to transient for use in next cycle
+          set_transient( 'excess_solar_available_avg', $excess_solar_available_loop_count, 5 * 60 );
 
           $shelly_readings_obj->excess_solar_available  = $excess_solar_available;
           $shelly_readings_obj->excess_solar_kw         = $excess_solar_kw;

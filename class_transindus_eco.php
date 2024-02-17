@@ -2777,8 +2777,8 @@ class class_transindus_eco
           $excess_solar_available = 
                 $shelly_readings_obj->psolar_kw > 0.5       &&    // at least 0.5KW of solar being consumed
                 $est_solar_total_kw > 1.5                   &&    // ensure the estimation is valid and not close to sunrise/set
-                $excess_solar_kw > 1                        &&    // estimated excess is greater than 1KW
-                $soc_percentage_now > 80;
+                $excess_solar_kw > 0.5                      &&    // estimated excess is greater than 1KW
+                $soc_percentage_now > 68;
 
           if ( $excess_solar_available === true )
           {

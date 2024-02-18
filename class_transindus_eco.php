@@ -2788,7 +2788,7 @@ class class_transindus_eco
             $excess_solar_available_loop_count += 1;    // increment averaging counter by 1
 
             // make sure the count never goes beyond 35.
-            if ( $excess_solar_available_loop_count > 35 ) $excess_solar_available_loop_count = 35;
+            if ( $excess_solar_available_loop_count > 25 ) $excess_solar_available_loop_count = 25;
           }
           else
           {
@@ -2800,7 +2800,7 @@ class class_transindus_eco
 
           // if excess is available for >=30 loops then we have average excess available
           // revaluate excess solar availability based on average count
-          if ( $excess_solar_available === true && $excess_solar_available_loop_count >=30 )
+          if ( $excess_solar_available === true && $excess_solar_available_loop_count >=20 )
           {
             // excess availability is true this loop and past 29 loops
             $excess_solar_available = true;

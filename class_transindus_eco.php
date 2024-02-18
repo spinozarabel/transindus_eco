@@ -4970,7 +4970,7 @@ class class_transindus_eco
             if ( $excess_solar_available === true )
             {
               // we potentially have solar power available for consumption that is being thrown away now
-              $psolar_info =  '<span style="font-size: 18px;color: Blue;"><strong>' . $psolar_kw . 
+              $psolar_info =  '<span style="font-size: 18px;color: DarkViolet;"><strong>' . $psolar_kw . 
                               ' KW</strong><br>' . $excess_solar_kw . ' KW</span>';
             }
             else

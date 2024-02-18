@@ -2761,6 +2761,9 @@ class class_transindus_eco
             $shelly_readings_obj->psolar_kw = $shelly_readings_obj->battery_power_kw  / 0.96;
           }
 
+          // initialize this to false. We will evaluate this for this loop next
+          $excess_solar_available = false;
+
           if (false !== ($excess_solar_available_loop_count = get_transient('excess_solar_available_loop_count')))
           {
             // the transient exists and is alreay loaded into the variable for processing
@@ -2775,17 +2778,17 @@ class class_transindus_eco
           $excess_solar_kw = $est_solar_total_kw - $shelly_readings_obj->psolar_kw;
 
           $excess_solar_available = 
-                $shelly_readings_obj->psolar_kw > 0.5       &&    // at least 0.5KW of solar being consumed
-                $est_solar_total_kw > 1.5                   &&    // ensure the estimation is valid and not close to sunrise/set
-                $excess_solar_kw > 0.5                      &&    // estimated excess is greater than 1KW
-                $soc_percentage_now > 68;
+                $est_solar_total_kw > 1.5       &&    // ensure the estimation is valid and not close to sunrise/set
+                $excess_solar_kw    > 0.5       &&    // estimated excess is greater than 1KW
+                $soc_percentage_now > 68;             // Once battery approcahes 50V or around 7-% SOC its current requirements throttles
 
+                // establish duration of availability
           if ( $excess_solar_available === true )
-          {
+          { 
             $excess_solar_available_loop_count += 1;    // increment averaging counter by 1
 
             // make sure the count never goes beyond 35.
-            if ( $excess_solar_available_loop_count >35 ) $excess_solar_available_loop_count = 35;
+            if ( $excess_solar_available_loop_count > 35 ) $excess_solar_available_loop_count = 35;
           }
           else
           {
@@ -2795,7 +2798,7 @@ class class_transindus_eco
             if ( $excess_solar_available_loop_count < 0 ) $excess_solar_available_loop_count = 0;
           }
 
-          // if excess is available for >=150 then we have average excess available
+          // if excess is available for >=30 loops then we have average excess available
           // revaluate excess solar availability based on average count
           if ( $excess_solar_available === true && $excess_solar_available_loop_count >=30 )
           {

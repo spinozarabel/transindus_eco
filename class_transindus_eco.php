@@ -2775,7 +2775,7 @@ class class_transindus_eco
             $excess_solar_available_loop_count = 0;
           }
 
-          $excess_solar_kw = $est_solar_total_kw - $shelly_readings_obj->psolar_kw;
+          $excess_solar_kw = round($est_solar_total_kw - $shelly_readings_obj->psolar_kw, 2);
 
           $excess_solar_available = 
                 $est_solar_total_kw > 1.5       &&    // ensure the estimation is valid and not close to sunrise/set

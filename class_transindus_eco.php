@@ -4883,7 +4883,8 @@ class class_transindus_eco
         $est_solar_total_kw = $readings_obj->est_solar_total_kw;
 
         // Potentially available solar power not being consumed right now
-        $psolar_potentially_available = $est_solar_total_kw - $psolar_kw;
+        $excess_solar_available = $readings_obj->excess_solar_available;
+        $excess_solar_kw        = $readings_obj->excess_solar_kw;
 
         // approximate solar current into battery
         $solar_amps_at_49V      =   round($psolar_kw * 1000 / 48.9, 1);
@@ -4966,11 +4967,11 @@ class class_transindus_eco
             $pv_arrow_icon = '<i class="fa-solid' . $pv_arrow_size . 'fa-arrow-down-long fa-rotate-by"
                                                                            style="--fa-rotate-angle: 45deg;
                                                                                               color: Green;"></i>';
-            if ($psolar_potentially_available > 0.3 && $psolar_kw > 1.5 )
+            if ( $excess_solar_available === true )
             {
               // we potentially have solar power available for consumption that is being thrown away now
-              $psolar_info =  '<span style="font-size: 18px;color: Green;"><strong>' . $psolar_kw . 
-                              ' KW</strong><br>' . $psolar_potentially_available . ' KW</span>';
+              $psolar_info =  '<span style="font-size: 18px;color: Blue;"><strong>' . $psolar_kw . 
+                              ' KW</strong><br>' . $excess_solar_kw . ' KW</span>';
             }
             else
             {

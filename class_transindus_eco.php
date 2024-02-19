@@ -566,7 +566,7 @@ class class_transindus_eco
       $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['ip_shelly_acin_1pm'] )  && $all_usermeta['do_shelly'];
     
       if ( $valid_shelly_config ) 
-      {  // Cotrol Shelly TRUE if usermeta AND valid config
+      {  // Cotrol Shelly TRUE if usermeta 'do_shelly' is true AND config has non-empty IP address for the switch
         $control_shelly = true;
       }
       else 
@@ -2693,7 +2693,7 @@ class class_transindus_eco
           $local_LVDS = $main_control_site_avasarala_is_offline_for_long  && 
                           $soc_percentage_now           < 40              &&    // local SOC measurement is low
                           $shelly1pm_acin_switch_status === "OFF"         &&    // Grid switch is OFF. If FFLINE or ON this won't care
-                          $control_shelly               === true          &&    // controllable by config
+                          $control_shelly               === true          &&    // This is true when Iswitch P address exists in config AND do_shelly is true
                           $switch_is_flapping           === false;
 
           $local_LVDS_release = $main_control_site_avasarala_is_offline_for_long  &&    // Main control site avasarala.in is offline for more than 15m

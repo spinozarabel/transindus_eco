@@ -10,4 +10,4 @@ vendor/
 check_avasarala_in*
 mystuder.py
 xcom_proto*
-*_test.php
+class_my_shelly_over_lan_test*

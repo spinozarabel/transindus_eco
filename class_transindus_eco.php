@@ -4291,7 +4291,7 @@ class class_transindus_eco
       $mystuder_over_xcomlan_script_name = $config['accounts'][$user_index]['mystuder_over_xcomlan_script_name'];
 
       // execute the scripy using shell exec and get the object response as a json string from the script
-      $json_string = shell_exec("python3 mystuder.py");
+      $json_string = shell_exec("mystuder.py");
 
       // check that json string is not null.
       if ( ! empty( $json_string ) )

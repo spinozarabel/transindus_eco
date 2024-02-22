@@ -365,9 +365,15 @@ $total_power_kw = $ret->est_solar_total_kw;
 $sunrise  = $ret->sunrise;
 $sunset   = $ret->sunset;
 
-echo("SUurise = " . $sunrise . "\n" );
+echo("Sunrise = " . $sunrise . "\n" );
 echo("Sunset = " . $sunset . "\n" );
-echo("Toyal SOlar KW " . $total_power_kw . "\n" );
+echo("Total Solar KW " . $total_power_kw . "\n" );
+
+$json_string = shell_exec("python3 mystuder.py");
+$studer_data_via_xcomlan_shellexec = json_decode($json_string);
+print_r($studer_data_via_xcomlan_shellexec);
+
+
 
 
 

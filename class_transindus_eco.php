@@ -2513,6 +2513,25 @@ class class_transindus_eco
               $shelly_readings_obj->shelly_em_home_kwh_since_midnight = $shelly_em_home_kwh_since_midnight;
             }
           }
+
+          { // make an API call on studer using xcomlan shell exec script methid
+            $studer_data_via_xcomlan = $this->get_studer_readings_over_xcomlan( $user_index );
+
+
+            $raw_batt_voltage_xcomlan = $studer_data_via_xcomlan->battery_voltage_xtender;
+
+            // battery current as measured by xcom-lan is got by adding + PV DC current amps and - inverter DC current amps
+            $batt_current_xcomlan = $studer_data_via_xcomlan->pv_current_now_total + $studer_data_via_xcomlan->inverter_current;
+
+            // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging
+            // $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);
+
+            // if battery is charging voltage will decrease and if discharging voltage will increase due to IR compensation
+            $ir_drop_compensated_battery_voltage_xcomlan = $raw_batt_voltage_xcomlan - 0.025 * $batt_current_xcomlan;
+
+            // calculate the running average over the last 5 readings including this one. Return is rounded to 2 decimals
+            $batt_voltage_xcomlan_avg = $this->get_battery_voltage_avg( $ir_drop_compensated_battery_voltage_xcomlan );
+          }
         }
 
         { // calculate the battery current measurement based SOC
@@ -2867,6 +2886,10 @@ class class_transindus_eco
 
           $log_string .= " $soc_update_method";
           $log_string .= " SOC: $soc_percentage_now_display";
+
+          $log_string = "Log -";
+          $log_string .= "E-Panel: $studer_data_via_xcomlan->pv_current_now1 W-Panel: $studer_data_via_xcomlan->pv_current_now1";
+          $log_string .= "PV-Amps: $studer_data_via_xcomlan->pv_current_now_total Shelly DC: $battery_amps BattV: $batt_voltage_xcomlan_avg";
 
           error_log($log_string);
         }
@@ -3638,35 +3661,42 @@ class class_transindus_eco
      *  Takes the average of the battery values stored in the array, independent of its size
      *  @preturn float:$battery_avg_voltage
      */
-    public function get_battery_voltage_avg( string $wp_user_name, float $new_battery_voltage_reading ): ? float
+    public function get_battery_voltage_avg( float $new_battery_voltage_reading ):float
     {
         // Load the voltage array that might have been pushed into transient space
-        $bv_arr_transient = get_transient( $wp_user_name . '_' . 'bv_avg_arr' ); 
-
-        // If transient doesnt exist rebuild
-        if ( ! is_array($bv_arr_transient))
+        if ( false !== ( $bv_arr_transient = get_transient( 'bv_avg_arr' ) ) )
         {
-          $bv_avg_arr = [];
+          // the transient exists. Check that it is an array
+          // If transient doesnt exist rebuild
+          if ( ! is_array($bv_arr_transient))
+          {
+            $bv_avg_arr = [];
+          }
+          else
+          {
+            // transient exists and it IS an array so populate it
+            $bv_avg_arr = $bv_arr_transient;
+          }
         }
         else
-        {
-          // it exists so populate
-          $bv_avg_arr = $bv_arr_transient;
+        { // transient does not exists so start from scratch
+          $bv_avg_arr = [];
         }
+
+        
         
         // push the new voltage reading to the holding array
         array_push( $bv_avg_arr, $new_battery_voltage_reading );
 
-        // If the array has more than 3 elements then drop the earliest one
-        // We are averaging for only 3 minutes
-        if ( sizeof($bv_avg_arr) > 3 )  {   // drop the earliest reading
+        // If the array has more than 5 elements then drop the earliest one
+        if ( sizeof($bv_avg_arr) > 5 )  {   // drop the earliest reading
             array_shift($bv_avg_arr);
         }
         // Write it to this object for access elsewhere easily
         $this->bv_avg_arr = $bv_avg_arr;
 
         // Setup transiet to keep previous state for averaging
-        set_transient( $wp_user_name . '_' . 'bv_avg_arr', $bv_avg_arr, 5*60 );
+        set_transient( 'bv_avg_arr', $bv_avg_arr, 5*60 );
 
 
         $count  = 0.00001;    // prevent division by 0 error
@@ -3686,6 +3716,8 @@ class class_transindus_eco
 
         return $battery_avg_voltage;
     }
+
+
 
     /**
      *  @param string:$start
@@ -4246,6 +4278,33 @@ class class_transindus_eco
 
       return $shelly_water_heater_data;
     }
+
+
+    /**
+     * 
+     */
+    public function get_studer_readings_over_xcomlan( int $user_index ): ? object
+    {
+      // load the script name from config
+      $config = $this->config;
+
+      $mystuder_over_xcomlan_script_name = $config['accounts'][$user_index]['mystuder_over_xcomlan_script_name'];
+
+      // execute the scripy using shell exec and get the object response as a json string from the script
+      $json_string = shell_exec( $mystuder_over_xcomlan_script_name );
+
+      // check that json string is not null.
+      if ( ! empty( $json_string ) )
+      {
+        $studer_data_via_xcomlan = json_decode($json_string);
+
+        return $studer_data_via_xcomlan;
+      }
+
+      return null;
+    }
+
+
 
 
     /**

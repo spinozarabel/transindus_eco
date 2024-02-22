@@ -369,9 +369,12 @@ echo("Sunrise = " . $sunrise . "\n" );
 echo("Sunset = " . $sunset . "\n" );
 echo("Total Solar KW " . $total_power_kw . "\n" );
 
-$json_string = shell_exec("python3 mystuder.py");
-$studer_data_via_xcomlan_shellexec = json_decode($json_string);
-print_r($studer_data_via_xcomlan_shellexec);
+$mystuder_over_xcomlan_script_name = $config['accounts'][$user_index]['mystuder_over_xcomlan_script_name'];
+
+$json_string = shell_exec( $mystuder_over_xcomlan_script_name );
+
+$studer_data_via_xcomlan = json_decode($json_string);
+print_r($studer_data_via_xcomlan);
 
 
 

@@ -4297,12 +4297,7 @@ class class_transindus_eco
       // execute the scripy using shell exec and get the object response as a json string from the script
       $json_string = exec( $mystuder_over_xcomlan_script_name, $output_array );
       
-      error_log( "JSON string from shell_exec: $json_string");
-
-      return null;
-
-      // check that json string is not null.
-      if ( ! empty( $json_string ) )
+      error_log(print_r($output_array, true));
       {
         $studer_data_via_xcomlan = json_decode($json_string);
 

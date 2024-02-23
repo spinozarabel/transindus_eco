@@ -322,7 +322,7 @@ $user_index = 0;
 // Make an API call on the Shelly plus Add on device
 $config = $test->config;
 
-$mystuder_over_xcomlan_script_name = "/usr/bin/python3 mystuder.py";
+$mystuder_over_xcomlan_script_name = "python3 mystuder.py";
 
 $json_string = shell_exec( $mystuder_over_xcomlan_script_name );
 

@@ -119,7 +119,7 @@ class my_mqtt {
     public function mqtt_publish_with_qos_0( $topic_param, $message )
     {
         $mqtt_broker_host       = "localhost";
-        $mqtt_broker_tls_port   = $this->config['accounts'][0]['mqtt_broker_tls_port'];
+        $mqtt_broker_tls_port   = 1883;
         $authorization_username = "";
         $authorization_password = "";
 

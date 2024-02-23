@@ -27,12 +27,12 @@ defined( 'MyConst' ) or die( 'No script kiddies please!' );
  require __DIR__ . '/vendor/autoload.php';
  
  use PhpMqtt\Client\ConnectionSettings;
- use PhpMqtt\Client\Logger;
+ use PhpMqtt\Client\SimpleLogger;
  use PhpMqtt\Client\Exceptions\MqttClientException;
  use PhpMqtt\Client\MqttClient;
  use Psr\Log\LogLevel;
 
-class my_mqtt_test {
+class my_mqtt {
 
     // configuration variable
     public  $config;
@@ -70,7 +70,7 @@ class my_mqtt_test {
         $authorization_password = $this->config['accounts'][0]['authorization_password'];
 
         // Create an instance of a PSR-3 compliant logger. For this example, we will also use the logger to log exceptions.
-        $logger = new Logger();
+        $logger = new SimpleLogger(LogLevel::INFO);
 
         try {
             // Create a new instance of an MQTT client and configure it to use the shared broker host and port.
@@ -116,16 +116,55 @@ class my_mqtt_test {
         }
     }
 
+    public function mqtt_publish_with_qos_0( $topic_param, $message )
+    {
+        $mqtt_broker_host       = "localhost";
+        $mqtt_broker_tls_port   = $this->config['accounts'][0]['mqtt_broker_tls_port'];
+        $authorization_username = "";
+        $authorization_password = "";
 
+        // Create an instance of a PSR-3 compliant logger. For this example, we will also use the logger to log exceptions.
+        $logger = new SimpleLogger(LogLevel::INFO);
+
+        try {
+            // Create a new instance of an MQTT client and configure it to use the shared broker host and port.
+            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, 'mystuder', MqttClient::MQTT_3_1, null, $logger);
+
+            // Create and configure the connection settings as required.
+            $connectionSettings = (new ConnectionSettings)
+            ->setUseTls(false)                   // Use TLS to encrypt the communications
+            ->setTlsSelfSignedAllowed(false)     //  No self-signed certifciates
+            ->setTlsVerifyPeer(false)            // Do require the certificate to match the host
+            ->setConnectTimeout(5)             // timeout for establishing socket
+            ->setSocketTimeout(10)              // If no data is read or sent for the given amount of seconds, the socket will be closed.
+            ->setResendTimeout(10)              // number of seconds the client will wait before sending a duplicate
+            ->setKeepAliveInterval(10)          
+            ->setTlsVerifyPeerName(true);
+        
+            // Connect to the broker using TLS with username and password authentication as defined above
+            $client->connect( $connectionSettings, true );
+            
+            // Publish the message 'Hello world!' on the topic 'foo/bar/baz' using QoS 0.
+            $client->publish( $topic_param, $message, MqttClient::QOS_AT_MOST_ONCE);
+            
+
+            
+            // Gracefully terminate the connection to the broker.
+            $client->disconnect();
+            } 
+        catch (MqttClientException $e) {
+            // MqttClientException is the base exception of all exceptions in the library. Catching it will catch all MQTT related exceptions.
+            $logger->error('Publishing a message using QoS 0 failed. An exception occurred.', ['exception' => $e]);
+            }   
+    }
 }
 
 
 
-$test = new my_mqtt_test();
+$test = new my_mqtt();
 
-$topic = "shellypro3em-" . $test->config['accounts'][0]['shelly_device_id_acin_3p'] . '/status/emdata:0';
+$topic = "iot_data_over_lan/studerxcomlan";
 
-$test->mqtt_subscribe_with_qos_0( $topic );
+$message = "Hello Studer";
 
-$shellypro3em_acin_3p_emdata_obj = json_decode($test->message);
-print_r($shellypro3em_acin_3p_emdata_obj);
+$test->mqtt_publish_with_qos_0( $topic, $message );

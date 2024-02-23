@@ -59,71 +59,6 @@ class my_shelly_over_lan_test
         $this->config = $this->get_config();
     }
 
-    /**
-     *  Assumes pump is channel 0 of the Shelly Pro 4PM supplying the entire Home Load
-     */
-    public function turn_pump_on_off( int $user_index, string $desired_state ) : bool
-    {
-        // get the config array from the object properties
-        $config = $this->config;
-
-        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_homepwr'];
-        $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_4pm'];
-
-        // set the channel of the switch that the pump is on
-        $channel_pump  = 0;
-
-        $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
-
-        // Get the pump switch status now
-        $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
-
-        if ( $shelly_api_device_response )
-        {
-          $pump_initial_switch_state = $shelly_api_device_response->{'switch:0'}->output;
-
-          // if the existing pump switch is same as desired, we simply exit with message
-          if (  ( $pump_initial_switch_state === true  &&  ( strtolower( $desired_state) === "on"  || $desired_state === true  || $desired_state == 1) ) || 
-                ( $pump_initial_switch_state === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
-          {
-            // esisting state is same as desired final state so return
-            error_log( "No Action in Pump Switch done since no change is desired " );
-            echo( "No Action in Pump Switch done since no change is desired " . "\n" );
-            return true;
-          }
-        }
-        else
-        {
-          // we didn't get a valid response but we can continue and try switching
-          error_log( "we didn't get a valid response for pump switch initial status check but we can continue and try switching" );
-        }
-
-        // Now lets change the pump state
-        $shelly_api_device_response = $shelly_api->turn_on_off_shelly_switch_over_lan( $desired_state );
-        sleep (1);
-
-        // lets get the new state of the pump shelly switch
-        $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
-
-        $pump_final_switch_state = $shelly_api_device_response->{'switch:0'}->output;
-
-        if (  ( $pump_final_switch_state === true  &&  ( strtolower( $desired_state) === "on"  || $desired_state === true  || $desired_state == 1) ) || 
-              ( $pump_final_switch_state === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
-        {
-          // Final state is same as desired final state so return
-          echo( "Pump Switch to desired state was successful " . "\n" );
-          return true;
-        }
-        else
-        {
-          error_log( "Pump Switch to desired state was not successful" );
-          echo( "Pump Switch to desired state was NOT successful " . "\n" );
-          return false;
-        }
-    }
-
 
 
 
@@ -317,17 +252,9 @@ class my_shelly_over_lan_test
 
 $test = new my_shelly_over_lan_test();
 
-$user_index = 0;
+$mystuder_readings_json_string = shell_exec( "python3 mystuder.py" );
 
-// Make an API call on the Shelly plus Add on device
-$config = $test->config;
 
-$mystuder_over_xcomlan_script_name = "python3 mystuder.py";
-
-$json_string = shell_exec( $mystuder_over_xcomlan_script_name );
-
-$studer_data_via_xcomlan = json_decode($json_string);
-print_r($studer_data_via_xcomlan);
 
 
 

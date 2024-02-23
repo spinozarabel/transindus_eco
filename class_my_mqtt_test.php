@@ -27,7 +27,7 @@ defined( 'MyConst' ) or die( 'No script kiddies please!' );
  require __DIR__ . '/vendor/autoload.php';
  
  use PhpMqtt\Client\ConnectionSettings;
- use PhpMqtt\Client\Examples\Shared\SimpleLogger;
+ use PhpMqtt\Client\Logger;
  use PhpMqtt\Client\Exceptions\MqttClientException;
  use PhpMqtt\Client\MqttClient;
  use Psr\Log\LogLevel;
@@ -70,7 +70,7 @@ class my_mqtt_test {
         $authorization_password = $this->config['accounts'][0]['authorization_password'];
 
         // Create an instance of a PSR-3 compliant logger. For this example, we will also use the logger to log exceptions.
-        $logger = new SimpleLogger(LogLevel::INFO);
+        $logger = new Logger();
 
         try {
             // Create a new instance of an MQTT client and configure it to use the shared broker host and port.

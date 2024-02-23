@@ -4290,14 +4290,14 @@ class class_transindus_eco
 
       $mystuder_over_xcomlan_script_name = $config['accounts'][$user_index]['mystuder_over_xcomlan_script_name'];
 
-      $mystuder_over_xcomlan_script_name = "cd /var/www/avasarala.local/wp-content/plugins/transindus_eco " . $mystuder_over_xcomlan_script_name;
+      $mystuder_over_xcomlan_script_name = "cd /var/www/avasarala.local/wp-content/plugins/transindus_eco " . "pwd";
 
       $output_array = [];
 
       // execute the scripy using shell exec and get the object response as a json string from the script
-      $json_string = exec( $mystuder_over_xcomlan_script_name, $output_array );
+      $json_string = shell_exec( $mystuder_over_xcomlan_script_name );
       
-      error_log(print_r($output_array, true));
+      error_log(print_r($json_string, true));
       {
         $studer_data_via_xcomlan = json_decode($json_string);
 

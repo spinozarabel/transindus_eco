@@ -4292,9 +4292,14 @@ class class_transindus_eco
 
       $mystuder_over_xcomlan_script_name = "cd /var/www/avasarala.local/wp-content/plugins/transindus_eco " . $mystuder_over_xcomlan_script_name;
 
+      $output_array = [];
+
       // execute the scripy using shell exec and get the object response as a json string from the script
-      $json_string = shell_exec( $mystuder_over_xcomlan_script_name );
+      $json_string = exec( $mystuder_over_xcomlan_script_name, $output_array );
       
+      error_log( "JSON string from shell_exec: $json_string");
+
+      return null;
 
       // check that json string is not null.
       if ( ! empty( $json_string ) )

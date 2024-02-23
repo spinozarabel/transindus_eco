@@ -322,54 +322,7 @@ $user_index = 0;
 // Make an API call on the Shelly plus Add on device
 $config = $test->config;
 
-$shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-$shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-$shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_plus_addon'];
-$ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_addon'];
-
-
-$shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
-
-// this is $curl_response.
-$shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
-
-$adc_voltage = $shelly_api_device_response->{'input:100'}->percent;
-
-$voltage =  ( $adc_voltage * 0.1 - 2.5 );
-
-$volts_per_amp = 0.625 / 100 * 4.7;
-
-$battery_amps = -1.0 * $voltage / $volts_per_amp;
-
-echo("Battery Amps = " . $battery_amps . "\n" );
- 
-// test AC IN Shelly 1PM switch
-{ // --------------------- Shelly1PM ACIN SWITCH data after making a Shelly API call -------------------
-
-  $shelly_switch_acin_details_arr = $test->get_shelly_switch_acin_details_over_lan( $user_index );
-
-  $shelly1pm_acin_switch_config     = $shelly_switch_acin_details_arr['shelly1pm_acin_switch_config'];  // Is configuration valid?
-  $control_shelly                   = $shelly_switch_acin_details_arr['control_shelly'];                // is switch set to be controllable?
-  $shelly1pm_acin_switch_status     = $shelly_switch_acin_details_arr['shelly1pm_acin_switch_status'];  // ON/OFF/OFFLINE/Not COnfigured
-  $shelly1pm_acin_voltage           = $shelly_switch_acin_details_arr['shelly1pm_acin_voltage'];
-  $shelly1pm_acin_current           = $shelly_switch_acin_details_arr['shelly1pm_acin_current'];
-  $shelly1pm_acin_power_kw          = $shelly_switch_acin_details_arr['shelly1pm_acin_power_kw'];
-
-  print_r($shelly_switch_acin_details_arr);
-}
-
-$ret = $test->estimated_solar_power(0);
-
-$total_power_kw = $ret->est_solar_total_kw;
-
-$sunrise  = $ret->sunrise;
-$sunset   = $ret->sunset;
-
-echo("Sunrise = " . $sunrise . "\n" );
-echo("Sunset = " . $sunset . "\n" );
-echo("Total Solar KW " . $total_power_kw . "\n" );
-
-$mystuder_over_xcomlan_script_name = $config['accounts'][$user_index]['mystuder_over_xcomlan_script_name'];
+$mystuder_over_xcomlan_script_name = "/usr/bin/python3 mystuder.py";
 
 $json_string = shell_exec( $mystuder_over_xcomlan_script_name );
 

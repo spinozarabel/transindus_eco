@@ -159,7 +159,7 @@ class my_mqtt {
     }
 }
 
-
+$mystuder_readings_json_string = shell_exec( "python3 mystuder.py" );
 
 $test = new my_mqtt();
 
@@ -167,4 +167,4 @@ $topic = "iot_data_over_lan/studerxcomlan";
 
 $message = "Hello Studer";
 
-$test->mqtt_publish_with_qos_0( $topic, $message );
+$test->mqtt_publish_with_qos_0( $topic, $mystuder_readings_json_string );

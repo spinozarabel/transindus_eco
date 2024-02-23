@@ -31,6 +31,7 @@ require_once(__DIR__."/studer_api.php");              // contains studer api cla
 require_once(__DIR__."/shelly_cloud_api.php");        // contains Shelly Cloud API class
 require_once(__DIR__."/class_solar_calculation.php"); // contains studer api class
 require_once(__DIR__."/openweather_api.php");         // contains openweather class
+require_once(__DIR__."/class_my_mqtt.php");
 
 class class_transindus_eco
 {
@@ -2515,7 +2516,7 @@ class class_transindus_eco
           }
 
           { // make an API call on studer using xcomlan shell exec script methid
-            $studer_data_via_xcomlan = $this->get_studer_readings_over_xcomlan( $user_index );
+            $studer_data_via_xcomlan = get_transient("studer_data_via_xcomlan");
 
 
             $raw_batt_voltage_xcomlan = $studer_data_via_xcomlan->battery_voltage_xtender;
@@ -4283,25 +4284,29 @@ class class_transindus_eco
     /**
      * 
      */
-    public function get_studer_readings_over_xcomlan( int $user_index ): ? object
+    public function get_studer_readings_over_xcomlan()
     {
       // load the script name from config
       $config = $this->config;
 
-      $mystuder_over_xcomlan_script_name = $config['accounts'][$user_index]['mystuder_over_xcomlan_script_name'];
+      $mqtt_ch = new my_mqtt();
 
-      // execute the scripy using shell exec and get the object response as a json string from the script
-      $json_string = shell_exec( "cd wp-content/plugins/transindus_eco pwd" );
-      
-      error_log( "JSON string from shell_exec: $json_string");
-      return null;
+      $topic = "iot_data_over_lan/studerxcomlan";
+
+      $mqtt_ch->mqtt_subscribe_with_qos_0( $topic );
+
+      $json_string = $mqtt_ch->message;
+
+      if (! empty( $json_string ))
       {
         $studer_data_via_xcomlan = json_decode($json_string);
+
+        set_transient( "studer_data_via_xcomlan", $studer_data_via_xcomlan, 3 * 60 );
 
         return $studer_data_via_xcomlan;
       }
 
-      error_log( "JSON string from shell_exec is empty");
+      error_log( "JSON string from mqtt subscription of scomlan via cron shell exec is empty");
       return null;
     }
 

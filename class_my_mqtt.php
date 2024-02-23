@@ -64,8 +64,8 @@ class my_mqtt {
      */
     public function mqtt_subscribe_with_qos_0( $topic_param )
     {
-        $mqtt_broker_host       = $this->config['accounts'][0]['mqtt_broker_host'];
-        $mqtt_broker_tls_port   = $this->config['accounts'][0]['mqtt_broker_tls_port'];
+        $mqtt_broker_host       = 'localhost';
+        $mqtt_broker_tls_port   = 1883;
         $authorization_username = $this->config['accounts'][0]['authorization_username'];
         $authorization_password = $this->config['accounts'][0]['authorization_password'];
 
@@ -78,16 +78,14 @@ class my_mqtt {
 
             // Create and configure the connection settings as required.
             $connectionSettings = (new ConnectionSettings)
-            ->setUseTls(true)                   // Use TLS to encrypt the communications
+            ->setUseTls(false)                   // Use TLS to encrypt the communications
             ->setTlsSelfSignedAllowed(false)     //  No self-signed certifciates
-            ->setTlsVerifyPeer(true)            // Do require the certificate to match the host
-            ->setConnectTimeout(10)             // timeout for establishing socket
+            ->setTlsVerifyPeer(false)            // Do require the certificate to match the host
+            ->setConnectTimeout(5)             // timeout for establishing socket
             ->setSocketTimeout(10)              // If no data is read or sent for the given amount of seconds, the socket will be closed.
             ->setResendTimeout(10)              // number of seconds the client will wait before sending a duplicate
             ->setKeepAliveInterval(10)          
-            ->setTlsVerifyPeerName(true)
-            ->setUsername($authorization_username)
-            ->setPassword($authorization_password);
+            ->setTlsVerifyPeerName(true);
         
             // Connect to the broker using TLS with username and password authentication as defined above
             $client->connect( $connectionSettings, true );

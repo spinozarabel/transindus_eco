@@ -2889,8 +2889,9 @@ class class_transindus_eco
           $log_string .= " SOC: $soc_percentage_now_display";
 
           $log_string = "Log -";
-          $log_string .= "E-Panel: $studer_data_via_xcomlan->pv_current_now1 W-Panel: $studer_data_via_xcomlan->pv_current_now1";
-          $log_string .= "PV-Amps: $studer_data_via_xcomlan->pv_current_now_total Shelly DC: $battery_amps BattV: $batt_voltage_xcomlan_avg";
+          $log_string .= "E-Panel: $studer_data_via_xcomlan->pv_current_now_1 W-Panel: $studer_data_via_xcomlan->pv_current_now_2";
+          $log_string .= "PV-Amps: $studer_data_via_xcomlan->pv_current_now_total Inverter DC: $studer_data_via_xcomlan->inverter_current";
+          $log_string .= " Shelly DC: $battery_amps BattV: $batt_voltage_xcomlan_avg";
 
           error_log($log_string);
         }

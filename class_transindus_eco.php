@@ -2572,13 +2572,24 @@ class class_transindus_eco
           $battery_soc_since_midnight_display     = round( $battery_soc_percentage_accumulated_since_midnight, 1);
         }
 
-        if ( $soc_percentage_now_calculated_using_shelly_bm > 100 )
+        { // calculate the Studer XCOM-LAN based SOC, $soc_percentage_now_calculated_using_studer_xcomlan
+          // This is calculated by Integrating the AH for each interval and accumulated into a discharge value after midnight
+          // This accumulated value is subtracted from the SOC st midnight that is common to calculation of all SOC's
+
+        }
+
+        if ( $soc_percentage_now_calculated_using_shelly_bm > 100 || $batt_voltage_xcomlan_avg >= 51.4 )
         { // 100% SOC clamp
           // recalculate Battery SOC % accumulated since midnight
           $recal_battery_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
 
           // write this value back to the user meta
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
+        }
+
+        if ( $soc_percentage_now_calculated_using_studer_xcomlan > 100 || $batt_voltage_xcomlan_avg >= 51.4 )
+        {   // battery float reached so 100% clamp of SOC
+          
         }
 
         if ( $it_is_still_dark )

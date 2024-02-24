@@ -4316,32 +4316,57 @@ class class_transindus_eco
 
 
     /**
-     * 
+     *  This function is scheduled and called by WPCRON in the main plugin file.
+     *  This function subscribes to a pre-defined topic and extracts a message that was published.
+     *  The publisher is a System triggered PHP CLI that runs a python program using <shell_exec.
+     *  This way, the shell_exec doesn't seem to have any issues as compared to running Apache PHP
+     *  The python takls to XCOM-LAN of Studer and gets the pre-set data into a JSOn string that is decoded by the PHP CLI
+     *  The function below gets the message and checks for its validity and then sets a transient
+     *  The transient is then accessed anywhere else that is needed on the site for SOC calculation and data display
      */
     public function get_studer_readings_over_xcomlan()
     {
-      // load the script name from config
+      // load the script name from config. Not needed for anything right now.
       $config = $this->config;
 
+      // define a new instance of the mqtt class to subscribe and get the message.
       $mqtt_ch = new my_mqtt();
 
+      // This is the pre-defined topic
       $topic = "iot_data_over_lan/studerxcomlan";
 
+      // subscribe to the mqtt broker. This is predefined as a localhost 1883 QOS_0 with no authentication connection
       $mqtt_ch->mqtt_subscribe_with_qos_0( $topic );
 
+      // The above is blocking till it gets a message or timeout.
       $json_string = $mqtt_ch->message;
 
+      // Check that the message is not empty
       if (! empty( $json_string ))
       {
         $studer_data_via_xcomlan = json_decode($json_string);
 
-        set_transient( "studer_data_via_xcomlan", $studer_data_via_xcomlan, 3 * 60 );
+        if ($studer_data_via_xcomlan === null) 
+        {
+          error_log( 'Error parsing JSON from MQTT studerxcomlan: '. json_last_error_msg() );
 
-        return $studer_data_via_xcomlan;
+          return null;
+        }
+        elseif( json_last_error() === JSON_ERROR_NONE )
+        {
+          set_transient( "studer_data_via_xcomlan", $studer_data_via_xcomlan, 3 * 60 );
+
+          return $studer_data_via_xcomlan;
+        }
+
+        error_log( 'Error parsing JSON from MQTT studerxcomlan: '. json_last_error_msg() );
+        return null;
       }
-
-      error_log( "JSON string from mqtt subscription of scomlan via cron shell exec is empty");
-      return null;
+      else
+      {
+        error_log( "JSON string from mqtt subscription of scomlan via cron shell exec is empty");
+        return null;
+      }
     }
 
 

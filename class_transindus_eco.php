@@ -2518,20 +2518,31 @@ class class_transindus_eco
           { // make an API call on studer using xcomlan shell exec script methid
             $studer_data_via_xcomlan = get_transient("studer_data_via_xcomlan");
 
+            if ( ! empty( $studer_data_via_xcomlan ) )
+            {
+              $raw_batt_voltage_xcomlan = $studer_data_via_xcomlan->battery_voltage_xtender;
 
-            $raw_batt_voltage_xcomlan = $studer_data_via_xcomlan->battery_voltage_xtender;
+              $east_panel_current = round( $studer_data_via_xcomlan->pv_current_now_1, 1 );
 
-            // battery current as measured by xcom-lan is got by adding + PV DC current amps and - inverter DC current amps
-            $batt_current_xcomlan = $studer_data_via_xcomlan->pv_current_now_total + $studer_data_via_xcomlan->inverter_current;
+              $west_panel_current = round( $studer_data_via_xcomlan->pv_current_now_2, 1 );
 
-            // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging
-            // $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);
+              $pv_current_now_total = round( $studer_data_via_xcomlan->pv_current_now_total, 1 );
 
-            // if battery is charging voltage will decrease and if discharging voltage will increase due to IR compensation
-            $ir_drop_compensated_battery_voltage_xcomlan = $raw_batt_voltage_xcomlan - 0.025 * $batt_current_xcomlan;
+              $inverter_current = round( $studer_data_via_xcomlan->inverter_current, 1);
 
-            // calculate the running average over the last 5 readings including this one. Return is rounded to 2 decimals
-            $batt_voltage_xcomlan_avg = $this->get_battery_voltage_avg( $ir_drop_compensated_battery_voltage_xcomlan );
+              // battery current as measured by xcom-lan is got by adding + PV DC current amps and - inverter DC current amps
+              $batt_current_xcomlan = $pv_current_now_total + $inverter_current;
+
+              // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging
+              // $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);
+
+              // if battery is charging voltage will decrease and if discharging voltage will increase due to IR compensation
+              $ir_drop_compensated_battery_voltage_xcomlan = $raw_batt_voltage_xcomlan - 0.025 * $batt_current_xcomlan;
+
+              // calculate the running average over the last 5 readings including this one. Return is rounded to 2 decimals
+              $batt_voltage_xcomlan_avg = $this->get_battery_voltage_avg( $ir_drop_compensated_battery_voltage_xcomlan );
+            }
+            
           }
         }
 
@@ -2889,8 +2900,9 @@ class class_transindus_eco
           $log_string .= " SOC: $soc_percentage_now_display";
 
           $log_string = "Log -";
-          $log_string .= "E-Panel: $studer_data_via_xcomlan->pv_current_now_1 W-Panel: $studer_data_via_xcomlan->pv_current_now_2";
-          $log_string .= "PV-Amps: $studer_data_via_xcomlan->pv_current_now_total Inverter DC: $studer_data_via_xcomlan->inverter_current";
+          $log_string .= " E-Panel: $east_panel_current W-Panel: $west_panel_current";
+          $log_string .= " PV-Amps: $pv_current_now_total Inverter DC: $inverter_current";
+          $log_string .= " StdrBatt-Amps: $batt_current_xcomlan";
           $log_string .= " Shelly DC: $battery_amps BattV: $batt_voltage_xcomlan_avg";
 
           error_log($log_string);

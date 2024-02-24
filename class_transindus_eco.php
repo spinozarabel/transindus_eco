@@ -2575,7 +2575,7 @@ class class_transindus_eco
         { // calculate the Studer XCOM-LAN based SOC, $soc_percentage_now_calculated_using_studer_xcomlan
           // This is calculated by Integrating the AH for each interval and accumulated into a discharge value after midnight
           // This accumulated value is subtracted from the SOC st midnight that is common to calculation of all SOC's
-
+          $soc_percentage_now_calculated_using_studer_xcomlan = 0;
         }
 
         if ( $soc_percentage_now_calculated_using_shelly_bm > 100 || $batt_voltage_xcomlan_avg >= 51.4 )

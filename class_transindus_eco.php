@@ -2731,10 +2731,11 @@ class class_transindus_eco
           $shelly_readings_obj->main_control_site_avasarala_is_offline_for_long   = $main_control_site_avasarala_is_offline_for_long;
 
           $local_LVDS = $main_control_site_avasarala_is_offline_for_long  && 
-                          $soc_percentage_now           < 40              &&    // local SOC measurement is low
                           $shelly1pm_acin_switch_status === "OFF"         &&    // Grid switch is OFF. If FFLINE or ON this won't care
                           $control_shelly               === true          &&    // This is true when Iswitch P address exists in config AND do_shelly is true
-                          $switch_is_flapping           === false;
+                          $switch_is_flapping           === false         &&
+                          ( $soc_percentage_now           < 40            ||    // local SOC measurement is low
+                            $batt_voltage_xcomlan_avg     < 48.5 );             // or local average Battery Voltage is too low
 
           $local_LVDS_release = $main_control_site_avasarala_is_offline_for_long  &&    // Main control site avasarala.in is offline for more than 15m
                           $soc_percentage_now           > 50                &&    // local SOC measurement is normal
@@ -2743,8 +2744,8 @@ class class_transindus_eco
                           $control_shelly               === true            &&    // Ccontrollable by config
                           $switch_is_flapping           === false;
 
-          $success_on = false;
-          $success_off = false;
+          $success_on   = false;
+          $success_off  = false;
 
           if ( $local_LVDS )
           {

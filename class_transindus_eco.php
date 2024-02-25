@@ -4336,7 +4336,7 @@ class class_transindus_eco
       $topic = "iot_data_over_lan/studerxcomlan";
 
       // subscribe to the mqtt broker. This is predefined as a localhost 1883 QOS_0 with no authentication connection
-      $mqtt_ch->mqtt_subscribe_with_qos_0( $topic );
+      $mqtt_ch->mqtt_sub_local_qos_0( $topic );
 
       // The above is blocking till it gets a message or timeout.
       $json_string = $mqtt_ch->message;

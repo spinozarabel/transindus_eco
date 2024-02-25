@@ -4349,6 +4349,7 @@ class class_transindus_eco
         if (! empty( $json_string ))
         {
           $studer_data_via_xcomlan = json_decode($json_string);
+          error_log($json_string);
 
           if ($studer_data_via_xcomlan === null) 
           {

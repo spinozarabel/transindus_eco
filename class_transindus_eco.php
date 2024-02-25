@@ -4368,7 +4368,7 @@ class class_transindus_eco
           error_log( "JSON string from mqtt subscription of scomlan via cron shell exec is empty");
         }
 
-        if ($i < 2) sleep(20);  // last loop is not delayed
+        if ($i < 2) sleep(15);  // last loop is not delayed
       }
     }
 

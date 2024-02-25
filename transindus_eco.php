@@ -26,6 +26,7 @@ $user_readings_array = [];
 // Action to execute WPCRON scheduled task
 add_action ( 'shellystuder_task_hook', [$transindus_eco, 'shellystuder_cron_exec'] );
 
+// Action for scheduled task hooh to handle xcomlan studer message subecription
 add_action ( 'xcomlanstuder_task_hook', [$transindus_eco, 'get_studer_readings_over_xcomlan'] );
 
 // wait for all plugins to be loaded before initializing our code
@@ -38,7 +39,6 @@ add_action('wp_ajax_my_solar_update',       [$transindus_eco, 'ajax_my_solar_upd
 
 // This is action for Ajax handler for updating screen using data from minutely cron readings
 add_action('wp_ajax_my_solar_cron_update',  [$transindus_eco, 'ajax_my_solar_cron_update_handler'] );
-
 
 add_filter( 'cron_schedules',  'shelly_studer_add_new_cron_interval' );
 

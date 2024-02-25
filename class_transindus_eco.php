@@ -4331,15 +4331,15 @@ class class_transindus_eco
       // load the script name from config. Not needed for anything right now.
       $config = $this->config;
 
-      // define a new instance of the mqtt class to subscribe and get the message.
-      $mqtt_ch = new my_mqtt();
-
       // This is the pre-defined topic
       $topic = "iot_data_over_lan/studerxcomlan";
 
       for ($i=0; $i < 3; $i++) 
       { 
         // subscribe to the mqtt broker. This is predefined as a localhost 1883 QOS_0 with no authentication connection
+        // define a new instance of the mqtt class to subscribe and get the message.
+        $mqtt_ch = new my_mqtt();
+
         $mqtt_ch->mqtt_sub_local_qos_0( $topic );
 
         // The above is blocking till it gets a message or timeout.
@@ -4356,7 +4356,7 @@ class class_transindus_eco
           }
           elseif( json_last_error() === JSON_ERROR_NONE )
           {
-            set_transient( "studer_data_via_xcomlan", $studer_data_via_xcomlan, 3 * 60 );
+            set_transient( "studer_data_via_xcomlan", $studer_data_via_xcomlan, 40 );
           }
           else
           {

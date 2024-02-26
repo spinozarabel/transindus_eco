@@ -1859,11 +1859,15 @@ class class_transindus_eco
           { // get all the readings for a user. User Index is 0 since only one user, this logged in admin user
             
             // 4 loops for each wp-cron trigger spaced by 15s due to the sleep function. wp-cron every 60s
-            for ($i=0; $i < 3; $i++) 
+            // for ($i=0; $i < 2; $i++) 
             { 
               $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
-
               sleep(18);
+
+              $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
+              sleep(18);
+
+              $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
             }
             
           }

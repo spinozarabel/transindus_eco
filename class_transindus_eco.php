@@ -2167,29 +2167,34 @@ class class_transindus_eco
      * 
      *  The previous values of thehcurrent and timestamp need to be got from transients.
      */
-    public function calculate_battery_accumulation_today_xcomlan( $user_index, $wp_user_ID, $batt_current_xcomlan, $timestamp_xcomlan_call )
+    public function calculate_battery_accumulation_today_xcomlan( $user_index, 
+                                                                  $wp_user_ID, 
+                                                                  $batt_current_xcomlan, 
+                                                                  $timestamp_xcomlan_call ): float
     {
       $config = $this->config;
 
+      // get the value that is used for the shelly battery current measurement method to be used as  backup
       $battery_soc_percentage_accumulated_since_midnight = (float) get_user_meta(  $wp_user_ID, 
                                                       'battery_soc_percentage_accumulated_since_midnight', true);
       
+      // This array keeps 3 consecutive values of past timestamps supplied by scomlan measuremnt calls
       if ( false !== ( $ts_xcomlan_history_array = get_transient("ts_xcomlan_history_array") ) )
       {
-
+        // The transient exists and is already loaded into the variable
       }
       else
       {
-        // transient doesnt exist so reset to a blank one.
+        // transient doesnt exist so reset to a blank array.
         $ts_xcomlan_history_array = [];
       }
 
-      // push the latest value into the array at the bottom
+      // push the latest value into the array
       array_push( $ts_xcomlan_history_array, $timestamp_xcomlan_call );
 
       // If the array has more than 5 elements then drop the earliest one
-      if ( sizeof($ts_xcomlan_history_array) > 3 )  
-      { // drop the earliest reading
+      if ( sizeof($ts_xcomlan_history_array) > 5 )  
+      { // drop the earliest xcomlan timestamp
         array_shift($ts_xcomlan_history_array);
       }
 
@@ -2198,13 +2203,18 @@ class class_transindus_eco
       $residual_array = array_diff($ts_xcomlan_history_array, array($timestamp_xcomlan_call));
       if (empty($residual_array))
       {
-        // all the last 5 timestamps sent by xcomlan are the same so it is stuck, no new data. 
-        error_log("all the last 3 timestamps sent by xcomlan are the same so it is stuck, returning Shelly based data");
+        // all the last few timestamps sent by xcomlan are the same so it is stuck, no new data. 
+        error_log("all the last few timestamps sent by xcomlan are the same so it is stuck, returning Shelly based data");
+
+        // update xcomlan method accumulated battery charge value to same as the shelly current measurement method and return
+        update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
+                                        $battery_soc_percentage_accumulated_since_midnight);
+        
         return $battery_soc_percentage_accumulated_since_midnight;
       }
 
       // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
-      $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH
+      $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH in our case
 
       // get the unix time now
       $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
@@ -2231,8 +2241,8 @@ class class_transindus_eco
 
       // reset value to the shelly one if this value is bad
       if (empty(  $battery_xcomlan_soc_percentage_accumulated_since_midnight )      || 
-                  $battery_xcomlan_soc_percentage_accumulated_since_midnight > 110  || 
-                  $battery_xcomlan_soc_percentage_accumulated_since_midnight < 25 )
+                  $battery_xcomlan_soc_percentage_accumulated_since_midnight > 100  || 
+                  $battery_xcomlan_soc_percentage_accumulated_since_midnight < 0 )
       {
         error_log("Reset xcomlan batt soc. Its bad value was: $battery_xcomlan_soc_percentage_accumulated_since_midnight");
         $battery_xcomlan_soc_percentage_accumulated_since_midnight = $battery_soc_percentage_accumulated_since_midnight;

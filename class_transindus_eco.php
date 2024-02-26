@@ -2537,6 +2537,8 @@ class class_transindus_eco
 
               $inverter_current_xcomlan         = round( $studer_data_via_xcomlan->inverter_current, 1);
 
+              $xcomlan_ts = (int) $studer_data_via_xcomlan->timestamp_xcomlan_call;
+
               // battery current as measured by xcom-lan is got by adding + PV DC current amps and - inverter DC current amps
               $batt_current_xcomlan = $pv_current_now_total_xcomlan + $inverter_current_xcomlan;
 
@@ -2926,11 +2928,12 @@ class class_transindus_eco
           $log_string .= " $soc_update_method";
           $log_string .= " SOC: $soc_percentage_now_display";
 
-          $log_string = "Log -";
-          $log_string .= " E-Panel: $east_panel_current_xcomlan W-Panel: $west_panel_current_xcomlan";
+          $log_string = "Log - xcom-ts: $xcomlan_ts";
+          $log_string .= " E: $east_panel_current_xcomlan W: $west_panel_current_xcomlan";
           $log_string .= " PV-Amps: $pv_current_now_total_xcomlan Inverter DC: $inverter_current_xcomlan";
           $log_string .= " StdrBatt-Amps: $batt_current_xcomlan";
           $log_string .= " Shelly DC: $battery_amps BattV: $batt_voltage_xcomlan_avg";
+          $log_string .= " SOC: $soc_percentage_now_display";
 
           error_log($log_string);
         }

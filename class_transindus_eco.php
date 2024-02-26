@@ -2555,6 +2555,8 @@ class class_transindus_eco
               // calculate the running average over the last 5 readings including this one. Return is rounded to 2 decimals
               $batt_voltage_xcomlan_avg = $this->get_battery_voltage_avg( $ir_drop_compensated_battery_voltage_xcomlan );
 
+              $psolar_kw = round( $pv_current_now_total_xcomlan * $ir_drop_compensated_battery_voltage_xcomlan * 0.001, 2);
+
               // pack these as properties onto the shelly readings object
               $shelly_readings_obj->batt_voltage_xcomlan_avg          = $batt_voltage_xcomlan_avg;
               $shelly_readings_obj->east_panel_current_xcomlan        = $east_panel_current_xcomlan;
@@ -2562,6 +2564,7 @@ class class_transindus_eco
               $shelly_readings_obj->pv_current_now_total_xcomlan      = $pv_current_now_total_xcomlan;
               $shelly_readings_obj->inverter_current_xcomlan          = $inverter_current_xcomlan;
               $shelly_readings_obj->batt_current_xcomlan              = $batt_current_xcomlan;
+
             }
             
           }
@@ -2816,13 +2819,9 @@ class class_transindus_eco
           { // solar power is 0 as it is still dark
             $shelly_readings_obj->psolar_kw = 0;
           }
-          elseif ( $shelly1pm_acin_switch_status != "ON" && ! $it_is_still_dark )
-          { // As it is daylight, solar is rpovising both battery charge and home load. Note that battery power can be negative
-            $shelly_readings_obj->psolar_kw = ($shelly_readings_obj->battery_power_kw + 1.07 * $shelly_em_home_kw) / 0.96;
-          }
-          elseif ( $shelly1pm_acin_switch_status == "ON" && ! $it_is_still_dark )
-          { // Grid is supplying the load so all of solar supplies the battery charging power
-            $shelly_readings_obj->psolar_kw = $shelly_readings_obj->battery_power_kw  / 0.96;
+          else
+          { // As it is daylight, solar is present along both battery charge and home load. Note that battery power can be negative
+            $shelly_readings_obj->psolar_kw = $psolar_kw;
           }
 
           // initialize this to false. We will evaluate this for this loop next
@@ -5026,7 +5025,7 @@ class class_transindus_eco
         $excess_solar_kw        = $readings_obj->excess_solar_kw;
 
         // approximate solar current into battery
-        $solar_amps_at_49V      =   round($psolar_kw * 1000 / 48.9, 1);
+        $solar_amps_at_49V      = $readings_obj->pv_current_now_total_xcomlan;
 
         // 
         $shelly_em_home_kw      =   $readings_obj->shelly_em_home_kw;

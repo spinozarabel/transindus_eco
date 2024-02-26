@@ -56,6 +56,11 @@ class class_transindus_eco
   public $datetime;
   public $valid_shelly_config;
   public $do_soc_cal_now_arr;
+  public $user_meta_defaults_arr;
+  public $timezone;
+  public $verbose, $lat, $lon, $utc_offset, $cloudiness_forecast;
+  public $index_of_logged_in_user, $wp_user_name_logged_in_user, $wp_user_obj;
+  public $shelly_switch_acin_details;
 
   public $all_usermeta;
 
@@ -728,6 +733,9 @@ class class_transindus_eco
 
       $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
 
+      // this is passed in so just round it off
+      $current_energy_counter_wh      = (int) round( $energy_total_to_home_ts, 0 );
+
       // get the energy consumed since midnight stored in user meta
       $shelly_energy_counter_midnight = $all_usermeta[ 'shelly_energy_counter_midnight' ];
 
@@ -735,9 +743,6 @@ class class_transindus_eco
       $previous_energy_counter_wh_tmp = $all_usermeta[ 'shelly_energy_counter_now' ] ?? $current_energy_counter_wh;
 
       $previous_energy_counter_wh     = (int) round( $previous_energy_counter_wh_tmp, 0 );
-
-      // this is passed in so just round it off
-      $current_energy_counter_wh      = (int) round( $energy_total_to_home_ts, 0 );
 
       if ( ( $current_energy_counter_wh - $previous_energy_counter_wh ) >= 0 )
       {
@@ -847,7 +852,7 @@ class class_transindus_eco
       $shelly_energy_counter_after_dark       = (int) round( $tmp_shelly_energy_counter_after_dark, 0 );
 
       // get the previous cycle energy counter value. 1st time when not set yet set to current value
-      $previous_energy_counter_wh_tmp = $all_usermeta[ 'shelly_energy_counter_now' ] ?? $current_energy_counter_wh;
+      $previous_energy_counter_wh_tmp = $all_usermeta[ 'shelly_energy_counter_now' ];
       $previous_energy_counter_wh     = (int) round($previous_energy_counter_wh_tmp, 0);
       
 
@@ -4044,12 +4049,12 @@ class class_transindus_eco
             break;
 
             case "estimated_solar_power":
-              $est_solar_kw = $this->estimated_solar_power($config_index);
-              foreach ($est_solar_kw as $key => $value)
+              $est_solar_kw_arr = $this->estimated_solar_power($config_index)->est_solar_kw_arr;
+              foreach ($est_solar_kw_arr as $key => $value)
               {
                 echo "<pre>" . "Est Solar Power, Clear Day (KW): " .    $value . "</pre>";
               }
-              echo "<pre>" . "Total Est Solar Power Clear Day (KW): " .    array_sum($est_solar_kw) . "</pre>";
+              echo "<pre>" . "Total Est Solar Power Clear Day (KW): " .    array_sum($est_solar_kw_arr) . "</pre>";
             break;
 
             case "check_if_cloudy_day":
@@ -4085,20 +4090,6 @@ class class_transindus_eco
 
             case "check_if_soc_after_dark_happened":
 
-              // get timestamp for soc after dark capture
-              $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
-
-              $timestamp_soc_capture_after_dark = get_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', true );
-
-              if ( $this->check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark ) )
-              {
-                print ("SOC after dark already happened");
-              }
-              else
-              {
-                print ("SOC after dark DID NOT happen yet");
-              }
-
             break;
 
             case "get_studer_clock_offset":
@@ -4110,28 +4101,6 @@ class class_transindus_eco
             break;
 
             case "get_shelly_battery_measurement":
-
-              $count = 1;
-
-              
-
-              $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
-
-              
-                
-                $est_solar_kw = $this->estimated_solar_power($config_index);
-
-                // $ratio_west_total = array_sum( $est_solar_kw ) / $est_solar_kw[1];
-
-                $solar_measurement_object = $this->get_shelly_battery_measurement( $config_index, 'transindus_admin', $wp_user_ID, $ratio_west_total );
-
-                $total_solar_current = 1.00 * round( $solar_measurement_object->solar_amps, 1);
-
-                // print( "ADC voltage (V): " .                                $battery_measurement_object->voltage . PHP_EOL );
-                print( $total_solar_current . PHP_EOL);
-                print( " Time interval (H: " .                              $solar_measurement_object->hours_between_measurement . PHP_EOL);
-                print( " Solar (AH) accumulated since last measurement: " . $solar_measurement_object->solar_ah_this_measurement .PHP_EOL);
-                
 
             break;
 

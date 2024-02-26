@@ -14,6 +14,14 @@ if (!defined( "ABSPATH" ) && !defined( "MOODLE_INTERNAL" ) )
 // class definition begins
 class solar_calculation
 {
+    public $panel_array_info;
+    public $panel_kw_peak;
+    public $panel_azimuth_deg, $panel_slope_deg, $panel_efficiency;
+    public $lat_deg, $lat_rad, $long_deg, $long_rad, $utc_offset, $timezone, $now, $d, $B_rad;
+    public $long_time_zone_deg, $eot, $hra_rad, $hra_degs, $delta_rad, $delta_deg, $sunrise, $sunset;
+    public $time_correction_factor, $theta_rad, $alpha_rad, $sun_azimuth_deg, $sun_elevation_deg;
+    public $declination_deg, $zenith_theta_s_deg;
+
     public function __construct(array $panel_array_info, 
                                 array $lat_long_array = [12.83463, 77.49814],
                                 float $utc_offset = 5.5 )

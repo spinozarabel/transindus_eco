@@ -19,6 +19,10 @@ class studer_api
 {
     const VERBOSE     = false;
 
+    public $verbose;
+    public $uhash, $phash, $baseurl;
+    public $installation_id, $name, $guid, $paramId, $device, $paramPart, $body;
+
     public function __construct(string $uhash, string $phash, string $baseurl)
     {
       $this->verbose  = self::VERBOSE;

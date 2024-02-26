@@ -27,7 +27,7 @@ $user_readings_array = [];
 add_action ( 'shellystuder_task_hook', [$transindus_eco, 'shellystuder_cron_exec'] );
 
 // Action for scheduled task hooh to handle xcomlan studer message subecription
-add_action ( 'xcomlanstuder_task_hook', [$transindus_eco, 'get_studer_readings_over_xcomlan'] );
+// add_action ( 'xcomlanstuder_task_hook', [$transindus_eco, 'get_studer_readings_over_xcomlan'] );
 
 // wait for all plugins to be loaded before initializing our code
 add_action('plugins_loaded', 'this_plugin_init');
@@ -46,11 +46,6 @@ add_filter( 'cron_schedules',  'shelly_studer_add_new_cron_interval' );
 if (!wp_next_scheduled('shellystuder_task_hook')) 
 {
     wp_schedule_event( time(), 'sixty_seconds', 'shellystuder_task_hook' );
-}
-
-if (!wp_next_scheduled('xcomlanstuder_task_hook')) 
-{
-    wp_schedule_event( time(), 'sixty_seconds', 'xcomlanstuder_task_hook' );
 }
 
 

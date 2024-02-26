@@ -2930,9 +2930,9 @@ class class_transindus_eco
 
           $log_string = "Log - xcom-ts: $xcomlan_ts";
           $log_string .= " E: $east_panel_current_xcomlan W: $west_panel_current_xcomlan";
-          $log_string .= " PV-Amps: $pv_current_now_total_xcomlan Inverter DC: $inverter_current_xcomlan";
-          $log_string .= " StdrBatt-Amps: $batt_current_xcomlan";
-          $log_string .= " Shelly DC: $battery_amps BattV: $batt_voltage_xcomlan_avg";
+          $log_string .= " PV: $pv_current_now_total_xcomlan Inv: $inverter_current_xcomlan";
+          $log_string .= " StdrBatt: $batt_current_xcomlan";
+          $log_string .= " ShlyBatt: $battery_amps Vbat $batt_voltage_xcomlan_avg";
           $log_string .= " SOC: $soc_percentage_now_display";
 
           error_log($log_string);

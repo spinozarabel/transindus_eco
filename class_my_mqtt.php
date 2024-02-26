@@ -111,7 +111,7 @@ class my_mqtt {
         }
     }
 
-    public function mqtt_pub_local_qos_0( $topic_param, $message )
+    public function mqtt_pub_local_qos_0( $topic_param, $message, $retain = false)
     {
         $mqtt_broker_host       = "localhost";
         $mqtt_broker_tls_port   = 1883;
@@ -135,7 +135,7 @@ class my_mqtt {
             $client->connect( $connectionSettings, true );
             
             // Publish the message passed in on the topic passed in using QoS 0.
-            $client->publish( $topic_param, $message, MqttClient::QOS_AT_MOST_ONCE);
+            $client->publish( $topic_param, $message, MqttClient::QOS_AT_MOST_ONCE, $retain);
             
 
             

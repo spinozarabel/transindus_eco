@@ -4356,7 +4356,8 @@ class class_transindus_eco
           }
           elseif( json_last_error() === JSON_ERROR_NONE )
           {
-            set_transient( "studer_data_via_xcomlan", $studer_data_via_xcomlan, 120 );
+            set_transient( "studer_data_via_xcomlan", $studer_data_via_xcomlan, 60 );
+            error_log($json_string);
           }
           else
           {

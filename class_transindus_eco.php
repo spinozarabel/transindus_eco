@@ -4334,7 +4334,7 @@ class class_transindus_eco
       // This is the pre-defined topic
       $topic = "iot_data_over_lan/studerxcomlan";
 
-      for ($i=0; $i < 3; $i++) 
+      // for ($i=0; $i < 3; $i++) 
       { 
         // subscribe to the mqtt broker. This is predefined as a localhost 1883 QOS_0 with no authentication connection
         // define a new instance of the mqtt class to subscribe and get the message.
@@ -4369,7 +4369,7 @@ class class_transindus_eco
           error_log( "JSON string from mqtt subscription of scomlan via cron shell exec is empty");
         }
 
-        if ($i < 2) sleep(15);  // last loop is not delayed
+        // if ($i < 2) sleep(15);  // last loop is not delayed
       }
     }
 

@@ -596,11 +596,9 @@ class class_transindus_eco
       if ( is_null($shelly_api_device_response) ) 
       { // switch status is unknown
 
-          // error_log("Shelly Grid Switch API call failed - Grid power failure Assumed");
+          $shelly_api_device_status_ON = null;  // other possible values are true/false
 
-          $shelly_api_device_status_ON = null;
-
-          $shelly_switch_status             = "OFFLINE";
+          $shelly_switch_status             = "OFFLINE";  // other possible values are "ON" / "OFF"
           $shelly_api_device_status_voltage = "NA";
 
           $return_array['shelly1pm_acin_switch_config']   = $valid_shelly_config;
@@ -626,7 +624,7 @@ class class_transindus_eco
 
           $shelly_api_device_status_power_kw  = round( $shelly_api_device_response->{'switch:0'}->apower * 0.001, 3);
 
-          if ($shelly_api_device_status_ON)
+          if ($shelly_api_device_status_ON)   // NULL case already captured above here it can only be true/false
           {
               $shelly_switch_status = "ON";
           }
@@ -715,73 +713,6 @@ class class_transindus_eco
       return $returned_obj;
     }
 
-
-    /**
-     *  LEGACY - NOT USED HERE
-     *  @param float:energy_total_to_home_ts is the total energy measured by Shelly4PM energy meter upto this point
-     *  @param int:user_index
-     *  @param int:wp_user_ID
-     *  @return int:shelly_energy_counter_midnight is the accumulated load energy as measured by Shelly Pro 4PM
-     */
-    public function get_accumulated_wh_since_midnight_shelly4pm_over_lan(  float $energy_total_to_home_ts, int $user_index, int $wp_user_ID ) : ? int
-    {
-      // set default timezone to Asia Kolkata
-      //
-
-      // read in the config array from the class property
-      $config = $this->config;
-
-      $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
-
-      // this is passed in so just round it off
-      $current_energy_counter_wh      = (int) round( $energy_total_to_home_ts, 0 );
-
-      // get the energy consumed since midnight stored in user meta
-      $shelly_energy_counter_midnight = $all_usermeta[ 'shelly_energy_counter_midnight' ];
-
-      // get the previous cycle energy counter value. 1st time when not set yet set to current value
-      $previous_energy_counter_wh_tmp = $all_usermeta[ 'shelly_energy_counter_now' ] ?? $current_energy_counter_wh;
-
-      $previous_energy_counter_wh     = (int) round( $previous_energy_counter_wh_tmp, 0 );
-
-      if ( ( $current_energy_counter_wh - $previous_energy_counter_wh ) >= 0 )
-      {
-        // the counter has not reset so calculate the energy consumed since last measurement
-        $delta_increase_wh = $current_energy_counter_wh - $previous_energy_counter_wh;
-      }
-      else
-      {
-        // counter has reset so ignore the previous counter reading we lose a little bit of the reading
-        $delta_increase_wh = $current_energy_counter_wh;
-      }
-
-      // check that the increase in energy WH is reasonable
-      // The increase should be greater than 0 and less than 1KWH
-      // The assumption is that between any 2 readings the difference shouldnt be more. 
-      // The only way the difference can be more is if the internet was down and readings get separated in time very long
-      // That is not being handled currently
-      if ( $delta_increase_wh < 0 || $delta_increase_wh > 500 )
-      {
-        error_log( "Danger-Delta Increase in shelly_energy_counter_midnight is Bad: " . $delta_increase_wh . "And was ignored");
-        // we ignore this accumulation
-        // update the current energy counter with current reading for next cycle
-        update_user_meta( $wp_user_ID, 'shelly_energy_counter_now', $current_energy_counter_wh );
-
-        return (int) $shelly_energy_counter_midnight;
-      }
-
-      // accumulate the energy from this cycle to accumulator
-      $shelly_energy_counter_midnight = (int) ($shelly_energy_counter_midnight + $delta_increase_wh);
-
-      // update the accumulator user meta for next cycle
-      update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', $shelly_energy_counter_midnight );
-
-      // update the current energy counter with current reading for next cycle
-      update_user_meta( $wp_user_ID, 'shelly_energy_counter_now', $current_energy_counter_wh );
-
-      // return the energy consumed since midnight in WH
-      return (int) $shelly_energy_counter_midnight;
-    }
 
 
     /**
@@ -2229,6 +2160,108 @@ class class_transindus_eco
 
 
     /**
+     *  @param int:$user_index
+     *  @param int:$wp_user_ID
+     *  @param float:$batt_current_xcomlan is the current measurement of battery current using xcomlan method
+     *  @param int:$timestamp_xcomlan_call is the timestamp around the time that the python script called xcomlan
+     * 
+     *  The previous values of thehcurrent and timestamp need to be got from transients.
+     */
+    public function calculate_battery_accumulation_today_xcomlan( $user_index, $wp_user_ID, $batt_current_xcomlan, $timestamp_xcomlan_call )
+    {
+      $config = $this->config;
+
+      $battery_soc_percentage_accumulated_since_midnight = (float) get_user_meta(  $wp_user_ID, 
+                                                      'battery_soc_percentage_accumulated_since_midnight', true);
+      
+      if ( false !== ( $ts_xcomlan_history_array = get_transient("ts_xcomlan_history_array") ) )
+      {
+
+      }
+      else
+      {
+        // transient doesnt exist so reset to a blank one.
+        $ts_xcomlan_history_array = [];
+      }
+
+      // push the latest value into the array at the bottom
+      array_push( $ts_xcomlan_history_array, $timestamp_xcomlan_call );
+
+      // If the array has more than 5 elements then drop the earliest one
+      if ( sizeof($ts_xcomlan_history_array) > 3 )  
+      { // drop the earliest reading
+        array_shift($ts_xcomlan_history_array);
+      }
+
+      // @todo check the scomlan time stamp to ensure that the measurement is not too old
+      // if it is too old then we reset the xcomlan values to the shelly battery measurement values
+      $residual_array = array_diff($ts_xcomlan_history_array, array($timestamp_xcomlan_call));
+      if (empty($residual_array))
+      {
+        // all the last 5 timestamps sent by xcomlan are the same so it is stuck, no new data. 
+        error_log("all the last 3 timestamps sent by xcomlan are the same so it is stuck, returning Shelly based data");
+        return $battery_soc_percentage_accumulated_since_midnight;
+      }
+
+      // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
+      $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH
+
+      // get the unix time now
+      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+      $now_timestamp = $now->getTimestamp();
+
+      // lets reuse the shelly battery current methid's previous timestamp
+      $previous_timestamp = get_transient( 'timestamp_battery_last_measurement' );
+
+      // get the previous xcom-lan reading from transient. If doesnt exist set it to current measurement
+      $previous_batt_current_xcomlan = (float) get_transient( 'previous_batt_current_xcomlan' ) ?? $batt_current_xcomlan;
+
+      // update transients with current measurements. These will be used as previous measurements for next cycle
+      // set_transient( 'timestamp_battery_last_measurement',  $timestamp,     60 * 60 );
+      set_transient( 'previous_batt_current_xcomlan', $batt_current_xcomlan,  30 * 60 );
+
+      $prev_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+      $prev_datetime_obj->setTimeStamp($previous_timestamp);
+
+      // get Battery SOC percentage accumulated till last measurement
+      $battery_xcomlan_soc_percentage_accumulated_since_midnight = (float) get_user_meta(  $wp_user_ID, 
+                                                      'battery_xcomlan_soc_percentage_accumulated_since_midnight', true);
+
+      
+
+      // reset value to the shelly one if this value is bad
+      if (empty(  $battery_xcomlan_soc_percentage_accumulated_since_midnight )      || 
+                  $battery_xcomlan_soc_percentage_accumulated_since_midnight > 110  || 
+                  $battery_xcomlan_soc_percentage_accumulated_since_midnight < 25 )
+      {
+        error_log("Reset xcomlan batt soc. Its bad value was: $battery_xcomlan_soc_percentage_accumulated_since_midnight");
+        $battery_xcomlan_soc_percentage_accumulated_since_midnight = $battery_soc_percentage_accumulated_since_midnight;
+      }
+
+      $diff = $now->diff( $prev_datetime_obj );
+
+      // take total seconds of difference between timestamp and divide by 3600
+      $hours_between_measurement = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 ) / 3600;
+
+      // AH of battery charge - +ve is charging and -ve is discharging
+      // use trapezoidal rule for integration
+      $battery_ah_this_measurement = 0.5 * ( $previous_batt_current_xcomlan + $batt_current_xcomlan ) * $hours_between_measurement;
+
+      $battery_soc_percent_this_measurement = $battery_ah_this_measurement / $battery_capacity_ah * 100;
+
+      
+      // accumulate  present measurement
+      $battery_xcomlan_soc_percentage_accumulated_since_midnight += $battery_soc_percent_this_measurement;
+
+      $battery_xcomlan_accumulated_ah_since_midnight = $battery_xcomlan_soc_percentage_accumulated_since_midnight / 100 * $battery_capacity_ah;
+
+      // update accumulated battery charge back to user meta
+      update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $battery_xcomlan_soc_percentage_accumulated_since_midnight);
+
+      return $battery_xcomlan_soc_percentage_accumulated_since_midnight;
+    }
+
+    /**
      * Gets all readings from Shelly and Studer and servo's AC IN shelly switch based on conditions
      * @param int:user_index
      * @param int:wp_user_ID
@@ -2244,10 +2277,10 @@ class class_transindus_eco
                                                         bool    $do_shelly,
                                                         bool    $make_studer_api_call = true ) : void
     {
-        { // Define boolean control variables required time intervals
+        // This is the main object that we deal with  for storing and processing data gathered from our IOT devices
+        $shelly_readings_obj = new stdClass;
 
-          // This is the main object that we deal with  for storing and processing data gathered from our IOT devices
-          $shelly_readings_obj = new stdClass;
+        { // Define boolean control variables required time intervals
 
           { // get the estimated solar power object from calculations for a clear day
               
@@ -2595,7 +2628,11 @@ class class_transindus_eco
         { // calculate the Studer XCOM-LAN based SOC, $soc_percentage_now_calculated_using_studer_xcomlan
           // This is calculated by Integrating the AH for each interval and accumulated into a discharge value after midnight
           // This accumulated value is subtracted from the SOC st midnight that is common to calculation of all SOC's
-          $soc_percentage_now_calculated_using_studer_xcomlan = 0;
+          $battery_xcomlan_soc_percentage_accumulated_since_midnight = 
+            $this->calculate_battery_accumulation_today_xcomlan($user_index, $wp_user_ID, $batt_current_xcomlan, $xcomlan_ts);
+
+          $soc_percentage_now_calculated_using_studer_xcomlan = 
+                  round( $soc_percentage_at_midnight + $battery_xcomlan_soc_percentage_accumulated_since_midnight, 1);
         }
 
         if ( $soc_percentage_now_calculated_using_shelly_bm > 100 || $batt_voltage_xcomlan_avg >= 51.4 )
@@ -2724,10 +2761,14 @@ class class_transindus_eco
           // reset battery soc accumulated value to 0. This is only done once in 24h, at midnight
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', 0);
 
+          // reset battery accumulated using xcomlan measurements
+          update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 0);
+
           error_log("Cal-Midnight - shelly_em_home_energy_counter_at_midnight: $shelly_em_home_wh");
           error_log("Cal-Midnight - grid_wh_counter_at_midnight: $home_grid_wh_counter_now");
           error_log("Cal-Midnight - soc_percentage_at_midnight: $soc_percentage_now_calculated_using_shelly_bm");
           error_log("Cal-Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
+          error_log("Cal-Midnight - battery_xcomlan_soc_percentage_accumulated_since_midnight: 0");
         }
 
         $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;
@@ -2942,6 +2983,7 @@ class class_transindus_eco
           $log_string .= " StdrBatt: $batt_current_xcomlan";
           $log_string .= " ShlyBatt: $battery_amps Vbat $batt_voltage_xcomlan_avg";
           $log_string .= " SOC: $soc_percentage_now_display";
+          $log_string .= " SOC-xomlan: $soc_percentage_now_calculated_using_studer_xcomlan";
 
           error_log($log_string);
         }

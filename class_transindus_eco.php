@@ -1941,15 +1941,15 @@ class class_transindus_eco
       $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
       $now_timestamp = $now->getTimestamp();
 
-      // lets reuse the shelly battery current methid's previous timestamp
-      $previous_timestamp = get_transient( 'timestamp_battery_last_measurement' );
+      // lets not reuse the battery last timestamp since that has been already updated by its routime
+      $previous_timestamp = get_transient( 'timestamp_xcomlan_battery_last_measurement' ) ?? $now_timestamp;
 
       // get the previous xcom-lan reading from transient. If doesnt exist set it to current measurement
       $previous_batt_current_xcomlan = (float) get_transient( 'previous_batt_current_xcomlan' ) ?? $batt_current_xcomlan;
 
       // update transients with current measurements. These will be used as previous measurements for next cycle
-      // set_transient( 'timestamp_battery_last_measurement',  $timestamp,     60 * 60 );
-      set_transient( 'previous_batt_current_xcomlan', $batt_current_xcomlan,  30 * 60 );
+      set_transient( 'timestamp_xcomlan_battery_last_measurement',  $now_timestamp,   30 * 60 );
+      set_transient( 'previous_batt_current_xcomlan', $batt_current_xcomlan,          30 * 60 );
 
       $prev_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
       $prev_datetime_obj->setTimeStamp($previous_timestamp);

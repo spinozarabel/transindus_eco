@@ -2362,6 +2362,9 @@ class class_transindus_eco
 
           $soc_percentage_now_calculated_using_studer_xcomlan = 
                   round( $soc_percentage_at_midnight + $battery_xcomlan_soc_percentage_accumulated_since_midnight, 1);
+
+          $shelly_readings_obj->soc_percentage_now_calculated_using_studer_xcomlan = 
+                                $soc_percentage_now_calculated_using_studer_xcomlan;
         }
 
         if ( $soc_percentage_now_calculated_using_shelly_bm > 100 || $batt_voltage_xcomlan_avg >= 51.4 )
@@ -2429,8 +2432,8 @@ class class_transindus_eco
 
               $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
 
-              $soc_update_method = "shelly-after-dark";
-              $soc_percentage_now = $soc_percentage_now_using_dark_shelly;
+              // $soc_update_method = "shelly-after-dark";
+              // $soc_percentage_now = $soc_percentage_now_using_dark_shelly;
             }
             else
             { // Inverter is supplying the home since the power from Grid is <= 0.1KW as measured by Shelly 3EM
@@ -2453,8 +2456,7 @@ class class_transindus_eco
 
               // check the validity of the SOC using this after dark shelly method
               $soc_after_dark_update_valid =  $soc_percentage_now_using_dark_shelly < 100 &&
-                                              $soc_percentage_now_using_dark_shelly > 40  &&
-                                              abs( $soc_percentage_now_using_dark_shelly - $soc_percentage_now_calculated_using_shelly_bm ) < 5;
+                                              $soc_percentage_now_using_dark_shelly > 40;
 
               // update SOC only if values are reasonable
               if ( $soc_after_dark_update_valid === true )
@@ -2466,20 +2468,19 @@ class class_transindus_eco
                 // update the readings object for transient and display
                 $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
 
-                $soc_update_method = "shelly-after-dark";
-                $soc_percentage_now = $soc_percentage_now_using_dark_shelly;
+                // $soc_update_method = "shelly-after-dark";
+                // $soc_percentage_now = $soc_percentage_now_using_dark_shelly;
 
                 // Since the soc after dark method is more accurate than the SOC shely BM
                 // calibrate the shelly BM method using the SOC after dark value and soc midnight value
-                $recal_battery_soc_percentage_accumulated_since_midnight = $soc_percentage_now_using_dark_shelly - $soc_percentage_at_midnight;
+                // $recal_battery_soc_percentage_accumulated_since_midnight = $soc_percentage_now_using_dark_shelly - $soc_percentage_at_midnight;
 
-                update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
-
+                // update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
               }
               else
               { // 
-                $soc_update_method = "shelly";
-                $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
+                // $soc_update_method = "shelly";
+                // $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
 
                 error_log("Log-SOC using after dark Shelly not used due to bad value of: $soc_percentage_now_using_dark_shelly");
               }
@@ -2490,9 +2491,12 @@ class class_transindus_eco
         {   // it is daylight now
             // update_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark', 0);
 
-          $soc_update_method = "shelly";
-          $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
+          // $soc_update_method = "shelly";
+          // $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
         }
+
+        // This is the preferred SOC value as it is backed by shelly BM. After Dark is not so accurate and so not used
+        $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
 
         // midnight actions
         if ( $this->is_time_just_pass_midnight( $user_index, $wp_user_name ) )
@@ -2505,7 +2509,7 @@ class class_transindus_eco
 
           // reset the SOC at midnight value to current update. This is only done once in 24h, at midnight
           // we also have the option of using the variable: $soc_percentage_now_using_dark_shelly
-          update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $soc_percentage_now_using_dark_shelly );
+          update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $soc_percentage_now );
 
           // reset battery soc accumulated value to 0. This is only done once in 24h, at midnight
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', 0);
@@ -2521,7 +2525,7 @@ class class_transindus_eco
         }
 
         $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;
-        $shelly_readings_obj->soc_update_method   = $soc_update_method;
+        // $shelly_readings_obj->soc_update_method   = $soc_update_method;
 
         $soc_percentage_now_display = round( $soc_percentage_now, 1);
 
@@ -2680,7 +2684,7 @@ class class_transindus_eco
           $log_string .= "Batt(A): " . number_format($battery_amps, 1) . " Grid: " . $shelly1pm_acin_switch_status;
           $log_string .= " ShellyEM(V): " . number_format($shelly_em_home_voltage, 0) . " Load(KW): " . number_format($shelly_em_home_kw, 3);
           // $log_string .= " pump secs: " . $pump_ON_duration_secs . " Water Heater: " . $shelly_water_heater_status_ON;
-          $log_string .= " SOC: " . number_format($soc_percentage_now_display, 1) . " SOC method: " . $soc_update_method;
+          $log_string .= " SOC: " . number_format($soc_percentage_now_display, 1);
 
           // error_log("Batt(A): $battery_amps, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, pump ON for: $pump_ON_duration_secs, Water Heater: $shelly_water_heater_status_ON, SOC: $soc_percentage_now_display");
           // error_log($log_string);
@@ -2722,8 +2726,6 @@ class class_transindus_eco
             $log_string .= " ExSolKW: $excess_solar_kw";
           }
           
-
-          $log_string .= " $soc_update_method";
           $log_string .= " SOC: $soc_percentage_now_display";
 
           $log_string = "Log- xts: $xcomlan_ts";
@@ -2739,9 +2741,6 @@ class class_transindus_eco
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );
-
-        // set transient for soc update method for 10m
-        set_transient( 'soc_update_method', $soc_update_method, 10 * 60 );
     }
 
 
@@ -4747,8 +4746,6 @@ class class_transindus_eco
         }
         $config         = $this->config;
 
-        $soc_update_method = get_transient( 'soc_update_method' );
-
         // last time when the battery was measured
         $previous_timestamp = get_transient("timestamp_battery_last_measurement");
 
@@ -4793,10 +4790,12 @@ class class_transindus_eco
         // changed to avg July 15 2023 was battery_voltage_vdc before that
         // $battery_voltage_vdc    =   round( (float) $readings_obj->battery_voltage_avg, 1);
 
-        // Positive is charging and negative is discharging
+        // Positive is charging and negative is discharging We use this as the readings have faster update rate
         $battery_amps           =   $readings_obj->battery_amps;
 
         $battery_power_kw       = abs(round($readings_obj->battery_power_kw, 2));
+
+        $battery_avg_voltage    =   $readings_obj->batt_voltage_xcomlan_avg;
 
         $home_grid_kw_power     =   $readings_obj->home_grid_kw_power;
         $home_grid_voltage      =   $readings_obj->home_grid_voltage;
@@ -4806,7 +4805,11 @@ class class_transindus_eco
         // This is the AC voltage of switch:0 of Shelly 4PM
         $shelly1pm_acin_voltage = $shelly_switch_acin_details_arr['shelly1pm_acin_voltage'];
 
-        $soc_percentage_now = round($readings_obj->soc_percentage_now, 1);
+        $soc_percentage_now                             = round($readings_obj->soc_percentage_now, 1);
+
+        $soc_percentage_now_calculated_using_shelly_bm  = round($readings_obj->soc_percentage_now_calculated_using_shelly_bm, 1);
+
+        $soc_percentage_now_using_dark_shelly           = round($readings_obj->soc_percentage_now_using_dark_shelly, 1);
 
         // If power is flowing OR switch has ON status then show CHeck and Green
         $grid_arrow_size = $this->get_arrow_size_based_on_power($home_grid_kw_power);
@@ -4976,7 +4979,9 @@ class class_transindus_eco
 
           // battery info shall be red in color
           $battery_info =  '<span style="font-size: 18px;color: Red;"><strong>' . $battery_power_kw . ' KW</strong><br>' 
-                                                                        . abs($battery_amps)  . 'A</span>';
+                                                                        . abs($battery_amps)  . 'A<br>'
+                                                                        . $battery_avg_voltage . 'V' .
+                           '</span>';
         }
 
         if  ($battery_power_kw < 0.01 ) $battery_arrow_icon = ''; // '<i class="fa-solid fa-1x fa-circle-xmark"></i>';
@@ -5128,9 +5133,10 @@ class class_transindus_eco
 
         
         
-        $format_object->soc_percentage_now_html = '<span style="font-size: 20px;color: Blue; display:block; text-align: center;">' . 
-                                                      '<strong>' . $soc_percentage_now  . ' %' . '</strong><br>' .
-                                                  '</span>';
+        $format_object->soc_percentage_now_html = 
+            '<span style="font-size: 20px;color: Blue; display:block; text-align: center;">' . 
+                '<strong>' . $soc_percentage_now  . '</strong> ' . $soc_percentage_now_calculated_using_shelly_bm . ' %<br>' .
+            '</span>';
         /*
         $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' .
                                                     $formatted_interval   . ' ' . $saved_cron_exit_condition  . $soc_update_method .

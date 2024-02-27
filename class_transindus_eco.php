@@ -2734,7 +2734,7 @@ class class_transindus_eco
           $log_string .= " X-A: $batt_current_xcomlan";
           $log_string .= " S-A: $battery_amps Vbat $batt_voltage_xcomlan_avg";
           $log_string .= " SOC-xln: $soc_percentage_now_display";                     // this is the xcom-lan soc
-          $log_string .= " SOC-sbm: $soc_percentage_now_calculated_using_shelly_bm";  // this is the shelly BM soc
+          $log_string .= " SOC-sbm: number_format($soc_percentage_now_calculated_using_shelly_bm,1 )";  // this is the shelly BM soc
 
           error_log($log_string);
         }

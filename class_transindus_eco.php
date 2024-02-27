@@ -5128,7 +5128,7 @@ class class_transindus_eco
         // format the interval for display
         $formatted_interval = $this->format_interval($interval_since_last_change);
 
-        $status .= " " . $now_format . " " . $readings_obj->soc_update_method;
+        $status .= " " . $now_format;
 
         
         $status_html = '<span style="color: Blue; display:block; text-align: center;">' .

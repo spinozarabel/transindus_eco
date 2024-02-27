@@ -2704,13 +2704,13 @@ class class_transindus_eco
           $log_string .= " $soc_update_method";
           $log_string .= " SOC: $soc_percentage_now_display";
 
-          $log_string = "Log - xcom-ts: $xcomlan_ts";
+          $log_string = "Log- xts: $xcomlan_ts";
           $log_string .= " E: $east_panel_current_xcomlan W: $west_panel_current_xcomlan";
           $log_string .= " PV: $pv_current_now_total_xcomlan Inv: $inverter_current_xcomlan";
-          $log_string .= " StdrBatt: $batt_current_xcomlan";
-          $log_string .= " ShlyBatt: $battery_amps Vbat $batt_voltage_xcomlan_avg";
+          $log_string .= " StdA: $batt_current_xcomlan";
+          $log_string .= " ShlyA: $battery_amps Vbat $batt_voltage_xcomlan_avg";
           $log_string .= " SOC: $soc_percentage_now_display";
-          $log_string .= " SOC-xomlan: $soc_percentage_now_calculated_using_studer_xcomlan";
+          $log_string .= " SOC-x: $soc_percentage_now_calculated_using_studer_xcomlan";
 
           error_log($log_string);
         }

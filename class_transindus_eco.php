@@ -1912,12 +1912,14 @@ class class_transindus_eco
         array_shift($ts_xcomlan_history_array);
       }
 
+      set_transient( 'ts_xcomlan_history_array', $ts_xcomlan_history_array, 5 * 60 );
+
       // @TODO check the xcomlan time stamp to ensure that the measurement is not too old
       // if it is too old then we reset the xcomlan values to the shelly battery measurement values
 
       // get the residual array that does not hold any of the current time stamp ones
       $residual_array = array_diff($ts_xcomlan_history_array, array($timestamp_xcomlan_call));
-      /*
+      
       // if the array is empty it means that the data is is stale and xcomlan channel is stuck
       if (empty($residual_array))
       {
@@ -1930,7 +1932,7 @@ class class_transindus_eco
         
         return $battery_soc_percentage_accumulated_since_midnight;
       }
-      */
+      
       
       // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
       $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH in our case

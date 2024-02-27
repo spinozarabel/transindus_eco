@@ -4809,7 +4809,10 @@ class class_transindus_eco
 
         $soc_percentage_now_calculated_using_shelly_bm  = round($readings_obj->soc_percentage_now_calculated_using_shelly_bm, 1);
 
-        $soc_percentage_now_using_dark_shelly           = round($readings_obj->soc_percentage_now_using_dark_shelly, 1);
+        if ( ! empty( $readings_obj->soc_percentage_now_using_dark_shelly ) )
+        {
+          $soc_percentage_now_using_dark_shelly           = round($readings_obj->soc_percentage_now_using_dark_shelly, 1);
+        }
 
         // If power is flowing OR switch has ON status then show CHeck and Green
         $grid_arrow_size = $this->get_arrow_size_based_on_power($home_grid_kw_power);
@@ -4961,8 +4964,10 @@ class class_transindus_eco
             $battery_color_style = 'greeniconcolor';
 
             // battery info shall be green in color
-            $battery_info =  '<span style="font-size: 18px;color: Green;"><strong>' . $battery_power_kw  . ' KW</strong><br>' 
-                                                                            . abs($battery_amps)  . 'A</span>';
+            $battery_info =   '<span style="font-size: 18px;color: Green;"><strong>'  . $battery_power_kw     . ' KW</strong><br>' 
+                                                                                      . abs($battery_amps)    . 'A<br>'
+                                                                                      . $battery_avg_voltage  . 'V' .
+                              '</span>';
         }
         else
         {
@@ -4978,9 +4983,9 @@ class class_transindus_eco
           $battery_color_style = 'rediconcolor';
 
           // battery info shall be red in color
-          $battery_info =  '<span style="font-size: 18px;color: Red;"><strong>' . $battery_power_kw . ' KW</strong><br>' 
-                                                                        . abs($battery_amps)  . 'A<br>'
-                                                                        . $battery_avg_voltage . 'V' .
+          $battery_info =  '<span style="font-size: 18px;color: Red;"><strong>' . $battery_power_kw     . ' KW</strong><br>' 
+                                                                                . abs($battery_amps)    . 'A<br>'
+                                                                                . $battery_avg_voltage  . 'V' .
                            '</span>';
         }
 

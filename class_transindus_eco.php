@@ -1873,7 +1873,12 @@ class class_transindus_eco
      *  @param float:$batt_current_xcomlan is the current measurement of battery current using xcomlan method
      *  @param int:$timestamp_xcomlan_call is the timestamp around the time that the python script called xcomlan
      * 
+     *  @return float:battery_xcomlan_soc_percentage_accumulated_since_midnight
+     * 
      *  The previous values of thehcurrent and timestamp need to be got from transients.
+     *  Average the currents and calculate the delta charge accumulated this cycle.
+     *  Add it to the total accumulated battery charge since midnight using xcomlan data
+     *  return this value and also update the user meta
      */
     public function calculate_battery_accumulation_today_xcomlan( $user_index, 
                                                                   $wp_user_ID, 
@@ -1917,7 +1922,7 @@ class class_transindus_eco
       if (empty($residual_array))
       {
         // all the last few timestamps sent by xcomlan are the same so it is stuck, no new data. 
-        error_log("all the last few timestamps sent by xcomlan are the same so it is stuck, returning Shelly based data");
+        error_log("xcomlan maybe stuck - all the last few TS are the same, returning Shelly based data");
 
         // we fall back to the shelly battery measurement accumulation
         update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
@@ -1947,7 +1952,7 @@ class class_transindus_eco
       $prev_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
       $prev_datetime_obj->setTimeStamp($previous_timestamp);
 
-      // get Battery SOC percentage accumulated till last measurement
+      // get Battery xcomlan SOC percentage accumulated till last measurement
       $battery_xcomlan_soc_percentage_accumulated_since_midnight = (float) get_user_meta(  $wp_user_ID, 
                                                       'battery_xcomlan_soc_percentage_accumulated_since_midnight', true);
 
@@ -1959,7 +1964,7 @@ class class_transindus_eco
                   $battery_xcomlan_soc_percentage_accumulated_since_midnight < 0 )
       {
         error_log("Reset xcomlan batt soc. Its bad value was: $battery_xcomlan_soc_percentage_accumulated_since_midnight");
-        $battery_xcomlan_soc_percentage_accumulated_since_midnight = $battery_soc_percentage_accumulated_since_midnight;
+        // $battery_xcomlan_soc_percentage_accumulated_since_midnight = $battery_soc_percentage_accumulated_since_midnight;
       }
 
       $diff = $now->diff( $prev_datetime_obj );

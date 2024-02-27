@@ -2375,7 +2375,11 @@ class class_transindus_eco
 
         if ( $soc_percentage_now_calculated_using_studer_xcomlan > 100 || $batt_voltage_xcomlan_avg >= 51.4 )
         {   // battery float reached so 100% clamp of SOC
-          
+            $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
+
+            // write this value back to the user meta
+            update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
+                                            $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight);
         }
 
         if ( $it_is_still_dark )

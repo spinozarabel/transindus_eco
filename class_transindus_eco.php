@@ -2390,10 +2390,27 @@ class class_transindus_eco
 
           if (  $soc_capture_after_dark_happened === false  && $shelly_em_home_wh && $time_window_for_soc_dark_capture_open )
           { // event not happened yet so make it happen with valid value for the home energy EM counter reading
+
+            // 1st preference is given to SOC value calculated by xcom-LAN method. So let's check its value
+            if ( ! empty( $soc_percentage_now_calculated_using_studer_xcomlan )         && 
+                          $soc_percentage_now_calculated_using_studer_xcomlan <= 100    &&
+                          $soc_percentage_now_calculated_using_studer_xcomlan > 70      &&
+                          abs($soc_percentage_now_calculated_using_studer_xcomlan - 
+                              $soc_percentage_now_calculated_using_shelly_bm)       < 5 )
+            {
+              $soc_used_for_dark_capture = $soc_percentage_now_calculated_using_studer_xcomlan;
+              error_log("xcom-lan SOC value used for dark capture");
+            }
+            else
+            {
+              $soc_used_for_dark_capture = $soc_percentage_now_calculated_using_shelly_bm;
+              error_log("shelly BM based SOC value used for dark capture");
+            }
+                           
             $this->capture_evening_soc_after_dark(  $user_index, 
                                                     $wp_user_name, 
                                                     $wp_user_ID, 
-                                                    $soc_percentage_now_calculated_using_shelly_bm, 
+                                                    $soc_used_for_dark_capture, 
                                                     $shelly_em_home_wh,
                                                     $time_window_for_soc_dark_capture_open );
           }

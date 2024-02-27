@@ -1942,7 +1942,7 @@ class class_transindus_eco
       $now_timestamp = $now->getTimestamp();
 
       // lets not reuse the battery last timestamp since that has been already updated by its routime
-      $previous_timestamp = get_transient( 'timestamp_xcomlan_battery_last_measurement' ) ?? $now_timestamp;
+      $previous_timestamp = (int) get_transient( 'timestamp_xcomlan_battery_last_measurement' ) ?? $now_timestamp;
 
       // get the previous xcom-lan reading from transient. If doesnt exist set it to current measurement
       $previous_batt_current_xcomlan = (float) get_transient( 'previous_batt_current_xcomlan' ) ?? $batt_current_xcomlan;

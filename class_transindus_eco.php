@@ -2394,9 +2394,8 @@ class class_transindus_eco
             // 1st preference is given to SOC value calculated by xcom-LAN method. So let's check its value
             if ( ! empty( $soc_percentage_now_calculated_using_studer_xcomlan )         && 
                           $soc_percentage_now_calculated_using_studer_xcomlan <= 100    &&
-                          $soc_percentage_now_calculated_using_studer_xcomlan > 70      &&
-                          abs($soc_percentage_now_calculated_using_studer_xcomlan - 
-                              $soc_percentage_now_calculated_using_shelly_bm)       < 5 )
+                          $soc_percentage_now_calculated_using_studer_xcomlan > 70
+                         )
             {
               $soc_used_for_dark_capture = $soc_percentage_now_calculated_using_studer_xcomlan;
               error_log("xcom-lan SOC value used for dark capture");

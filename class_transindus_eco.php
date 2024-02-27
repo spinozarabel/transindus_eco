@@ -1959,9 +1959,7 @@ class class_transindus_eco
       
 
       // reset value to the shelly one if this value is bad
-      if (empty(  $battery_xcomlan_soc_percentage_accumulated_since_midnight )      || 
-                  $battery_xcomlan_soc_percentage_accumulated_since_midnight > 100  || 
-                  $battery_xcomlan_soc_percentage_accumulated_since_midnight < 0 )
+      if (empty(  $battery_xcomlan_soc_percentage_accumulated_since_midnight ) )
       {
         error_log("Reset xcomlan batt soc. Its bad value was: $battery_xcomlan_soc_percentage_accumulated_since_midnight");
         // $battery_xcomlan_soc_percentage_accumulated_since_midnight = $battery_soc_percentage_accumulated_since_midnight;

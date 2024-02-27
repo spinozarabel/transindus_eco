@@ -2729,10 +2729,10 @@ class class_transindus_eco
           $log_string .= " SOC: $soc_percentage_now_display";
 
           $log_string = "Log- xts: $xcomlan_ts";
-          $log_string .= " E: "       . number_format($east_panel_current_xcomlan,1)   .  "W: "   . number_format($west_panel_current_xcomlan,1);
-          $log_string .= " PV: "      . number_format($pv_current_now_total_xcomlan,1) . "Inv: "  . number_format($inverter_current_xcomlan,1);
+          $log_string .= " E: "       . number_format($east_panel_current_xcomlan,1)   .  " W: "   . number_format($west_panel_current_xcomlan,1);
+          $log_string .= " PV: "      . number_format($pv_current_now_total_xcomlan,1) . " Inv: "  . number_format($inverter_current_xcomlan,1);
           $log_string .= " X-A: "     . number_format($batt_current_xcomlan,1);
-          $log_string .= " S-A: "     . number_format($battery_amps,1) . 'Vbat:'                  .  number_format($batt_voltage_xcomlan_avg,1);
+          $log_string .= " S-A: "     . number_format($battery_amps,1) . ' Vbat:'                  .  number_format($batt_voltage_xcomlan_avg,1);
           $log_string .= " SOC-xln: " . number_format($soc_percentage_now_display,1);                     // this is the xcom-lan soc,1
           $log_string .= " SOC-sbm: " . number_format($soc_percentage_now_calculated_using_shelly_bm,1 );  // this is the shelly BM soc
 

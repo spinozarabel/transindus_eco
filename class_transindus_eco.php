@@ -3802,30 +3802,17 @@ class class_transindus_eco
 
             case "Get_Shelly_Device_Status":
                 // Get the Shelly device status whose id is listed in the config.
-                $shelly_api_device_response = $this->get_shelly_device_status($config_index);
-                $shelly_api_device_status_ON = $shelly_api_device_response->data->device_status;
-
-                print_r( $shelly_api_device_status_ON );
+                
             break;
 
             case "turn_Shelly_Switch_ON":
                 // command the Shelly ACIN switch to ON
-                $shelly_api_device_response = $this->turn_on_off_shelly_switch($config_index, "on");
-                sleep(1);
-
-                // get a fresh status
-                $shelly_api_device_response = $this->get_shelly_device_status($config_index);
-                $shelly_api_device_status_ON   = $shelly_api_device_response->data->device_status;
+                
             break;
 
             case "turn_Shelly_Switch_OFF":
                 // command the Shelly ACIN switch to ON
-                $shelly_api_device_response = $this->turn_on_off_shelly_switch($config_index, "off");
-                sleep(1);
-
-                // get a fresh status
-                $shelly_api_device_response = $this->get_shelly_device_status($config_index);
-                $shelly_api_device_status_ON   = $shelly_api_device_response->data->device_status;
+                
             break;
 
             case "run_cron_exec_once":
@@ -3864,14 +3851,12 @@ class class_transindus_eco
 
             case "shelly_status_acin":
 
-              $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
-
-              print_r( $this->get_shelly_switch_acin_details($config_index) );
+              
             break;
 
             case "get_shelly_device_status_homepwr":
 
-              print_r( $this->get_shelly_device_status_homepwr($config_index) );
+              
             break;
 
             case "check_if_soc_after_dark_happened":
@@ -4684,37 +4669,6 @@ class class_transindus_eco
           }
           // Grid ON/OFF is determoned in the CRON loop as usual. 
           return;
-
-          // The code below is obsolete and will never execute
-
-            // Get current status of switch
-            $shelly_api_device_response   = $this->get_shelly_device_status($user_index);
-
-            if ( empty($shelly_api_device_response) ) {   // what do we do we do if device is OFFLINE?
-                // do nothing
-            }
-            else {  // valid switch response so we can determine status
-                    
-                    $shelly_api_device_status_ON  = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
-
-                    if ($shelly_api_device_status_ON) {   // Switch is ON, toggle switch to OFF
-                        $shelly_switch_status = "ON";
-
-                        // we need to turn it off because user has toggled switch
-                        $response = $this->turn_on_off_shelly_switch($user_index, "off");
-
-                        error_log('Changed Switch from ON->OFF due to Ajax Request');
-
-                    }
-                    else {    // Switch is OFF, toggle switch to ON
-                        $shelly_switch_status = "OFF";
-
-                        // we need to turn switch ON since user has toggled switch
-                        $response = $this->turn_on_off_shelly_switch($user_index, "on");
-
-                        error_log('Changed Switch from OFF->ON due to Ajax Request');
-                    }
-            }
         }
 
         // get a new set of readings

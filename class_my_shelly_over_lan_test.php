@@ -248,11 +248,33 @@ class my_shelly_over_lan_test
           return false;
         }
     }
+
+    public function get_shelly_3p_grid_wh_since_midnight_over_lan(  int     $user_index ): ? object
+    {
+
+      // get API and device ID from config based on user index
+      $config = $this->config;
+
+      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin_3p'];
+      $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_3em'];
+
+      // gen2 default pass parameter
+      $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
+
+      // this is $curl_response.
+      $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
+
+      return $shelly_api_device_response;
+      
+    }
 }
 
 $test = new my_shelly_over_lan_test();
 
-$mystuder_readings_json_string = shell_exec( "python3 mystuder.py" );
+$shelly_3p_grid_energy_measurement_obj = $test->get_shelly_3p_grid_wh_since_midnight_over_lan( 0 );
+ print_r($shelly_3p_grid_energy_measurement_obj);
 
 
 

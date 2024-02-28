@@ -1076,15 +1076,14 @@ class class_transindus_eco
                                                                     int     $wp_user_ID     ): ? object
     {
       // Blue phase of RYB is assigned to home so this corresponds to c phase of abc
-      $home_total_act_energy_string  = "c_total_act_energy"; 
-      $home_act_power_string         = "c_act_power";
-      $home_voltage_string           = "c_voltage";
+      $home_em      = "em1:2";
+      $home_emdata  = "em1data:2";
 
-      // Yellow phase of RYB is assigned to car charger so this corresponds to b phase of abc sequence
-      $car_charger_total_act_energy_string  = "b_total_act_energy";
-      $car_charger_act_power_string         = "b_act_power"; 
+      // Red phase of RYB is assigned to car charger sinside garage o this corresponds to a phase of abc sequence
+      $car_em      = "em1:0";
+      $car_emdata  = "em1data:0";
 
-      // get value of Shelly Pro 3EM Red phase watt hour counter as set at midnight
+      // get value of Shelly Pro 3EM Home phase watt hour counter as set at midnight
       $grid_wh_counter_at_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', true), 0);
 
       // get API and device ID from config based on user index
@@ -1104,10 +1103,7 @@ class class_transindus_eco
       $shelly_3p_grid_energy_measurement_obj = new stdClass;
 
       // check to make sure that it exists. If null API call was fruitless
-      if (  empty(        $shelly_api_device_response ) || 
-            empty(        $shelly_api_device_response->{"emdata:0"}->$home_total_act_energy_string )         ||
-            (int) round(  $shelly_api_device_response->{"emdata:0"}->$home_total_act_energy_string, 0 ) < 0
-          )
+      if (  empty( $shelly_api_device_response ) )
       {
         $this->verbose ? error_log("Shelly 3EM Grid Energy API call failed"): false;
 
@@ -1138,16 +1134,16 @@ class class_transindus_eco
       { // we have a valid reading from SHelly 3EM device
 
         // main power to home. The phase is deretermined by passed in string: a/b/c corresponding to R/Y/B
-        $home_grid_wh_counter_now  = $shelly_api_device_response->{"emdata:0"}->$home_total_act_energy_string;
+        $home_grid_wh_counter_now  = $shelly_api_device_response->$home_emdata->total_act_energy;
 
-        $home_grid_w_power           = $shelly_api_device_response->{"em:0"}->$home_act_power_string;
+        $home_grid_w_power           = $shelly_api_device_response->$home_em->act_power;
         $home_grid_kw_power          = round( 0.001 * $home_grid_w_power, 3);
 
-        $home_grid_voltage           = $shelly_api_device_response->{"em:0"}->$home_voltage_string;
+        $home_grid_voltage           = $shelly_api_device_response->$home_em->voltage;
 
         // get energy counter value and power values of phase supplying car charger, assumed b or Y phase
-        $car_charger_grid_wh_counter_now  = $shelly_api_device_response->{"emdata:0"}->$car_charger_total_act_energy_string;
-        $car_charger_grid_w_power         = $shelly_api_device_response->{"em:0"}->$car_charger_act_power_string;
+        $car_charger_grid_wh_counter_now  = $shelly_api_device_response->$car_emdata->total_act_energy;
+        $car_charger_grid_w_power         = $shelly_api_device_response->$car_em->act_power;
         $car_charger_grid_kw_power        = round( 0.001 * $car_charger_grid_w_power, 3);
         
         // update the transient with most recent measurement

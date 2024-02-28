@@ -2131,7 +2131,6 @@ class class_transindus_eco
           $shelly1pm_acin_power_kw          = $shelly_switch_acin_details_arr['shelly1pm_acin_power_kw'];
 
           $shelly_readings_obj->shelly_switch_acin_details_arr = $shelly_switch_acin_details_arr;
-          // error_log("Shelly 1PM AC IN switch: Status: $shelly1pm_acin_switch_status, AC Voltage: $shelly1pm_acin_voltage");
         }
 
         

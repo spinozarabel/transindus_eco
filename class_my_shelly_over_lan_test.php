@@ -280,6 +280,8 @@ $shelly_3p_grid_energy_measurement_obj = $test->get_shelly_3p_grid_wh_since_midn
 
  $home_ac_voltage = $shelly_3p_grid_energy_measurement_obj->$home_em->voltage;
 
+ print($home_ac_voltage);
+
 
 
 

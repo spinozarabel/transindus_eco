@@ -276,6 +276,10 @@ $test = new my_shelly_over_lan_test();
 $shelly_3p_grid_energy_measurement_obj = $test->get_shelly_3p_grid_wh_since_midnight_over_lan( 0 );
  print_r($shelly_3p_grid_energy_measurement_obj);
 
+ $home_em = "em1:0";
+
+ $home_ac_voltage = $shelly_3p_grid_energy_measurement_obj->$home_em->voltage;
+
 
 
 

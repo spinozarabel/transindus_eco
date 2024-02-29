@@ -3937,7 +3937,7 @@ class class_transindus_eco
         // set the channel of the switch
         $channel  = 0;
 
-        $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, $channel  );
+        $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly  );
 
         // Get the switch initial status now before any switching happens
         $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();

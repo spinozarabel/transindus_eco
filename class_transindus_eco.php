@@ -1402,7 +1402,7 @@ class class_transindus_eco
         $car_charger_grid_w_pwr           = $shelly_api_device_response->data->device_status->$car_em->act_power;
         $car_charger_grid_voltage         = $shelly_api_device_response->data->device_status->$car_em->voltage;
 
-        $car_charger_outside_grid_wh_counter_now  = $shelly_api_device_response->data->device_status->$car_outside_emdata->act_power;
+        $car_charger_outside_grid_wh_counter_now  = $shelly_api_device_response->data->device_status->$car_outside_emdata->total_act_energy;
         $car_charger_outside_grid_w_pwr           = $shelly_api_device_response->data->device_status->$car_outside_em->act_power;
         $car_charger_outside_grid_voltage         = $shelly_api_device_response->data->device_status->$car_outside_em->voltage;
 

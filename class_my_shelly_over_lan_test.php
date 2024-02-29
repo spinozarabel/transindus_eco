@@ -81,16 +81,11 @@ class my_shelly_over_lan_test
       // ensure that the data below is current before coming here
       $all_usermeta['do_shelly'] = true;
 
-      $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['ip_shelly_acin_1pm'] )  && $all_usermeta['do_shelly'];
+      $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['ip_shelly_acin_1pm'] );
+
+      $control_shelly = $valid_shelly_config && $all_usermeta["do_shelly"];
     
-      if ( $valid_shelly_config ) 
-      {  // Cotrol Shelly TRUE if usermeta AND valid config
-        $control_shelly = true;
-      }
-      else 
-      {    // Cotrol Shelly FALSE if usermeta AND valid config FALSE
-        $control_shelly = false;
-      }
+      
 
       // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
       if ( $valid_shelly_config ) 
@@ -285,6 +280,8 @@ $shelly_3p_grid_energy_measurement_obj = $test->get_shelly_3p_grid_wh_since_midn
  print($home_ac_voltage);
  print ($home_ac_power);
 
+ $shelly_switch_acin_details = $test->get_shelly_switch_acin_details_over_lan(0);
+ print_r($shelly_switch_acin_details);
 
 
 

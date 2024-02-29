@@ -2693,9 +2693,9 @@ class class_transindus_eco
             $log_string .= " LVDS: TRUE";
           }
 
-          if ( $local_LVDS_release === true )
+          if ( $local_switch_release === true )
           {
-            $log_string .= " LVDS_release: TRUE";
+            $log_string .= " Switch_release: TRUE";
           }
 
           if ( $excess_solar_available === true )

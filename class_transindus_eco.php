@@ -2513,7 +2513,7 @@ class class_transindus_eco
 
           if ( $switch_flap_amount  > 2 )
             {
-              // This means that over a 10m running average, there are more than 2 switch operations from ON->OFF or from OFF->ON
+              // This means that over a 15m running average, there are more than 2 switch operations from ON->OFF or from OFF->ON
               $switch_is_flapping = true;
             }
           else
@@ -2528,7 +2528,6 @@ class class_transindus_eco
           $local_LVDS = 
                           $shelly1pm_acin_switch_status === "OFF"         &&    // Grid switch is OFF. If FFLINE or ON this won't care
                           $control_shelly               === true          &&    // This is true when Iswitch P address exists in config AND do_shelly is true
-                          $switch_is_flapping           === false         &&
                           ( $soc_percentage_now           < 50            ||    // local SOC measurement is low
                             $batt_voltage_xcomlan_avg     < 48.5 );             // or local average Battery Voltage is too low
 
@@ -2545,14 +2544,14 @@ class class_transindus_eco
           if ( $local_LVDS )
           {
             // local command to turn ON Shelly 1PM Grid Switch
-            error_log("Danger-Main control site is down for more than 15m and SOC ls low, commanded to turn ON Shelly 1PM Grid switch");
+            error_log("LogLvds: SOC and or Battery VOltage is LOW, commanded to turn ON Shelly 1PM Grid switch");
 
             $success_on = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
           }
           elseif ( $local_LVDS_release  )
           {   // switch release if control site is down for long and it is daylight and soc is above limit and Grid switch is ON still
             
-            error_log("Danger-Main control site is down for more than 15m and SOC ls high, commanded to turn OFF Shelly 1PM Grid switch");
+            error_log("LogLvds: SOC has recovered, commanded to turn OFF Shelly 1PM Grid switch");
 
             $success_off = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'off' );
           }
@@ -2571,9 +2570,9 @@ class class_transindus_eco
             }
 
             
-            // If the array has more than 100 items then drop the earliest one
-            // We are averaging over 100 loops or about 100 x 5 = 500s or about 10m
-            if ( sizeof($switch_flap_array) > 100 )  
+            //  We want to detect over a span of 5m or 300s. Each loop is 15s so 20 loops
+            // We are averaging over 100 loops or about 100 x 15 = 500s or about 10m
+            if ( sizeof($switch_flap_array) > 20 )  
             {   // drop the earliest reading
                 array_shift($switch_flap_array);
             }

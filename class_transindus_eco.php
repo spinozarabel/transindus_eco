@@ -558,9 +558,6 @@ class class_transindus_eco
     {
       $return_array = [];
 
-      // set default timezone to Asia Kolkata
-      //
-
       $config     = $this->config;
 
       // get WP user object and so get its ID
@@ -569,16 +566,11 @@ class class_transindus_eco
       // ensure that the data below is current before coming here
       $all_usermeta = $this->all_usermeta ?? $this->get_all_usermeta( $wp_user_ID );
 
-      $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['ip_shelly_acin_1pm'] )  && $all_usermeta['do_shelly'];
+      $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['ip_shelly_acin_1pm'] );
+
+      $control_shelly = $valid_shelly_config && $all_usermeta["do_shelly"];
     
-      if ( $valid_shelly_config ) 
-      {  // Cotrol Shelly TRUE if usermeta 'do_shelly' is true AND config has non-empty IP address for the switch
-        $control_shelly = true;
-      }
-      else 
-      {    // Cotrol Shelly FALSE if usermeta AND valid config FALSE
-        $control_shelly = false;
-      }
+     
 
       // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
 

@@ -677,7 +677,7 @@ class class_transindus_eco
             empty(      $shelly_api_device_response->emeters[0]->total ) 
           )
       { // Shelly Load EM did not respond over LAN
-        $this->verbose ? error_log( "Shelly EM Load Energy API call failed - See below for response" ): false;
+        $this->verbose ? error_log( "LogApi: Shelly EM Load Energy API call failed - See below for response" ): false;
         $this->verbose ? error_log( print_r($shelly_api_device_response , true) ): false;
 
         return null;
@@ -875,7 +875,7 @@ class class_transindus_eco
         // check to make sure that it exists. If null call was fruitless
         if ( empty( $shelly_api_device_response ) )
         {
-          error_log("Danger-Shelly Battery Measurement API call over LAN failed");
+          error_log("LogApi: Danger-Shelly Battery Measurement API call over LAN failed");
 
           return null;
         }
@@ -958,14 +958,6 @@ class class_transindus_eco
           // update accumulated battery charge back to user meta
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $battery_soc_percentage_accumulated_since_midnight);
         }
-        /*
-        $this->verbose ? error_log("Battery % added today: $battery_soc_percentage_accumulated_since_midnight, 
-                                    % accumulated just now: $battery_soc_percent_this_measurement, 
-                                    Batt Amps: $battery_amps"
-                                  ) : false;
-        */
-
-        
 
         // write variables as properties to returned object
         $battery_measurements_object->battery_ah_this_measurement                       = $battery_ah_this_measurement;
@@ -1002,7 +994,7 @@ class class_transindus_eco
         // check to make sure that it exists. If null API call was fruitless
         if ( empty( $shelly_api_device_response ) || empty( $shelly_api_device_response->{"switch:3"}->aenergy->total ) )
         {
-          $this->verbose ? error_log("Shelly Homepwr switch API call failed"): false;
+          error_log("LogApi: Shelly Homepwr switch API call failed");
 
           return null;
         }
@@ -1549,14 +1541,14 @@ class class_transindus_eco
                 ( $pump_initial_switch_state === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
           {
             // esisting state is same as desired final state so return
-            error_log( "Log-No Action in Pump Switch done since no change is desired - Initial State: $pump_initial_switch_state, desired State: $desired_state" );
+            error_log( "LogSw-No Action in Pump Switch done since no change is desired - Initial State: $pump_initial_switch_state, desired State: $desired_state" );
             return true;
           }
         }
         else
         {
           // we didn't get a valid response but we can continue and try switching
-          error_log( "we didn't get a valid response for pump switch initial status check but we can continue and try switching" );
+          error_log( "LogSw: we didn't get a valid response for pump switch initial status check but we can continue and try switching" );
         }
 
         // Now lets change the pump state
@@ -1576,7 +1568,7 @@ class class_transindus_eco
         }
         else
         {
-          error_log( "Danger-Failed to switch - Initial State: $pump_initial_switch_state, desired State: $desired_state, Final State: $pump_final_switch_state" );
+          error_log( "LogSw: Danger-Failed to switch - Initial State: $pump_initial_switch_state, desired State: $desired_state, Final State: $pump_final_switch_state" );
           return false;
         }
     }
@@ -1842,11 +1834,11 @@ class class_transindus_eco
 
             if ( ! $status_turn_pump_on )
             {
-              error_log("Danger-Pump could NOT be turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF - investigate");
+              error_log("LogSw: Danger-Pump could NOT be turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF - investigate");
             }
             else
             {
-              error_log("Danger-Pump turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF");
+              error_log("LogSw: Danger-Pump turned back ON after duration of: $pump_OFF_duration_secs Seconds after Pump OFF");
             }
 
             
@@ -1920,7 +1912,7 @@ class class_transindus_eco
       if (empty($residual_array))
       {
         // all the last few timestamps sent by xcomlan are the same so it is stuck, no new data. 
-        error_log("xcomlan maybe stuck - all the last few TS are the same, returning Shelly based data");
+        error_log("LogXl: xcomlan maybe stuck - all the last few TS are the same, returning Shelly based data");
 
         // we fall back to the shelly battery measurement accumulation
         update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
@@ -3960,14 +3952,14 @@ class class_transindus_eco
                 ( $initial_switch_state === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
           {
             // esisting state is same as desired final state so return
-            error_log( "Log-No Action in ACIN Switch - Initial Switch State: $initial_switch_state, Desired State: $desired_state" );
+            error_log( "LogSw: No Action in ACIN Switch - Initial Switch State: $initial_switch_state, Desired State: $desired_state" );
             return true;
           }
         }
         else
         {
           // we didn't get a valid response but we can continue and try switching
-          error_log( "we didn't get a valid response for ACIN switch initial status check but we can continue and try switching" );
+          error_log( "LogSw: we didn't get a valid response for ACIN switch initial status check but we can continue and try switching" );
         }
 
         // Now lets change the switch state by command over LAN
@@ -3979,7 +3971,7 @@ class class_transindus_eco
 
         If ( empty( $shelly_api_device_response ) )
         {
-          error_log( "Danger-we didn't get a valid response for switch turn on/off" );
+          error_log( "LogSw: Danger-we didn't get a valid response for switch turn on/off" );
 
           return false;
         }
@@ -3994,7 +3986,7 @@ class class_transindus_eco
         }
         else
         {
-          error_log( "Danger-ACIN Switch to desired state Failed - Desired State: $desired_state, Final State: $final_switch_state" );
+          error_log( "LogSw: Danger-ACIN Switch to desired state Failed - Desired State: $desired_state, Final State: $final_switch_state" );
           return false;
         }
     }
@@ -4020,7 +4012,7 @@ class class_transindus_eco
       if ( is_null($shelly_api_device_response) ) 
       { // No response for Shelly water heater switch API call
 
-        // error_log("Shelly Water Heater Switch over LAN call failed - Reason unknown");
+        // error_log("LogApi: Shelly Water Heater Switch over LAN call failed - Reason unknown");
         return null;
       }
       else 
@@ -4681,7 +4673,7 @@ class class_transindus_eco
     {
         if ( empty($readings_obj))
         {
-          error_log("Log-Readings object passed into format data is empty");
+          error_log("LogEmpty-Readings object passed into format data is empty");
           return null;
         }
         $config         = $this->config;

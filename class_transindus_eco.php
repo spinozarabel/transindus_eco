@@ -2054,10 +2054,10 @@ class class_transindus_eco
         { // Get user meta for limits and controls. These should not change inside of the for loop in cron exec
           $all_usermeta                           = $this->get_all_usermeta( $wp_user_ID );
           // SOC percentage needed to trigger LVDS
-          $soc_percentage_lvds_setting            = $all_usermeta['soc_percentage_lvds_setting']  ?? 40;
+          $soc_percentage_lvds_setting            = $all_usermeta['soc_percentage_lvds_setting']  ?? 50;
 
           // Avg Battery Voltage lower threshold for LVDS triggers
-          $average_battery_voltage_lvds_setting   = $all_usermeta['average_battery_voltage_lvds_setting']  ?? 48.3;
+          $average_battery_voltage_lvds_setting   = $all_usermeta['average_battery_voltage_lvds_setting']  ?? 48.5;
 
           // Switch releases if SOC is above this level 
           $soc_percentage_switch_release_setting  = $all_usermeta['soc_percentage_switch_release_setting']  ?? 95.0; 
@@ -2527,12 +2527,12 @@ class class_transindus_eco
 
           $local_LVDS = 
                           $shelly1pm_acin_switch_status === "OFF"         &&    // Grid switch is OFF. If FFLINE or ON this won't care
-                          $control_shelly               === true          &&    // This is true when Iswitch P address exists in config AND do_shelly is true
-                          ( $soc_percentage_now           < 50            ||    // local SOC measurement is low
-                            $batt_voltage_xcomlan_avg     < 48.5 );             // or local average Battery Voltage is too low
+                          $control_shelly               === true          &&    // TRUE when switch IP address exists AND do_shelly is TRUE
+                          ( $soc_percentage_now         <= ( $soc_percentage_lvds_setting - 1 ) ||    // local SOC measurement is < setting
+                            $batt_voltage_xcomlan_avg   < $average_battery_voltage_lvds_setting );    // or local average Battery Voltage < setting
 
-          $local_LVDS_release = 
-                          $soc_percentage_now           > 52                &&    // local SOC measurement is normal
+          $local_switch_release = 
+                          $soc_percentage_now           >= ( $soc_percentage_lvds_setting + 1 ) &&    // local SOC measurement is normal
                           $battery_amps                 > 6                 &&    // battery is charging with at least 0.3KW surplus from solar
                           $shelly1pm_acin_switch_status === "ON"            &&    // Grid switch is ON. Anyother state won't matter
                           $control_shelly               === true            &&    // Ccontrollable by config
@@ -2548,12 +2548,20 @@ class class_transindus_eco
 
             $success_on = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
           }
-          elseif ( $local_LVDS_release  )
-          {   // switch release if control site is down for long and it is daylight and soc is above limit and Grid switch is ON still
+          elseif ( $local_switch_release  )
+          {   // switch release - SOC has recovered and Battery is charging from Solar
             
-            error_log("LogLvds: SOC has recovered, commanded to turn OFF Shelly 1PM Grid switch");
+            error_log("LogLvds: SOC has recovered, Solar is charging the Battery - commanded to turn OFF Shelly 1PM Grid switch");
 
             $success_off = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'off' );
+          }
+
+          if ( $keep_shelly_switch_closed_always === true )
+          {
+            // local command to turn ON Shelly 1PM Grid Switch
+            error_log("LogAlways ON: Keep Grid Switch Always ON commanded to turn ON Shelly 1PM Grid switch");
+
+            $success_on = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
           }
 
           { // record for possible switch flap

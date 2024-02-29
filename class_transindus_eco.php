@@ -2499,7 +2499,7 @@ class class_transindus_eco
 
         $soc_percentage_now_display = round( $soc_percentage_now, 1);
 
-        { // local control of LVDS and switch release only if control site is down for long
+        { // local control of LVDS and switch release
 
           // Get flap transient - If transient doesnt exist rebuild
           $switch_flap_array = get_transient( 'switch_flap_array' ); 

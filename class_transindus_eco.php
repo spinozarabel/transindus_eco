@@ -1954,15 +1954,6 @@ class class_transindus_eco
       $battery_xcomlan_soc_percentage_accumulated_since_midnight = (float) get_user_meta(  $wp_user_ID, 
                                                       'battery_xcomlan_soc_percentage_accumulated_since_midnight', true);
 
-      
-
-      // reset value to the shelly one if this value is bad
-      if (empty(  $battery_xcomlan_soc_percentage_accumulated_since_midnight ) )
-      {
-        error_log("Reset xcomlan batt soc. Its bad value was: $battery_xcomlan_soc_percentage_accumulated_since_midnight");
-        // $battery_xcomlan_soc_percentage_accumulated_since_midnight = $battery_soc_percentage_accumulated_since_midnight;
-      }
-
       $diff = $now->diff( $prev_datetime_obj );
 
       // take total seconds of difference between timestamp and divide by 3600
@@ -2723,7 +2714,7 @@ class class_transindus_eco
           
           $log_string .= " SOC: $soc_percentage_now_display";
 
-          $log_string = "Log- xts: $xcomlan_ts";
+          $log_string = "LogSoc xts: $xcomlan_ts";
           $log_string .= " E: "       . number_format($east_panel_current_xcomlan,1)   .  " W: "   . number_format($west_panel_current_xcomlan,1);
           $log_string .= " PV: "      . number_format($pv_current_now_total_xcomlan,1) . " Inv: "  . number_format($inverter_current_xcomlan,1);
           $log_string .= " X-A: "     . number_format($batt_current_xcomlan,1);

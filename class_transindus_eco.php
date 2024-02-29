@@ -2550,15 +2550,15 @@ class class_transindus_eco
 
           $shelly_readings_obj->main_control_site_avasarala_is_offline_for_long   = $main_control_site_avasarala_is_offline_for_long;
 
-          $local_LVDS = $main_control_site_avasarala_is_offline_for_long  && 
+          $local_LVDS = 
                           $shelly1pm_acin_switch_status === "OFF"         &&    // Grid switch is OFF. If FFLINE or ON this won't care
                           $control_shelly               === true          &&    // This is true when Iswitch P address exists in config AND do_shelly is true
                           $switch_is_flapping           === false         &&
-                          ( $soc_percentage_now           < 40            ||    // local SOC measurement is low
+                          ( $soc_percentage_now           < 50            ||    // local SOC measurement is low
                             $batt_voltage_xcomlan_avg     < 48.5 );             // or local average Battery Voltage is too low
 
-          $local_LVDS_release = $main_control_site_avasarala_is_offline_for_long  &&    // Main control site avasarala.in is offline for more than 15m
-                          $soc_percentage_now           > 50                &&    // local SOC measurement is normal
+          $local_LVDS_release = 
+                          $soc_percentage_now           > 52                &&    // local SOC measurement is normal
                           $battery_amps                 > 6                 &&    // battery is charging with at least 0.3KW surplus from solar
                           $shelly1pm_acin_switch_status === "ON"            &&    // Grid switch is ON. Anyother state won't matter
                           $control_shelly               === true            &&    // Ccontrollable by config

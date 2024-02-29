@@ -507,10 +507,9 @@ class class_transindus_eco
       $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['shelly_device_id_acin']   )  &&
                               ! empty( $config['accounts'][$user_index]['shelly_device_id_homepwr'] ) &&
                               ! empty( $config['accounts'][$user_index]['shelly_server_uri']  )       &&
-                              ! empty( $config['accounts'][$user_index]['shelly_auth_key']    )       &&
-                                $all_usermeta['do_shelly'];
+                              ! empty( $config['accounts'][$user_index]['shelly_auth_key']    );
     
-      if ( $valid_shelly_config ) 
+      if ( $valid_shelly_config && $all_usermeta['do_shelly'] ) 
       {  // Cotrol Shelly TRUE if usermeta AND valid config
         $control_shelly = true;
       }
@@ -2680,9 +2679,9 @@ class class_transindus_eco
               // TODO what happens during day time when STUDER is offline and close to LVDS?
               // TODO how to then use $shelly_readings_obj->LVDS_BM as the main LVDS?
               $LVDS =             ( ( $battery_voltage_avg  <= $battery_voltage_avg_lvds_setting || 
-                                      $SOC_percentage_now   <= $soc_percentage_lvds_setting           )  
-                                      &&
-                                    ( $shelly_switch_status == "OFF" ) );
+                                      $SOC_percentage_now   <= $soc_percentage_lvds_setting           )  &&
+                                      $shelly_switch_status == "OFF"                                     &&
+                                      $control_shelly === true );
 
               if ($LVDS)
               {
@@ -2824,7 +2823,8 @@ class class_transindus_eco
             {
               // set the switch tree conditions for this mode of update
               $LVDS = $soc_percentage_now_using_dark_shelly <= $soc_percentage_lvds_setting &&  // less than LVDS setting
-                      $shelly_switch_status == "OFF" ;                                          // Grid switch is OFF
+                      $shelly_switch_status == "OFF"  &&
+                      $control_shelly === true;                                         // Grid switch is OFF
 
               if ($LVDS)
               {

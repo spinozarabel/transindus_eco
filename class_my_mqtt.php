@@ -73,7 +73,7 @@ class my_mqtt {
 
         try {
             // Create a new instance of an MQTT client and configure it to use the shared broker host and port.
-            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, 'mysolarApp', MqttClient::MQTT_3_1, null, $logger);
+            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, 'mysolarApplocal', MqttClient::MQTT_3_1, null, $logger);
 
             // Create and configure the connection settings as required.
             $connectionSettings = (new ConnectionSettings)
@@ -148,7 +148,54 @@ class my_mqtt {
             }   
     }
 
-    public function mqtt_pub_remote_qos_0( $topic_param, $message )
+    public function mqtt_pub_remote_qos_0( $topic_param, $message, $retain = false)
+    {
+        $mqtt_broker_host       = $this->config['accounts'][0]['mqtt_broker_host'];
+        $mqtt_broker_tls_port   = $this->config['accounts'][0]['mqtt_broker_tls_port'];
+        $authorization_username = $this->config['accounts'][0]['authorization_username'];
+        $authorization_password = $this->config['accounts'][0]['authorization_password'];
+
+        // Create an instance of a PSR-3 compliant logger. For this example, we will also use the logger to log exceptions.
+        $logger = new SimpleLogger(LogLevel::INFO);
+
+        try {
+            // Create a new instance of an MQTT client and configure it to use the shared broker host and port.
+            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, 'mysolarApplocal', MqttClient::MQTT_3_1, null, $logger);
+
+            // Create and configure the connection settings as required.
+            $connectionSettings = (new ConnectionSettings)
+            ->setUseTls(true)                   // No TLS to encrypt the communications
+            ->setTlsSelfSignedAllowed(false)     //  No self-signed certifciates
+            ->setTlsVerifyPeer(true)            // Do  NOTrequire the certificate to match the host
+            ->setConnectTimeout(5)               // timeout for establishing socket
+            ->setSocketTimeout(10)               // If no data is read or sent for the given amount of seconds, the socket will be closed.
+            ->setResendTimeout(10)               // number of seconds the client will wait before sending a duplicate
+            ->setKeepAliveInterval(10)          
+            ->setTlsVerifyPeerName(true)
+            ->setUsername($authorization_username)
+            ->setPassword($authorization_password);
+        
+            // Connect to the broker using TLS with username and password authentication as defined above
+            $client->connect( $connectionSettings, true );
+            
+            // Publish the message passed in on the topic passed in using QoS 0.
+            $client->publish( $topic_param, $message, MqttClient::QOS_AT_MOST_ONCE, $retain);
+            
+
+            
+            // Gracefully terminate the connection to the broker.
+            $client->disconnect();
+            } 
+        catch (MqttClientException $e) {
+            // MqttClientException is the base exception of all exceptions in the library. Catching it will catch all MQTT related exceptions.
+            $logger->error('Publishing a message using QoS 0 failed. An exception occurred.', ['exception' => $e]);
+            }   
+    }
+
+    /**
+     * 
+     */
+    public function mqtt_sub_remote_qos_0( $topic_param )
     {
         $mqtt_broker_host       = $this->config['accounts'][0]['mqtt_broker_host'];
         $mqtt_broker_tls_port   = $this->config['accounts'][0]['mqtt_broker_tls_port'];
@@ -164,9 +211,9 @@ class my_mqtt {
 
             // Create and configure the connection settings as required.
             $connectionSettings = (new ConnectionSettings)
-            ->setUseTls(false)                   // No TLS to encrypt the communications
+            ->setUseTls(true)                   // No TLS to encrypt the communications
             ->setTlsSelfSignedAllowed(false)     //  No self-signed certifciates
-            ->setTlsVerifyPeer(false)            // Do  NOTrequire the certificate to match the host
+            ->setTlsVerifyPeer(true)            // Do  NOTrequire the certificate to match the host
             ->setConnectTimeout(5)               // timeout for establishing socket
             ->setSocketTimeout(10)               // If no data is read or sent for the given amount of seconds, the socket will be closed.
             ->setResendTimeout(10)               // number of seconds the client will wait before sending a duplicate
@@ -175,21 +222,32 @@ class my_mqtt {
             ->setUsername($authorization_username)
             ->setPassword($authorization_password);
         
-            // Connect to the broker using TLS with username and password authentication as defined above
+            // Connect to the broker using above connection specifications
             $client->connect( $connectionSettings, true );
-            
-            // Publish the message passed in on the topic passed in using QoS 0.
-            $client->publish( $topic_param, $message, MqttClient::QOS_AT_MOST_ONCE);
-            
+        
+            // Subscribe to the topic passed in using QoS 0.
+            $client->subscribe( $topic_param, function (string $topic, string $message, bool $retained) use ($logger, $client) {
+                
+                // After receiving the first message on the subscribed topic, we want the client to stop listening for messages.
+                $client->interrupt();
+
+                // write the message received back to $this as property. This is how the message will be accessed in the code
+                $this->message = $message;
+
+            }, MqttClient::QOS_AT_MOST_ONCE);
 
             
+            // Since subscribing requires to wait for messages, we need to start the client loop which takes care of receiving,
+            // parsing and delivering messages to the registered callbacks. The loop will run indefinitely, until a message
+            // is received, which will interrupt the loop.
+            $client->loop(true);
+        
             // Gracefully terminate the connection to the broker.
             $client->disconnect();
-            } 
-        catch (MqttClientException $e) {
+        } catch (MqttClientException $e) {
             // MqttClientException is the base exception of all exceptions in the library. Catching it will catch all MQTT related exceptions.
-            $logger->error('Publishing a message using QoS 0 failed. An exception occurred.', ['exception' => $e]);
-            }   
+            $logger->error('Subscribing to a topic using QoS 0 failed. An exception occurred.', ['exception' => $e]);
+        }   
     }
 }
 

@@ -2716,6 +2716,9 @@ class class_transindus_eco
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );
+
+        // publish this data to remote server present in config
+        $this->publish_data_to_avasarala_in_using_mqtt( $shelly_readings_obj );
     }
 
 
@@ -4043,6 +4046,23 @@ class class_transindus_eco
       $shelly_water_heater_data->shelly_water_heater_voltage    = $shelly_water_heater_voltage;
 
       return $shelly_water_heater_data;
+    }
+
+
+    /**
+     * 
+     */
+    public function publish_data_to_avasarala_in_using_mqtt( object $data ): void
+    {
+      $json_data = json_encode($data);
+      $mqtt_ch = new my_mqtt();
+
+      $topic = "data_from_linux_home_desktop/solar";
+
+      $retain = true;
+
+      // publish the json string obtained from xcom-lan studer readings as the message
+      $mqtt_ch->mqtt_pub_remote_qos_0( $topic, $json_data, $retain );
     }
 
 

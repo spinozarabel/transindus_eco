@@ -4062,7 +4062,7 @@ class class_transindus_eco
       $retain = true;
 
       // publish the json string obtained from xcom-lan studer readings as the message
-      // $mqtt_ch->mqtt_pub_remote_qos_0( $topic, $json_data, $retain );
+      $mqtt_ch->mqtt_pub_remote_qos_0( $topic, $json_data, $retain );
     }
 
 

@@ -2543,25 +2543,23 @@ class class_transindus_eco
 
           if ( $local_LVDS )
           {
-            // local command to turn ON Shelly 1PM Grid Switch
-            error_log("LogLvds: SOC and or Battery VOltage is LOW, commanded to turn ON Shelly 1PM Grid switch");
-
             $success_on = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
+
+            error_log("LogLvds: SOC and or Battery VOltage is LOW, commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
           }
           elseif ( $local_switch_release  )
-          {   // switch release - SOC has recovered and Battery is charging from Solar
-            
-            error_log("LogLvds: SOC has recovered, Solar is charging the Battery - commanded to turn OFF Shelly 1PM Grid switch");
-
+          {  
             $success_off = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'off' );
+
+            error_log("LogLvds: SOC has recovered, Solar is charging Battery, commanded to turn OFF Shelly 1PM Grid switch - Success: $success_off");
           }
 
           if ( $keep_shelly_switch_closed_always === true )
           {
             // local command to turn ON Shelly 1PM Grid Switch
-            error_log("LogAlways ON: Keep Grid Switch Always ON commanded to turn ON Shelly 1PM Grid switch");
-
             $success_on = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
+
+            error_log("LogAlways ON: Keep Grid Switch Always ON commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
           }
 
           { // record for possible switch flap

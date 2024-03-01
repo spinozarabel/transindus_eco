@@ -172,6 +172,7 @@ class my_mqtt {
             ->setResendTimeout(10)               // number of seconds the client will wait before sending a duplicate
             ->setKeepAliveInterval(10)          
             ->setTlsVerifyPeerName(true)
+            ->setTlsCertificateAuthorityPath("/etc/ssl/certs/")
             ->setUsername($authorization_username)
             ->setPassword($authorization_password);
         
@@ -219,6 +220,7 @@ class my_mqtt {
             ->setResendTimeout(10)               // number of seconds the client will wait before sending a duplicate
             ->setKeepAliveInterval(10)          
             ->setTlsVerifyPeerName(true)
+            ->setTlsCertificateAuthorityPath("/etc/ssl/certs/")
             ->setUsername($authorization_username)
             ->setPassword($authorization_password);
         

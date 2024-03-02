@@ -2739,10 +2739,12 @@ class class_transindus_eco
           $shelly_readings_obj->shelly_em_home_energy_counter_at_midnight = get_user_meta($wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', true);
           $shelly_readings_obj->grid_wh_counter_at_midnight = get_user_meta($wp_user_ID, 'grid_wh_counter_at_midnight', true);
           $shelly_readings_obj->soc_percentage_at_midnight  = get_user_meta($wp_user_ID, 'soc_percentage_at_midnight',  true);
-          $shelly_readings_obj->battery_soc_percentage_accumulated_since_midnight  = get_user_meta($wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight',  true);
-          $shelly_readings_obj->battery_xcomlan_soc_percentage_accumulated_since_midnight  = get_user_meta($wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight',  true);
+          $shelly_readings_obj->battery_soc_percentage_accumulated_since_midnight         = get_user_meta($wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight',  true);
+          $shelly_readings_obj->battery_xcomlan_soc_percentage_accumulated_since_midnight = get_user_meta($wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight',  true);
           $shelly_readings_obj->soc_percentage_update_after_dark = get_user_meta($wp_user_ID, 'soc_percentage_update_after_dark', true);
           $shelly_readings_obj->shelly_energy_counter_after_dark = get_user_meta($wp_user_ID, 'shelly_energy_counter_after_dark', true);
+          $shelly_readings_obj->timestamp_soc_capture_after_dark = get_user_meta($wp_user_ID, 'timestamp_soc_capture_after_dark', true);
+          $shelly_readings_obj->soc_capture_after_dark_happened = $soc_capture_after_dark_happened; // boolean value
         }
 
         // publish this data to remote server present in config

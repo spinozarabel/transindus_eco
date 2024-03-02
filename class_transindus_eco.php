@@ -3343,6 +3343,8 @@ class class_transindus_eco
       // The above is blocking till it gets a message or timeout.
       $json_string = $mqtt_ch->message;
 
+      error_log("JSON from LocalSolarApp: $json_string");
+
       // Check that the message is not empty
       if (! empty( $json_string ))
       {

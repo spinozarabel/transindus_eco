@@ -69,7 +69,7 @@ class my_mqtt {
         $mqtt_broker_tls_port   = 1883;
 
         // Create an instance of a PSR-3 compliant logger. For this example, we will also use the logger to log exceptions.
-        $logger = new SimpleLogger(LogLevel::INFO);
+        $logger = new SimpleLogger(LogLevel::WARNING);
 
         try {
             // Create a new instance of an MQTT client and configure it to use the shared broker host and port.
@@ -117,7 +117,7 @@ class my_mqtt {
         $mqtt_broker_tls_port   = 1883;
 
         // Create an instance of a PSR-3 compliant logger. For this example, we will also use the logger to log exceptions.
-        $logger = new SimpleLogger(LogLevel::INFO);
+        $logger = new SimpleLogger(LogLevel::WARNING);
 
         try {
             // Create a new instance of an MQTT client and configure it to use the shared broker host and port.
@@ -156,7 +156,7 @@ class my_mqtt {
         $authorization_password = $this->config['accounts'][0]['authorization_password'];
 
         // Create an instance of a PSR-3 compliant logger. For this example, we will also use the logger to log exceptions.
-        $logger = new SimpleLogger(LogLevel::INFO);
+        $logger = new SimpleLogger(LogLevel::WARNING);
 
         try {
             // Create a new instance of an MQTT client and configure it to use the shared broker host and port.
@@ -204,7 +204,7 @@ class my_mqtt {
         $authorization_password = $this->config['accounts'][0]['authorization_password'];
 
         // Create an instance of a PSR-3 compliant logger. For this example, we will also use the logger to log exceptions.
-        $logger = new SimpleLogger(LogLevel::INFO);
+        $logger = new SimpleLogger(LogLevel::WARNING);
 
         try {
             // Create a new instance of an MQTT client and configure it to use the shared broker host and port.

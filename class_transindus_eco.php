@@ -2082,6 +2082,9 @@ class class_transindus_eco
 
           // Battery capacity for 100% SOC in AH
           $battery_capacity_ah                    = $this->config['accounts'][$user_index]['battery_capacity_ah'];
+
+          $shelly_readings_obj->soc_percentage_lvds_setting           = $soc_percentage_lvds_setting;
+          $shelly_readings_obj->average_battery_voltage_lvds_setting  = $average_battery_voltage_lvds_setting;
         }
 
         { // get the SOCs from the user meta.
@@ -5081,9 +5084,9 @@ class class_transindus_eco
 
         
         $status_html = '<span style="color: Blue; display:block; text-align: center;">' .
-                                                  $status   . '<br>' . 
-                                                  'sunrise: ' . $readings_obj->sunrise  . ' sunset: ' . $readings_obj->sunset .
-                                  '</span>';
+                          $status   . '<br>' . 
+                          'LVDS-soc: ' . $readings_obj->soc_percentage_lvds_setting  . ' LVDS-Vbat: ' . $readings_obj->average_battery_voltage_lvds_setting .
+                        '</span>';
 
         
         

@@ -2176,6 +2176,9 @@ class class_transindus_eco
         { // readin the data from the home linux computer
           $object_from_linux_home_desktop = $this->get_mqtt_data_from_from_linux_home_desktop();
           // error_log(print_r($object_from_linux_home_desktop, true));
+        }
+
+        { // verify that data coming in from local computer is valid
 
         }
         { // Define boolean control variables for various time intervals

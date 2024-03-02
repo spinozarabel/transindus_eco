@@ -2378,12 +2378,12 @@ class class_transindus_eco
               error_log("shelly BM based SOC value used for dark capture");
             }
             
-            $soc_capture_after_dark_happened = $this->capture_evening_soc_after_dark(  $user_index, 
-                                                                                        $wp_user_name, 
-                                                                                        $wp_user_ID, 
-                                                                                        $soc_used_for_dark_capture, 
-                                                                                        $shelly_em_home_wh,
-                                                                                        $time_window_for_soc_dark_capture_open );
+            $this->capture_evening_soc_after_dark(  $user_index, 
+                                                    $wp_user_name, 
+                                                    $wp_user_ID, 
+                                                    $soc_used_for_dark_capture, 
+                                                    $shelly_em_home_wh,
+                                                    $time_window_for_soc_dark_capture_open );
           }
 
           if ( $soc_capture_after_dark_happened === true )
@@ -2462,6 +2462,8 @@ class class_transindus_eco
 
           // $soc_update_method = "shelly";
           // $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
+
+          $soc_capture_after_dark_happened = false;
         }
 
         // This is the preferred SOC value as it is backed by shelly BM. After Dark is not so accurate and so not used

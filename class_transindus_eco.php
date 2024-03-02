@@ -31,6 +31,7 @@ require_once(__DIR__."/studer_api.php");              // contains studer api cla
 require_once(__DIR__."/shelly_cloud_api.php");        // contains Shelly Cloud API class
 require_once(__DIR__."/class_solar_calculation.php"); // contains studer api class
 require_once(__DIR__."/openweather_api.php");         // contains openweather class
+require_once(__DIR__."/class_my_mqtt.php");
 
 class class_transindus_eco
 {
@@ -3320,8 +3321,51 @@ class class_transindus_eco
           // We only apply 100% clamp based on Studer values or the battery voltage of Studer reading
           return $shelly_readings_obj;
         }
+
+        $object_from_linux_home_desktop = $this->get_mqtt_data_from_from_linux_home_desktop();
+        error_log(print_r($object_from_linux_home_desktop, true));
     }
 
+
+    /**
+     * 
+     */
+    public function get_mqtt_data_from_from_linux_home_desktop()
+    {
+      // This is the pre-defined topic
+      $topic = "data_from_linux_home_desktop/solar";
+
+
+      $mqtt_ch = new my_mqtt();
+
+      $mqtt_ch->mqtt_sub_remote_qos_0( $topic );
+
+      // The above is blocking till it gets a message or timeout.
+      $json_string = $mqtt_ch->message;
+
+      // Check that the message is not empty
+      if (! empty( $json_string ))
+      {
+        $object_from_linux_home_desktop = json_decode($json_string);
+
+        if ($object_from_linux_home_desktop === null) 
+        {
+          error_log( 'Error parsing JSON from MQTT studerxcomlan: '. json_last_error_msg() );
+        }
+        elseif( json_last_error() === JSON_ERROR_NONE )
+        {
+          return $object_from_linux_home_desktop;
+        }
+        else
+        {
+          error_log( 'Error parsing JSON from MQTT studerxcomlan: '. json_last_error_msg() );
+        }
+      }
+      else
+      {
+        error_log( "JSON string from mqtt subscription of scomlan via cron shell exec is empty");
+      }
+    }
 
 
 

@@ -1340,10 +1340,6 @@ class class_transindus_eco
                                                     int     $present_home_wh_reading,
                                                     bool    $time_window_for_soc_dark_capture_open )  : bool
     {
-      // set default timezone to Asia Kolkata
-      //
-
-
       // check if it is after dark and before midnightdawn annd that the transient has not been set yet
       // The time window for this to happen is over 15m after sunset for Studer and 5m therafter for Shelly if Studer fails
       if (  $time_window_for_soc_dark_capture_open === true  ) 
@@ -2381,13 +2377,13 @@ class class_transindus_eco
               $soc_used_for_dark_capture = $soc_percentage_now_calculated_using_shelly_bm;
               error_log("shelly BM based SOC value used for dark capture");
             }
-                           
-            $this->capture_evening_soc_after_dark(  $user_index, 
-                                                    $wp_user_name, 
-                                                    $wp_user_ID, 
-                                                    $soc_used_for_dark_capture, 
-                                                    $shelly_em_home_wh,
-                                                    $time_window_for_soc_dark_capture_open );
+            
+            $soc_capture_after_dark_happened = $this->capture_evening_soc_after_dark(  $user_index, 
+                                                                                        $wp_user_name, 
+                                                                                        $wp_user_ID, 
+                                                                                        $soc_used_for_dark_capture, 
+                                                                                        $shelly_em_home_wh,
+                                                                                        $time_window_for_soc_dark_capture_open );
           }
 
           if ( $soc_capture_after_dark_happened === true )

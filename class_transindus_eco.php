@@ -2528,11 +2528,11 @@ class class_transindus_eco
           $local_LVDS = 
                           $shelly1pm_acin_switch_status === "OFF"         &&    // Grid switch is OFF. If FFLINE or ON this won't care
                           $control_shelly               === true          &&    // TRUE when switch IP address exists AND do_shelly is TRUE
-                          ( $soc_percentage_now         <= ( $soc_percentage_lvds_setting - 1 ) ||    // local SOC measurement is < setting
+                          ( $soc_percentage_now         < $soc_percentage_lvds_setting ||    // local SOC measurement is < setting
                             $batt_voltage_xcomlan_avg   < $average_battery_voltage_lvds_setting );    // or local average Battery Voltage < setting
 
           $local_switch_release = 
-                          $soc_percentage_now           >= ( $soc_percentage_lvds_setting + 1 ) &&    // local SOC measurement is normal
+                          $soc_percentage_now           >= ( $soc_percentage_lvds_setting + 2 ) &&    // local SOC measurement is normal
                           $battery_amps                 > 6                 &&    // battery is charging with at least 0.3KW surplus from solar
                           $shelly1pm_acin_switch_status === "ON"            &&    // Grid switch is ON. Anyother state won't matter
                           $control_shelly               === true            &&    // Ccontrollable by config

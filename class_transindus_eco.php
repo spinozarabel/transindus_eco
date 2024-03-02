@@ -3267,7 +3267,7 @@ class class_transindus_eco
           }
 
         $object_from_linux_home_desktop = $this->get_mqtt_data_from_from_linux_home_desktop();
-        error_log(print_r($object_from_linux_home_desktop, true));
+        // error_log(print_r($object_from_linux_home_desktop, true));
         
         // return object based on mode of update whetehr Studer or Shelly. For Studer case only, also apply 100% clamp
         if ( $soc_update_method === "studer" )

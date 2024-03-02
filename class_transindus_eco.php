@@ -2173,6 +2173,11 @@ class class_transindus_eco
                                                         bool    $do_shelly,
                                                         bool    $make_studer_api_call = true ) : ? object
     {
+        { // readin the data from the home linux computer
+          $object_from_linux_home_desktop = $this->get_mqtt_data_from_from_linux_home_desktop();
+          error_log(print_r($object_from_linux_home_desktop, true));
+
+        }
         { // Define boolean control variables for various time intervals
           
           $sunrise_hms_format = $this->cloudiness_forecast->sunrise_hms_format  ?? "06:00:00";
@@ -2196,15 +2201,9 @@ class class_transindus_eco
           $it_is_still_dark = $this->nowIsWithinTimeLimits( $sunset_hms_format, "23:59:59" ) || 
                               $this->nowIsWithinTimeLimits( "00:00", $sunrise_hms_format );
 
-          // Boolean values for checking is present time is within defined time intervals
-          $now_is_daytime       = $this->nowIsWithinTimeLimits("08:30", "16:30"); // changed from 17:30  on 7/28/22
-          $now_is_sunset        = $this->nowIsWithinTimeLimits("16:31", "16:41");
 
-          // False implies that Studer readings are to be used for SOC update, true indicates Shelly based processing
-          // set default at the beginning to Studer updates of SOC
-          $soc_updated_using_shelly = false;
 
-          $RDBC = false;    // permamantly disable RDBC mode 
+
         }
 
         { // Get user meta for limits and controls as an array rather than 1 by 1
@@ -3265,9 +3264,6 @@ class class_transindus_eco
           {
               update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ) );
           }
-
-        $object_from_linux_home_desktop = $this->get_mqtt_data_from_from_linux_home_desktop();
-        // error_log(print_r($object_from_linux_home_desktop, true));
         
         // return object based on mode of update whetehr Studer or Shelly. For Studer case only, also apply 100% clamp
         if ( $soc_update_method === "studer" )

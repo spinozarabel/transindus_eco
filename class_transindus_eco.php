@@ -2304,7 +2304,7 @@ class class_transindus_eco
               $shelly_readings_obj->pv_current_now_total_xcomlan      = $pv_current_now_total_xcomlan;
               $shelly_readings_obj->inverter_current_xcomlan          = $inverter_current_xcomlan;
               $shelly_readings_obj->batt_current_xcomlan              = $batt_current_xcomlan;
-
+              $shelly_readings_obj->xcomlan_ts                        = $xcomlan_ts;
             }
             
           }

@@ -3265,6 +3265,9 @@ class class_transindus_eco
           {
               update_user_meta( $wp_user_ID, 'studer_readings_object',  json_encode( $array_for_json ) );
           }
+
+        $object_from_linux_home_desktop = $this->get_mqtt_data_from_from_linux_home_desktop();
+        error_log(print_r($object_from_linux_home_desktop, true));
         
         // return object based on mode of update whetehr Studer or Shelly. For Studer case only, also apply 100% clamp
         if ( $soc_update_method === "studer" )
@@ -3321,9 +3324,6 @@ class class_transindus_eco
           // We only apply 100% clamp based on Studer values or the battery voltage of Studer reading
           return $shelly_readings_obj;
         }
-
-        $object_from_linux_home_desktop = $this->get_mqtt_data_from_from_linux_home_desktop();
-        error_log(print_r($object_from_linux_home_desktop, true));
     }
 
 
@@ -3342,8 +3342,6 @@ class class_transindus_eco
 
       // The above is blocking till it gets a message or timeout.
       $json_string = $mqtt_ch->message;
-
-      error_log("JSON from LocalSolarApp: $json_string");
 
       // Check that the message is not empty
       if (! empty( $json_string ))

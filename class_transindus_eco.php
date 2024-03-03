@@ -828,9 +828,9 @@ class class_transindus_eco
      *  @param bool:$it_is_still_dark indicates if it is daylight or dark at present
      *  @return object:$battery_measurements_object contains the measurements of the battery using the Shelly UNI device
      *  
-     *  The current is measured using a hall effect sensor. The sensor output voltage is rread by the ADC in the shelly UNI
-     *  The transducer function is: V(A) = (Vout - 2.5)/0.0294 using 29.375 mv/A around 2.5V reference
-     *  Trapezoidal rule is used to calculate Area
+     *  The current is measured using a hall effect sensor. The sensor output voltage is read by the ADC in the shelly Plus Addon
+     *  The transducer function is used to translate the ADC voltage to Battery current estimated.
+     *  Trapezoidal rule is used to integrate the AH using the previous mesurement stored in transient.
      *  Current measurements are used to update user meta for accumulated Solar AH since Studer Midnight
      *  in user meta 'battery_soc_percentage_accumulated_since_midnight'. This must be reset to 0 just aftermidnight elsewhere.
      */
@@ -961,6 +961,23 @@ class class_transindus_eco
         
         return $battery_measurements_object;
     }
+
+
+    /**
+     * 
+     */
+    public function get_both_battery_charges_accumulated_this_cycle(
+                                                                    float $batt_amps_xcomlan, 
+                                                                    int   $ts1_xcomlan,
+                                                                    int   $ts2_xcomlan, 
+                                                                    float $batt_amps_shelly_bm, 
+                                                                    int   $ts1_shelly_bm,
+                                                                    int   $ts2_shelly_bm        )
+    {
+
+    }
+
+
 
     /**
      *  @param int:$user_index of user in config array
@@ -2050,34 +2067,34 @@ class class_transindus_eco
         { // Get user meta for limits and controls. These should not change inside of the for loop in cron exec
           $all_usermeta                           = $this->get_all_usermeta( $wp_user_ID );
           // SOC percentage needed to trigger LVDS
-          $soc_percentage_lvds_setting            = $all_usermeta['soc_percentage_lvds_setting']  ?? 50;
+          $soc_percentage_lvds_setting            = (float) $all_usermeta['soc_percentage_lvds_setting']  ?? 50;
 
           // Avg Battery Voltage lower threshold for LVDS triggers
-          $average_battery_voltage_lvds_setting   = $all_usermeta['average_battery_voltage_lvds_setting']  ?? 48.5;
+          $average_battery_voltage_lvds_setting   = (float) $all_usermeta['average_battery_voltage_lvds_setting']  ?? 48.5;
 
           // Switch releases if SOC is above this level 
-          $soc_percentage_switch_release_setting  = $all_usermeta['soc_percentage_switch_release_setting']  ?? 95.0; 
+          $soc_percentage_switch_release_setting  = (float) $all_usermeta['soc_percentage_switch_release_setting']  ?? 95.0; 
 
           // battery float voltage setting. Only used for SOC clamp for 100%
-          $average_battery_float_voltage          = $all_usermeta['average_battery_float_voltage'] ?? 51.3; 
+          $average_battery_float_voltage          = (float) $all_usermeta['average_battery_float_voltage'] ?? 51.3; 
 
           // Min VOltage at ACIN for RDBC to switch to GRID
-          $acin_min_voltage                       = $all_usermeta['acin_min_voltage'] ?? 199;  
+          $acin_min_voltage                       = (float) $all_usermeta['acin_min_voltage'] ?? 199;  
 
           // Max voltage at ACIN for RDBC to switch to GRID
-          $acin_max_voltage                       = $all_usermeta['acin_max_voltage'] ?? 241; 
+          $acin_max_voltage                       = (float) $all_usermeta['acin_max_voltage'] ?? 241; 
 
           // Minimum Psolar before RDBC can be actiated
-          $psolar_kw_min                          = $all_usermeta['psolar_kw_min'] ?? 0.3;  
+          $psolar_kw_min                          = (float) $all_usermeta['psolar_kw_min'] ?? 0.3;  
 
           // get operation flags from user meta. Set it to false if not set
-          $keep_shelly_switch_closed_always       = $all_usermeta['keep_shelly_switch_closed_always'] ?? false;
+          $keep_shelly_switch_closed_always       = (bool) $all_usermeta['keep_shelly_switch_closed_always'] ?? false;
 
           // get the installed battery capacity in KWH from config
-          $battery_capacity_kwh                   = $this->config['accounts'][$user_index]['battery_capacity'];
+          $battery_capacity_kwh                   = (float) $this->config['accounts'][$user_index]['battery_capacity'];
 
           // Battery capacity for 100% SOC in AH
-          $battery_capacity_ah                    = $this->config['accounts'][$user_index]['battery_capacity_ah'];
+          $battery_capacity_ah                    = (float) $this->config['accounts'][$user_index]['battery_capacity_ah'];
 
           $shelly_readings_obj->soc_percentage_lvds_setting           = $soc_percentage_lvds_setting;
           $shelly_readings_obj->average_battery_voltage_lvds_setting  = $average_battery_voltage_lvds_setting;

@@ -1860,6 +1860,232 @@ class class_transindus_eco
     }
 
 
+     /**
+     * 
+     */
+    public function get_battery_delta_soc_for_both_methods( int     $user_index, 
+                                                            int     $wp_user_ID, 
+                                                            string  $shelly_switch_status,
+                                                            float   $home_grid_kw_power,
+                                                            bool    $it_is_still_dark,
+                                                            float   $batt_amps_shelly_now,
+                                                            int     $ts_shellybm_now,
+                                                            float   $batt_amps_xcomlan_now,
+                                                            int     $ts_xcomlan_now )
+    {
+      $config = $this->config;
+      // intialize a new stdclass object to be returned 
+      $battery_soc_since_midnight_obj = new stdClass;
+
+      // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
+      $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH in our case
+
+      // get Battery SOC percentage accumulated till last measurement using the Shelly based current measurement
+      $soc_shellybm_since_midnight = (float) get_user_meta(   $wp_user_ID, 
+                                                      'battery_soc_percentage_accumulated_since_midnight',        true);
+      // get Battery xcomlan SOC percentage accumulated till last measurement
+      $soc_xcomlan_since_midnight = (float) get_user_meta(    $wp_user_ID, 
+                                                      'battery_xcomlan_soc_percentage_accumulated_since_midnight', true);
+
+      switch (true) 
+      {
+        case ( ! empty($ts_shellybm_now) &&  ! empty($ts_xcomlan_now) ):
+          // both measurement cases exist
+          $existence_int = 3; // binary 11
+
+          // get the unix time stamp when Shelly BM measurement was done
+          $now_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $now_shellybm->setTimestamp($ts_shellybm_now);
+
+          // get the unix time stamp when xcomlan measurement was done
+          $now_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $now_xcomlan->setTimestamp($ts_xcomlan_now);
+
+          $previous_ts_shellybm         = (int)   get_transient(  'timestamp_battery_last_measurement' )  ?? $ts_shellybm_now;
+          $previous_batt_amps_shellybm  = (float) get_transient(  'amps_battery_last_measurement' )       ?? $batt_amps_shelly_now;
+
+           // get previous xcomlan measurements
+          $previous_ts_xcomlan =          (int)   get_transient( 'timestamp_xcomlan_battery_last_measurement' ) ?? $ts_xcomlan_now;
+          $previous_batt_amps_xcomlan =   (float) get_transient( 'previous_batt_current_xcomlan' )              ?? $batt_amps_xcomlan_now;
+
+          // set present values of shellybm for next cycle
+          set_transient( 'timestamp_battery_last_measurement',  $ts_shellybm_now,       60 * 60 );
+          set_transient( 'amps_battery_last_measurement',       $batt_amps_shelly_now,  60 * 60 );
+
+          // set present values of xcomlan for next cycle
+          set_transient( 'timestamp_xcomlan_battery_last_measurement',  $ts_xcomlan_now,        60 * 60 );
+          set_transient( 'previous_batt_current_xcomlan',               $batt_amps_xcomlan_now, 60 * 60 );
+
+          $prev_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $prev_shellybm->setTimestamp($previous_ts_shellybm);
+
+          $prev_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $prev_xcomlan->setTimestamp($previous_ts_xcomlan);
+
+          $diff_shellybm = $now_shellybm->diff( $prev_shellybm );
+          $delta_hours_shellybm = ( $diff_shellybm->s + $diff_shellybm->i * 60  + $diff_shellybm->h * 60 * 60 ) / 3600;
+
+          $diff_xcomlan = $now_xcomlan->diff( $prev_xcomlan );
+          $delta_hours_xcomlan = ( $diff_xcomlan->s + $diff_xcomlan->i * 60  + $diff_xcomlan->h * 60 * 60 ) / 3600;
+
+        break;
+
+        case ( ! empty($ts_shellybm_now) && empty($ts_xcomlan_now) ):
+          // xcomlan measurements are empty so use shellybm based ones instead
+          $existence_int = 2; // binary 10
+          $now_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $now_shellybm->setTimestamp($ts_shellybm_now);
+
+          $previous_ts_shellybm         = (int)   get_transient(  'timestamp_battery_last_measurement' )  ?? $ts_shellybm_now;
+          $previous_batt_amps_shellybm  = (float) get_transient(  'amps_battery_last_measurement' )       ?? $batt_amps_shelly_now;
+
+          $prev_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $prev_shellybm->setTimestamp($previous_ts_shellybm);
+
+          $diff_shellybm = $now_shellybm->diff( $prev_shellybm );
+          $delta_hours_shellybm = ( $diff_shellybm->s + $diff_shellybm->i * 60  + $diff_shellybm->h * 60 * 60 ) / 3600;
+
+          // set present values of shellybm for next cycle
+          set_transient( 'timestamp_battery_last_measurement',  $ts_shellybm_now,       60 * 60 );
+          set_transient( 'amps_battery_last_measurement',       $batt_amps_shelly_now,  60 * 60 );
+
+          // use values of shellybm for scomlan since xcomlan set is empty
+          set_transient( 'timestamp_xcomlan_battery_last_measurement',  $ts_shellybm_now,      60 * 60 );
+          set_transient( 'previous_batt_current_xcomlan',               $batt_amps_shelly_now, 60 * 60 );
+
+        break;
+
+        case (  empty($ts_shellybm_now) && ! empty($ts_xcomlan_now) ):
+          // xcomlan measurements are empty so use shellybm based ones instead
+          $existence_int = 1; // binary 01
+
+          $now_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $now_xcomlan->setTimestamp($ts_xcomlan_now);
+
+          // get previous xcomlan measurements
+          $previous_ts_xcomlan =          (int)   get_transient( 'timestamp_xcomlan_battery_last_measurement' ) ?? $ts_xcomlan_now;
+          $previous_batt_amps_xcomlan =   (float) get_transient( 'previous_batt_current_xcomlan' )              ?? $batt_amps_xcomlan_now;
+
+          $prev_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $prev_xcomlan->setTimestamp($previous_ts_xcomlan);
+
+          $diff_xcomlan = $now_xcomlan->diff( $prev_xcomlan );
+          $delta_hours_xcomlan = ( $diff_xcomlan->s + $diff_xcomlan->i * 60  + $diff_xcomlan->h * 60 * 60 ) / 3600;
+
+          set_transient( 'timestamp_battery_last_measurement',  $ts_xcomlan_now,        60 * 60 );
+          set_transient( 'amps_battery_last_measurement',       $batt_amps_xcomlan_now, 60 * 60 );
+
+          // use values of shellybm for scomlan since xcomlan set is empty
+          set_transient( 'timestamp_xcomlan_battery_last_measurement',  $ts_xcomlan_now,        60 * 60 );
+          set_transient( 'previous_batt_current_xcomlan',               $batt_amps_xcomlan_now, 60 * 60 );
+
+
+        break;
+        
+        default:
+          // case of 00 we do nothing
+          $existence_int = 0; // binary 00
+          break;
+      }
+
+      // Determine if battery current is zero because it is dark and Grid is ON supplying the load
+      if (  $it_is_still_dark               &&  // No solar
+            $shelly_switch_status === 'ON'  &&  // Grid switch is ON
+            $home_grid_kw_power > 0.1            )   // Power supplied by grid to home is greater than 0.1 KW
+      { // battery is not charging or discharging so delta soc is 0
+        $battery_soc_since_midnight_obj->delta_ah_shellybm = 0;
+        $battery_soc_since_midnight_obj->delta_soc_shellybm = 0;
+
+        // return value read from usermeta, unchanged
+        $battery_soc_since_midnight_obj->soc_shellybm_since_midnight = $soc_shellybm_since_midnight;
+
+        $battery_soc_since_midnight_obj->delta_ah_xcomlan = 0;
+        $battery_soc_since_midnight_obj->delta_soc_xcomlan = 0;
+
+        // return value read from usermetaunchanged this cycle
+        $battery_soc_since_midnight_obj->soc_xcomlan_since_midnight = $soc_xcomlan_since_midnight;
+        
+        return $battery_soc_since_midnight_obj;
+      }
+      else
+      { // battery is charging or discharging so do account for it
+        if ( $existence_int === 3 )
+        { // both methods are working and valid this cycle
+          $delta_ah_shellybm = 0.5 * ( $previous_batt_amps_shellybm + $batt_amps_shelly_now ) * $delta_hours_shellybm;
+          $delta_soc_shellybm = $delta_ah_shellybm / $battery_capacity_ah * 100;
+          $soc_shellybm_since_midnight += $delta_soc_shellybm;                      // accumulate
+
+          $battery_soc_since_midnight_obj->delta_ah_shellybm = $delta_ah_shellybm;
+          $battery_soc_since_midnight_obj->delta_soc_shellybm = $delta_soc_shellybm;
+          $battery_soc_since_midnight_obj->soc_shellybm_since_midnight = $soc_shellybm_since_midnight;
+          // update the usermeta
+          update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $soc_shellybm_since_midnight );
+
+
+          $delta_ah_xcomlan = 0.5 * ( $previous_batt_amps_xcomlan + $batt_amps_xcomlan_now ) * $delta_hours_xcomlan;
+          $delta_soc_xcomlan = $delta_ah_xcomlan / $battery_capacity_ah * 100;
+          $soc_xcomlan_since_midnight += $delta_soc_xcomlan;
+
+          $battery_soc_since_midnight_obj->delta_ah_xcomlan = $delta_ah_xcomlan;
+          $battery_soc_since_midnight_obj->delta_soc_xcomlan = $delta_soc_xcomlan;
+          $battery_soc_since_midnight_obj->soc_xcomlan_since_midnight = $soc_xcomlan_since_midnight;
+          // update the usermeta
+          update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_xcomlan_since_midnight );
+
+          return $battery_soc_since_midnight_obj;
+        }
+
+        if ( $existence_int === 2 )
+        { // only shellybm method is working this cycle
+          $delta_ah_shellybm = 0.5 * ( $previous_batt_amps_shellybm + $batt_amps_shelly_now ) * $delta_hours_shellybm;
+          $delta_soc_shellybm = $delta_ah_shellybm / $battery_capacity_ah * 100;
+          $soc_shellybm_since_midnight += $delta_soc_shellybm;                      // accumulate
+
+          $battery_soc_since_midnight_obj->delta_ah_shellybm = $delta_ah_shellybm;
+          $battery_soc_since_midnight_obj->delta_soc_shellybm = $delta_soc_shellybm;
+          $battery_soc_since_midnight_obj->soc_shellybm_since_midnight = $soc_shellybm_since_midnight;
+          // update the usermeta
+          update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $soc_shellybm_since_midnight );
+
+          $battery_soc_since_midnight_obj->delta_ah_xcomlan = $delta_ah_shellybm;
+          $battery_soc_since_midnight_obj->delta_soc_xcomlan = $delta_soc_shellybm;
+
+          $battery_soc_since_midnight_obj->soc_xcomlan_since_midnight = $soc_shellybm_since_midnight;
+          // update the usermeta
+          update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_xcomlan_since_midnight );
+
+          return $battery_soc_since_midnight_obj;
+        }
+
+        if ( $existence_int === 1 )
+        { // only xcomlan method is valid this cycle
+          $delta_ah_xcomlan = 0.5 * ( $previous_batt_amps_xcomlan + $batt_amps_xcomlan_now ) * $delta_hours_xcomlan;
+          $delta_soc_xcomlan = $delta_ah_xcomlan / $battery_capacity_ah * 100;
+          $soc_xcomlan_since_midnight += $delta_soc_xcomlan;
+
+          $battery_soc_since_midnight_obj->delta_ah_xcomlan = $delta_ah_xcomlan;
+          $battery_soc_since_midnight_obj->delta_soc_xcomlan = $delta_soc_xcomlan;
+          $battery_soc_since_midnight_obj->soc_xcomlan_since_midnight = $soc_xcomlan_since_midnight;
+          // update the usermeta
+          update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_xcomlan_since_midnight );
+
+          $battery_soc_since_midnight_obj->delta_ah_shellybm = $delta_ah_xcomlan;
+          $battery_soc_since_midnight_obj->delta_soc_shellybm = $delta_soc_xcomlan;
+          $battery_soc_since_midnight_obj->soc_shellybm_since_midnight = $soc_shellybm_since_midnight;
+          // update the usermeta
+          update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $soc_shellybm_since_midnight );
+
+        }
+
+      }
+
+
+
+
+      return $battery_soc_since_midnight_obj;
+    }
+
+
     /**
      *  @param int:$user_index
      *  @param int:$wp_user_ID

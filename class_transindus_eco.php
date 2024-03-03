@@ -830,22 +830,11 @@ class class_transindus_eco
      *  
      *  The current is measured using a hall effect sensor. The sensor output voltage is read by the ADC in the shelly Plus Addon
      *  The transducer function is used to translate the ADC voltage to Battery current estimated.
-     *  Trapezoidal rule is used to integrate the AH using the previous mesurement stored in transient.
-     *  Current measurements are used to update user meta for accumulated Solar AH since Studer Midnight
-     *  in user meta 'battery_soc_percentage_accumulated_since_midnight'. This must be reset to 0 just aftermidnight elsewhere.
      */
-    public function get_shelly_battery_measurement_over_lan(  int     $user_index,            
-                                                              string  $wp_user_name,  
-                                                              int     $wp_user_ID, 
-                                                              string  $shelly_switch_status,  
-                                                              float   $home_grid_kw_power, 
-                                                              bool    $it_is_still_dark) : ? object
+    public function get_shelly_battery_measurement_over_lan( int $user_index ) : ? object
     {
-        // set default timezone to Asia Kolkata
-        //
-
         // initialize the object to be returned
-        $battery_measurements_object = new stdClass;
+        $shelly_bm_measurement_obj = new stdClass;
 
         // Make an API call on the Shelly UNI device
         $config = $this->config;
@@ -854,9 +843,6 @@ class class_transindus_eco
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
         $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_plus_addon'];
         $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_addon'];
-
-        // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
-        $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH
 
         // uses default values of 'gen2' and channel 0 for last 2 unsoecified parameters 
         $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
@@ -872,12 +858,11 @@ class class_transindus_eco
           return null;
         }
 
-        // get the unix time stamp when measurement was made
-        $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-        $timestamp = $now->getTimestamp();
-
         // The measure ADC voltage is in percent of 10V. So a 25% reading indicates 2.5V measured
         $adc_voltage_shelly = $shelly_api_device_response->{"input:100"}->percent;
+
+        // get the timestamp of measurement from Shelly Plus 1 device
+        $timestamp_shellybm = (int) round( $shelly_api_device_response->serial, 0);
 
         // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
         $delta_voltage = $adc_voltage_shelly * 0.1 - 2.54;
@@ -891,90 +876,12 @@ class class_transindus_eco
         // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign and educe the current by 5%
         // This is because the battery SOC numbers tend about 4 points more from about a value of 40% which indicates about 10^ over measurement
         // so to be conservative we are using a 5% reduction to see if this corrects the tendency.
-        $battery_amps = -1.0 * round( $battery_amps_raw_measurement * 0.90, 1);
+        $batt_amps_shellybm = -1.0 * round( $battery_amps_raw_measurement * 0.90, 1);
 
-        // get the previous reading's timestamp from transient. If transient doesnt exist set the value to current measurement
-        $previous_timestamp = get_transient( 'timestamp_battery_last_measurement' ) ?? $timestamp;
-
-        // get the previous reading from transient. If doesnt exist set it to current measurement
-        $previous_battery_amps = (float) get_transient( 'amps_battery_last_measurement' ) ?? $battery_amps;
-
-        // update transients with current measurements. These will be used as previous measurements for next cycle
-        set_transient( 'timestamp_battery_last_measurement',  $timestamp,     60 * 60 );
-        set_transient( 'amps_battery_last_measurement',       $battery_amps,  60 * 60 );
-
-        $prev_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-        $prev_datetime_obj->setTimeStamp($previous_timestamp);
-
-        // get Battery SOC percentage accumulated till last measurement
-        $battery_soc_percentage_accumulated_since_midnight = (float) get_user_meta(  $wp_user_ID, 
-                                                                              'battery_soc_percentage_accumulated_since_midnight', true);
-
-        if (  $it_is_still_dark               &&  // No solar
-              $shelly_switch_status === 'ON'  &&  // Grid switch is ON
-              $home_grid_kw_power > 0.1            )   // Power supplied by grid to home is greater than 0.1 KW
-        {
-          // There is no solar and the grid is supplying the load.
-          // Any small battery current is just noise and so can be set to 0 for accuracy
-          $battery_amps = 0;                // set battery current to truly 0 for more accurate calculation
-
-          $previous_battery_amps = 0;       // also 0 this
-
-          $battery_ah_this_measurement = 0; // accumulation of charge this cycle is 0
-
-          $battery_soc_percent_this_measurement = 0;  // delta SOC% accumulated this sycle is 0
-
-          // unchanged but needed to prevent error in assignment later on
-          $battery_accumulated_ah_since_midnight = $battery_soc_percentage_accumulated_since_midnight / 100 * $battery_capacity_ah;
-        }
-        else
-        { // Battery probably charging or discharhing so take into account
-          // find out the time interval between the last timestamp and the present one in seconds
-          $diff = $now->diff( $prev_datetime_obj );
-
-          // take total seconds of difference between timestamp and divide by 3600
-          $hours_between_measurement = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 ) / 3600;
-
-          // AH of battery charge - +ve is charging and -ve is discharging
-          // use trapezoidal rule for integration
-          $battery_ah_this_measurement = 0.5 * ( $previous_battery_amps + $battery_amps ) * $hours_between_measurement;
-
-          $battery_soc_percent_this_measurement = $battery_ah_this_measurement / $battery_capacity_ah * 100;
-
-          
-          // accumulate  present measurement
-          $battery_soc_percentage_accumulated_since_midnight += $battery_soc_percent_this_measurement;
-
-          $battery_accumulated_ah_since_midnight = $battery_soc_percentage_accumulated_since_midnight / 100 * $battery_capacity_ah;
-
-          // update accumulated battery charge back to user meta
-          update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $battery_soc_percentage_accumulated_since_midnight);
-        }
-
-        // write variables as properties to returned object
-        $battery_measurements_object->battery_ah_this_measurement                       = $battery_ah_this_measurement;
-        $battery_measurements_object->battery_soc_percent_this_measurement              = $battery_soc_percent_this_measurement;
-        $battery_measurements_object->battery_soc_percentage_accumulated_since_midnight = $battery_soc_percentage_accumulated_since_midnight;
-        $battery_measurements_object->battery_amps                                      = $battery_amps;
-        $battery_measurements_object->battery_capacity_ah                               = $battery_capacity_ah;
-        $battery_measurements_object->battery_accumulated_ah_since_midnight             = $battery_accumulated_ah_since_midnight;
+        $shelly_bm_measurement_obj->batt_amps_shellybm  = $batt_amps_shellybm;
+        $shelly_bm_measurement_obj->timestamp_shellybm  = $timestamp_shellybm;
         
-        return $battery_measurements_object;
-    }
-
-
-    /**
-     * 
-     */
-    public function get_both_battery_charges_accumulated_this_cycle(
-                                                                    float $batt_amps_xcomlan, 
-                                                                    int   $ts1_xcomlan,
-                                                                    int   $ts2_xcomlan, 
-                                                                    float $batt_amps_shelly_bm, 
-                                                                    int   $ts1_shelly_bm,
-                                                                    int   $ts2_shelly_bm        )
-    {
-
+        return $shelly_bm_measurement_obj;
     }
 
 
@@ -1871,10 +1778,11 @@ class class_transindus_eco
                                                             float   $batt_amps_shelly_now,
                                                             int     $ts_shellybm_now,
                                                             float   $batt_amps_xcomlan_now,
-                                                            int     $ts_xcomlan_now )
+                                                            int     $ts_xcomlan_now ): object
     {
       $config = $this->config;
-      // intialize a new stdclass object to be returned 
+
+      // intialize a new stdclass object to be returned by this function
       $battery_soc_since_midnight_obj = new stdClass;
 
       // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
@@ -1889,8 +1797,8 @@ class class_transindus_eco
 
       switch (true) 
       {
-        case ( ! empty($ts_shellybm_now) &&  ! empty($ts_xcomlan_now) ):
-          // both measurement cases exist
+        case ( ! empty($ts_shellybm_now) &&  ! empty($ts_xcomlan_now) ):  // both measurement cases have valid data
+          
           $existence_int = 3; // binary 11
 
           // get the unix time stamp when Shelly BM measurement was done
@@ -1901,20 +1809,21 @@ class class_transindus_eco
           $now_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $now_xcomlan->setTimestamp($ts_xcomlan_now);
 
+          // get shellybm previous cycle values from transient. Reset to present values if non-existent
           $previous_ts_shellybm         = (int)   get_transient(  'timestamp_battery_last_measurement' )  ?? $ts_shellybm_now;
           $previous_batt_amps_shellybm  = (float) get_transient(  'amps_battery_last_measurement' )       ?? $batt_amps_shelly_now;
 
-           // get previous xcomlan measurements
+           // get previous xcomlan measurements. Reset to present values if non-existent
           $previous_ts_xcomlan =          (int)   get_transient( 'timestamp_xcomlan_battery_last_measurement' ) ?? $ts_xcomlan_now;
           $previous_batt_amps_xcomlan =   (float) get_transient( 'previous_batt_current_xcomlan' )              ?? $batt_amps_xcomlan_now;
 
           // set present values of shellybm for next cycle
-          set_transient( 'timestamp_battery_last_measurement',  $ts_shellybm_now,       60 * 60 );
-          set_transient( 'amps_battery_last_measurement',       $batt_amps_shelly_now,  60 * 60 );
+          set_transient( 'timestamp_battery_last_measurement',  $ts_shellybm_now,       5 * 60 );
+          set_transient( 'amps_battery_last_measurement',       $batt_amps_shelly_now,  5 * 60 );
 
           // set present values of xcomlan for next cycle
-          set_transient( 'timestamp_xcomlan_battery_last_measurement',  $ts_xcomlan_now,        60 * 60 );
-          set_transient( 'previous_batt_current_xcomlan',               $batt_amps_xcomlan_now, 60 * 60 );
+          set_transient( 'timestamp_xcomlan_battery_last_measurement',  $ts_xcomlan_now,        5 * 60 );
+          set_transient( 'previous_batt_current_xcomlan',               $batt_amps_xcomlan_now, 5 * 60 );
 
           $prev_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $prev_shellybm->setTimestamp($previous_ts_shellybm);
@@ -1930,9 +1839,12 @@ class class_transindus_eco
 
         break;
 
-        case ( ! empty($ts_shellybm_now) && empty($ts_xcomlan_now) ):
-          // xcomlan measurements are empty so use shellybm based ones instead
+        case ( ! empty($ts_shellybm_now) && empty($ts_xcomlan_now) ):   // xcomlan method has failed this cycle so use shellybm delta values for both
+
+          error_log("XCOMLAN data has failed so only using Shelly BM method");
+
           $existence_int = 2; // binary 10
+
           $now_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $now_shellybm->setTimestamp($ts_shellybm_now);
 
@@ -1955,8 +1867,10 @@ class class_transindus_eco
 
         break;
 
-        case (  empty($ts_shellybm_now) && ! empty($ts_xcomlan_now) ):
-          // xcomlan measurements are empty so use shellybm based ones instead
+        case (  empty($ts_shellybm_now) && ! empty($ts_xcomlan_now) ):    // ShellyBM method has failed so use only xcomlan deltas for both
+          
+          error_log("Shelly BM API call has failed so only using XCOM-LAN method");
+
           $existence_int = 1; // binary 01
 
           $now_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
@@ -1979,29 +1893,39 @@ class class_transindus_eco
           set_transient( 'timestamp_xcomlan_battery_last_measurement',  $ts_xcomlan_now,        60 * 60 );
           set_transient( 'previous_batt_current_xcomlan',               $batt_amps_xcomlan_now, 60 * 60 );
 
-
         break;
         
         default:
-          // case of 00 we do nothing
-          $existence_int = 0; // binary 00
-          break;
+          // case of 00 we just ignore accumulation this cycle
+          error_log("Both Shelly BM and XCOM-LAN methods have failed. No accumulation this cycle");
+
+          $battery_soc_since_midnight_obj->delta_ah_shellybm = 0;
+          $battery_soc_since_midnight_obj->delta_soc_shellybm = 0;
+          // return value read from usermeta, unchanged
+          $battery_soc_since_midnight_obj->soc_shellybm_since_midnight = $soc_shellybm_since_midnight;
+
+          $battery_soc_since_midnight_obj->delta_ah_xcomlan = 0;
+          $battery_soc_since_midnight_obj->delta_soc_xcomlan = 0;
+          // return value read from usermetaunchanged this cycle
+          $battery_soc_since_midnight_obj->soc_xcomlan_since_midnight = $soc_xcomlan_since_midnight;
+          
+          return $battery_soc_since_midnight_obj;
+
+        break;
       }
 
       // Determine if battery current is zero because it is dark and Grid is ON supplying the load
-      if (  $it_is_still_dark               &&  // No solar
-            $shelly_switch_status === 'ON'  &&  // Grid switch is ON
-            $home_grid_kw_power > 0.1            )   // Power supplied by grid to home is greater than 0.1 KW
+      if (  $it_is_still_dark               &&        // No solar
+            $shelly_switch_status === 'ON'  &&        // Grid switch is ON
+            $home_grid_kw_power > 0.1            )    // Power supplied by grid to home is greater than 0.1 KW
       { // battery is not charging or discharging so delta soc is 0
         $battery_soc_since_midnight_obj->delta_ah_shellybm = 0;
         $battery_soc_since_midnight_obj->delta_soc_shellybm = 0;
-
         // return value read from usermeta, unchanged
         $battery_soc_since_midnight_obj->soc_shellybm_since_midnight = $soc_shellybm_since_midnight;
 
         $battery_soc_since_midnight_obj->delta_ah_xcomlan = 0;
         $battery_soc_since_midnight_obj->delta_soc_xcomlan = 0;
-
         // return value read from usermetaunchanged this cycle
         $battery_soc_since_midnight_obj->soc_xcomlan_since_midnight = $soc_xcomlan_since_midnight;
         
@@ -2012,8 +1936,8 @@ class class_transindus_eco
         if ( $existence_int === 3 )
         { // both methods are working and valid this cycle
           $delta_ah_shellybm = 0.5 * ( $previous_batt_amps_shellybm + $batt_amps_shelly_now ) * $delta_hours_shellybm;
-          $delta_soc_shellybm = $delta_ah_shellybm / $battery_capacity_ah * 100;
-          $soc_shellybm_since_midnight += $delta_soc_shellybm;                      // accumulate
+          $delta_soc_shellybm = $delta_ah_shellybm / $battery_capacity_ah * 100;    // delta soc% from delta AH
+          $soc_shellybm_since_midnight += $delta_soc_shellybm;                      // accumulate delta soc shellyBM
 
           $battery_soc_since_midnight_obj->delta_ah_shellybm = $delta_ah_shellybm;
           $battery_soc_since_midnight_obj->delta_soc_shellybm = $delta_soc_shellybm;
@@ -2024,7 +1948,7 @@ class class_transindus_eco
 
           $delta_ah_xcomlan = 0.5 * ( $previous_batt_amps_xcomlan + $batt_amps_xcomlan_now ) * $delta_hours_xcomlan;
           $delta_soc_xcomlan = $delta_ah_xcomlan / $battery_capacity_ah * 100;
-          $soc_xcomlan_since_midnight += $delta_soc_xcomlan;
+          $soc_xcomlan_since_midnight += $delta_soc_xcomlan;                        // accumulate
 
           $battery_soc_since_midnight_obj->delta_ah_xcomlan = $delta_ah_xcomlan;
           $battery_soc_since_midnight_obj->delta_soc_xcomlan = $delta_soc_xcomlan;
@@ -2047,10 +1971,12 @@ class class_transindus_eco
           // update the usermeta
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $soc_shellybm_since_midnight );
 
+          // we use the delta values from shellybm but accumulate to original values from xcomlan
           $battery_soc_since_midnight_obj->delta_ah_xcomlan = $delta_ah_shellybm;
           $battery_soc_since_midnight_obj->delta_soc_xcomlan = $delta_soc_shellybm;
+          $soc_xcomlan_since_midnight += $delta_soc_shellybm;
 
-          $battery_soc_since_midnight_obj->soc_xcomlan_since_midnight = $soc_shellybm_since_midnight;
+          $battery_soc_since_midnight_obj->soc_xcomlan_since_midnight = $soc_xcomlan_since_midnight;
           // update the usermeta
           update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_xcomlan_since_midnight );
 
@@ -2069,24 +1995,23 @@ class class_transindus_eco
           // update the usermeta
           update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_xcomlan_since_midnight );
 
+          // we use the delta values from xcomlan but accumulate to original shellybm values
           $battery_soc_since_midnight_obj->delta_ah_shellybm = $delta_ah_xcomlan;
           $battery_soc_since_midnight_obj->delta_soc_shellybm = $delta_soc_xcomlan;
+          $soc_shellybm_since_midnight += $delta_soc_xcomlan;                      // accumulate
           $battery_soc_since_midnight_obj->soc_shellybm_since_midnight = $soc_shellybm_since_midnight;
           // update the usermeta
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $soc_shellybm_since_midnight );
 
+          return $battery_soc_since_midnight_obj;
         }
-
       }
-
-
-
-
-      return $battery_soc_since_midnight_obj;
     }
 
 
     /**
+     *  Not used anymore replaced by get_battery_delta_soc_for_both_methods function above
+     * 
      *  @param int:$user_index
      *  @param int:$wp_user_ID
      *  @param float:$batt_current_xcomlan is the current measurement of battery current using xcomlan method
@@ -2392,34 +2317,27 @@ class class_transindus_eco
           
           { // Measure Battery Charging current as positive using Shelly plus Add-on
             
-            $shelly_battery_measurement_object = $this->get_shelly_battery_measurement_over_lan(  $user_index, 
-                                                                                                  $wp_user_name, 
-                                                                                                  $wp_user_ID, 
-                                                                                                  $shelly1pm_acin_switch_status, 
-                                                                                                  $home_grid_kw_power, 
-                                                                                                  $it_is_still_dark );
+            $shelly_battery_measurement_object = $this->get_shelly_battery_measurement_over_lan(  $user_index );
+
             if ( $shelly_battery_measurement_object )
             { // valid shelly battery measurement - load object with battery measurement data
-              $battery_capacity_ah                                = $shelly_battery_measurement_object->battery_capacity_ah;
-              $battery_ah_this_measurement                        = $shelly_battery_measurement_object->battery_ah_this_measurement;
-              $battery_amps                                       = $shelly_battery_measurement_object->battery_amps;
-
-              $battery_soc_percentage_accumulated_since_midnight  = $shelly_battery_measurement_object->battery_soc_percentage_accumulated_since_midnight;
-              $battery_accumulated_ah_since_midnight              = $shelly_battery_measurement_object->battery_accumulated_ah_since_midnight;
-              $battery_accumulated_kwh_since_midnight             = round( 49.8 * 0.001 * $battery_accumulated_ah_since_midnight, 3 );
-
-              
-
-              $shelly_readings_obj->battery_capacity_ah       = $battery_capacity_ah;
-              $shelly_readings_obj->battery_amps              = $battery_amps;  
-              $shelly_readings_obj->battery_power_kw          = round( 49.8 * 0.001 * $battery_amps, 3 );
-
-
-              $shelly_readings_obj->battery_accumulated_ah_since_midnight             = $battery_accumulated_ah_since_midnight;
-              $shelly_readings_obj->battery_soc_percentage_accumulated_since_midnight = $battery_soc_percentage_accumulated_since_midnight;
-              $shelly_readings_obj->battery_ah_this_measurement                       = $battery_ah_this_measurement;
-              $shelly_readings_obj->battery_accumulated_kwh_since_midnight            = $battery_accumulated_kwh_since_midnight;
+              $batt_amps_shellybm   = $shelly_battery_measurement_object->batt_amps_shellybm;
+              $timestamp_shellybm   = $shelly_battery_measurement_object->timestamp_shellybm;
             }
+
+            $shelly_readings_obj->battery_capacity_ah       = $battery_capacity_ah;
+            $shelly_readings_obj->battery_amps              = $batt_amps_shellybm;  
+            $shelly_readings_obj->battery_power_kw          = round( 49.8 * 0.001 * $batt_amps_shellybm, 3 );
+
+            // TODO TODO TODO TODO
+            $battery_soc_percentage_accumulated_since_midnight  = $shelly_battery_measurement_object->battery_soc_percentage_accumulated_since_midnight;
+            $battery_accumulated_ah_since_midnight              = $shelly_battery_measurement_object->battery_accumulated_ah_since_midnight;
+            $battery_accumulated_kwh_since_midnight             = round( 49.8 * 0.001 * $battery_accumulated_ah_since_midnight, 3 );
+            $shelly_readings_obj->battery_accumulated_ah_since_midnight             = $battery_accumulated_ah_since_midnight;
+            $shelly_readings_obj->battery_soc_percentage_accumulated_since_midnight = $battery_soc_percentage_accumulated_since_midnight;
+            $shelly_readings_obj->battery_ah_this_measurement                       = $battery_ah_this_measurement;
+            $shelly_readings_obj->battery_accumulated_kwh_since_midnight            = $battery_accumulated_kwh_since_midnight;
+            
           }
 
           { // Now make a Shelly 4PM measurement to get individual powers for all channels
@@ -2501,14 +2419,7 @@ class class_transindus_eco
           { // Get studer data using xcomlan. A CRON MQTT on localhost publisher and a WP CRON MQTT subscriber
             $studer_data_via_xcomlan = $this->get_studer_readings_over_xcomlan();
 
-            if ( empty( $studer_data_via_xcomlan ) )
-            {
-              $studer_data_via_xcomlan = get_transient("studer_data_via_xcomlan") ;
-            }
-
-
-            // transient data from cron MQTT is still available, so fresh since a maximum of 3 minutes
-            if ( ! empty( $studer_data_via_xcomlan ) && $studer_data_via_xcomlan->battery_voltage_xtender > 46.0 )
+            if ( ! empty( $studer_data_via_xcomlan ) && $studer_data_via_xcomlan->battery_voltage_xtender > 45.0 )
             { // we seem to have valid data
               $raw_batt_voltage_xcomlan = $studer_data_via_xcomlan->battery_voltage_xtender;
 
@@ -2549,34 +2460,36 @@ class class_transindus_eco
           }
         }
 
-        { // calculate the battery current measurement based SOC
-          $soc_percentage_now_calculated_using_shelly_bm = $soc_percentage_at_midnight + $battery_soc_percentage_accumulated_since_midnight;
+        { // calculate the SOC from Shelly BM and Xcom-Lan methods of battery current measurement
+
+          // 1st call the routine to accumulate the battery charge this cycle based on current measurements this cycle
+          $batt_soc_accumulation_obj = $this->get_battery_delta_soc_for_both_methods(  
+                                                                  $user_index, 
+                                                                  $wp_user_ID, 
+                                                                  $shelly1pm_acin_switch_status, 
+                                                                  $home_grid_kw_power,
+                                                                  $it_is_still_dark,
+                                                                  $batt_amps_shellybm,
+                                                                  $timestamp_shellybm,
+                                                                  $batt_current_xcomlan,
+                                                                  $xcomlan_ts             );
+
+          $soc_shellybm_since_midnight                    = $batt_soc_accumulation_obj->soc_shellybm_since_midnight;
+          $soc_percentage_now_calculated_using_shelly_bm  = $soc_percentage_at_midnight + $soc_shellybm_since_midnight;
+
+          $soc_xcomlan_since_midnight                         = $batt_soc_accumulation_obj->soc_xcomlan_since_midnight;
+          $soc_percentage_now_calculated_using_studer_xcomlan = $soc_percentage_at_midnight + $soc_xcomlan_since_midnight;
+
           
           // lets update the user meta for updated SOC
           update_user_meta( $wp_user_ID, 'soc_percentage_now_calculated_using_shelly_bm', $soc_percentage_now_calculated_using_shelly_bm);
 
           // $surplus  power is any surplus from solar after load consumption, available for battery, etc.
-          $surplus = round( $shelly_readings_obj->battery_amps * 49.8 * 0.001, 1 ); // in KW
+          $surplus = round( $shelly_readings_obj->batt_amps_shellybm * 49.8 * 0.001, 1 ); // in KW
 
           $shelly_readings_obj->surplus  = $surplus;
-          $shelly_readings_obj->soc_percentage_now_calculated_using_shelly_bm  = round( $soc_percentage_now_calculated_using_shelly_bm, 5);
-
-          $soc_percentage_at_midnight_display     = round( $soc_percentage_at_midnight, 1);
-          $soc_percentage_shelly_bm_display_only  = round( $soc_percentage_now_calculated_using_shelly_bm, 1);
-          $battery_soc_since_midnight_display     = round( $battery_soc_percentage_accumulated_since_midnight, 1);
-        }
-
-        { // calculate the Studer XCOM-LAN based SOC, $soc_percentage_now_calculated_using_studer_xcomlan
-          // This is calculated by Integrating the AH for each interval and accumulated into a discharge value after midnight
-          // This accumulated value is subtracted from the SOC st midnight that is common to calculation of all SOC's
-          $battery_xcomlan_soc_percentage_accumulated_since_midnight = 
-            $this->calculate_battery_accumulation_today_xcomlan($user_index, $wp_user_ID, $batt_current_xcomlan, $xcomlan_ts);
-
-          $soc_percentage_now_calculated_using_studer_xcomlan = 
-                  round( $soc_percentage_at_midnight + $battery_xcomlan_soc_percentage_accumulated_since_midnight, 1);
-
-          $shelly_readings_obj->soc_percentage_now_calculated_using_studer_xcomlan = 
-                                $soc_percentage_now_calculated_using_studer_xcomlan;
+          $shelly_readings_obj->soc_percentage_now_calculated_using_shelly_bm       = $soc_percentage_now_calculated_using_shelly_bm;
+          $shelly_readings_obj->soc_percentage_now_calculated_using_studer_xcomlan  = $soc_percentage_now_calculated_using_studer_xcomlan;
         }
 
         if ( $soc_percentage_now_calculated_using_shelly_bm > 100 || $batt_voltage_xcomlan_avg >= 51.4 )
@@ -2643,9 +2556,6 @@ class class_transindus_eco
               $soc_percentage_now_using_dark_shelly = (float) get_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  true);
 
               $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
-
-              // $soc_update_method = "shelly-after-dark";
-              // $soc_percentage_now = $soc_percentage_now_using_dark_shelly;
             }
             else
             { // Inverter is supplying the home since the power from Grid is <= 0.1KW as measured by Shelly 3EM
@@ -2664,52 +2574,16 @@ class class_transindus_eco
               $soc_percentage_discharge = $home_consumption_kwh_after_dark_using_shellyem / $battery_capacity_kwh * 100;
 
               // round it to 3 decimal places for accuracy of arithmatic for accumulation
-              $soc_percentage_now_using_dark_shelly = round( $soc_percentage_after_dark - $soc_percentage_discharge, 5);
-
-              // check the validity of the SOC using this after dark shelly method
-              $soc_after_dark_update_valid =  $soc_percentage_now_using_dark_shelly < 100 &&
-                                              $soc_percentage_now_using_dark_shelly > 40;
-
-              // update SOC only if values are reasonable
-              if ( $soc_after_dark_update_valid === true )
-              {
-                // Valid values, update user meta to get differentials for next cycle.
-                update_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark', $soc_percentage_now_using_dark_shelly);
-                update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_em_home_wh);
-
-                // update the readings object for transient and display
-                $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
-
-                // $soc_update_method = "shelly-after-dark";
-                // $soc_percentage_now = $soc_percentage_now_using_dark_shelly;
-
-                // Since the soc after dark method is more accurate than the SOC shely BM
-                // calibrate the shelly BM method using the SOC after dark value and soc midnight value
-                // $recal_battery_soc_percentage_accumulated_since_midnight = $soc_percentage_now_using_dark_shelly - $soc_percentage_at_midnight;
-
-                // update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
-              }
-              else
-              { // 
-                // $soc_update_method = "shelly";
-                // $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
-
-                error_log("Log-SOC using after dark Shelly not used due to bad value of: $soc_percentage_now_using_dark_shelly");
-              }
+              $soc_percentage_now_using_dark_shelly = $soc_percentage_after_dark - $soc_percentage_discharge;
             }
           }
         }
         else
         {   // it is daylight now
-            // update_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark', 0);
-
-          // $soc_update_method = "shelly";
-          // $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
-
           $soc_capture_after_dark_happened = false;
         }
 
-        // This is the preferred SOC value as it is backed by shelly BM. After Dark is not so accurate and so not used
+        // This is the preferred SOC value as it is backed by shelly BM.
         $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
 
         // midnight actions
@@ -2739,11 +2613,10 @@ class class_transindus_eco
         }
 
         $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;
-        // $shelly_readings_obj->soc_update_method   = $soc_update_method;
 
         $soc_percentage_now_display = round( $soc_percentage_now, 1);
 
-        { // local control of LVDS and switch release
+        { // Switch control Tree decision
 
           // Get flap transient - If transient doesnt exist rebuild
           $switch_flap_array = get_transient( 'switch_flap_array' ); 
@@ -2765,9 +2638,8 @@ class class_transindus_eco
               $switch_is_flapping = false;
             }
         
-          $main_control_site_avasarala_is_offline_for_long = $this->check_if_main_control_site_avasarala_is_offline_for_long();
-
-          $shelly_readings_obj->main_control_site_avasarala_is_offline_for_long   = $main_control_site_avasarala_is_offline_for_long;
+          // $main_control_site_avasarala_is_offline_for_long = $this->check_if_main_control_site_avasarala_is_offline_for_long();
+          // $shelly_readings_obj->main_control_site_avasarala_is_offline_for_long   = $main_control_site_avasarala_is_offline_for_long;
 
           $LVDS = 
               $shelly1pm_acin_switch_status === "OFF"         &&    // Grid switch is OFF. If FFLINE or ON this won't care
@@ -2777,7 +2649,7 @@ class class_transindus_eco
 
           $switch_release = 
               $soc_percentage_now               >= ( $soc_percentage_lvds_setting + 2 ) && // local SOC measurement is normal
-              $battery_amps                     > 6                 &&    // battery is charging with at least 0.3KW surplus from solar
+             ($batt_amps_shellybm > 6   || $batt_current_xcomlan > 6)                   && // battery is charging with at least 0.3KW surplus from solar
               $shelly1pm_acin_switch_status     === "ON"            &&    // Grid switch is ON. Anyother state won't matter
               $control_shelly                   === true            &&    // Ccontrollable by config
               $keep_shelly_switch_closed_always === false           &&    // keep switch ON always is False
@@ -2965,7 +2837,7 @@ class class_transindus_eco
           $log_string .= " E: "       . number_format($east_panel_current_xcomlan,1)   .  " W: "   . number_format($west_panel_current_xcomlan,1);
           $log_string .= " PV: "      . number_format($pv_current_now_total_xcomlan,1) . " Inv: "  . number_format($inverter_current_xcomlan,1);
           $log_string .= " X-A: "     . number_format($batt_current_xcomlan,1);
-          $log_string .= " S-A: "     . number_format($battery_amps,1) . ' Vbat:'                  .  number_format($batt_voltage_xcomlan_avg,1);
+          $log_string .= " S-A: "     . number_format($batt_amps_shellybm,1) . ' Vbat:'            .  number_format($batt_voltage_xcomlan_avg,1);
           $log_string .= " SOC-xln: " . number_format($soc_percentage_now_display,1);                     // this is the xcom-lan soc,1
           $log_string .= " SOC-sbm: " . number_format($soc_percentage_now_calculated_using_shelly_bm,1 );  // this is the shelly BM soc
 

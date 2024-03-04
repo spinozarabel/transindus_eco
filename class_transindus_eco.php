@@ -6202,7 +6202,7 @@ class class_transindus_eco
 
       $status = "";
 
-      $shelly_switch_acin_details_arr = $readings_obj->shelly_switch_acin_details_arr;
+      $shelly_switch_acin_details_arr = (array) $readings_obj->shelly_switch_acin_details_arr;
 
       $shelly_water_heater_kw       = 0;
       $shelly_water_heater_status   = null;

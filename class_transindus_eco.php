@@ -6014,29 +6014,17 @@ class class_transindus_eco
         // error_log('from CRON Ajax Call: wp_user_ID:' . $wp_user_ID . ' user_index:'   . $user_index);
       }
 
-      $soc_update_method = get_transient( $wp_user_name . '_' . 'soc_update_method' );
 
       // get the transient related to this user ID that stores the latest Readingss - check if from Studer or Shelly
       // $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
 
-      if ( $soc_update_method === "shelly-after-dark" )
-      {
-        $studer_readings_obj = get_transient( $wp_user_name . '_' . 'shelly_readings_obj' );
-      }
-      elseif ( $soc_update_method === "studer" )
-      {
-        $studer_readings_obj = get_transient( $wp_user_name . '_' . 'studer_readings_object' );
-      }
-      elseif ( $soc_update_method === "shelly" )
-      {
-        $studer_readings_obj = get_transient( $wp_user_name . '_' . 'shelly_readings_obj' );
-      }
+      $shelly_readings_obj = get_transient( 'shelly_readings_obj' );
 
       // error_log(print_r($studer_readings_obj, true));
 
-      if ($studer_readings_obj) {   // transient exists so we can send it
+      if ($shelly_readings_obj) {   // transient exists so we can send it
           
-          $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj );
+          $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $shelly_readings_obj );
 
           // send JSON encoded data to client browser AJAX call and then die
           wp_send_json($format_object);

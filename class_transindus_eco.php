@@ -6281,7 +6281,7 @@ class class_transindus_eco
           case ( $shelly1pm_acin_switch_status === "OFF" ):   // Switch is online and OFF
               $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Red;"></i>';
 
-              $grid_arrow_icon = '<i class="fa-solid fa-1x fa-circle-xmark"></i>';
+              $grid_arrow_icon = '';  // '<i class="fa-solid fa-1x fa-circle-xmark"></i>';
   
               $grid_info = '<span style="font-size: 18px;color: Red;">' . $home_grid_kw_power . 
                       ' KW<br>' . $home_grid_voltage . ' V</span>';

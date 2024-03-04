@@ -2222,7 +2222,7 @@ class class_transindus_eco
 
             set_transient( 'shelly_readings_obj', $object_from_linux_home_desktop_is_valid, 5 * 60 );
 
-            return;
+            return $object_from_linux_home_desktop_is_valid;
           }
           
         }

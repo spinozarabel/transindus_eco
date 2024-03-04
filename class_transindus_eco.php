@@ -861,8 +861,17 @@ class class_transindus_eco
         // The measure ADC voltage is in percent of 10V. So a 25% reading indicates 2.5V measured
         $adc_voltage_shelly = $shelly_api_device_response->{"input:100"}->percent;
 
+        $serial = $shelly_api_device_response->serial;
+
         // get the timestamp of measurement from Shelly Plus 1 device
-        $timestamp_shellybm = (int) round( $shelly_api_device_response->serial, 0);
+        if ($serial)
+        {
+          $timestamp_shellybm = (int) round( $serial , 0);
+        }
+        else
+        {
+          $timestamp_shellybm = 0;
+        }
 
         // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
         $delta_voltage = $adc_voltage_shelly * 0.1 - 2.54;
@@ -2487,6 +2496,7 @@ class class_transindus_eco
           $shelly_readings_obj->surplus  = $surplus;
           $shelly_readings_obj->soc_percentage_now_calculated_using_shelly_bm       = $soc_percentage_now_calculated_using_shelly_bm;
           $shelly_readings_obj->soc_percentage_now_calculated_using_studer_xcomlan  = $soc_percentage_now_calculated_using_studer_xcomlan;
+          $shelly_readings_obj->batt_amps  = $batt_amps;
         }
 
         if ( $soc_percentage_now_calculated_using_shelly_bm > 100 || $batt_voltage_xcomlan_avg >= 51.4 )
@@ -4856,7 +4866,7 @@ class class_transindus_eco
         }
         
 
-        $main_control_site_avasarala_is_offline_for_long = $readings_obj->main_control_site_avasarala_is_offline_for_long;
+        $main_control_site_avasarala_is_offline_for_long = false; // $readings_obj->main_control_site_avasarala_is_offline_for_long;
 
         // solar power calculated from Shelly measurements of battery Grid and Load
         $psolar_kw              =   round($readings_obj->psolar_kw, 2);

@@ -2491,7 +2491,7 @@ class class_transindus_eco
           update_user_meta( $wp_user_ID, 'soc_percentage_now_calculated_using_shelly_bm', $soc_percentage_now_calculated_using_shelly_bm);
 
           // $surplus  power is any surplus from solar after load consumption, available for battery, etc.
-          $surplus = round( $shelly_readings_obj->batt_amps * 49.8 * 0.001, 1 ); // in KW
+          $surplus = round( $batt_amps * 49.8 * 0.001, 1 ); // in KW
 
           $shelly_readings_obj->surplus  = $surplus;
           $shelly_readings_obj->soc_percentage_now_calculated_using_shelly_bm       = $soc_percentage_now_calculated_using_shelly_bm;

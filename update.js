@@ -135,7 +135,7 @@ jQuery(document).ready(function($) {
             $('#soc_percentage_now').html( data.soc_percentage_now_html);
 
             // update CRON exit condition and time it happened
-            $('#cron_exit_condition').html( data.cron_exit_condition);
+            $('#cron_exit_condition').html( data.status);
 
             // Update the load splits
             $('#power_to_home_kw').html( data.shelly_water_heater_kw);

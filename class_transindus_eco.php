@@ -4700,7 +4700,7 @@ class class_transindus_eco
         </table>';
 
 
-        $output .= '<div id="cron_exit_condition">'. $format_object->cron_exit_condition     . '</div>';
+        $output .= '<div id="cron_exit_condition">'. $format_object->status     . '</div>';
 
         return $output;
     }

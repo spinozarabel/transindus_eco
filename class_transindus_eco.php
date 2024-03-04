@@ -1806,13 +1806,11 @@ class class_transindus_eco
      */
     public function shellystuder_cron_exec()
     {   
-        // increment counter each time and signal when 12 cycles have completed - counter is modulo 12
-        // $this->count_5s_cron_cycles_modulo_12();
-
-        // Loop over all of the eligible users
         $config = $this->get_config();
 
-        $account = $config['accounts'][0];
+        $user_index = 0;
+
+        $account = $config['accounts'][$user_index];
         
         $wp_user_name = $account['wp_user_name'];
 
@@ -1840,14 +1838,14 @@ class class_transindus_eco
           {
 
             // get all the readings for this user. Enable Studer measurements. User Index is 0 since only one user
-            $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, true );
+            $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly, true );
 
             
             for ( $i = 0; $i < 10; $i++ )
             {
               sleep(5);
               // enable Studer measurements. These will complete and end the script. User index is 0 since only 1 user
-            $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
+            $this->get_readings_and_servo_grid_switch( $user_index, $wp_user_ID, $wp_user_name, $do_shelly, false );
             }
           }
         }
@@ -2174,7 +2172,7 @@ class class_transindus_eco
                                                         bool    $make_studer_api_call = true ) : ? object
     {
         { // readin the data from the home linux computer
-          $object_from_linux_home_desktop = $this->get_mqtt_data_from_from_linux_home_desktop();
+          $object_from_linux_home_desktop = $this->get_mqtt_data_from_from_linux_home_desktop( $user_index );
           // error_log(print_r($object_from_linux_home_desktop, true));
 
           $object_from_linux_home_desktop_is_valid = true;
@@ -3371,11 +3369,12 @@ class class_transindus_eco
     /**
      * 
      */
-    public function get_mqtt_data_from_from_linux_home_desktop()
+    public function get_mqtt_data_from_from_linux_home_desktop( int $user_index )
     {
-      // This is the pre-defined topic
-      $topic = "data_from_linux_home_desktop/solar";
+      $config = $this->config ?? $this->get_config();
 
+      // This is the pre-defined topic
+      $topic = $config['accounts'][$user_index]['topic'];
 
       $mqtt_ch = new my_mqtt();
 

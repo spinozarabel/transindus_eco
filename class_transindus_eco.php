@@ -2325,8 +2325,8 @@ class class_transindus_eco
 
             if ( $shelly_battery_measurement_object )
             { // valid shelly battery measurement - load object with battery measurement data
-              $batt_amps_shellybm   = $shelly_battery_measurement_object->batt_amps_shellybm;
-              $timestamp_shellybm   = $shelly_battery_measurement_object->timestamp_shellybm;
+              $batt_amps_shellybm   = (float) $shelly_battery_measurement_object->batt_amps_shellybm;
+              $timestamp_shellybm   = (int)   $shelly_battery_measurement_object->timestamp_shellybm;
             }
 
             $shelly_readings_obj->battery_capacity_ah       = $battery_capacity_ah; // this is obtianed from config

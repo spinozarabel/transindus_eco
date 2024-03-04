@@ -6560,11 +6560,11 @@ class class_transindus_eco
       // timestamp at last measurement exit
       // $past_unixdatetime = $cron_exit_condition_user_meta_arr['unixdatetime'];
       // get datetime object from timestamp
-      $past = (new DateTime('@' . $previous_timestamp))->setTimezone(new DateTimeZone("Asia/Kolkata"));
+      // $past = (new DateTime('@' . $previous_timestamp))->setTimezone(new DateTimeZone("Asia/Kolkata"));
       // get the interval object
-      $interval_since_last_change = $now->diff($past);
+      // $interval_since_last_change = $now->diff($past);
       // format the interval for display
-      $formatted_interval = $this->format_interval($interval_since_last_change);
+      // $formatted_interval = $this->format_interval($interval_since_last_change);
 
       $status .= " " . $now_format;
 

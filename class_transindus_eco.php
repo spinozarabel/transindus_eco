@@ -6248,7 +6248,7 @@ class class_transindus_eco
       $home_grid_kw_power     =   $readings_obj->home_grid_kw_power;
       $home_grid_voltage      =   $readings_obj->home_grid_voltage;
 
-      $shelly1pm_acin_switch_status = $shelly_switch_acin_details_arr['shelly1pm_acin_switch_status'];
+      $shelly1pm_acin_switch_status = (string) $shelly_switch_acin_details_arr['shelly1pm_acin_switch_status'];
 
       // This is the AC voltage of switch:0 of Shelly 4PM
       $shelly1pm_acin_voltage = $shelly_switch_acin_details_arr['shelly1pm_acin_voltage'];

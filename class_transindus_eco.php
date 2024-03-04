@@ -861,15 +861,12 @@ class class_transindus_eco
         // The measure ADC voltage is in percent of 10V. So a 25% reading indicates 2.5V measured
         $adc_voltage_shelly = $shelly_api_device_response->{"input:100"}->percent;
 
-        $timestamp_serial = $shelly_api_device_response->serial;
-
-        error_log(print_r($shelly_api_device_response, true));
-        error_log("Serial - $timestamp_serial");
+        $timestamp_unixtime = $shelly_api_device_response->sys->unixtime;
 
         // get the timestamp of measurement from Shelly Plus 1 device
-        if ($timestamp_serial)
+        if ($timestamp_unixtime)
         {
-          $timestamp_shellybm = (int) round( $timestamp_serial , 0);
+          $timestamp_shellybm = (int) round( $timestamp_unixtime , 0);
         }
         else
         {

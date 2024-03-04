@@ -4891,13 +4891,15 @@ class class_transindus_eco
         // This is the AC voltage of switch:0 of Shelly 4PM
         $shelly1pm_acin_voltage = $shelly_switch_acin_details_arr['shelly1pm_acin_voltage'];
 
-        $soc_percentage_now                             = round($readings_obj->soc_percentage_now, 1);
+        $control_shelly         = (bool) $shelly_switch_acin_details_arr['control_shelly'];
+
+        $soc_percentage_now     = round($readings_obj->soc_percentage_now, 1);
 
         $soc_percentage_now_calculated_using_shelly_bm  = round($readings_obj->soc_percentage_now_calculated_using_shelly_bm, 1);
 
         if ( ! empty( $readings_obj->soc_percentage_now_using_dark_shelly ) )
         {
-          $soc_percentage_now_using_dark_shelly           = round($readings_obj->soc_percentage_now_using_dark_shelly, 1);
+          $soc_percentage_now_using_dark_shelly = round($readings_obj->soc_percentage_now_using_dark_shelly, 1);
         }
 
         // If power is flowing OR switch has ON status then show CHeck and Green
@@ -4987,17 +4989,17 @@ class class_transindus_eco
         $studer_icon = '<i style="display:block; text-align: center;" class="clickableIcon fa-solid fa-3x fa-cog" style="color: Green;"></i>';
         $format_object->studer_icon = $studer_icon;
 
-        if ( $main_control_site_avasarala_is_offline_for_long === false )
+        if ( $control_shelly === true )
         {
-            // main control site is ONLINE and is what will be controlling the ACIN switch
-            // a green cloud icon signifies that the main site is in control
+            // Local computer over LAN will be controlling the ACIN switch
+            // a green cloud icon signifies that local site is in control
             $shelly_servo_icon = '<span style="color: Green; display:block; text-align: center;">
                                       <i class="clickableIcon fa-solid fa-2x fa-cloud"></i>
                                   </span>';
         }
         else
         {
-            // main control site is OFFLINE for long. A red cloud icon indicates that local control is in sway
+            // Local site is not in control
             $shelly_servo_icon = '<span style="color: Red; display:block; text-align: center;">
                                       <i class="clickableIcon fa-solid fa-2x fa-cloud"></i>
                                   </span>';

@@ -2220,9 +2220,9 @@ class class_transindus_eco
             }
             */
 
-            set_transient( 'shelly_readings_obj', $object_from_linux_home_desktop_is_valid, 5 * 60 );
+            set_transient( 'shelly_readings_obj', $object_from_linux_home_desktop, 5 * 60 );
 
-            return $object_from_linux_home_desktop_is_valid;
+            return $object_from_linux_home_desktop;
           }
           
         }

@@ -2173,50 +2173,56 @@ class class_transindus_eco
     {
         { // readin the data from the home linux computer
           $object_from_linux_home_desktop = $this->get_mqtt_data_from_from_linux_home_desktop( $user_index );
-          // error_log(print_r($object_from_linux_home_desktop, true));
+
+          error_log(print_r($object_from_linux_home_desktop, true));
 
           $object_from_linux_home_desktop_is_valid = true;
 
           if ( $object_from_linux_home_desktop_is_valid === true )
           {
-            // update the SOC captured at midnight
-            $soc_percentage_at_midnight = $object_from_linux_home_desktop->$object_from_linux_home_desktop;
-            update_user_meta( $wp_user_ID, 'soc_percentage', $soc_percentage_at_midnight );
+            /*
+            { // update user meta with mqtt imported data
+              // update the SOC captured at midnight
+              $soc_percentage_at_midnight = $object_from_linux_home_desktop->soc_percentage_at_midnight;
+              update_user_meta( $wp_user_ID, 'soc_percentage', $soc_percentage_at_midnight );
 
-            // update the Shelly EM home energy WH counter at midnight
-            $shelly_em_home_energy_counter_at_midnight = $object_from_linux_home_desktop->shelly_em_home_energy_counter_at_midnight;
-            update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_midnight', $shelly_em_home_energy_counter_at_midnight );
+              // update the Shelly EM home energy WH counter at midnight
+              $shelly_em_home_energy_counter_at_midnight = $object_from_linux_home_desktop->shelly_em_home_energy_counter_at_midnight;
+              update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_midnight', $shelly_em_home_energy_counter_at_midnight );
 
-            // update the Shelly BM method battery AH accumulation since midnight
-            $battery_soc_percentage_accumulated_since_midnight = $object_from_linux_home_desktop->battery_soc_percentage_accumulated_since_midnight;
-            update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $battery_soc_percentage_accumulated_since_midnight );
+              // update the battery AH accumulation since midnight. We are using the xcomlan value since it is reliable
+              $battery_soc_percentage_accumulated_since_midnight = $object_from_linux_home_desktop->battery_xcomlan_soc_percentage_accumulated_since_midnight;
+              update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $battery_soc_percentage_accumulated_since_midnight );
 
-            // update the Studer xcomlan current based battery SOC % accumulated since midnight
-            $battery_xcomlan_soc_percentage_accumulated_since_midnight = $object_from_linux_home_desktop->battery_xcomlan_soc_percentage_accumulated_since_midnight;
-            update_user_meta( $wp_user_ID, 'studer_current_based_soc_percentage_accumulated_since_midnight', $battery_xcomlan_soc_percentage_accumulated_since_midnight );
+              // we don;t have separate xcomlan midnight values. We use existing ones as above
+              // $battery_xcomlan_soc_percentage_accumulated_since_midnight = $object_from_linux_home_desktop->battery_xcomlan_soc_percentage_accumulated_since_midnight;
+              // update_user_meta( $wp_user_ID, 'studer_current_based_soc_percentage_accumulated_since_midnight', $battery_xcomlan_soc_percentage_accumulated_since_midnight );
 
-            // update the midnight Grid Counter value
-            $grid_wh_counter_at_midnight = $object_from_linux_home_desktop->grid_wh_counter_at_midnight;
-            update_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', $grid_wh_counter_at_midnight );
+              // update the midnight Grid Counter value
+              $grid_wh_counter_at_midnight = $object_from_linux_home_desktop->grid_wh_counter_at_midnight;
+              update_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', $grid_wh_counter_at_midnight );
 
-            // After dark SOC capture value
-            $soc_percentage_update_after_dark = $object_from_linux_home_desktop->soc_percentage_update_after_dark;
-            update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_update_after_dark );
+              // After dark SOC capture value
+              $soc_percentage_update_after_dark = $object_from_linux_home_desktop->soc_percentage_update_after_dark;
+              update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_update_after_dark );
 
-            // after dark energy counter value for Shelly 1EM
-            $shelly_energy_counter_after_dark = $object_from_linux_home_desktop->shelly_energy_counter_after_dark;
-            update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_energy_counter_after_dark );
+              // after dark energy counter value for Shelly 1EM
+              $shelly_energy_counter_after_dark = $object_from_linux_home_desktop->shelly_energy_counter_after_dark;
+              update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_energy_counter_after_dark );
 
-            // update the SOC dark capture timestamp
-            $timestamp_soc_capture_after_dark = $object_from_linux_home_desktop->timestamp_soc_capture_after_dark;
-            update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $timestamp_soc_capture_after_dark );
+              // update the SOC dark capture timestamp
+              $timestamp_soc_capture_after_dark = $object_from_linux_home_desktop->timestamp_soc_capture_after_dark;
+              update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $timestamp_soc_capture_after_dark );
 
-            // update the grid energy accumulated since midnight.
-            $home_grid_kwh_accumulated_since_midnight = $object_from_linux_home_desktop->home_grid_kwh_accumulated_since_midnight;
-            update_user_meta( $wp_user_ID, 'grid_wh_since_midnight', $home_grid_kwh_accumulated_since_midnight );
+              // update the grid energy accumulated since midnight.
+              $home_grid_kwh_accumulated_since_midnight = $object_from_linux_home_desktop->home_grid_kwh_accumulated_since_midnight;
+              update_user_meta( $wp_user_ID, 'grid_wh_since_midnight', $home_grid_kwh_accumulated_since_midnight );
+            }
+            */
 
-            $soc_capture_after_dark_happened = $object_from_linux_home_desktop->soc_capture_after_dark_happened;
+            set_transient( 'shelly_readings_obj', $object_from_linux_home_desktop_is_valid, 5 * 60 );
 
+            return;
           }
           
         }
@@ -6047,7 +6053,7 @@ class class_transindus_eco
      *  The data is sent by AJAX to  client browser using the AJAX call.
      */
     public function ajax_my_solar_update_handler()     
-    {   // service AJax Call
+    {   // service Ajax Call
         // The error log time stamp was showing as UTC so I added the below statement
         //
 
@@ -6115,7 +6121,7 @@ class class_transindus_eco
         // extract the do_shelly control flag as set in user meta
         $do_shelly  = get_user_meta($wp_user_ID, "do_shelly", true);
 
-        if ($toggleGridSwitch)  
+        if (false)  // was previously $toggleGridSwitch, now inactivated till needed later on
         { // User has requested to toggle the GRID ON/OFF Shelly Switch
           // the current interpretation is that this is the toggle for the keep_always_on flag
           // Find the current status and just toggle the status
@@ -6167,12 +6173,9 @@ class class_transindus_eco
         }
 
         // get a new set of readings
-        $studer_readings_obj = $this->get_readings_and_servo_grid_switch  ($user_index, 
-                                                                          $wp_user_ID, 
-                                                                          $wp_user_name, 
-                                                                          $do_shelly);
+        $readings_obj = get_transient( 'shelly_readings_object' );
 
-        $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj );
+        $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $readings_obj );
 
         wp_send_json($format_object);
     }    
@@ -6214,7 +6217,7 @@ class class_transindus_eco
       }
       
 
-      $main_control_site_avasarala_is_offline_for_long = $readings_obj->main_control_site_avasarala_is_offline_for_long;
+      $main_control_site_avasarala_is_offline_for_long = false; // $readings_obj->main_control_site_avasarala_is_offline_for_long;
 
       // solar power calculated from Shelly measurements of battery Grid and Load
       $psolar_kw              =   round($readings_obj->psolar_kw, 2);
@@ -6236,7 +6239,7 @@ class class_transindus_eco
       // $battery_voltage_vdc    =   round( (float) $readings_obj->battery_voltage_avg, 1);
 
       // Positive is charging and negative is discharging We use this as the readings have faster update rate
-      $battery_amps           =   $readings_obj->battery_amps;
+      $battery_amps           =   $readings_obj->batt_amps;
 
       $battery_power_kw       = abs(round($readings_obj->battery_power_kw, 2));
 
@@ -6250,13 +6253,15 @@ class class_transindus_eco
       // This is the AC voltage of switch:0 of Shelly 4PM
       $shelly1pm_acin_voltage = $shelly_switch_acin_details_arr['shelly1pm_acin_voltage'];
 
-      $soc_percentage_now                             = round($readings_obj->soc_percentage_now, 1);
+      $control_shelly         = (bool) $shelly_switch_acin_details_arr['control_shelly'];
+
+      $soc_percentage_now     = round($readings_obj->soc_percentage_now, 1);
 
       $soc_percentage_now_calculated_using_shelly_bm  = round($readings_obj->soc_percentage_now_calculated_using_shelly_bm, 1);
 
       if ( ! empty( $readings_obj->soc_percentage_now_using_dark_shelly ) )
       {
-        $soc_percentage_now_using_dark_shelly           = round($readings_obj->soc_percentage_now_using_dark_shelly, 1);
+        $soc_percentage_now_using_dark_shelly = round($readings_obj->soc_percentage_now_using_dark_shelly, 1);
       }
 
       // If power is flowing OR switch has ON status then show CHeck and Green
@@ -6346,17 +6351,17 @@ class class_transindus_eco
       $studer_icon = '<i style="display:block; text-align: center;" class="clickableIcon fa-solid fa-3x fa-cog" style="color: Green;"></i>';
       $format_object->studer_icon = $studer_icon;
 
-      if ( $main_control_site_avasarala_is_offline_for_long === false )
+      if ( $control_shelly === true )
       {
-          // main control site is ONLINE and is what will be controlling the ACIN switch
-          // a green cloud icon signifies that the main site is in control
+          // Local computer over LAN will be controlling the ACIN switch
+          // a green cloud icon signifies that local site is in control
           $shelly_servo_icon = '<span style="color: Green; display:block; text-align: center;">
                                     <i class="clickableIcon fa-solid fa-2x fa-cloud"></i>
                                 </span>';
       }
       else
       {
-          // main control site is OFFLINE for long. A red cloud icon indicates that local control is in sway
+          // Local site is not in control
           $shelly_servo_icon = '<span style="color: Red; display:block; text-align: center;">
                                     <i class="clickableIcon fa-solid fa-2x fa-cloud"></i>
                                 </span>';
@@ -6596,7 +6601,7 @@ class class_transindus_eco
       $format_object->status = $status_html;
 
       return $format_object;
-  }
+    }
 
     /**
      * 

@@ -863,7 +863,7 @@ class class_transindus_eco
 
         $timestamp_serial = $shelly_api_device_response->serial;
 
-        error_log(print_r($shelly_api_device_response, true);
+        error_log(print_r($shelly_api_device_response, true));
         error_log("Serial - $timestamp_serial");
 
         // get the timestamp of measurement from Shelly Plus 1 device

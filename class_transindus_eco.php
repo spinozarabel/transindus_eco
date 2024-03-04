@@ -611,7 +611,7 @@ class class_transindus_eco
           $shelly_api_device_status_ON        = $shelly_api_device_response->{'switch:0'}->output;
           $shelly_api_device_status_voltage   = $shelly_api_device_response->{'switch:0'}->voltage;
 
-          $shelly_api_device_status_current   = $shelly_api_device_response->{'switch:0'}->current;
+          // $shelly_api_device_status_current   = $shelly_api_device_response->{'switch:0'}->current;
           $shelly_api_device_status_minute_ts = $shelly_api_device_response->{'switch:0'}->aenergy->minute_ts;
 
           $shelly_api_device_status_power_kw  = round( $shelly_api_device_response->{'switch:0'}->apower * 0.001, 3);
@@ -629,7 +629,7 @@ class class_transindus_eco
           $return_array['control_shelly']                 = $control_shelly;
           $return_array['shelly1pm_acin_switch_status']   = $shelly_switch_status;
           $return_array['shelly1pm_acin_voltage']         = $shelly_api_device_status_voltage;
-          $return_array['shelly1pm_acin_current']         = $shelly_api_device_status_current;
+          // $return_array['shelly1pm_acin_current']         = $shelly_api_device_status_current;
           $return_array['shelly1pm_acin_power_kw']        = $shelly_api_device_status_power_kw;
           $return_array['shelly1pm_acin_minute_ts']       = $shelly_api_device_status_minute_ts;
 

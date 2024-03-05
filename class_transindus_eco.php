@@ -2739,8 +2739,9 @@ class class_transindus_eco
           // the transient contents get changed only if it DID NOT come out through no_action.
           set_transient( 'switch_tree_obj', $switch_tree_obj, 60 * 60 );
 
-          /*
+          
           $shelly_readings_obj->switch_tree_obj = $switch_tree_obj;
+          /*
           $exit_datetimeobj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $exit_datetimeobj->setTimestamp( $switch_tree_obj->switch_tree_exit_timestamp);
           $interval_since_last_change = $now->diff($exit_datetimeobj);

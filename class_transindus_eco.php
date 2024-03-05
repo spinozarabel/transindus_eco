@@ -1799,6 +1799,9 @@ class class_transindus_eco
           
           $existence_int = 3; // binary 11
 
+          $battery_soc_since_midnight_obj->shelly_bm_ok_bool      = (bool) true;
+          $battery_soc_since_midnight_obj->shelly_xcomlan_ok_bool = (bool) true;
+
           // get the unix time stamp when Shelly BM measurement was done
           $now_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $now_shellybm->setTimestamp($ts_shellybm_now);
@@ -1842,6 +1845,8 @@ class class_transindus_eco
           error_log("XCOMLAN data has failed so only using Shelly BM method");
 
           $existence_int = 2; // binary 10
+          $battery_soc_since_midnight_obj->shelly_bm_ok_bool      = (bool) true;
+          $battery_soc_since_midnight_obj->shelly_xcomlan_ok_bool = (bool) false;
 
           $now_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $now_shellybm->setTimestamp($ts_shellybm_now);
@@ -1870,6 +1875,8 @@ class class_transindus_eco
           error_log("Shelly BM API call has failed so only using XCOM-LAN method");
 
           $existence_int = 1; // binary 01
+          $battery_soc_since_midnight_obj->shelly_bm_ok_bool      = (bool) false;
+          $battery_soc_since_midnight_obj->shelly_xcomlan_ok_bool = (bool) true;
 
           $now_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $now_xcomlan->setTimestamp($ts_xcomlan_now);
@@ -1896,6 +1903,9 @@ class class_transindus_eco
         default:
           // case of 00 we just ignore accumulation this cycle
           error_log("Both Shelly BM and XCOM-LAN methods have failed. No accumulation this cycle");
+
+          $battery_soc_since_midnight_obj->shelly_bm_ok_bool      = (bool) false;
+          $battery_soc_since_midnight_obj->shelly_xcomlan_ok_bool = (bool) false;
 
           $battery_soc_since_midnight_obj->delta_ah_shellybm = 0;
           $battery_soc_since_midnight_obj->delta_soc_shellybm = 0;
@@ -2666,12 +2676,13 @@ class class_transindus_eco
           $success_off  = false;
 
           $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $now_timestamp = $now->getTimestamp();
 
           if ( false === ( $switch_tree_obj = get_transient( 'switch_tree_obj') ) )
           {
             $switch_tree_obj = new stdClass;
             $switch_tree_obj->switch_tree_exit_condition = "no_action";
-            $switch_tree_obj->switch_tree_exit_timestamp = $now->getTimestamp();
+            $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
           }
 
           switch (true) 
@@ -2682,7 +2693,7 @@ class class_transindus_eco
               if ( $success_on )
               {
                 $switch_tree_obj->switch_tree_exit_condition = "LVDS";
-                $switch_tree_obj->switch_tree_exit_timestamp = $now->getTimestamp();
+                $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
               }
             break;
 
@@ -2692,7 +2703,7 @@ class class_transindus_eco
               if ( $success_off )
               {
                 $switch_tree_obj->switch_tree_exit_condition = "lvds_release";
-                $switch_tree_obj->switch_tree_exit_timestamp = $now->getTimestamp();
+                $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
               }
             break;
 
@@ -2704,7 +2715,7 @@ class class_transindus_eco
               if ( $success_off )
               {
                 $switch_tree_obj->switch_tree_exit_condition = "float_release";
-                $switch_tree_obj->switch_tree_exit_timestamp = $now->getTimestamp();
+                $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
               }
             break;
 
@@ -2714,7 +2725,7 @@ class class_transindus_eco
               if ( $success_off )
               {
                 $switch_tree_obj->switch_tree_exit_condition = "always_on";
-                $switch_tree_obj->switch_tree_exit_timestamp = $now->getTimestamp();
+                $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
               }
             break;
             
@@ -2728,7 +2739,19 @@ class class_transindus_eco
           // the transient contents get changed only if it DID NOT come out through no_action.
           set_transient( 'switch_tree_obj', $switch_tree_obj, 60 * 60 );
 
+          /*
           $shelly_readings_obj->switch_tree_obj = $switch_tree_obj;
+          $exit_datetimeobj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $exit_datetimeobj->setTimestamp( $switch_tree_obj->switch_tree_exit_timestamp);
+          $interval_since_last_change = $now->diff($exit_datetimeobj);
+          $formatted_interval = $this->format_interval($interval_since_last_change);
+          $status_html = '<span style="color: Blue; display:block; text-align: center;">' .
+                            $formatted_interval   . ' ' . $switch_tree_obj->switch_tree_exit_condition  .
+                          '</span>';
+          $shelly_readings_obj->status_html = $status_html;
+          */
+
+
 
           { // record for possible switch flap
             
@@ -2873,9 +2896,6 @@ class class_transindus_eco
           error_log($log_string);
         }
 
-        // update transient with new data. Validity is 10m
-        set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );
-
         // for remote pushed object we may add more data that is not needed for transient above
         {
           $shelly_readings_obj->shelly_em_home_energy_counter_at_midnight = get_user_meta($wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', true);
@@ -2887,7 +2907,14 @@ class class_transindus_eco
           $shelly_readings_obj->shelly_energy_counter_after_dark = get_user_meta($wp_user_ID, 'shelly_energy_counter_after_dark', true);
           $shelly_readings_obj->timestamp_soc_capture_after_dark = get_user_meta($wp_user_ID, 'timestamp_soc_capture_after_dark', true);
           $shelly_readings_obj->soc_capture_after_dark_happened = $soc_capture_after_dark_happened; // boolean value
+          $shelly_readings_obj->shelly_bm_ok_bool       = $batt_soc_accumulation_obj->shelly_bm_ok_bool;
+          $shelly_readings_obj->shelly_xcomlan_ok_bool  = $batt_soc_accumulation_obj->shelly_xcomlan_ok_bool;
         }
+
+        // update transient with new data. Validity is 10m
+        set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );
+
+        
 
         // publish this data to remote server present in config
         $this->publish_data_to_avasarala_in_using_mqtt( $shelly_readings_obj );
@@ -5254,6 +5281,9 @@ class class_transindus_eco
         $interval_since_last_change = $now->diff($exit_datetimeobj);
         $formatted_interval = $this->format_interval($interval_since_last_change);
 
+        $xcomlan_status  = $readings_obj->shelly_xcomlan_ok_bool ? "Xcom-Lan OK": "Xcom-Lan NOT Ok";
+        $shellybm_status = $readings_obj->shelly_bm_ok_bool ? "Shelly BM OK": "Shelly BM NOT Ok";
+
 
         $status .= " " . $now_format;
 
@@ -5272,6 +5302,9 @@ class class_transindus_eco
         
         $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
                             $formatted_interval   . ' ' . $switch_tree_exit_condition  .
+                        '</span>';
+        $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
+                            $xcomlan_status   . ' ' . $shellybm_status  .
                         '</span>';
         
         $format_object->status = $status_html;

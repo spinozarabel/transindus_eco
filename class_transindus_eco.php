@@ -1806,7 +1806,7 @@ class class_transindus_eco
 
           // check its validity - if it exceeds duration given, it is not valid. Use that
           
-          if ( $this->check_validity_of_timestamp( $xcomlan_ts, 180 )->elapsed_time_exceeds_duration_given )
+          if ( $this->check_validity_of_timestamp( $xcomlan_ts, 180 )->elapsed_time_exceeds_duration_given === false )
           { // timestamp is fresher than 3m so acceptable
             set_transient( 'shelly_readings_obj', $object_from_linux_home_desktop, 5 * 60 );
             return $object_from_linux_home_desktop;

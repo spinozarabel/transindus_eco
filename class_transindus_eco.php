@@ -2341,7 +2341,6 @@ class class_transindus_eco
 
             $shelly_readings_obj->battery_capacity_ah       = $battery_capacity_ah; // this is obtianed from config
             $shelly_readings_obj->battery_amps              = $batt_amps_shellybm;  
-            $shelly_readings_obj->battery_power_kw          = round( 49.8 * 0.001 * $batt_amps_shellybm, 3 );
           }
 
           { // Now make a Shelly 4PM measurement to get individual powers for all channels
@@ -2496,6 +2495,17 @@ class class_transindus_eco
           $shelly_readings_obj->soc_percentage_now_calculated_using_shelly_bm       = $soc_percentage_now_calculated_using_shelly_bm;
           $shelly_readings_obj->soc_percentage_now_calculated_using_studer_xcomlan  = $soc_percentage_now_calculated_using_studer_xcomlan;
           $shelly_readings_obj->batt_amps  = $batt_amps;
+
+          if ($batt_voltage_xcomlan_avg > 45 )
+          {
+            // if xcomlan measurements get a valid battery voltage use it for best accuracy
+            $shelly_readings_obj->battery_power_kw = round( $batt_voltage_xcomlan_avg * $batt_amps * 0.001, 3 );
+          }
+          else
+          {
+            // if not use an average battery voltage of 49.8V over its cycle of 48.5 - 51.4 V
+            $shelly_readings_obj->battery_power_kw = round( 49.8 * $batt_amps * 0.001, 3 );
+          }
         }
 
         if ( $soc_percentage_now_calculated_using_shelly_bm > 100 || $batt_voltage_xcomlan_avg >= 51.4 )

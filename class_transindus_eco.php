@@ -2665,16 +2665,35 @@ class class_transindus_eco
           $success_on   = false;
           $success_off  = false;
 
+          $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+
+          if ( false === ( $switch_tree_obj = get_transient( 'switch_tree_obj') ) )
+          {
+            $switch_tree_obj = new stdClass;
+            $switch_tree_obj->switch_tree_exit_condition = "no_action";
+            $switch_tree_obj->switch_tree_exit_timestamp = $now->getTimestamp();
+          }
+
           switch (true) 
           {
             case ( $LVDS ):
               $success_on = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
               error_log("LogLvds: SOC and or Battery VOltage is LOW, commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
+              if ( $success_on )
+              {
+                $switch_tree_obj->switch_tree_exit_condition = "LVDS";
+                $switch_tree_obj->switch_tree_exit_timestamp = $now->getTimestamp();
+              }
             break;
 
             case ( $switch_release ):
               $success_off = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'off' );
               error_log("LogLvds: SOC has recovered, Solar is charging Battery, commanded to turn OFF Shelly 1PM Grid switch - Success: $success_off");
+              if ( $success_off )
+              {
+                $switch_tree_obj->switch_tree_exit_condition = "lvds_release";
+                $switch_tree_obj->switch_tree_exit_timestamp = $now->getTimestamp();
+              }
             break;
 
             case ( $battery_float_switch_release ):
@@ -2682,18 +2701,34 @@ class class_transindus_eco
               error_log("LogFloat OFF:  commanded to turn OFF Shelly 1PM Grid switch - Success: $success_off");
               // reset the keep always ON flag back to false to prevent flapping
               update_user_meta( $wp_user_ID, 'keep_shelly_switch_closed_always', false );
+              if ( $success_off )
+              {
+                $switch_tree_obj->switch_tree_exit_condition = "float_release";
+                $switch_tree_obj->switch_tree_exit_timestamp = $now->getTimestamp();
+              }
             break;
 
             case ( $keep_shelly_switch_closed_till_float ):
               $success_on = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
               error_log("LogAlways ON: Keep Grid Switch Always ON commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
+              if ( $success_off )
+              {
+                $switch_tree_obj->switch_tree_exit_condition = "always_on";
+                $switch_tree_obj->switch_tree_exit_timestamp = $now->getTimestamp();
+              }
             break;
             
             default:
               // no switch action
               $this->verbose ? error_log("No switch Action was done in this cycle"): false;
+              $switch_tree_exit_condition = "no_action";
             break;
           }
+
+          // the transient contents get changed only if it DID NOT come out through no_action.
+          set_transient( 'switch_tree_obj', $switch_tree_obj, 60 * 60 );
+
+          $shelly_readings_obj->switch_tree_obj = $switch_tree_obj;
 
           { // record for possible switch flap
             
@@ -5102,6 +5137,12 @@ class class_transindus_eco
         $ac_switch_status_bool    = $readings_obj->ac_switch_status_bool;
         $home_switch_status_bool  = $readings_obj->home_switch_status_bool;
 
+        $switch_tree_obj            = $readings_obj->switch_tree_obj;
+        $switch_tree_exit_condition = $switch_tree_obj->switch_tree_exit_condition;
+        $switch_tree_exit_timestamp = $switch_tree_obj->switch_tree_exit_timestamp;
+
+        
+
 
         // $load_arrow_size = $this->get_arrow_size_based_on_power($pout_inverter_ac_kw);
         $load_arrow_size = $this->get_arrow_size_based_on_power($power_total_to_home_kw);
@@ -5205,37 +5246,34 @@ class class_transindus_eco
 
         // present time
         $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-
         $now_format = $now->format("H:i:s");
-        // timestamp at last measurement exit
-        // $past_unixdatetime = $cron_exit_condition_user_meta_arr['unixdatetime'];
-        // get datetime object from timestamp
-        $past = (new DateTime('@' . $previous_timestamp))->setTimezone(new DateTimeZone("Asia/Kolkata"));
-        // get the interval object
-        $interval_since_last_change = $now->diff($past);
-        // format the interval for display
+
+        $exit_datetimeobj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+        $exit_datetimeobj->setTimestamp($switch_tree_exit_timestamp);
+
+        $interval_since_last_change = $now->diff($exit_datetimeobj);
         $formatted_interval = $this->format_interval($interval_since_last_change);
+
 
         $status .= " " . $now_format;
 
         
         $status_html = '<span style="color: Blue; display:block; text-align: center;">' .
                           $status   . '<br>' . 
-                          'LVDS-soc: ' . $readings_obj->soc_percentage_lvds_setting  . ' LVDS-Vbat: ' . $readings_obj->average_battery_voltage_lvds_setting .
+                          'LVDS: ' . $readings_obj->soc_percentage_lvds_setting  . '% ' . $readings_obj->average_battery_voltage_lvds_setting .
                         '</span>';
 
         
         
         $format_object->soc_percentage_now_html = 
             '<span style="font-size: 20px;color: Blue; display:block; text-align: center;">' . 
-                '<strong>' . $soc_percentage_now  . '</strong> ' . $soc_percentage_now_calculated_using_shelly_bm . ' %<br>' .
+                '<strong>' . $soc_percentage_now  . '</strong>%<br>' .
             '</span>';
-        /*
-        $format_object->cron_exit_condition = '<span style="color: Blue; display:block; text-align: center;">' .
-                                                    $formatted_interval   . ' ' . $saved_cron_exit_condition  . $soc_update_method .
-                                                    // $readings_obj->battery_current_comparison . 
-                                              '</span>';
-        */
+        
+        $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
+                            $formatted_interval   . ' ' . $switch_tree_exit_condition  .
+                        '</span>';
+        
         $format_object->status = $status_html;
 
         return $format_object;

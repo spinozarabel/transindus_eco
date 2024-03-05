@@ -2741,18 +2741,6 @@ class class_transindus_eco
 
           
           $shelly_readings_obj->switch_tree_obj = $switch_tree_obj;
-          /*
-          $exit_datetimeobj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          $exit_datetimeobj->setTimestamp( $switch_tree_obj->switch_tree_exit_timestamp);
-          $interval_since_last_change = $now->diff($exit_datetimeobj);
-          $formatted_interval = $this->format_interval($interval_since_last_change);
-          $status_html = '<span style="color: Blue; display:block; text-align: center;">' .
-                            $formatted_interval   . ' ' . $switch_tree_obj->switch_tree_exit_condition  .
-                          '</span>';
-          $shelly_readings_obj->status_html = $status_html;
-          */
-
-
 
           { // record for possible switch flap
             

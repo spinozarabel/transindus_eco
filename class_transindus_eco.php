@@ -5260,7 +5260,7 @@ class class_transindus_eco
         
         $status_html = '<span style="color: Blue; display:block; text-align: center;">' .
                           $status   . '<br>' . 
-                          'LVDS: ' . $readings_obj->soc_percentage_lvds_setting  . '% ' . $readings_obj->average_battery_voltage_lvds_setting .
+                          'LVDS: ' . $readings_obj->soc_percentage_lvds_setting  . '% ' . $readings_obj->average_battery_voltage_lvds_setting . 'V' .
                         '</span>';
 
         

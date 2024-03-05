@@ -1742,6 +1742,42 @@ class class_transindus_eco
     }
 
 
+     /**
+     *  @param int:$ts is the timestamp referenced to whatever TZ, but shall be in the past to now
+     *  @param int:$duration_in_seconds is the given duration
+     * 
+     *  @param int:obj
+     * 
+     *  The function checks that the time elapsed in seconds from now in Kolkata to the given timestamp in the past
+     *  It returns the elapsed time and also whether the elapsed time has exceeded the given duration.
+     *  If it exceeds then true is returned if not a false is returned.
+     */
+    public function check_validity_of_timestamp( int $ts, int $duration_in_seconds) : object
+    {
+      $obj = new stdClass;
+
+      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+
+      $now_ts = $now->getTimestamp();
+
+      // The number of seconds is positive if timestamp given is in the past
+      $seconds_elapsed = ( $now_ts - $ts );
+
+      if ( $seconds_elapsed > $duration_in_seconds )
+        {
+          $obj->elapsed_time_exceeds_duration_given = true;
+        }
+      else
+        { 
+          $obj->elapsed_time_exceeds_duration_given = false;
+        }
+
+      $obj->seconds_elapsed = $seconds_elapsed;
+
+      return $obj;
+    } 
+
+
     /**
      * Gets all readings from Shelly and Studer and servo's AC IN shelly switch based on conditions
      * @param int:user_index
@@ -1758,58 +1794,63 @@ class class_transindus_eco
                                                         bool    $do_shelly,
                                                         bool    $make_studer_api_call = true ) : ? object
     {
-        { // readin the data from the home linux computer
+        { // readin the data from the home computer
           $object_from_linux_home_desktop = $this->get_mqtt_data_from_from_linux_home_desktop( $user_index );
 
-          error_log(print_r($object_from_linux_home_desktop, true));
-
           $object_from_linux_home_desktop_is_valid = true;
+          // how do we determine of the data from home computer is valid?
+          // data is valid if the timestamp from object received using mqtt, is not more than 2m stale.
 
-          if ( $object_from_linux_home_desktop_is_valid === true )
-          {
-            /*
-            { // update user meta with mqtt imported data
-              // update the SOC captured at midnight
-              $soc_percentage_at_midnight = $object_from_linux_home_desktop->soc_percentage_at_midnight;
-              update_user_meta( $wp_user_ID, 'soc_percentage', $soc_percentage_at_midnight );
+          // get the ts that was sent by xcomlan via mqtt
+          $xcomlan_ts = $object_from_linux_home_desktop->xcomlan_ts;
 
-              // update the Shelly EM home energy WH counter at midnight
-              $shelly_em_home_energy_counter_at_midnight = $object_from_linux_home_desktop->shelly_em_home_energy_counter_at_midnight;
-              update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_midnight', $shelly_em_home_energy_counter_at_midnight );
-
-              // update the battery AH accumulation since midnight. We are using the xcomlan value since it is reliable
-              $battery_soc_percentage_accumulated_since_midnight = $object_from_linux_home_desktop->battery_xcomlan_soc_percentage_accumulated_since_midnight;
-              update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $battery_soc_percentage_accumulated_since_midnight );
-
-              // we don;t have separate xcomlan midnight values. We use existing ones as above
-              // $battery_xcomlan_soc_percentage_accumulated_since_midnight = $object_from_linux_home_desktop->battery_xcomlan_soc_percentage_accumulated_since_midnight;
-              // update_user_meta( $wp_user_ID, 'studer_current_based_soc_percentage_accumulated_since_midnight', $battery_xcomlan_soc_percentage_accumulated_since_midnight );
-
-              // update the midnight Grid Counter value
-              $grid_wh_counter_at_midnight = $object_from_linux_home_desktop->grid_wh_counter_at_midnight;
-              update_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', $grid_wh_counter_at_midnight );
-
-              // After dark SOC capture value
-              $soc_percentage_update_after_dark = $object_from_linux_home_desktop->soc_percentage_update_after_dark;
-              update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_update_after_dark );
-
-              // after dark energy counter value for Shelly 1EM
-              $shelly_energy_counter_after_dark = $object_from_linux_home_desktop->shelly_energy_counter_after_dark;
-              update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_energy_counter_after_dark );
-
-              // update the SOC dark capture timestamp
-              $timestamp_soc_capture_after_dark = $object_from_linux_home_desktop->timestamp_soc_capture_after_dark;
-              update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $timestamp_soc_capture_after_dark );
-
-              // update the grid energy accumulated since midnight.
-              $home_grid_kwh_accumulated_since_midnight = $object_from_linux_home_desktop->home_grid_kwh_accumulated_since_midnight;
-              update_user_meta( $wp_user_ID, 'grid_wh_since_midnight', $home_grid_kwh_accumulated_since_midnight );
-            }
-            */
-
+          // check its validity - if it exceeds duration given, it is not valid. Use that
+          
+          if ( $this->check_validity_of_timestamp( $xcomlan_ts, 180 )->elapsed_time_exceeds_duration_given )
+          { // timestamp is fresher than 3m so acceptable
             set_transient( 'shelly_readings_obj', $object_from_linux_home_desktop, 5 * 60 );
-
             return $object_from_linux_home_desktop;
+          }
+          else
+          { // timestamp is stale so xcomlan data is not valid.
+            /*
+            // update the SOC captured at midnight
+            $soc_percentage_at_midnight = $object_from_linux_home_desktop->soc_percentage_at_midnight;
+            update_user_meta( $wp_user_ID, 'soc_percentage', $soc_percentage_at_midnight );
+
+            // update the Shelly EM home energy WH counter at midnight
+            $shelly_em_home_energy_counter_at_midnight = $object_from_linux_home_desktop->shelly_em_home_energy_counter_at_midnight;
+            update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_midnight', $shelly_em_home_energy_counter_at_midnight );
+
+            // update the battery AH accumulation since midnight. We are using the xcomlan value since it is reliable
+            $battery_soc_percentage_accumulated_since_midnight = $object_from_linux_home_desktop->battery_xcomlan_soc_percentage_accumulated_since_midnight;
+            update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $battery_soc_percentage_accumulated_since_midnight );
+
+            // we don;t have separate xcomlan midnight values. We use existing ones as above
+            // $battery_xcomlan_soc_percentage_accumulated_since_midnight = $object_from_linux_home_desktop->battery_xcomlan_soc_percentage_accumulated_since_midnight;
+            // update_user_meta( $wp_user_ID, 'studer_current_based_soc_percentage_accumulated_since_midnight', $battery_xcomlan_soc_percentage_accumulated_since_midnight );
+
+            // update the midnight Grid Counter value
+            $grid_wh_counter_at_midnight = $object_from_linux_home_desktop->grid_wh_counter_at_midnight;
+            update_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', $grid_wh_counter_at_midnight );
+
+            // After dark SOC capture value
+            $soc_percentage_update_after_dark = $object_from_linux_home_desktop->soc_percentage_update_after_dark;
+            update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_update_after_dark );
+
+            // after dark energy counter value for Shelly 1EM
+            $shelly_energy_counter_after_dark = $object_from_linux_home_desktop->shelly_energy_counter_after_dark;
+            update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_energy_counter_after_dark );
+
+            // update the SOC dark capture timestamp
+            $timestamp_soc_capture_after_dark = $object_from_linux_home_desktop->timestamp_soc_capture_after_dark;
+            update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $timestamp_soc_capture_after_dark );
+
+            // update the grid energy accumulated since midnight.
+            $home_grid_kwh_accumulated_since_midnight = $object_from_linux_home_desktop->home_grid_kwh_accumulated_since_midnight;
+            update_user_meta( $wp_user_ID, 'grid_wh_since_midnight', $home_grid_kwh_accumulated_since_midnight );
+            */
+            return null;
           }
           
         }
@@ -4080,28 +4121,21 @@ class class_transindus_eco
         // extract the control flag as set in user meta
         $do_shelly  = get_user_meta($wp_user_ID, "do_shelly", true) ?? false;
 
-        // get the Studer status using the minimal set of readings. At night this is the object from the Shelly readings
-        $studer_readings_obj  = $this->get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly);
+        // get the data by executing the cron loop by force once
+        $readings_obj  = $this->get_readings_and_servo_grid_switch($user_index, $wp_user_ID, $wp_user_name, $do_shelly);
 
         $it_is_still_dark = $this->nowIsWithinTimeLimits( "18:55", "23:59:59" ) || $this->nowIsWithinTimeLimits( "00:00", "06:30" );
 
         // check for valid studer values. Return if empty.
-        if( empty(  $studer_readings_obj ) )
+        if( empty(  $readings_obj ) )
         {
-            if ( $it_is_still_dark )
-            {
-              $output .= "Could not get a valid Shelly readings for Home Power at night, using API";
-            }
-            else
-            {
-              $output .= "Could not get a valid Studer Reading using API";
-            }
+          $output .= "Could not get valid data from home server using mqtt";
 
-            return $output;
+          return $output;
         }
 
         // get the format of all the information for the table in the page
-        $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $studer_readings_obj );
+        $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $readings_obj );
 
         // define all the icon styles and colors based on STuder and Switch values
         $output .= '

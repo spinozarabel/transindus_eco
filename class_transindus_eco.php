@@ -4147,12 +4147,16 @@ class class_transindus_eco
         <table id="my-load-distribution-table">
             <tr>
                 <td id="water_heater_icon">'  . $format_object->water_heater_icon  . '</td>
+                <td></td>
                 <td id="ac_icon">'            . $format_object->ac_icon            . '</td>
+                <td></td>
                 <td id="pump_icon">'          . $format_object->pump_icon          . '</td>
             </tr>
             <tr>
                 <td id="shelly_water_heater_kw">' . $format_object->shelly_water_heater_kw    . '</td>
+                <td></td>
                 <td id="power_to_ac_kw">'   . $format_object->power_to_ac_kw      . '</td>
+                <td></td>
                 <td id="power_to_pump_kw">' . $format_object->power_to_pump_kw    . '</td>
             </tr>
             

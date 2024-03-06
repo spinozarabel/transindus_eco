@@ -1752,7 +1752,7 @@ class class_transindus_eco
      *  It returns the elapsed time and also whether the elapsed time has exceeded the given duration.
      *  If it exceeds then true is returned if not a false is returned.
      */
-    public function check_validity_of_timestamp( int $ts, int $duration_in_seconds) : object
+    public function check_validity_of_timestamp( int $ts, int $duration_in_seconds) : ? object
     {
       $obj = new stdClass;
 
@@ -1805,8 +1805,8 @@ class class_transindus_eco
           $xcomlan_ts   = $object_from_linux_home_desktop->xcomlan_ts;
           $shellybm_ts  = $object_from_linux_home_desktop->timestamp_shellybm;
 
-          $obj_check_ts_validity_xcomlan  = $this->check_validity_of_timestamp( $xcomlan_ts,  180 );
-          $obj_check_ts_validity_shellybm = $this->check_validity_of_timestamp( $shellybm_ts, 180 );
+          $obj_check_ts_validity_xcomlan  = $this->check_validity_of_timestamp( $xcomlan_ts,  120 );
+          $obj_check_ts_validity_shellybm = $this->check_validity_of_timestamp( $shellybm_ts, 120 );
 
           // check its validity - if it exceeds duration given, it is not valid. Use that
           
@@ -1821,7 +1821,7 @@ class class_transindus_eco
             $object_from_linux_home_desktop->seconds_elapsed_xcomlan_ts   = $seconds_elapsed_xcomlan_ts;
             $object_from_linux_home_desktop->seconds_elapsed_shellybm_ts  = $seconds_elapsed_shellybm_ts;
 
-            set_transient( 'shelly_readings_obj', $object_from_linux_home_desktop, 5 * 60 );
+            set_transient( 'shelly_readings_obj', $object_from_linux_home_desktop, 3 * 60 );
 
             return $object_from_linux_home_desktop;
           }

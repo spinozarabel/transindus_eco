@@ -2705,6 +2705,7 @@ class class_transindus_eco
               if ( $success_on )
               {
                 $switch_tree_obj->switch_tree_exit_condition = "LVDS";
+                $present_switch_tree_exit_condition = "LVDS";
                 $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
               }
             break;
@@ -2715,6 +2716,7 @@ class class_transindus_eco
               if ( $success_off )
               {
                 $switch_tree_obj->switch_tree_exit_condition = "lvds_release";
+                $present_switch_tree_exit_condition = "lvds_release";
                 $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
               }
             break;
@@ -2727,6 +2729,7 @@ class class_transindus_eco
               if ( $success_off )
               {
                 $switch_tree_obj->switch_tree_exit_condition = "float_release";
+                $present_switch_tree_exit_condition = "float_release";
                 $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
               }
             break;
@@ -2737,6 +2740,7 @@ class class_transindus_eco
               if ( $success_off )
               {
                 $switch_tree_obj->switch_tree_exit_condition = "always_on";
+                $present_switch_tree_exit_condition = "always_on";
                 $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
               }
             break;
@@ -2744,7 +2748,8 @@ class class_transindus_eco
             default:
               // no switch action
               $this->verbose ? error_log("No switch Action was done in this cycle"): false;
-              $switch_tree_exit_condition = "no_action";
+              $present_switch_tree_exit_condition = "no_action";
+              $switch_tree_obj->switch_tree_exit_condition = "always_on";
             break;
           }
 
@@ -2753,6 +2758,7 @@ class class_transindus_eco
 
           
           $shelly_readings_obj->switch_tree_obj = $switch_tree_obj;
+          $shelly_readings_obj->present_switch_tree_exit_condition = $present_switch_tree_exit_condition;
 
           { // record for possible switch flap
             

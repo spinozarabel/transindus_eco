@@ -1798,17 +1798,31 @@ class class_transindus_eco
           $object_from_linux_home_desktop = $this->get_mqtt_data_from_from_linux_home_desktop( $user_index );
 
           $object_from_linux_home_desktop_is_valid = true;
-          // how do we determine of the data from home computer is valid?
-          // data is valid if the timestamp from object received using mqtt, is not more than 2m stale.
+          // how do we determine that the data from home computer is valid?
+          // data is valid if the timestamp from object received using mqtt, is not stale.
 
-          // get the ts that was sent by xcomlan via mqtt
-          $xcomlan_ts = $object_from_linux_home_desktop->xcomlan_ts;
+          // get the ts that was sent by xcomlan and shellybm
+          $xcomlan_ts   = $object_from_linux_home_desktop->xcomlan_ts;
+          $shellybm_ts  = $object_from_linux_home_desktop->timestamp_shellybm;
+
+          $obj_check_ts_validity_xcomlan  = $this->check_validity_of_timestamp( $xcomlan_ts,  180 );
+          $obj_check_ts_validity_shellybm = $this->check_validity_of_timestamp( $shellybm_ts, 180 );
 
           // check its validity - if it exceeds duration given, it is not valid. Use that
           
-          if ( $this->check_validity_of_timestamp( $xcomlan_ts, 180 )->elapsed_time_exceeds_duration_given === false )
-          { // timestamp is fresher than 3m so acceptable
+          if (  $obj_check_ts_validity_xcomlan->elapsed_time_exceeds_duration_given   === false || 
+                $obj_check_ts_validity_shellybm->elapsed_time_exceeds_duration_given  === false     )
+          { // at least one timestamp is fresher than 3m so acceptable
+            // get the value of the duration since timestamp
+            $seconds_elapsed_xcomlan_ts   =  $obj_check_ts_validity_xcomlan->seconds_elapsed;
+            $seconds_elapsed_shellybm_ts  =  $obj_check_ts_validity_shellybm->seconds_elapsed;
+
+            // write these back to the object for access outside of this routine
+            $object_from_linux_home_desktop->seconds_elapsed_xcomlan_ts   = $seconds_elapsed_xcomlan_ts;
+            $object_from_linux_home_desktop->seconds_elapsed_shellybm_ts  = $seconds_elapsed_shellybm_ts;
+
             set_transient( 'shelly_readings_obj', $object_from_linux_home_desktop, 5 * 60 );
+
             return $object_from_linux_home_desktop;
           }
           else

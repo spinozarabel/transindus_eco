@@ -6077,8 +6077,8 @@ class class_transindus_eco
       $interval_since_last_change = $now->diff($exit_datetimeobj);
       $formatted_interval = $this->format_interval($interval_since_last_change);
 
-      $xcomlan_status  = $readings_obj->shelly_xcomlan_ok_bool ? "Xcom-Lan OK": "Xcom-Lan NOT Ok";
-      $shellybm_status = $readings_obj->shelly_bm_ok_bool ? "Shelly BM OK": "Shelly BM NOT Ok";
+      $xcomlan_status  = "Xcomlan TS: " . $format_object->seconds_elapsed_xcomlan_ts;
+      $shellybm_status = "ShellyBM TS: " . $format_object->seconds_elapsed_shellybm_ts;
 
       $status .= " " . $now_format;
 

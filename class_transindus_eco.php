@@ -6077,8 +6077,8 @@ class class_transindus_eco
       $interval_since_last_change = $now->diff($exit_datetimeobj);
       $formatted_interval = $this->format_interval($interval_since_last_change);
 
-      $xcomlan_status  = "Xcomlan TS: " . $format_object->seconds_elapsed_xcomlan_ts;
-      $shellybm_status = "ShellyBM TS: " . $format_object->seconds_elapsed_shellybm_ts;
+      $xcomlan_status  = "Xcomlan TS: " . $readings_obj->seconds_elapsed_xcomlan_ts;
+      $shellybm_status = "ShellyBM TS: " . $readings_obj->seconds_elapsed_shellybm_ts;
 
       $status .= " " . $now_format;
 

@@ -2340,7 +2340,8 @@ class class_transindus_eco
             }
 
             $shelly_readings_obj->battery_capacity_ah       = $battery_capacity_ah; // this is obtianed from config
-            $shelly_readings_obj->battery_amps              = $batt_amps_shellybm;  
+            $shelly_readings_obj->batt_amps_shellybm        = $batt_amps_shellybm;  
+            $shelly_readings_obj->timestamp_shellybm        = $timestamp_shellybm;
           }
 
           { // Now make a Shelly 4PM measurement to get individual powers for all channels
@@ -2479,10 +2480,11 @@ class class_transindus_eco
 
           $soc_shellybm_since_midnight                    = $batt_soc_accumulation_obj->soc_shellybm_since_midnight;
           $soc_percentage_now_calculated_using_shelly_bm  = $soc_percentage_at_midnight + $soc_shellybm_since_midnight;
-          $batt_amps                                      =  $batt_soc_accumulation_obj->batt_amps;
 
           $soc_xcomlan_since_midnight                         = $batt_soc_accumulation_obj->soc_xcomlan_since_midnight;
           $soc_percentage_now_calculated_using_studer_xcomlan = $soc_percentage_at_midnight + $soc_xcomlan_since_midnight;
+
+          $batt_amps                                      = $batt_soc_accumulation_obj->batt_amps;
 
           
           // lets update the user meta for updated SOC
@@ -2845,45 +2847,6 @@ class class_transindus_eco
         }
         
         { // logging
-  
-          /*
-            error_log("Batt(A): $battery_amps, Grid: $shelly1pm_acin_switch_status, ShellyEM(V): $shelly_em_home_voltage, Load(KW): $shelly_em_home_kw, pump ON for: $pump_ON_duration_secs, Water Heater: $shelly_water_heater_status_ON, SOC: $soc_percentage_now_display");
-            error_log($log_string);
-          */
-
-          /*
-          $log_string = "Log-";
-
-          if ( $it_is_still_dark === true )
-          {
-            $log_string .= " It is dark: Yes"; 
-          }
-          else
-          {
-            $log_string .= " E: $est_solar_kw_arr[0] KW. W: $est_solar_kw_arr[1] KW Elev: $est_solar_obj->sun_elevation_deg";
-            $log_string .= " Azm: $est_solar_obj->sun_azimuth_deg HRA: $est_solar_obj->hra_degs ";
-          }
-
-          if ( ! empty( $soc_capture_after_dark_happened ) && $soc_capture_after_dark_happened === true )
-          {
-            $log_string .= " SOC dark: Captured";
-          }
-
-          if ( $switch_flap_amount > 0 )
-          {
-            $log_string .= " Sw Flap: $switch_flap_amount";
-          }
-
-          if ( $excess_solar_available === true )
-          {
-            $log_string .= " ExSolKW: $excess_solar_kw";
-          }
-          
-          $log_string .= " SOC: $soc_percentage_now_display";
-
-          error_log($log_string);
-          */
-
           $log_string = "LogSoc xts: $xcomlan_ts";
           $log_string .= " E: "       . number_format($east_panel_current_xcomlan,1)   .  " W: "   . number_format($west_panel_current_xcomlan,1);
           $log_string .= " PV: "      . number_format($pv_current_now_total_xcomlan,1) . " Inv: "  . number_format($inverter_current_xcomlan,1);

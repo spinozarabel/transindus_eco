@@ -1865,44 +1865,47 @@ class class_transindus_eco
               case "LVDS":
 
                 $notification_title   = "LVDS";
-                $notification_message = "LVDS - SOC " . $$object_from_linux_home_desktop->soc_percentage_now . "%";
+                $notification_message = "LVDS - SOC " . $object_from_linux_home_desktop->soc_percentage_now . "%";
                 
               break;
 
               case "lvds_release":
 
                 $notification_title   = "lvds_release";
-                $notification_message = "lvds_release - SOC " . $$object_from_linux_home_desktop->soc_percentage_now . "%";
+                $notification_message = "lvds_release - SOC " . $object_from_linux_home_desktop->soc_percentage_now . "%";
                 
               break;
 
               case "float_release":
 
                 $notification_title   = "float_release";
-                $notification_message = "float_release - SOC " . $$object_from_linux_home_desktop->soc_percentage_now . "%";
+                $notification_message = "float_release - SOC " . $object_from_linux_home_desktop->soc_percentage_now . "%";
                 
                 break;
 
                 case "always_on":
 
                   $notification_title   = "always_on";
-                  $notification_message = "always_on - SOC " . $$object_from_linux_home_desktop->soc_percentage_now . "%";
+                  $notification_message = "always_on - SOC " . $object_from_linux_home_desktop->soc_percentage_now . "%";
                   
                   break;
 
                 default:
 
                   $notifications_enabled = (bool) false;
-                  
+
                   break;
             }
+            error_log($notification_message);
 
+            /*
             if ( $notifications_enabled )
                 {
                   $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
                                                       $webpushrKey, $webpushrAuthToken  );
                   set_transient('last_notification_ts', $now_ts, 3600 );                        
                 }
+              */
             
 
             set_transient( 'shelly_readings_obj', $object_from_linux_home_desktop, 3 * 60 );

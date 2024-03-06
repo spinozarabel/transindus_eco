@@ -1797,7 +1797,11 @@ class class_transindus_eco
         { // readin the data from the home computer
           $object_from_linux_home_desktop = $this->get_mqtt_data_from_from_linux_home_desktop( $user_index );
 
-          $object_from_linux_home_desktop_is_valid = true;
+          // how do we determine that a notification needs to be sent?
+          // we send notifications for any LDS, switch relese, float release, pump overflow type events
+          // we need to detect these events since now they are controlled locally by LAN
+
+
           // how do we determine that the data from home computer is valid?
           // data is valid if the timestamp from object received using mqtt, is not stale.
 

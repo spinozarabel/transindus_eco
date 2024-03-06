@@ -1853,7 +1853,7 @@ class class_transindus_eco
             // get the switch tree object
             $switch_tree_obj = $object_from_linux_home_desktop->switch_tree_obj;
 
-            switch ( $switch_tree_obj->switch_tree_exit_condition )
+            switch ( $object_from_linux_home_desktop->present_switch_tree_exit_condition )
             {
               case "no_action":
 
@@ -1896,16 +1896,15 @@ class class_transindus_eco
 
                   break;
             }
-            error_log($notification_message);
 
-            /*
+            
             if ( $notifications_enabled )
                 {
                   $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
                                                       $webpushrKey, $webpushrAuthToken  );
                   set_transient('last_notification_ts', $now_ts, 3600 );                        
                 }
-              */
+              
             
 
             set_transient( 'shelly_readings_obj', $object_from_linux_home_desktop, 3 * 60 );

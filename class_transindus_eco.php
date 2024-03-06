@@ -1794,6 +1794,12 @@ class class_transindus_eco
                                                         bool    $do_shelly,
                                                         bool    $make_studer_api_call = true ) : ? object
     {
+        $config = $this->get_config();
+
+        $webpushr_subscriber_id = get_user_meta( $wp_user_ID, 'webpushr_subscriber_id', true );
+        $webpushrKey            = $config['accounts'][$user_index]['webpushrKey'];
+        $webpushrAuthToken      = $config['accounts'][$user_index]['webpushrAuthToken'];
+
         { // readin the data from the home computer
           $object_from_linux_home_desktop = $this->get_mqtt_data_from_from_linux_home_desktop( $user_index );
 
@@ -1824,6 +1830,80 @@ class class_transindus_eco
             // write these back to the object for access outside of this routine
             $object_from_linux_home_desktop->seconds_elapsed_xcomlan_ts   = $seconds_elapsed_xcomlan_ts;
             $object_from_linux_home_desktop->seconds_elapsed_shellybm_ts  = $seconds_elapsed_shellybm_ts;
+
+            $notifications_enabled = (bool) false;
+            if ( false === ( $last_notification_ts = get_transient('last_notification_ts') ) )
+            {
+              $notifications_enabled = (bool) true;
+            }
+            else
+            {
+              if ( $this->check_validity_of_timestamp( $last_notification_ts, 1800 )->elapsed_time_exceeds_duration_given )
+              {
+                $notifications_enabled = (bool) true;
+              }
+              else
+              {
+                $notifications_enabled = (bool) false;
+              }
+            }
+            $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+            $now_ts = $now->getTimestamp();
+
+            // get the switch tree object
+            $switch_tree_obj = $object_from_linux_home_desktop->switch_tree_obj;
+
+            switch ( $switch_tree_obj->switch_tree_exit_condition )
+            {
+              case "no_action":
+
+                // no notifications
+                $notifications_enabled = (bool) false;
+
+              break;
+
+              case "LVDS":
+
+                $notification_title   = "LVDS";
+                $notification_message = "LVDS - SOC " . $$object_from_linux_home_desktop->soc_percentage_now . "%";
+                
+              break;
+
+              case "lvds_release":
+
+                $notification_title   = "lvds_release";
+                $notification_message = "lvds_release - SOC " . $$object_from_linux_home_desktop->soc_percentage_now . "%";
+                
+              break;
+
+              case "float_release":
+
+                $notification_title   = "float_release";
+                $notification_message = "float_release - SOC " . $$object_from_linux_home_desktop->soc_percentage_now . "%";
+                
+                break;
+
+                case "always_on":
+
+                  $notification_title   = "always_on";
+                  $notification_message = "always_on - SOC " . $$object_from_linux_home_desktop->soc_percentage_now . "%";
+                  
+                  break;
+
+                default:
+
+                  $notifications_enabled = (bool) false;
+                  
+                  break;
+            }
+
+            if ( $notifications_enabled )
+                {
+                  $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
+                                                      $webpushrKey, $webpushrAuthToken  );
+                  set_transient('last_notification_ts', $now_ts, 3600 );                        
+                }
+            
 
             set_transient( 'shelly_readings_obj', $object_from_linux_home_desktop, 3 * 60 );
 
@@ -1895,10 +1975,6 @@ class class_transindus_eco
 
           $it_is_still_dark = $this->nowIsWithinTimeLimits( $sunset_hms_format, "23:59:59" ) || 
                               $this->nowIsWithinTimeLimits( "00:00", $sunrise_hms_format );
-
-
-
-
         }
 
         { // Get user meta for limits and controls as an array rather than 1 by 1

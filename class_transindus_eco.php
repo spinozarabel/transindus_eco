@@ -2751,16 +2751,18 @@ class class_transindus_eco
               // no switch action
               $this->verbose ? error_log("No switch Action was done in this cycle"): false;
               $present_switch_tree_exit_condition = "no_action";
-              $switch_tree_obj->switch_tree_exit_condition = "always_on";
+              $switch_tree_obj->switch_tree_exit_condition = "no_action";
+
+              // no timestamp for cron exit condition
             break;
           }
 
-          // the transient contents get changed only if it DID NOT come out through no_action.
-          set_transient( 'switch_tree_obj', $switch_tree_obj, 60 * 60 );
+          set_transient( 'switch_tree_obj', $switch_tree_obj, 60 * 60 );  // the transient contents get changed only if NOT no_action exit
 
           
-          $shelly_readings_obj->switch_tree_obj = $switch_tree_obj;
-          $shelly_readings_obj->present_switch_tree_exit_condition = $present_switch_tree_exit_condition;
+          $shelly_readings_obj->switch_tree_obj = $switch_tree_obj;                             // this is to record how long since last significant event
+
+          $shelly_readings_obj->present_switch_tree_exit_condition = $present_switch_tree_exit_condition; // this is to detect remote notification event
 
           { // record for possible switch flap
             

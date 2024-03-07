@@ -6194,7 +6194,7 @@ class class_transindus_eco
                           'Grid Status since'   . ' ' . $grid_seconds_in_hms  .
                       '</span>';               
   
-  $format_object->status = $status_html;
+      $format_object->status = $status_html;
 
       $format_object->status = $status_html;
 

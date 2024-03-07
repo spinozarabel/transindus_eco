@@ -2660,31 +2660,31 @@ class class_transindus_eco
           // $shelly_readings_obj->main_control_site_avasarala_is_offline_for_long   = $main_control_site_avasarala_is_offline_for_long;
 
           $LVDS = 
-              $shelly1pm_acin_switch_status === "OFF"         &&    // Grid switch is OFF. If FFLINE or ON this won't care
-              $control_shelly               === true          &&    // TRUE when switch IP address exists AND do_shelly is TRUE
-              ( $soc_percentage_now         < $soc_percentage_lvds_setting ||    // local SOC measurement is < setting
-                $batt_voltage_xcomlan_avg   < $average_battery_voltage_lvds_setting );    // or local average Battery Voltage < setting
+              $shelly1pm_acin_switch_status === "OFF"         &&                        // Grid switch is OFF
+              $control_shelly               === true          &&                        // Grid Switch is Controllable
+              ( $soc_percentage_now         < $soc_percentage_lvds_setting ||           // SOC is < LVDS setting
+                $batt_voltage_xcomlan_avg   < $average_battery_voltage_lvds_setting );  // Battery Voltage < LVDS setting
 
           $switch_release = 
-              $soc_percentage_now               >= ( $soc_percentage_lvds_setting + 2 ) && // local SOC measurement is normal
-             ($batt_amps_shellybm > 6   || $batt_current_xcomlan > 6)                   && // battery is charging with at least 0.3KW surplus from solar
-              $shelly1pm_acin_switch_status     === "ON"            &&    // Grid switch is ON. Anyother state won't matter
-              $control_shelly                   === true            &&    // Ccontrollable by config
-              $keep_shelly_switch_closed_always === false           &&    // keep switch ON always is False
-              $switch_is_flapping               === false;                // switch is NOT flapping.
+              $soc_percentage_now               >= ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered past LVDS
+             ($batt_amps_shellybm > 6   || $batt_current_xcomlan > 6)                   &&  // battery is charging with at least 0.3 KW Solar
+              $shelly1pm_acin_switch_status     === "ON"            &&                      // Grid switch is ON
+              $control_shelly                   === true            &&                      // Grid Switch is Controllable
+              $keep_shelly_switch_closed_always === false           &&                      // keep switch ON always is False
+              $switch_is_flapping               === false;                                  // switch is NOT flapping.
 
           $battery_float_switch_release = 
-              $soc_percentage_now               >=  $soc_percentage_switch_release_setting  &&    // reached setting value
-              $shelly1pm_acin_switch_status     === "ON"                                    &&    // switch is already ON
-              $control_shelly                   === true                                    &&    // Ccontrollable by config
-              $switch_is_flapping               === false;                // switch is NOT flapping.
+              $soc_percentage_now               >=  $soc_percentage_switch_release_setting  &&    // SOC has reached the float setting value
+              $shelly1pm_acin_switch_status     === "ON"                                    &&    // Grid switch is ON
+              $control_shelly                   === true                                    &&    // Crid Switch is Controllable
+              $switch_is_flapping               === false;                                        // switch is NOT flapping.
 
           $keep_shelly_switch_closed_till_float = 
-              $soc_percentage_now               <  ( $soc_percentage_switch_release_setting - 5 ) && // unless less than float by 5 points
-              $shelly1pm_acin_switch_status     === "OFF"                                   &&    // switch is OFF
-              $control_shelly                   === true                                    &&    // Ccontrollable
-              $keep_shelly_switch_closed_always === true                                    &&    // keep switch ON always flag is SET
-              $switch_is_flapping               === false;                // switch is NOT flapping.
+              $soc_percentage_now               <  ( $soc_percentage_switch_release_setting - 5 ) &&  // SOC must be 5 points below float to prevent flapping
+              $shelly1pm_acin_switch_status     === "OFF"                                   &&        // Grid switch is OFF
+              $control_shelly                   === true                                    &&        // Grid Switch is Controllable
+              $keep_shelly_switch_closed_always === true                                    &&        // keep switch ON always flag is SET
+              $switch_is_flapping               === false;                                            // switch is NOT flapping.
 
           $success_on   = false;
           $success_off  = false;
@@ -2725,9 +2725,14 @@ class class_transindus_eco
 
             case ( $battery_float_switch_release ):
               $success_off = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'off' );
+
               error_log("LogFloat OFF:  commanded to turn OFF Shelly 1PM Grid switch - Success: $success_off");
+
               // reset the keep always ON flag back to false to prevent flapping
               update_user_meta( $wp_user_ID, 'keep_shelly_switch_closed_always', false );
+
+              error_log("LogFloat OFF:  reset keep-always-on flag to false");
+
               if ( $success_off )
               {
                 $switch_tree_obj->switch_tree_exit_condition = "float_release";

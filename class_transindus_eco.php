@@ -981,13 +981,19 @@ class class_transindus_eco
                                                                     string  $wp_user_name, 
                                                                     int     $wp_user_ID     ): ? object
     {
-      // Blue phase of RYB is assigned to home so this corresponds to c phase of abc
+      // Blue phase of RYB is assigned to home so this corresponds to c phase of abc. This goes directly to the Studer AC input
       $home_em      = "em1:2";
       $home_emdata  = "em1data:2";
 
       // Red phase of RYB is assigned to car charger sinside garage o this corresponds to a phase of abc sequence
       $car_em      = "em1:0";
       $car_emdata  = "em1data:0";
+
+      // Yellow phase feeds the wall charger outside the garage, with a 15A plug inside a box.
+      // we will call this wall_charger_3kw
+
+      $wallcharger_3kw_em      = "em1:1";
+      $wallcharger_3kw_emdata  = "em1data:1";
 
       // get value of Shelly Pro 3EM Home phase watt hour counter as set at midnight
       $grid_wh_counter_at_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', true), 0);
@@ -1007,6 +1013,9 @@ class class_transindus_eco
       $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
 
       $shelly_3p_grid_energy_measurement_obj = new stdClass;
+
+      // get the grid status in the previous measurement
+      $grid_previous_status = (string) get_transient( 'grid_status' );
 
       // check to make sure that it exists. If null API call was fruitless
       if (  empty( $shelly_api_device_response ) )
@@ -1028,16 +1037,58 @@ class class_transindus_eco
         $shelly_3p_grid_energy_measurement_obj->home_grid_wh_accumulated_since_midnight  = $home_grid_wh_accumulated_since_midnight;
         $shelly_3p_grid_energy_measurement_obj->home_grid_kwh_accumulated_since_midnight = round( $home_grid_wh_accumulated_since_midnight * 0.001, 3);
 
-        // offline so no power
+        // offline so no power in all 3 phases
         $shelly_3p_grid_energy_measurement_obj->home_grid_kw_power        = 0;
         $shelly_3p_grid_energy_measurement_obj->car_charger_grid_kw_power = 0;
+        $shelly_3p_grid_energy_measurement_obj->wallcharger_grid_kw_power = 0;
 
         $shelly_3p_grid_energy_measurement_obj->offline = true;
+
+        $grid_present_status = "offline";
+
+
+        if ( $grid_previous_status !== $grid_present_status )
+        {
+          // record the timestamp when this transition happened to keep track of the grid status duration
+          $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $ts_now = $now->getTimestamp();
+
+          set_transient( 'grid_status_change_ts',   $ts_now,                24 * 60 * 60 );
+          set_transient( 'grid_status',             $grid_present_status,   24 * 60 * 60 );
+        }
+        else
+        { // grid status continues to be same
+          // lets determine the accumulated time in this state
+          $grid_status_change_ts          = (int)  get_transient('grid_status_change_ts');
+          $seconds_elapsed_grid_unchanged = $this->check_validity_of_timestamp( $grid_status_change_ts, 3600 )->seconds_elapsed;
+        }
+
+        $shelly_3p_grid_energy_measurement_obj->seconds_elapsed_grid_unchanged = $seconds_elapsed_grid_unchanged;
 
         return $shelly_3p_grid_energy_measurement_obj;
       }
       else
       { // we have a valid reading from SHelly 3EM device
+
+        $grid_present_status = "online";
+        $shelly_3p_grid_energy_measurement_obj->offline = (bool) false;
+
+        if ( $grid_previous_status !== $grid_present_status )
+        {   // grid status transition from offline to online
+          // record the timestamp when this transition happened to keep track of the grid status duration
+          $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $ts_now = $now->getTimestamp();
+
+          set_transient( 'grid_status_change_ts',   $ts_now,                24 * 60 * 60 );
+          set_transient( 'grid_status',             $grid_present_status,   24 * 60 * 60 );
+        }
+        else
+        { // grid status continues to be online from last call
+          // lets determine the accumulated time in this state
+          $grid_status_change_ts          = (int)  get_transient('grid_status_change_ts');
+          $seconds_elapsed_grid_unchanged = $this->check_validity_of_timestamp( $grid_status_change_ts, 3600 )->seconds_elapsed;
+        }
+        $shelly_3p_grid_energy_measurement_obj->seconds_elapsed_grid_unchanged = $seconds_elapsed_grid_unchanged;
 
         // main power to home. The phase is deretermined by passed in string: a/b/c corresponding to R/Y/B
         $home_grid_wh_counter_now  = $shelly_api_device_response->$home_emdata->total_act_energy;
@@ -1051,6 +1102,18 @@ class class_transindus_eco
         $car_charger_grid_wh_counter_now  = $shelly_api_device_response->$car_emdata->total_act_energy;
         $car_charger_grid_w_power         = $shelly_api_device_response->$car_em->act_power;
         $car_charger_grid_kw_power        = round( 0.001 * $car_charger_grid_w_power, 3);
+        $car_charger_grid_voltage         = $shelly_api_device_response->$car_em->voltage;
+
+        // get energy counter and power values of phase supplying the wall charger outside garage
+        $wallcharger_grid_wh_counter_now  = $shelly_api_device_response->$wallcharger_3kw_emdata->total_act_energy;
+        $wallcharger_grid_w_power         = $shelly_api_device_response->$wallcharger_3kw_em->act_power;
+        $wallcharger_grid_kw_power        = round( 0.001 * $wallcharger_grid_w_power, 3);
+        $wallcharger_grid_voltage         = $shelly_api_device_response->$wallcharger_3kw_em->voltage;
+
+        // store 3P grid voltages as transients for access elsewhere in site
+        set_transient( 'red_phase_voltage',        $car_charger_grid_voltage,   1 * 60 );
+        set_transient( 'yellow_phase_voltage',     $wallcharger_grid_voltage,   1 * 60 );
+        set_transient( 'blue_phase_voltage',       $home_grid_voltage,          1 * 60 );
         
         // update the transient with most recent measurement
         set_transient( 'home_grid_wh_counter',        $home_grid_wh_counter_now,        24 * 60 * 60 );

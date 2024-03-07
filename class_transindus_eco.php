@@ -1059,11 +1059,11 @@ class class_transindus_eco
         else
         { // grid status continues to be same
           // lets determine the accumulated time in this state
-          $grid_status_change_ts          = (int)  get_transient('grid_status_change_ts');
-          $seconds_elapsed_grid_unchanged = $this->check_validity_of_timestamp( $grid_status_change_ts, 3600 )->seconds_elapsed;
+          $grid_status_change_ts       = (int)  get_transient('grid_status_change_ts');
+          $seconds_elapsed_grid_status = $this->check_validity_of_timestamp( $grid_status_change_ts, 3600 )->seconds_elapsed;
         }
 
-        $shelly_3p_grid_energy_measurement_obj->seconds_elapsed_grid_unchanged = $seconds_elapsed_grid_unchanged;
+        $shelly_3p_grid_energy_measurement_obj->seconds_elapsed_grid_status = $seconds_elapsed_grid_status;
 
         return $shelly_3p_grid_energy_measurement_obj;
       }
@@ -1086,9 +1086,9 @@ class class_transindus_eco
         { // grid status continues to be online from last call
           // lets determine the accumulated time in this state
           $grid_status_change_ts          = (int)  get_transient('grid_status_change_ts');
-          $seconds_elapsed_grid_unchanged = $this->check_validity_of_timestamp( $grid_status_change_ts, 3600 )->seconds_elapsed;
+          $seconds_elapsed_grid_status = $this->check_validity_of_timestamp( $grid_status_change_ts, 3600 )->seconds_elapsed;
         }
-        $shelly_3p_grid_energy_measurement_obj->seconds_elapsed_grid_unchanged = $seconds_elapsed_grid_unchanged;
+        $shelly_3p_grid_energy_measurement_obj->seconds_elapsed_grid_status = $seconds_elapsed_grid_status;
 
         // main power to home. The phase is deretermined by passed in string: a/b/c corresponding to R/Y/B
         $home_grid_wh_counter_now  = $shelly_api_device_response->$home_emdata->total_act_energy;

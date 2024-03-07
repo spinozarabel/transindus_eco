@@ -5832,6 +5832,9 @@ class class_transindus_eco
       $home_grid_kw_power     =   $readings_obj->home_grid_kw_power;
       $home_grid_voltage      =   $readings_obj->home_grid_voltage;
 
+      $seconds_elapsed_grid_status = (int) $readings_obj->seconds_elapsed_grid_status;
+      $grid_seconds_in_hms = $this->format_seconds_to_hms_format ($seconds_elapsed_grid_status );
+
       $shelly1pm_acin_switch_status = (string) $shelly_switch_acin_details_arr['shelly1pm_acin_switch_status'];
 
       // This is the AC voltage of switch:0 of Shelly 4PM
@@ -6186,6 +6189,10 @@ class class_transindus_eco
       $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
                           $xcomlan_status   . ' ' . $shellybm_status  .
                       '</span>';
+
+      $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
+                          'Grid Status since'   . ' ' . $grid_seconds_in_hms  .
+                      '</span>';               
   
   $format_object->status = $status_html;
 
@@ -6251,5 +6258,15 @@ class class_transindus_eco
       if ($interval->s) { $result += $interval->s / 60; }
 
       return round( $result, 2);
+    }
+
+    /**
+     * 
+     */
+    public function format_seconds_to_hms_format( int $seconds ): string
+    {
+      $t = round( $seconds);
+
+      return sprintf('%02d:%02d:%02d', ($t/3600),($t/60%60), $t%60);
     }
 }

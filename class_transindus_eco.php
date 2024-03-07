@@ -2751,9 +2751,8 @@ class class_transindus_eco
               // no switch action
               $this->verbose ? error_log("No switch Action was done in this cycle"): false;
               $present_switch_tree_exit_condition = "no_action";
-              $switch_tree_obj->switch_tree_exit_condition = "no_action";
 
-              // no timestamp for cron exit condition
+              // no cchange in switch_tree_obj
             break;
           }
 

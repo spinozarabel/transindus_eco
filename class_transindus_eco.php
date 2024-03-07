@@ -1901,10 +1901,10 @@ class class_transindus_eco
             if ( $notifications_enabled )
                 {
                   error_log( "This is the notofication that would have been sent: $notification_message");
-                  /*
+                  
                   $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
                                                       $webpushrKey, $webpushrAuthToken  );
-                                                      */
+                                                      
                   set_transient('last_notification_ts', $now_ts, 3600 );                        
                 }
               

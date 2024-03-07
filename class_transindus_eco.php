@@ -5833,7 +5833,7 @@ class class_transindus_eco
       $home_grid_voltage      =   $readings_obj->home_grid_voltage;
 
       $seconds_elapsed_grid_status = (int) $readings_obj->seconds_elapsed_grid_status;
-      // $grid_seconds_in_hms = $this->format_seconds_to_hms_format ($seconds_elapsed_grid_status );
+      $grid_seconds_in_hms = $this->format_seconds_to_hms_format ($seconds_elapsed_grid_status );
 
       $shelly1pm_acin_switch_status = (string) $shelly_switch_acin_details_arr['shelly1pm_acin_switch_status'];
 
@@ -6191,7 +6191,7 @@ class class_transindus_eco
                       '</span>';
 
       $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
-                          'Grid Status since'   . ' ' . $seconds_elapsed_grid_status  .
+                          'Grid Status unchanged'   . ' ' . $grid_seconds_in_hms  .
                       '</span>';               
   
       $format_object->status = $status_html;
@@ -6265,8 +6265,16 @@ class class_transindus_eco
      */
     public function format_seconds_to_hms_format( int $seconds ): string
     {
-      $t = round( $seconds);
+      // Calculate the hours 
+      $hours = floor($seconds / 3600); 
+    
+      // Calculate the remaining seconds 
+      // into minutes 
+      $minutes = floor(($seconds % 3600) / 60); 
+    
+      // Return the result as a string
+      $hms_string = (string) $hours . ":" . $minutes;
 
-      return sprintf('%02d:%02d:%02d', ($t/3600),($t/60%60), $t%60);
+      return $hms_string;
     }
 }

@@ -1940,6 +1940,8 @@ class class_transindus_eco
         $battery_soc_since_midnight_obj->delta_soc_xcomlan = 0;
         // return value read from usermetaunchanged this cycle
         $battery_soc_since_midnight_obj->soc_xcomlan_since_midnight = $soc_xcomlan_since_midnight;
+
+        $battery_soc_since_midnight_obj->batt_amps = 0;
         
         return $battery_soc_since_midnight_obj;
       }

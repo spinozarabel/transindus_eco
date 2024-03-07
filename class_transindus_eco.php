@@ -1129,6 +1129,7 @@ class class_transindus_eco
 
         $shelly_3p_grid_energy_measurement_obj->home_grid_kw_power         = $home_grid_kw_power;
         $shelly_3p_grid_energy_measurement_obj->car_charger_grid_kw_power  = $car_charger_grid_kw_power;
+        $shelly_3p_grid_energy_measurement_obj->wallcharger_grid_kw_power  = $wallcharger_grid_kw_power;
 
         $shelly_3p_grid_energy_measurement_obj->home_grid_voltage         = $home_grid_voltage;
 

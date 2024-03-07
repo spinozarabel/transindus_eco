@@ -6273,7 +6273,7 @@ class class_transindus_eco
       $minutes = floor(($seconds % 3600) / 60); 
     
       // Return the result as a string
-      $hms_string = (string) $hours . ":" . $minutes;
+      $hms_string = (string) $hours . "h:" . $minutes . "m";
 
       return $hms_string;
     }

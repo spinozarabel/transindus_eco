@@ -1831,7 +1831,6 @@ class class_transindus_eco
             $object_from_linux_home_desktop->seconds_elapsed_xcomlan_ts   = $seconds_elapsed_xcomlan_ts;
             $object_from_linux_home_desktop->seconds_elapsed_shellybm_ts  = $seconds_elapsed_shellybm_ts;
 
-            $notifications_enabled = (bool) false;
             if ( false === ( $last_notification_ts = get_transient('last_notification_ts') ) )
             {
               $notifications_enabled = (bool) true;
@@ -1847,6 +1846,7 @@ class class_transindus_eco
                 $notifications_enabled = (bool) false;
               }
             }
+
             $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
             $now_ts = $now->getTimestamp();
 
@@ -1858,7 +1858,7 @@ class class_transindus_eco
               case "no_action":
 
                 // no notifications
-                $notifications_enabled = (bool) false;
+                $notifications_enabled = (bool) false;  // independent of everything else
 
               break;
 
@@ -1900,8 +1900,11 @@ class class_transindus_eco
             
             if ( $notifications_enabled )
                 {
+                  error_log( "This is the notofication that would have been sent: $notification_message");
+                  /*
                   $this->send_webpushr_notification(  $notification_title, $notification_message, $webpushr_subscriber_id, 
                                                       $webpushrKey, $webpushrAuthToken  );
+                                                      */
                   set_transient('last_notification_ts', $now_ts, 3600 );                        
                 }
               

@@ -239,15 +239,6 @@ class class_transindus_eco
     }
 
 
-
-    /**
-     * 
-     */
-    public static function set_default_timezone()
-    {
-      //
-    }
-
     /**
      *  This shoercode checks the user meta for studer settings to see if they are set.
      *  If not set the user meta are set using defaults.
@@ -2990,6 +2981,26 @@ class class_transindus_eco
     }
 
 
+    
+    /**
+     *  This routine will publish the updated flag values via mqtt.
+     *  It is upto the local server to subscribe to this topic and get the values
+     */
+    public function push_flag_changes_to_local_server( int $user_index, int $wp_user_ID, object $flag_object )
+    {
+      $config = $this->config;
+
+      $message = json_encode( $flag_object );
+
+      $topic = $config['accounts'][$user_index]['topic_flag_from_remote'];
+
+      $mqtt_ch = new my_mqtt();
+
+      // publish message to remote using TLS even if on same server. set retain messages to be true
+      $mqtt_ch->mqtt_pub_remote_qos_0( $topic, $message, true );
+    }
+
+
     /**
      * 
      */
@@ -5676,11 +5687,12 @@ class class_transindus_eco
                     break;
 
                 case($current_status_doShelly):               // If TRUE, update user meta to FALSE
-                    
+                    $do_shelly = (bool) false;
                     update_user_meta( $wp_user_ID, "do_shelly", false);
                     break;
 
                 case( ! $current_status_doShelly):            // If FALSE, update user meta to TRUE
+                  $do_shelly = (bool) true;
                     update_user_meta( $wp_user_ID, "do_shelly", true);
                     break;
             }
@@ -5696,19 +5708,30 @@ class class_transindus_eco
 
           if ($current_state_keep_always_on === true)
           {
+            $keep_shelly_switch_closed_always = (bool) false;
+
             update_user_meta( $wp_user_ID, 'keep_shelly_switch_closed_always', false);
 
             error_log('Changed keep always ON flag from true-->false due to Ajax Request');
           }
           else {
+            $keep_shelly_switch_closed_always = (bool) true;
+
             update_user_meta( $wp_user_ID, 'keep_shelly_switch_closed_always', true);
 
             error_log('Changed keep always ON flag from false-->true due to Ajax Request');
           }
+        }
+
+          $flag_object = new stdClass;
+
+          $flag_object->keep_shelly_switch_closed_always = $keep_shelly_switch_closed_always;
+          $flag_object->do_shelly = $do_shelly;
+
+          $this->push_flag_changes_to_local_server( 0, $wp_user_ID, $flag_object );
 
           // Grid ON/OFF is determoned in the CRON loop as usual.
           wp_send_json(null);
-        }
     }    
     
     /**

@@ -61,7 +61,9 @@ class my_mqtt {
 
     /**
      *  Subscribes to local host with QOS 0 with no authentication since it is only over private local LAN
+     *  Since the only subscription is by the local linux computer we fix the client ID to the name of the app.
      *  @param string:$topic_param is a string containing the topic. Something like 'shellypro3em-deviceid'
+     * 
      */
     public function mqtt_sub_local_qos_0( $topic_param )
     {
@@ -111,6 +113,11 @@ class my_mqtt {
         }
     }
 
+    /**
+     *  This is to be used only for a local client on the server. Since it is befind a firewall no internet
+     *  Since the call is local there is no need for encryption nor authentication as the LAN (WIFI) is secured.
+     *  since only xcom-lan from Studer will be using this we fix the client ID.
+     */
     public function mqtt_pub_local_qos_0( $topic_param, $message, $retain = false)
     {
         $mqtt_broker_host       = "localhost";
@@ -148,6 +155,13 @@ class my_mqtt {
             }   
     }
 
+    /**
+     *  Publish to TLS broker using domain not not localhost or IP. Even a local client on the server will have to use this method
+     *  The client ID is set to the username
+     *  @param string:$topic_param is the topic that is passed in
+     *  @param string:$message is the message that is passed in
+     *  @param bool:$retain is the flag that is passed in to set retaining messages on publishing
+     */
     public function mqtt_pub_remote_qos_0( $topic_param, $message, $retain = false)
     {
         $mqtt_broker_host       = $this->config['accounts'][0]['mqtt_broker_host'];
@@ -160,13 +174,13 @@ class my_mqtt {
 
         try {
             // Create a new instance of an MQTT client and configure it to use the shared broker host and port.
-            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, 'mysolarApplocal', MqttClient::MQTT_3_1, null, $logger);
+            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, $authorization_username, MqttClient::MQTT_3_1, null, $logger);
 
             // Create and configure the connection settings as required.
             $connectionSettings = (new ConnectionSettings)
-            ->setUseTls(true)                   // No TLS to encrypt the communications
+            ->setUseTls(true)                    // set TLS to encrypt the communications
             ->setTlsSelfSignedAllowed(false)     //  No self-signed certifciates
-            ->setTlsVerifyPeer(true)            // Do  NOTrequire the certificate to match the host
+            ->setTlsVerifyPeer(true)             // Do require the certificate to match the host
             ->setConnectTimeout(5)               // timeout for establishing socket
             ->setSocketTimeout(10)               // If no data is read or sent for the given amount of seconds, the socket will be closed.
             ->setResendTimeout(10)               // number of seconds the client will wait before sending a duplicate

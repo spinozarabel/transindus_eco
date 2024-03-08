@@ -193,7 +193,8 @@ class my_mqtt {
     }
 
     /**
-     * 
+     *  Subscription to TLS broker using domain name. Note that a local client on this server will also need to use this method
+     *   and not localhost.
      */
     public function mqtt_sub_remote_qos_0( $topic_param )
     {
@@ -207,7 +208,8 @@ class my_mqtt {
 
         try {
             // Create a new instance of an MQTT client and configure it to use the shared broker host and port.
-            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, 'mystuder', MqttClient::MQTT_3_1, null, $logger);
+            // note that the cleint ID is same as the mqtt user's username
+            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, $authorization_username, MqttClient::MQTT_3_1, null, $logger);
 
             // Create and configure the connection settings as required.
             $connectionSettings = (new ConnectionSettings)

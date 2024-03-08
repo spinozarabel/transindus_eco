@@ -2981,7 +2981,7 @@ class class_transindus_eco
     }
 
 
-    
+
     /**
      *  This routine will publish the updated flag values via mqtt.
      *  It is upto the local server to subscribe to this topic and get the values
@@ -5725,10 +5725,11 @@ class class_transindus_eco
 
           $flag_object = new stdClass;
 
-          $flag_object->keep_shelly_switch_closed_always = $keep_shelly_switch_closed_always;
-          $flag_object->do_shelly = $do_shelly;
+          if ($toggleGridSwitch) $flag_object->keep_shelly_switch_closed_always = $keep_shelly_switch_closed_always;
+          
+          if ( $doShellyToggle ) $flag_object->do_shelly = $do_shelly;
 
-          $this->push_flag_changes_to_local_server( 0, $wp_user_ID, $flag_object );
+          if ( ! empty($flag_object ) ) $this->push_flag_changes_to_local_server( 0, $wp_user_ID, $flag_object );
 
           // Grid ON/OFF is determoned in the CRON loop as usual.
           wp_send_json(null);

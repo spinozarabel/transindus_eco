@@ -3933,7 +3933,7 @@ class class_transindus_eco
 
 
     /**
-     * 
+     *  responds to an AJAX call from JS timer for updating grid voltages on the grid page
      */
     public function ajax_my_grid_cron_update_handler()
     {
@@ -5633,8 +5633,8 @@ class class_transindus_eco
 
 
     /**
-     *  This AJAX handler server side function generates 5s data from measurements
-     *  The data is sent by AJAX to  client browser using the AJAX call.
+     *  This AJAX handler server side function when power icon
+     *  The function toggles the doShelly user meta and the keepalways user meta depending on received inputs
      */
     public function ajax_my_solar_update_handler()     
     {   // service Ajax Call
@@ -5685,33 +5685,16 @@ class class_transindus_eco
                     break;
             }
         }
-        
-        {    // get user_index based on user_name
-            $current_user = get_user_by('id', $wp_user_ID);
-            $wp_user_name = $current_user->user_login;
-            $user_index   = array_search( $wp_user_name, array_column($this->config['accounts'], 'wp_user_name')) ;
 
-            if ( $this->verbose)
-            {
 
-            
-              error_log("from Ajax Call: toggleGridSwitch Value: " . $toggleGridSwitch . 
-                                                    ' wp_user_ID:' . $wp_user_ID       . 
-                                              ' doShellyToggle:'   . $doShellyToggle   . 
-                                                  ' user_index:'   . $user_index);
-            }
-        }
-
-        // extract the do_shelly control flag as set in user meta
-        $do_shelly  = get_user_meta($wp_user_ID, "do_shelly", true);
-
-        if (false)  // was previously $toggleGridSwitch, now inactivated till needed later on
+        if ($toggleGridSwitch)
         { // User has requested to toggle the GRID ON/OFF Shelly Switch
           // the current interpretation is that this is the toggle for the keep_always_on flag
+          // Once the change if any happens the cron loop will determine grid switch, not here.
           // Find the current status and just toggle the status
-          $current_state_keep_always_on =  get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true);
+          $current_state_keep_always_on =  (bool) get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always",  true);
 
-          if ($current_state_keep_always_on == true)
+          if ($current_state_keep_always_on === true)
           {
             update_user_meta( $wp_user_ID, 'keep_shelly_switch_closed_always', false);
 
@@ -5719,49 +5702,13 @@ class class_transindus_eco
           }
           else {
             update_user_meta( $wp_user_ID, 'keep_shelly_switch_closed_always', true);
+
             error_log('Changed keep always ON flag from false-->true due to Ajax Request');
           }
-          // Grid ON/OFF is determoned in the CRON loop as usual. 
-          return;
 
-          // The code below is obsolete and will never execute
-
-            // Get current status of switch
-            $shelly_api_device_response   = $this->get_shelly_device_status($user_index);
-
-            if ( empty($shelly_api_device_response) ) {   // what do we do we do if device is OFFLINE?
-                // do nothing
-            }
-            else {  // valid switch response so we can determine status
-                    
-                    $shelly_api_device_status_ON  = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
-
-                    if ($shelly_api_device_status_ON) {   // Switch is ON, toggle switch to OFF
-                        $shelly_switch_status = "ON";
-
-                        // we need to turn it off because user has toggled switch
-                        $response = $this->turn_on_off_shelly_switch($user_index, "off");
-
-                        error_log('Changed Switch from ON->OFF due to Ajax Request');
-
-                    }
-                    else {    // Switch is OFF, toggle switch to ON
-                        $shelly_switch_status = "OFF";
-
-                        // we need to turn switch ON since user has toggled switch
-                        $response = $this->turn_on_off_shelly_switch($user_index, "on");
-
-                        error_log('Changed Switch from OFF->ON due to Ajax Request');
-                    }
-            }
+          // Grid ON/OFF is determoned in the CRON loop as usual.
+          wp_send_json(null);
         }
-
-        // get a new set of readings
-        $readings_obj = get_transient( 'shelly_readings_object' );
-
-        $format_object = $this->prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $readings_obj );
-
-        wp_send_json($format_object);
     }    
     
     /**

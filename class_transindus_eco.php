@@ -4336,7 +4336,7 @@ class class_transindus_eco
             }
                 
 
-            if ( $flag_object->do_shelly )
+            if ( $flag_object->do_shelly === true ||  $flag_object->do_shelly === false )
             {
               $do_shelly_from_mqtt_update = (bool) $flag_object->do_shelly;
 

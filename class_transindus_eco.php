@@ -1451,7 +1451,7 @@ class class_transindus_eco
 
         $user_index = (int) 0;
 
-        // $this->get_flag_data_from_master_remote($user_index, $wp_user_ID);
+        $this->get_flag_data_from_master_remote($user_index, $wp_user_ID);
 
         if ( $wp_user_ID )
         { // we have a valid user

@@ -4335,7 +4335,7 @@ class class_transindus_eco
               }
             }
                 
-
+            /*
             if ( $flag_object->do_shelly === true ||  $flag_object->do_shelly === false )
             {
               $do_shelly_from_mqtt_update = (bool) $flag_object->do_shelly;
@@ -4349,7 +4349,7 @@ class class_transindus_eco
                 error_log(" Updated flag do_shelly From: $do_shelly_present_setting To $do_shelly_from_mqtt_update");
               }
             }
-              
+            */  
             
             if ( ! empty( $flag_object->soc_percentage_lvds_setting ) && $flag_object->soc_percentage_lvds_setting > 40 && $flag_object->soc_percentage_lvds_setting < 96)
             {

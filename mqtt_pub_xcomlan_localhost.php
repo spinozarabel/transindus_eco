@@ -15,6 +15,8 @@ $topic = "iot_data_over_lan/studerxcomlan";
 
 $retain = true;
 
+$clientId = 'StuderXcomLanLocalPub';
+
 // publish the json string obtained from xcom-lan studer readings as the message
-$test->mqtt_pub_local_qos_0( $topic, $mystuder_readings_json_string, $retain );
+$test->mqtt_pub_local_qos_0( $topic, $mystuder_readings_json_string, $retain, $clientId );
 

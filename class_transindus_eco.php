@@ -4304,7 +4304,7 @@ class class_transindus_eco
         // define a new instance of the mqtt class to subscribe and get the message.
         $mqtt_ch = new my_mqtt();
 
-        $mqtt_ch->mqtt_sub_remote_qos_0( $topic_flg_from_remote );
+        $mqtt_ch->mqtt_sub_remote_qos_0( $topic_flg_from_remote, 'LocalWPGettingFlags' );
 
         // The above is blocking till it gets a message or timeout.
         $json_string = $mqtt_ch->message;
@@ -4351,7 +4351,7 @@ class class_transindus_eco
       $retain = true;
 
       // publish the json string obtained from xcom-lan studer readings as the message
-      $mqtt_ch->mqtt_pub_remote_qos_0( $topic, $json_data, $retain );
+      $mqtt_ch->mqtt_pub_remote_qos_0( $topic, $json_data, $retain, 'localWPReadings' );
     }
 
 
@@ -4379,7 +4379,7 @@ class class_transindus_eco
         // define a new instance of the mqtt class to subscribe and get the message.
         $mqtt_ch = new my_mqtt();
 
-        $mqtt_ch->mqtt_sub_local_qos_0( $topic );
+        $mqtt_ch->mqtt_sub_local_qos_0( $topic, 'localWPXcomLanData' );
 
         // The above is blocking till it gets a message or timeout.
         $json_string = $mqtt_ch->message;

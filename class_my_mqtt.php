@@ -61,9 +61,12 @@ class my_mqtt {
 
     /**
      *  Subscribes to local host with QOS 0 with no authentication since it is only over private local LAN
-     *  @param string:$topic_param is a string containing the topic. Something like 'shellypro3em-deviceid'
+     *  This is used by local WP to get data about Studer from xcom-lan.
+     * 
+     *  @param string:$topic is a string containing the topic. Something like 'shellypro3em-deviceid'
+     *  @param string:$clientId is pre-defined to be 'mysolarApplocal'. It is recommended to be given a value
      */
-    public function mqtt_sub_local_qos_0( $topic_param )
+    public function mqtt_sub_local_qos_0( string $topic, string $clientId = 'mysolarApplocal' )
     {
         $mqtt_broker_host       = 'localhost';
         $mqtt_broker_tls_port   = 1883;
@@ -73,7 +76,7 @@ class my_mqtt {
 
         try {
             // Create a new instance of an MQTT client and configure it to use the shared broker host and port.
-            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, 'mysolarApplocal', MqttClient::MQTT_3_1, null, $logger);
+            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, $clientId, MqttClient::MQTT_3_1, null, $logger);
 
             // Create and configure the connection settings as required.
             $connectionSettings = (new ConnectionSettings)
@@ -87,7 +90,7 @@ class my_mqtt {
             $client->connect( $connectionSettings, true );
         
             // Subscribe to the topic passed in using QoS 0.
-            $client->subscribe( $topic_param, function (string $topic, string $message, bool $retained) use ($logger, $client) {
+            $client->subscribe( $topic, function (string $topic, string $message, bool $retained) use ($logger, $client) {
                 
                 // After receiving the first message on the subscribed topic, we want the client to stop listening for messages.
                 $client->interrupt();
@@ -111,7 +114,11 @@ class my_mqtt {
         }
     }
 
-    public function mqtt_pub_local_qos_0( $topic_param, $message, $retain = false)
+    /**
+     *  This function is used for example by a CRON driven php-cli driven to publish xcom-lan data via python script
+     *      to the local mosquitto broker.
+     */
+    public function mqtt_pub_local_qos_0( string $topic, string $message, $retain = false, string $clientId = 'cron_xcomlan')
     {
         $mqtt_broker_host       = "localhost";
         $mqtt_broker_tls_port   = 1883;
@@ -121,7 +128,7 @@ class my_mqtt {
 
         try {
             // Create a new instance of an MQTT client and configure it to use the shared broker host and port.
-            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, 'mystuder', MqttClient::MQTT_3_1, null, $logger);
+            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, $clientId, MqttClient::MQTT_3_1, null, $logger);
 
             // Create and configure the connection settings as required.
             $connectionSettings = (new ConnectionSettings)
@@ -135,7 +142,7 @@ class my_mqtt {
             $client->connect( $connectionSettings, true );
             
             // Publish the message passed in on the topic passed in using QoS 0.
-            $client->publish( $topic_param, $message, MqttClient::QOS_AT_MOST_ONCE, $retain);
+            $client->publish( $topic, $message, MqttClient::QOS_AT_MOST_ONCE, $retain);
             
 
             
@@ -148,7 +155,10 @@ class my_mqtt {
             }   
     }
 
-    public function mqtt_pub_remote_qos_0( $topic_param, $message, $retain = false)
+    /**
+     *  This is used for example by local WP to publish the shelly_readings_obj to remote WP
+     */
+    public function mqtt_pub_remote_qos_0( string $topic, string $message, $retain = false, string $clientId = 'mysolarApplocal')
     {
         $mqtt_broker_host       = $this->config['accounts'][0]['mqtt_broker_host'];
         $mqtt_broker_tls_port   = $this->config['accounts'][0]['mqtt_broker_tls_port'];
@@ -160,7 +170,7 @@ class my_mqtt {
 
         try {
             // Create a new instance of an MQTT client and configure it to use the shared broker host and port.
-            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, 'mysolarApplocal', MqttClient::MQTT_3_1, null, $logger);
+            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, $clientId, MqttClient::MQTT_3_1, null, $logger);
 
             // Create and configure the connection settings as required.
             $connectionSettings = (new ConnectionSettings)
@@ -180,7 +190,7 @@ class my_mqtt {
             $client->connect( $connectionSettings, true );
             
             // Publish the message passed in on the topic passed in using QoS 0.
-            $client->publish( $topic_param, $message, MqttClient::QOS_AT_MOST_ONCE, $retain);
+            $client->publish( $topic, $message, MqttClient::QOS_AT_MOST_ONCE, $retain);
             
 
             
@@ -194,9 +204,11 @@ class my_mqtt {
     }
 
     /**
-     * 
+     *  This is used by local WP to subscribe to remote mqtt broker to get the flag export data published by the remote WP to it.
+     *  This is also used by remote WP to subscribe to MQTT broker to get readings obj data published by local WP to it. This routine
+     *      though is executed as part of the remote WP and the code maybe same or slightly different
      */
-    public function mqtt_sub_remote_qos_0( $topic_param )
+    public function mqtt_sub_remote_qos_0( string $topic, string $clientId = 'mystuder' )
     {
         $mqtt_broker_host       = $this->config['accounts'][0]['mqtt_broker_host'];
         $mqtt_broker_tls_port   = $this->config['accounts'][0]['mqtt_broker_tls_port'];
@@ -208,7 +220,7 @@ class my_mqtt {
 
         try {
             // Create a new instance of an MQTT client and configure it to use the shared broker host and port.
-            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, 'mystuder', MqttClient::MQTT_3_1, null, $logger);
+            $client = new MqttClient($mqtt_broker_host, $mqtt_broker_tls_port, $clientId, MqttClient::MQTT_3_1, null, $logger);
 
             // Create and configure the connection settings as required.
             $connectionSettings = (new ConnectionSettings)
@@ -228,7 +240,7 @@ class my_mqtt {
             $client->connect( $connectionSettings, true );
         
             // Subscribe to the topic passed in using QoS 0.
-            $client->subscribe( $topic_param, function (string $topic, string $message, bool $retained) use ($logger, $client) {
+            $client->subscribe( $topic, function (string $topic, string $message, bool $retained) use ($logger, $client) {
                 
                 // After receiving the first message on the subscribed topic, we want the client to stop listening for messages.
                 $client->interrupt();

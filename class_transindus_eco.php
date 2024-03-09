@@ -2729,7 +2729,7 @@ class class_transindus_eco
 
           $switch_release = 
               $soc_percentage_now               >= ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered past LVDS
-             ($batt_amps_shellybm > 6   || $batt_current_xcomlan > 6)                   &&  // battery is charging with at least 0.3 KW Solar
+             // ($batt_amps_shellybm > 6   || $batt_current_xcomlan > 6)                   &&  // battery is charging with at least 0.3 KW Solar
               $shelly1pm_acin_switch_status     === "ON"            &&                      // Grid switch is ON
               $control_shelly                   === true            &&                      // Grid Switch is Controllable
               $keep_shelly_switch_closed_always === false           &&                      // keep switch ON always is False

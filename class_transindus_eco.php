@@ -4321,7 +4321,46 @@ class class_transindus_eco
           elseif( json_last_error() === JSON_ERROR_NONE )
           {
             // do all the flag updation here
-            error_log(print_r($flag_object, true));
+            if ( $flag_object->keep_shelly_switch_closed_always )
+            {
+              $keep_shelly_switch_closed_always_from_mqtt_update = (bool) $flag_object->keep_shelly_switch_closed_always;
+
+              $keep_shelly_switch_closed_always_present_setting = (bool) get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always", true);
+
+              // compare the values and update if not the same
+              if ( $keep_shelly_switch_closed_always_from_mqtt_update !== $keep_shelly_switch_closed_always_present_setting )
+              {
+                //update_user_meta($wp_user_ID, "keep_shelly_switch_closed_always", $keep_shelly_switch_closed_always_from_mqtt_update);
+                error_log(" Updated flag keep_switch_closed_always From: $keep_shelly_switch_closed_always_present_setting To $keep_shelly_switch_closed_always_from_mqtt_update");
+              }
+            }
+                
+
+            if ( $flag_object->do_shelly )
+            {
+              $do_shelly_from_mqtt_update = (bool) $flag_object->do_shelly;
+
+              $do_shelly_present_setting = (bool) get_user_meta($wp_user_ID, "do_shelly", true);
+
+              // compare the values and update if not the same
+              if ( $do_shelly_from_mqtt_update !== $do_shelly_present_setting )
+              {
+                //update_user_meta($wp_user_ID, "do_shelly", $do_shelly_from_mqtt_update);
+                error_log(" Updated flag do_shelly From: $do_shelly_present_setting To $do_shelly_from_mqtt_update");
+              }
+            }
+              
+            
+            if ( ! empty( $flag_object->soc_percentage_lvds_setting ) && $flag_object->soc_percentage_lvds_setting > 40 && $flag_object->soc_percentage_lvds_setting < 96)
+              $soc_percentage_lvds_setting_from_mqtt_update = (float) $flag_object->soc_percentage_lvds_setting;
+              $soc_percentage_lvds_setting_present_setting  = (float) get_user_meta($wp_user_ID, "soc_percentage_lvds_setting", true);
+
+              // compare the values and update if not the same
+              if ( $soc_percentage_lvds_setting_from_mqtt_update != $soc_percentage_lvds_setting_present_setting )
+              {
+                //update_user_meta($wp_user_ID, "soc_percentage_lvds_setting", $soc_percentage_lvds_setting_from_mqtt_update);
+                error_log(" Updated soc_percentage_lvds_setting From: $soc_percentage_lvds_setting_present_setting To $soc_percentage_lvds_setting_from_mqtt_update");
+              }
           }
           else
           {

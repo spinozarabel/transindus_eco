@@ -4340,6 +4340,9 @@ class class_transindus_eco
      */
     public function publish_data_to_avasarala_in_using_mqtt( object $data ): void
     {
+      $config = $this->config;
+      $topic = $config['accounts'][0]['topic_data_from_local_linux'];
+
       $json_data = json_encode($data);
       $mqtt_ch = new my_mqtt();
 

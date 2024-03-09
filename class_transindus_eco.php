@@ -4352,6 +4352,7 @@ class class_transindus_eco
               
             
             if ( ! empty( $flag_object->soc_percentage_lvds_setting ) && $flag_object->soc_percentage_lvds_setting > 40 && $flag_object->soc_percentage_lvds_setting < 96)
+            {
               $soc_percentage_lvds_setting_from_mqtt_update = (float) $flag_object->soc_percentage_lvds_setting;
               $soc_percentage_lvds_setting_present_setting  = (float) get_user_meta($wp_user_ID, "soc_percentage_lvds_setting", true);
 
@@ -4361,6 +4362,8 @@ class class_transindus_eco
                 //update_user_meta($wp_user_ID, "soc_percentage_lvds_setting", $soc_percentage_lvds_setting_from_mqtt_update);
                 error_log(" Updated soc_percentage_lvds_setting From: $soc_percentage_lvds_setting_present_setting To $soc_percentage_lvds_setting_from_mqtt_update");
               }
+            }
+              
           }
           else
           {

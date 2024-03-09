@@ -1451,7 +1451,7 @@ class class_transindus_eco
 
         $user_index = (int) 0;
 
-        // $this->get_flag_data_from_master_remote($user_index, $wp_user_ID);
+        $this->get_flag_data_from_master_remote($user_index, $wp_user_ID);
 
         if ( $wp_user_ID )
         { // we have a valid user
@@ -4297,7 +4297,7 @@ class class_transindus_eco
       $config = $this->config;
 
       // set the topic to update flags from remote to local
-      $topic_flg_from_remote = $config['accounts'][$user_index]['topic_flg_from_remote'];
+      $topic_flg_from_remote = $config['accounts'][$user_index]['topic_flag_from_remote'];
 
       { 
         // subscribe to the mqtt broker. This is predefined as a localhost 1883 QOS_0 with no authentication connection

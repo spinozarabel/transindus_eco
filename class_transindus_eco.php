@@ -2996,7 +2996,9 @@ class class_transindus_eco
 
       $mqtt_ch = new my_mqtt();
 
-      // publish message to remote using TLS even if on same server. set retain messages to be true
+      // publish message to remote mqtt broker using TLS even if on same server. set retain messages to be true
+      // we retain messages such that asynchronous subscription will still get the message even if it is sent only once.
+      // if the message is ressent with new data, that new data will take the place of the latest retained data.
       $mqtt_ch->mqtt_pub_remote_qos_0( $topic, $message, true );
     }
 
@@ -3099,6 +3101,7 @@ class class_transindus_eco
     /**
      *  Ninja form data is checked for proper limits.
      *  If data is changed the corresponding user meta is updated to trhe new form data.
+     *  In the case here of remote WP being a shadow of the local WP any changes to some fields will be sent to the Local WP
      */
     public function my_ninja_forms_after_submission( $form_data )
     {
@@ -3123,6 +3126,9 @@ class class_transindus_eco
         error_log("Could not retrieve transient data for defaults array for settings, aborting without user meta updates");
         return;
       }
+
+      // initialize object to be sent to the local WP to reflect updates here
+      $settings_obj_to_local_wp = new stdClass;
 
       $defaults_arr_keys    = array_keys($defaults_arr);       // get all the keys in numerically indexed array
       
@@ -3151,6 +3157,8 @@ class class_transindus_eco
             {
               // update the user meta with value from form since it is different from existing setting
               update_user_meta( $wp_user_ID, 'keep_shelly_switch_closed_always', $submitted_field_value);
+
+              $settings_obj_to_local_wp->keep_shelly_switch_closed_always =  $submitted_field_value;
 
               error_log( "Updated User Meta - keep_shelly_switch_closed_always - from Settings Form: " . $field[ 'value' ] );
             }
@@ -3222,6 +3230,8 @@ class class_transindus_eco
             {
               // update the user meta with value from form since it is different from existing setting
               update_user_meta( $wp_user_ID, 'do_shelly', $submitted_field_value);
+
+              $settings_obj_to_local_wp->do_shelly =  $submitted_field_value;
 
               error_log( "Updated User Meta - do_shelly - from Settings Form: " . $field[ 'value' ] );
             }
@@ -3304,6 +3314,8 @@ class class_transindus_eco
               {
                 update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
                 error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+
+                $settings_obj_to_local_wp->soc_percentage_lvds_setting =  $field[ 'value' ];
               }
             }
             else
@@ -3660,6 +3672,9 @@ class class_transindus_eco
         endswitch;       // end of switch
 
       endforeach;        // end of foreach
+
+      // before we leave as we would normally for a standalone control site since this is a shadow remote site we mqtt pub the updates
+      if ( ! empty($settings_obj_to_local_wp ) ) $this->push_flag_changes_to_local_server( 0, $wp_user_ID, $settings_obj_to_local_wp );
 
     } // end function
 

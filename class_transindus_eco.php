@@ -1449,6 +1449,10 @@ class class_transindus_eco
 
         $wp_user_ID   = $wp_user_obj->ID;
 
+        $user_index = (int) 0;
+
+        $this->get_flag_data_from_master_remote($user_index, $wp_user_ID);
+
         if ( $wp_user_ID )
         { // we have a valid user
           
@@ -4285,6 +4289,51 @@ class class_transindus_eco
       return $shelly_water_heater_data;
     }
 
+    /**
+     * 
+     */
+    public function get_flag_data_from_master_remote( int $user_index, int $wp_user_ID):void
+    {
+      $config = $this->config;
+
+      // set the topic to update flags from remote to local
+      $topic_flg_from_remote = $config['accounts'][$user_index]['topic_flg_from_remote'];
+
+      { 
+        // subscribe to the mqtt broker. This is predefined as a localhost 1883 QOS_0 with no authentication connection
+        // define a new instance of the mqtt class to subscribe and get the message.
+        $mqtt_ch = new my_mqtt();
+
+        $mqtt_ch->mqtt_sub_remote_qos_0( $topic_flg_from_remote );
+
+        // The above is blocking till it gets a message or timeout.
+        $json_string = $mqtt_ch->message;
+
+        // Check that the message is not empty
+        if (! empty( $json_string ))
+        {
+          $flag_object = json_decode($json_string);
+
+          if ($flag_object === null) 
+          {
+            error_log( 'Error parsing JSON from MQTT studerxcomlan: '. json_last_error_msg() );
+          }
+          elseif( json_last_error() === JSON_ERROR_NONE )
+          {
+            // do all the flag updation here
+            error_log(print_r($flag_object, true));
+          }
+          else
+          {
+            error_log( 'Error parsing JSON from MQTT studerxcomlan: '. json_last_error_msg() );
+          }
+        }
+        else
+        {
+          // error_log( "JSON string from mqtt subscription of scomlan via cron shell exec is empty");
+        }
+      }
+    }
 
     /**
      * 

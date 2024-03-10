@@ -2597,6 +2597,12 @@ class class_transindus_eco
             update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
                                             $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight);
 
+            /*
+              Ideally, the daily SOC error should be 0.
+              The SOC error comes about due to decrease in battery capacity and or due to errors in the battery current measurement
+              and errors in numerical integration. If the average error changes slowly with time over months
+              then the most probable reason is degaradation in battery capacity due to age and charge cycling. 
+              */
             if ( false === get_transient( 'soc_daily_error' ) )
             {
               // the transient does not exist so the daily error has not yet been captured so capture the error

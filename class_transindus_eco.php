@@ -4330,7 +4330,7 @@ class class_transindus_eco
               // compare the values and update if not the same
               if ( $keep_shelly_switch_closed_always_from_mqtt_update !== $keep_shelly_switch_closed_always_present_setting )
               {
-                //update_user_meta($wp_user_ID, "keep_shelly_switch_closed_always", $keep_shelly_switch_closed_always_from_mqtt_update);
+                update_user_meta($wp_user_ID, "keep_shelly_switch_closed_always", $keep_shelly_switch_closed_always_from_mqtt_update);
                 error_log(" Updated flag keep_switch_closed_always From: $keep_shelly_switch_closed_always_present_setting To $keep_shelly_switch_closed_always_from_mqtt_update");
               }
             }
@@ -4351,7 +4351,7 @@ class class_transindus_eco
             }
             */  
             
-            if ( ! empty( $flag_object->soc_percentage_lvds_setting ) && $flag_object->soc_percentage_lvds_setting > 40 && $flag_object->soc_percentage_lvds_setting < 96)
+            if ( ! empty( $flag_object->soc_percentage_lvds_setting ) && $flag_object->soc_percentage_lvds_setting >= 45 && $flag_object->soc_percentage_lvds_setting < 99 )
             {
               $soc_percentage_lvds_setting_from_mqtt_update = (float) $flag_object->soc_percentage_lvds_setting;
               $soc_percentage_lvds_setting_present_setting  = (float) get_user_meta($wp_user_ID, "soc_percentage_lvds_setting", true);
@@ -4359,7 +4359,7 @@ class class_transindus_eco
               // compare the values and update if not the same
               if ( $soc_percentage_lvds_setting_from_mqtt_update != $soc_percentage_lvds_setting_present_setting )
               {
-                //update_user_meta($wp_user_ID, "soc_percentage_lvds_setting", $soc_percentage_lvds_setting_from_mqtt_update);
+                update_user_meta($wp_user_ID, "soc_percentage_lvds_setting", $soc_percentage_lvds_setting_from_mqtt_update);
                 error_log(" Updated soc_percentage_lvds_setting From: $soc_percentage_lvds_setting_present_setting To $soc_percentage_lvds_setting_from_mqtt_update");
               }
             }

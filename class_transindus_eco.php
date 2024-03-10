@@ -4321,7 +4321,7 @@ class class_transindus_eco
           elseif( json_last_error() === JSON_ERROR_NONE )
           {
             // do all the flag updation here
-            if ( $flag_object->keep_shelly_switch_closed_always )
+            if ( $flag_object->keep_shelly_switch_closed_always === true ||  $flag_object->keep_shelly_switch_closed_always === false )
             {
               $keep_shelly_switch_closed_always_from_mqtt_update = (bool) $flag_object->keep_shelly_switch_closed_always;
 

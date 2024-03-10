@@ -2596,6 +2596,17 @@ class class_transindus_eco
             // write this value back to the user meta
             update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
                                             $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight);
+
+            if ( false === get_transient( 'soc_daily_error' ) )
+            {
+              // the transient does not exist so the daily error has not yet been captured so capture the error
+              $soc_daily_error = number_format( 100 - $soc_percentage_now_calculated_using_studer_xcomlan, 1 );
+
+              // write this as transient so it will be checked, will exist and so won't get overwritten and will last say till early AM next day
+              set_transient( 'soc_daily_error' , $soc_daily_error, 15 * 60 * 60 );
+
+              error_log("LogSocDailyError: $soc_daily_error");
+            }
         }
 
         if ( $it_is_still_dark )

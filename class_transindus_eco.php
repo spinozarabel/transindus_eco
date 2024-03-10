@@ -1843,9 +1843,9 @@ class class_transindus_eco
                                                             string  $shelly_switch_status,
                                                             float   $home_grid_kw_power,
                                                             bool    $it_is_still_dark,
-                                                            float   $batt_amps_shelly_now,
+                                                            ? float $batt_amps_shelly_now,
                                                             int     $ts_shellybm_now,
-                                                            float   $batt_amps_xcomlan_now,
+                                                            ? float $batt_amps_xcomlan_now,
                                                             int     $ts_xcomlan_now ): object
     {
       $config = $this->config;

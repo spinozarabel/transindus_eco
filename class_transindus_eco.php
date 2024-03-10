@@ -2732,8 +2732,9 @@ class class_transindus_eco
                 $batt_voltage_xcomlan_avg   < $average_battery_voltage_lvds_setting );  // Battery Voltage < LVDS setting
 
           $switch_release = 
-              $soc_percentage_now               >= ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered past LVDS
-             ($batt_amps_shellybm > 6   || $batt_current_xcomlan > 6)                   &&  // battery is charging with at least 0.3 KW Solar
+              $soc_percentage_now               >= ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered 2 points past LVDS minimum setting
+             ($batt_amps_shellybm > 6   || $batt_current_xcomlan > 6)                   &&  // battery is charging. This cannot happen when dark
+              $psolar_kw          > (0.3 + $shelly_em_home_kw)                          &&  // Solar must exceed home consumption by 0.3KW
               $shelly1pm_acin_switch_status     === "ON"            &&                      // Grid switch is ON
               $control_shelly                   === true            &&                      // Grid Switch is Controllable
               $keep_shelly_switch_closed_always === false           &&                      // keep switch ON always is False
@@ -2743,6 +2744,7 @@ class class_transindus_eco
               $soc_percentage_now               >=  $soc_percentage_switch_release_setting  &&    // SOC has reached the float setting value
               $shelly1pm_acin_switch_status     === "ON"                                    &&    // Grid switch is ON
               $control_shelly                   === true                                    &&    // Crid Switch is Controllable
+              // $keep_shelly_switch_closed_always === true                                    &&    // keep switch ON always is true
               $switch_is_flapping               === false;                                        // switch is NOT flapping.
 
           $keep_shelly_switch_closed_till_float = 

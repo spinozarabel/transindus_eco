@@ -2696,6 +2696,13 @@ class class_transindus_eco
         // midnight actions
         if ( $this->is_time_just_pass_midnight( $user_index, $wp_user_name ) )
         {
+          /*
+            @TODO
+            This is where we need to calculate all of the daily statistics and get other required data from transients
+            Then write all of this daily data into a custom post for the day that just ended
+          */
+
+          // Then we reset values for the new day
           // reset Shelly EM Home WH counter to present reading in WH. This is only done once in 24h, at midnight
           update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', $shelly_em_home_wh );
 

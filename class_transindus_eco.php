@@ -2319,7 +2319,7 @@ class class_transindus_eco
           $soc_percentage_switch_release_setting  = (float) $all_usermeta['soc_percentage_switch_release_setting']  ?? 95.0; 
 
           // battery float voltage setting. Only used for SOC clamp for 100%
-          $average_battery_float_voltage          = (float) $all_usermeta['average_battery_float_voltage'] ?? 51.3; 
+          $average_battery_float_voltage          = (float) $all_usermeta['average_battery_float_voltage'] ?? 51.5;
 
           // Min VOltage at ACIN for RDBC to switch to GRID
           $acin_min_voltage                       = (float) $all_usermeta['acin_min_voltage'] ?? 199;  
@@ -2580,7 +2580,7 @@ class class_transindus_eco
           }
         }
 
-        if ( $soc_percentage_now_calculated_using_shelly_bm > 100 || $batt_voltage_xcomlan_avg >= 51.4 )
+        if ( $soc_percentage_now_calculated_using_shelly_bm > 100 || $batt_voltage_xcomlan_avg >= $average_battery_float_voltage )
         { // 100% SOC clamp
           // recalculate Battery SOC % accumulated since midnight
           $recal_battery_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
@@ -2589,7 +2589,7 @@ class class_transindus_eco
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
         }
 
-        if ( $soc_percentage_now_calculated_using_studer_xcomlan > 100 || $batt_voltage_xcomlan_avg >= 51.4 )
+        if ( $soc_percentage_now_calculated_using_studer_xcomlan > 100 || $batt_voltage_xcomlan_avg >= $average_battery_float_voltage )
         {   // battery float reached so 100% clamp of SOC
             $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
 

@@ -2697,10 +2697,78 @@ class class_transindus_eco
         if ( $this->is_time_just_pass_midnight( $user_index, $wp_user_name ) )
         {
           /*
-            @TODO
             This is where we need to calculate all of the daily statistics and get other required data from transients
             Then write all of this daily data into a custom post for the day that just ended
           */
+          // get the difference in counter redings to get home energy WH over last 24h before counter resets at midnight
+          $wh_energy_consumed_by_home_today  = $shelly_em_home_wh - (float) get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', true );
+          $kwh_energy_consumed_by_home_today = round( 0.001 * $wh_energy_consumed_by_home_today, 2) ?? 0;
+
+          $wh_energy_from_grid_last_24h   = $home_grid_wh_counter_now - (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', true );
+          $kwh_energy_from_grid_last_24h  = round( 0.001 * $wh_energy_from_grid_last_24h, 2);
+
+          $kwh_solar_generated_today          = get_transient( 'kwh_solar_generated_today' ) ?? 0;
+          // expire this transient soon with a value of 0. It will get restarted after sunrise for next day, in loop
+          set_transient( 'kwh_solar_generated_today', 0, 60 );
+
+          // get the total SOC% accumulated in last 24h before it is reset for new day
+          $battery_soc_percentage_accumulated_last24h = (float) get_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', true );
+          $kwh_accumulated_in_battery_today = round($battery_soc_percentage_accumulated_last24h * $battery_capacity_kwh / 100, 2);
+
+          // get this for previous day as it will be reset to value for the upcoming new day
+          $soc_value_at_beginning_of_today    = (float) get_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', true) ?? 0;
+
+          if (false !== ( $soc_daily_error = get_transient( 'soc_daily_error' ) ) )
+          {
+            // the transient exists and is already read into the variable for use
+            // expire this transient soon.
+            set_transient( 'soc_daily_error', $soc_daily_error, 60 );
+          }
+          else
+          {
+            // transient does not exist most probably because float did not happen, so set it to 0
+            $soc_daily_error = 0;
+          }
+          
+
+          // lets get the date for the dailylog post
+          $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $ts = $now->getTimestamp() - 300;
+          $now->setTimestamp($ts);
+          $date_formatted = $now->format('Y-m-d');
+
+          // create a new custom post type daily_log
+          $post_arr = array(
+                            'post_type'       => 'daily_log',
+                            'post_title'      => 'Daily Log',
+                            'post_content'    => '',
+                            'post_status'     => 'publish',
+                            'post_author'     => $wp_user_ID,
+                            'post_date'       => $date_formatted,
+                            'comment_status'  => 'closed',
+                            'ping_status'     => 'closed',
+                            'meta_input'   => array(
+                                                    'kwh_solar_generated_today'         => $kwh_solar_generated_today,
+                                                    'kwh_energy_consumed_by_home_today' => $kwh_energy_consumed_by_home_today,
+                                                    'soc_daily_error'                   => $soc_daily_error,
+                                                    'soc_value_at_beginning_of_today'   => $soc_value_at_beginning_of_today,
+                                                    'kwh_accumulated_in_battery_today'  => $kwh_accumulated_in_battery_today,
+                                                  ) ,
+                          );
+
+          $post_id = wp_insert_post($post_arr);
+
+          if(!is_wp_error($post_id))
+          {
+            //the post is valid
+            error_log("Today's Daily Log CUstom Post was created successfully as Post ID:  $post_id");
+          }
+          else
+          {
+            //there was an error in the post insertion, 
+            error_log("Error in Daily Log CUstom POst CReation: $post_id->get_error_message()");
+          }
+          
 
           // Then we reset values for the new day
           // reset Shelly EM Home WH counter to present reading in WH. This is only done once in 24h, at midnight
@@ -2838,7 +2906,7 @@ class class_transindus_eco
             case ( $keep_shelly_switch_closed_till_float ):
               $success_on = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
               error_log("LogAlways ON: Keep Grid Switch Always ON commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
-              if ( $success_off )
+              if ( $success_on )
               {
                 $switch_tree_obj->switch_tree_exit_condition = "always_on";
                 $present_switch_tree_exit_condition = "always_on";

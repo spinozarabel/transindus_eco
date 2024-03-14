@@ -3404,6 +3404,8 @@ class class_transindus_eco
               {
                 update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
                 error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+
+                $settings_obj_to_local_wp->soc_percentage_switch_release_setting =  $field[ 'value' ];
               }
             }
             else
@@ -3491,6 +3493,8 @@ class class_transindus_eco
               {
                 update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
                 error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+
+                $settings_obj_to_local_wp->average_battery_float_voltage =  $field[ 'value' ];
               }
             }
             else

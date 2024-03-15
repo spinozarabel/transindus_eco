@@ -872,9 +872,9 @@ class class_transindus_eco
         $battery_amps_raw_measurement = ($delta_voltage / $volts_per_amp);
 
         // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign and educe the current by 5%
-        // This is because the battery SOC numbers tend about 4 points more from about a value of 40% which indicates about 10^ over measurement
-        // so to be conservative we are using a 5% reduction to see if this corrects the tendency.
-        $batt_amps_shellybm = -1.0 * round( $battery_amps_raw_measurement * 0.90, 1);
+        // This is because the battery SOC numbers tend about 4 points more from about a value of 40% which indicates about 10% over measurement
+        // so to be conservative we are using a 10% reduction to see if this corrects the tendency.
+        $batt_amps_shellybm = -1.0 * round( $battery_amps_raw_measurement * 0.9, 1);
 
         $shelly_bm_measurement_obj->batt_amps_shellybm  = $batt_amps_shellybm;
         $shelly_bm_measurement_obj->timestamp_shellybm  = $timestamp_shellybm;
@@ -4428,6 +4428,36 @@ class class_transindus_eco
               {
                 update_user_meta($wp_user_ID, "keep_shelly_switch_closed_always", $keep_shelly_switch_closed_always_from_mqtt_update);
                 error_log(" Updated flag keep_switch_closed_always From: $keep_shelly_switch_closed_always_present_setting To $keep_shelly_switch_closed_always_from_mqtt_update");
+              }
+            }
+
+            if ( property_exists($flag_object, "average_battery_float_voltage" ) )
+            {
+              $average_battery_float_voltage_from_mqtt_update = (float) $flag_object->average_battery_float_voltage;
+              $average_battery_float_voltage_present_setting = (float) get_user_meta($wp_user_ID, "average_battery_float_voltage", true);
+
+              // compare the values and update if not the same provided update is meaningful
+              if (  $average_battery_float_voltage_from_mqtt_update != $average_battery_float_voltage_present_setting && 
+                    $average_battery_float_voltage_from_mqtt_update >= 51 &&
+                    $average_battery_float_voltage_from_mqtt_update <= 52     )
+              {
+                update_user_meta($wp_user_ID, "average_battery_float_voltage", $average_battery_float_voltage_from_mqtt_update);
+                error_log(" Updated flag average_battery_float_voltage From: $average_battery_float_voltage_present_setting To $average_battery_float_voltage_from_mqtt_update");
+              }
+            }
+
+            if ( property_exists($flag_object, "soc_percentage_switch_release_setting" ) )
+            {
+              $soc_percentage_switch_release_setting_from_mqtt_update = (float) $flag_object->soc_percentage_switch_release_setting;
+              $soc_percentage_switch_release_setting_present_setting = (float) get_user_meta($wp_user_ID, "soc_percentage_switch_release_setting", true);
+
+              // compare the values and update if not the same provided update is meaningful
+              if (  $soc_percentage_switch_release_setting_from_mqtt_update != $soc_percentage_switch_release_setting_present_setting && 
+              $soc_percentage_switch_release_setting_from_mqtt_update < 100 &&
+              $soc_percentage_switch_release_setting_from_mqtt_update > 75      )
+              {
+                update_user_meta($wp_user_ID, "soc_percentage_switch_release_setting", $soc_percentage_switch_release_setting_from_mqtt_update);
+                error_log(" Updated flag soc_percentage_switch_release_setting From: $soc_percentage_switch_release_setting_from_mqtt_update To $soc_percentage_switch_release_setting_from_mqtt_update");
               }
             }
                 

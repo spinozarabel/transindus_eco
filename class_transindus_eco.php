@@ -2581,6 +2581,7 @@ class class_transindus_eco
           }
         }
 
+        /*
         if ( $soc_percentage_now_calculated_using_shelly_bm > 100 || $batt_voltage_xcomlan_avg >= $average_battery_float_voltage )
         { // 100% SOC clamp
           // recalculate Battery SOC % accumulated since midnight
@@ -2589,6 +2590,7 @@ class class_transindus_eco
           // write this value back to the user meta
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
         }
+        */
 
         if ( $soc_percentage_now_calculated_using_studer_xcomlan > 100 || $batt_voltage_xcomlan_avg >= $average_battery_float_voltage )
         {   // battery float reached so 100% clamp of SOC
@@ -2597,6 +2599,12 @@ class class_transindus_eco
             // write this value back to the user meta
             update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
                                             $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight);
+
+            // recalculate Battery SOC % accumulated since midnight as measured by Shelly battery measurement
+            $recal_battery_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
+
+            // write this value back to the user meta using the shelly BM method
+            update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
 
             /*
               Ideally, the daily SOC error should be 0.

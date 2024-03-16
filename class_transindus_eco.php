@@ -2508,8 +2508,8 @@ class class_transindus_eco
               $xcomlan_ts = (int) $studer_data_via_xcomlan->timestamp_xcomlan_call;
 
               // battery current as measured by xcom-lan is got by adding + PV DC current amps and - inverter DC current amps
-              // the factor 0f 0.9 is for calibration w.r.t measurements made using Coslite BMS and calculations
-              $batt_current_xcomlan = ( $pv_current_now_total_xcomlan + $inverter_current_xcomlan ) * 0.9;
+              // 
+              $batt_current_xcomlan = ( $pv_current_now_total_xcomlan + $inverter_current_xcomlan );
 
               // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging
               // $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);

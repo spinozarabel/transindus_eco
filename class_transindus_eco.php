@@ -874,7 +874,7 @@ class class_transindus_eco
         // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign and educe the current by 5%
         // This is because the battery SOC numbers tend about 4 points more from about a value of 40% which indicates about 10% over measurement
         // so to be conservative we are using a 10% reduction to see if this corrects the tendency.
-        $batt_amps_shellybm = -1.0 * round( $battery_amps_raw_measurement * 0.9, 1);
+        $batt_amps_shellybm = -1.0 * round( $battery_amps_raw_measurement, 1);
 
         $shelly_bm_measurement_obj->batt_amps_shellybm  = $batt_amps_shellybm;
         $shelly_bm_measurement_obj->timestamp_shellybm  = $timestamp_shellybm;

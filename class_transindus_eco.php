@@ -874,7 +874,7 @@ class class_transindus_eco
         // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign and educe the current by 5%
         // This is because the battery SOC numbers tend about 4 points more from about a value of 40% which indicates about 10% over measurement
         // so to be conservative we are using a 10% reduction to see if this corrects the tendency.
-        $batt_amps_shellybm = -1.0 * round( $battery_amps_raw_measurement, 1) * 0.93;
+        $batt_amps_shellybm = -1.0 * round( $battery_amps_raw_measurement, 1) * 0.90;
 
         $shelly_bm_measurement_obj->batt_amps_shellybm  = $batt_amps_shellybm;
         $shelly_bm_measurement_obj->timestamp_shellybm  = $timestamp_shellybm;
@@ -2510,6 +2510,17 @@ class class_transindus_eco
               // battery current as measured by xcom-lan is got by adding + PV DC current amps and - inverter DC current amps
               // 
               $batt_current_xcomlan = ( $pv_current_now_total_xcomlan + $inverter_current_xcomlan );
+
+              if ( $batt_current_xcomlan >= 0 )
+              {
+                // increse the measured current by 2.5%
+                $batt_current_xcomlan = $batt_current_xcomlan * 1.025;
+              }
+              else
+              {
+                // reduce the measured current by 2.5%
+                $batt_current_xcomlan = $batt_current_xcomlan * 0.975;
+              }
 
               // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging
               // $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);

@@ -2755,12 +2755,12 @@ class class_transindus_eco
           $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $ts = $now->getTimestamp() - 300;
           $now->setTimestamp($ts);
-          $date_formatted = $now->format('Y-m-d');
+          $date_formatted = $now->format('Y-m-d H:i');
 
           // create a new custom post type daily_log
           $post_arr = array(
                             'post_type'       => 'daily_log',
-                            'post_title'      => 'Daily Log',
+                            'post_title'      => 'Solar Log ' . $date_formatted ,
                             'post_content'    => '',
                             'post_status'     => 'publish',
                             'post_author'     => $wp_user_ID,

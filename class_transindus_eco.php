@@ -1848,7 +1848,7 @@ class class_transindus_eco
                                                             ? int     $ts_shellybm_now,
                                                             ? float $batt_amps_xcomlan_now,
                                                             ? int     $ts_xcomlan_now 
-                                                            ) : object
+                                                          ) : object
     {
       $config = $this->config;
 
@@ -2514,12 +2514,12 @@ class class_transindus_eco
               if ( $batt_current_xcomlan >= 0 )
               {
                 // increse the measured current by 2.5%
-                $batt_current_xcomlan = $batt_current_xcomlan * 1.025;
+                $batt_current_xcomlan = round( $batt_current_xcomlan * 1.025, 1);
               }
               else
               {
                 // reduce the measured current by 2.5%
-                $batt_current_xcomlan = $batt_current_xcomlan * 0.975;
+                $batt_current_xcomlan = round( $batt_current_xcomlan * 0.975, 1);
               }
 
               // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging

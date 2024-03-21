@@ -2853,8 +2853,7 @@ class class_transindus_eco
           $LVDS = 
               $shelly1pm_acin_switch_status === "OFF"         &&                        // Grid switch is OFF
               $control_shelly               === true          &&                        // Grid Switch is Controllable
-              ( $soc_percentage_now         < $soc_percentage_lvds_setting ||           // SOC is < LVDS setting
-                $batt_voltage_xcomlan_avg   < $average_battery_voltage_lvds_setting );  // Battery Voltage < LVDS setting
+              $soc_percentage_now           <   $soc_percentage_lvds_setting;           // SOC less than threshold setting
 
           $switch_release = 
               $soc_percentage_now               >= ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered 2 points past LVDS minimum setting

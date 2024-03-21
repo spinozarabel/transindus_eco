@@ -872,9 +872,9 @@ class class_transindus_eco
         $battery_amps_raw_measurement = ($delta_voltage / $volts_per_amp);
 
         // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign and educe the current by 5%
-        // This is because the battery SOC numbers tend about 4 points more from about a value of 40% which indicates about 10^ over measurement
-        // so to be conservative we are using a 5% reduction to see if this corrects the tendency.
-        $batt_amps_shellybm = -1.0 * round( $battery_amps_raw_measurement * 0.90, 1);
+        // This is because the battery SOC numbers tend about 4 points more from about a value of 40% which indicates about 10% over measurement
+        // so to be conservative we are using a 10% reduction to see if this corrects the tendency.
+        $batt_amps_shellybm = -1.0 * round( $battery_amps_raw_measurement, 1) * 0.90;
 
         $shelly_bm_measurement_obj->batt_amps_shellybm  = $batt_amps_shellybm;
         $shelly_bm_measurement_obj->timestamp_shellybm  = $timestamp_shellybm;
@@ -1460,7 +1460,7 @@ class class_transindus_eco
 
         $user_index = (int) 0;
 
-        // $this->get_flag_data_from_master_remote($user_index, $wp_user_ID);
+        $this->get_flag_data_from_master_remote($user_index, $wp_user_ID);
 
         if ( $wp_user_ID )
         { // we have a valid user
@@ -1843,6 +1843,7 @@ class class_transindus_eco
       }
     }
 
+    
 
      /**
      * 
@@ -1852,10 +1853,11 @@ class class_transindus_eco
                                                             string  $shelly_switch_status,
                                                             float   $home_grid_kw_power,
                                                             bool    $it_is_still_dark,
-                                                            float   $batt_amps_shelly_now,
-                                                            int     $ts_shellybm_now,
-                                                            float   $batt_amps_xcomlan_now,
-                                                            int     $ts_xcomlan_now ): object
+                                                            ? float $batt_amps_shelly_now,
+                                                            ? int     $ts_shellybm_now,
+                                                            ? float $batt_amps_xcomlan_now,
+                                                            ? int     $ts_xcomlan_now 
+                                                          ) : object
     {
       $config = $this->config;
 
@@ -1865,12 +1867,10 @@ class class_transindus_eco
       // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
       $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH in our case
 
-      // get Battery SOC percentage accumulated till last measurement using the Shelly based current measurement
-      $soc_shellybm_since_midnight = (float) get_user_meta(   $wp_user_ID, 
-                                                      'battery_soc_percentage_accumulated_since_midnight',        true);
-      // get Battery xcomlan SOC percentage accumulated till last measurement
-      $soc_xcomlan_since_midnight = (float) get_user_meta(    $wp_user_ID, 
-                                                      'battery_xcomlan_soc_percentage_accumulated_since_midnight', true);
+      // get SOC percentage accumulated till last measurement for both shelly_bm and xcomlan methods
+      $soc_shellybm_since_midnight  = (float) get_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight',         true);
+      $soc_xcomlan_since_midnight   = (float) get_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', true);
+      
 
       switch (true) 
       {
@@ -1882,12 +1882,12 @@ class class_transindus_eco
           $battery_soc_since_midnight_obj->shelly_xcomlan_ok_bool = (bool) true;
 
           // get the unix time stamp when Shelly BM measurement was done
-          $now_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          $now_shellybm->setTimestamp($ts_shellybm_now);
+          // $now_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          // $now_shellybm->setTimestamp($ts_shellybm_now);
 
           // get the unix time stamp when xcomlan measurement was done
-          $now_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          $now_xcomlan->setTimestamp($ts_xcomlan_now);
+          // $now_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          // $now_xcomlan->setTimestamp($ts_xcomlan_now);
 
           // get shellybm previous cycle values from transient. Reset to present values if non-existent
           $previous_ts_shellybm         = (int)   get_transient(  'timestamp_battery_last_measurement' )  ?? $ts_shellybm_now;
@@ -1911,11 +1911,13 @@ class class_transindus_eco
           $prev_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $prev_xcomlan->setTimestamp($previous_ts_xcomlan);
 
-          $diff_shellybm = $now_shellybm->diff( $prev_shellybm );
-          $delta_hours_shellybm = ( $diff_shellybm->s + $diff_shellybm->i * 60  + $diff_shellybm->h * 60 * 60 ) / 3600;
+          // duration in seconds between timestamps for shelly_bm method
+          $delta_secs_shellybm  = $ts_shellybm_now - $previous_ts_shellybm;
+          $delta_hours_shellybm = $delta_secs_shellybm / 3600;
 
-          $diff_xcomlan = $now_xcomlan->diff( $prev_xcomlan );
-          $delta_hours_xcomlan = ( $diff_xcomlan->s + $diff_xcomlan->i * 60  + $diff_xcomlan->h * 60 * 60 ) / 3600;
+          // duration in secs between measurements
+          $delta_secs_xcomlan   = $ts_xcomlan_now - $previous_ts_xcomlan;
+          $delta_hours_xcomlan  = $delta_secs_xcomlan / 3600;
 
         break;
 
@@ -1927,17 +1929,18 @@ class class_transindus_eco
           $battery_soc_since_midnight_obj->shelly_bm_ok_bool      = (bool) true;
           $battery_soc_since_midnight_obj->shelly_xcomlan_ok_bool = (bool) false;
 
-          $now_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          $now_shellybm->setTimestamp($ts_shellybm_now);
+          // $now_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          // $now_shellybm->setTimestamp($ts_shellybm_now);
 
           $previous_ts_shellybm         = (int)   get_transient(  'timestamp_battery_last_measurement' )  ?? $ts_shellybm_now;
           $previous_batt_amps_shellybm  = (float) get_transient(  'amps_battery_last_measurement' )       ?? $batt_amps_shelly_now;
 
-          $prev_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          $prev_shellybm->setTimestamp($previous_ts_shellybm);
+          // $prev_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          // $prev_shellybm->setTimestamp($previous_ts_shellybm);
 
-          $diff_shellybm = $now_shellybm->diff( $prev_shellybm );
-          $delta_hours_shellybm = ( $diff_shellybm->s + $diff_shellybm->i * 60  + $diff_shellybm->h * 60 * 60 ) / 3600;
+          // duration in seconds between timestamps for shelly_bm method
+          $delta_secs_shellybm  = $ts_shellybm_now - $previous_ts_shellybm;
+          $delta_hours_shellybm = $delta_secs_shellybm / 3600;
 
           // set present values of shellybm for next cycle
           set_transient( 'timestamp_battery_last_measurement',  $ts_shellybm_now,       60 * 60 );
@@ -1957,18 +1960,19 @@ class class_transindus_eco
           $battery_soc_since_midnight_obj->shelly_bm_ok_bool      = (bool) false;
           $battery_soc_since_midnight_obj->shelly_xcomlan_ok_bool = (bool) true;
 
-          $now_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          $now_xcomlan->setTimestamp($ts_xcomlan_now);
+          // $now_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          // $now_xcomlan->setTimestamp($ts_xcomlan_now);
 
           // get previous xcomlan measurements
           $previous_ts_xcomlan =          (int)   get_transient( 'timestamp_xcomlan_battery_last_measurement' ) ?? $ts_xcomlan_now;
           $previous_batt_amps_xcomlan =   (float) get_transient( 'previous_batt_current_xcomlan' )              ?? $batt_amps_xcomlan_now;
 
-          $prev_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          $prev_xcomlan->setTimestamp($previous_ts_xcomlan);
+          // $prev_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          // $prev_xcomlan->setTimestamp($previous_ts_xcomlan);
 
-          $diff_xcomlan = $now_xcomlan->diff( $prev_xcomlan );
-          $delta_hours_xcomlan = ( $diff_xcomlan->s + $diff_xcomlan->i * 60  + $diff_xcomlan->h * 60 * 60 ) / 3600;
+          // duration in secs between measurements
+          $delta_secs_xcomlan   = $ts_xcomlan_now - $previous_ts_xcomlan;
+          $delta_hours_xcomlan  = $delta_secs_xcomlan / 3600;
 
           set_transient( 'timestamp_battery_last_measurement',  $ts_xcomlan_now,        60 * 60 );
           set_transient( 'amps_battery_last_measurement',       $batt_amps_xcomlan_now, 60 * 60 );
@@ -2008,7 +2012,7 @@ class class_transindus_eco
       // Determine if battery current is zero because it is dark and Grid is ON supplying the load
       if (  $it_is_still_dark               &&        // No solar
             $shelly_switch_status === 'ON'  &&        // Grid switch is ON
-            $home_grid_kw_power > 0.1            )    // Power supplied by grid to home is greater than 0.1 KW
+            $home_grid_kw_power > 0.05            )   // Power supplied by grid to home is greater than 0.05 KW
       { // battery is not charging or discharging so delta soc is 0
         $battery_soc_since_midnight_obj->delta_ah_shellybm = 0;
         $battery_soc_since_midnight_obj->delta_soc_shellybm = 0;
@@ -2046,8 +2050,10 @@ class class_transindus_eco
           $battery_soc_since_midnight_obj->delta_ah_xcomlan = $delta_ah_xcomlan;
           $battery_soc_since_midnight_obj->delta_soc_xcomlan = $delta_soc_xcomlan;
           $battery_soc_since_midnight_obj->soc_xcomlan_since_midnight = $soc_xcomlan_since_midnight;
-          // set the default battery current
+
+          // set the default battery current as xcomlan method
           $battery_soc_since_midnight_obj->batt_amps = $batt_amps_xcomlan_now;
+
           // update the usermeta
           update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_xcomlan_since_midnight );
 
@@ -2326,7 +2332,7 @@ class class_transindus_eco
           $soc_percentage_switch_release_setting  = (float) $all_usermeta['soc_percentage_switch_release_setting']  ?? 95.0; 
 
           // battery float voltage setting. Only used for SOC clamp for 100%
-          $average_battery_float_voltage          = (float) $all_usermeta['average_battery_float_voltage'] ?? 51.3; 
+          $average_battery_float_voltage          = (float) $all_usermeta['average_battery_float_voltage'] ?? 51.5;
 
           // Min VOltage at ACIN for RDBC to switch to GRID
           $acin_min_voltage                       = (float) $all_usermeta['acin_min_voltage'] ?? 199;  
@@ -2522,7 +2528,19 @@ class class_transindus_eco
               $xcomlan_ts = (int) $studer_data_via_xcomlan->timestamp_xcomlan_call;
 
               // battery current as measured by xcom-lan is got by adding + PV DC current amps and - inverter DC current amps
-              $batt_current_xcomlan = $pv_current_now_total_xcomlan + $inverter_current_xcomlan;
+              // 
+              $batt_current_xcomlan = ( $pv_current_now_total_xcomlan + $inverter_current_xcomlan );
+
+              if ( $batt_current_xcomlan >= 0 )
+              {
+                // increse the measured current by 2.5%
+                $batt_current_xcomlan = round( $batt_current_xcomlan * 1.025, 1);
+              }
+              else
+              {
+                // reduce the measured current by 2.5%
+                $batt_current_xcomlan = round( $batt_current_xcomlan * 0.975, 1);
+              }
 
               // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging
               // $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);
@@ -2530,8 +2548,15 @@ class class_transindus_eco
               // if battery is charging voltage will decrease and if discharging voltage will increase due to IR compensation
               $ir_drop_compensated_battery_voltage_xcomlan = $raw_batt_voltage_xcomlan - 0.025 * $batt_current_xcomlan;
 
-              // calculate the running average over the last 5 readings including this one. Return is rounded to 2 decimals
-              $batt_voltage_xcomlan_avg = $this->get_battery_voltage_avg( $ir_drop_compensated_battery_voltage_xcomlan );
+              if ( $ir_drop_compensated_battery_voltage_xcomlan > 48 )
+              { // calculate running aerage only if current measurement seems reasonable
+                // calculate the running average over the last 5 readings including this one. Return is rounded to 2 decimals
+                $batt_voltage_xcomlan_avg = $this->get_battery_voltage_avg( $ir_drop_compensated_battery_voltage_xcomlan );
+              }
+              else
+              {
+                $batt_voltage_xcomlan_avg = 49;   // this is a safety catch in case the xcomlan voltage measurement fails
+              }
 
               $psolar_kw = round( $pv_current_now_total_xcomlan * $ir_drop_compensated_battery_voltage_xcomlan * 0.001, 2);
 
@@ -2594,7 +2619,8 @@ class class_transindus_eco
           }
         }
 
-        if ( $soc_percentage_now_calculated_using_shelly_bm > 100 || $batt_voltage_xcomlan_avg >= 51.4 )
+        /*
+        if ( $soc_percentage_now_calculated_using_shelly_bm > 100 || $batt_voltage_xcomlan_avg >= $average_battery_float_voltage )
         { // 100% SOC clamp
           // recalculate Battery SOC % accumulated since midnight
           $recal_battery_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
@@ -2602,14 +2628,38 @@ class class_transindus_eco
           // write this value back to the user meta
           update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
         }
+        */
 
-        if ( $soc_percentage_now_calculated_using_studer_xcomlan > 100 || $batt_voltage_xcomlan_avg >= 51.4 )
+        if ( $batt_voltage_xcomlan_avg >= $average_battery_float_voltage )
         {   // battery float reached so 100% clamp of SOC
             $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
 
             // write this value back to the user meta
             update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
                                             $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight);
+
+            // recalculate Battery SOC % accumulated since midnight as measured by Shelly battery measurement
+            $recal_battery_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
+
+            // write this value back to the user meta using the shelly BM method
+            update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
+
+            /*
+              Ideally, the daily SOC error should be 0.
+              The SOC error comes about due to decrease in battery capacity and or due to errors in the battery current measurement
+              and errors in numerical integration. If the average error changes slowly with time over months
+              then the most probable reason is degaradation in battery capacity due to age and charge cycling. 
+              */
+            if ( false === get_transient( 'soc_daily_error' ) )
+            {
+              // the transient does not exist so the daily error has not yet been captured so capture the error
+              $soc_daily_error = number_format( 100 - $soc_percentage_now_calculated_using_studer_xcomlan, 1 );
+
+              // write this as transient so it will be checked, will exist and so won't get overwritten and will last say till early AM next day
+              set_transient( 'soc_daily_error' , $soc_daily_error, 15 * 60 * 60 );
+
+              error_log("LogSocDailyError: $soc_daily_error");
+            }
         }
 
         if ( $it_is_still_dark )
@@ -2693,6 +2743,81 @@ class class_transindus_eco
         // midnight actions
         if ( $this->is_time_just_pass_midnight( $user_index, $wp_user_name ) )
         {
+          /*
+            This is where we need to calculate all of the daily statistics and get other required data from transients
+            Then write all of this daily data into a custom post for the day that just ended
+          */
+          // get the difference in counter redings to get home energy WH over last 24h before counter resets at midnight
+          $wh_energy_consumed_by_home_today  = $shelly_em_home_wh - (float) get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', true );
+          $kwh_energy_consumed_by_home_today = round( 0.001 * $wh_energy_consumed_by_home_today, 2) ?? 0;
+
+          $wh_energy_from_grid_last_24h   = $home_grid_wh_counter_now - (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', true );
+          $kwh_energy_from_grid_last_24h  = round( 0.001 * $wh_energy_from_grid_last_24h, 2);
+
+          $kwh_solar_generated_today          = get_transient( 'kwh_solar_generated_today' ) ?? 0;
+          // expire this transient soon with a value of 0. It will get restarted after sunrise for next day, in loop
+          set_transient( 'kwh_solar_generated_today', 0, 60 );
+
+          // get the total SOC% accumulated in last 24h before it is reset for new day
+          $battery_soc_percentage_accumulated_last24h = (float) get_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', true );
+          $kwh_accumulated_in_battery_today = round($battery_soc_percentage_accumulated_last24h * $battery_capacity_kwh / 100, 2);
+
+          // get this for previous day as it will be reset to value for the upcoming new day
+          $soc_value_at_beginning_of_today    = (float) get_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', true) ?? 0;
+
+          if (false !== ( $soc_daily_error = get_transient( 'soc_daily_error' ) ) )
+          {
+            // the transient exists and is already read into the variable for use
+            // expire this transient soon.
+            set_transient( 'soc_daily_error', $soc_daily_error, 60 );
+          }
+          else
+          {
+            // transient does not exist most probably because float did not happen, so set it to 0
+            $soc_daily_error = 0;
+          }
+          
+
+          // lets get the date for the dailylog post
+          $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $ts = $now->getTimestamp() - 300;
+          $now->setTimestamp($ts);
+          $date_formatted = $now->format('Y-m-d H:i');
+
+          // create a new custom post type daily_log
+          $post_arr = array(
+                            'post_type'       => 'daily_log',
+                            'post_title'      => 'Solar Log ' . $date_formatted ,
+                            'post_content'    => '',
+                            'post_status'     => 'publish',
+                            'post_author'     => $wp_user_ID,
+                            'post_date'       => $date_formatted,
+                            'comment_status'  => 'closed',
+                            'ping_status'     => 'closed',
+                            'meta_input'   => array(
+                                                    'kwh_solar_generated_today'         => $kwh_solar_generated_today,
+                                                    'kwh_energy_consumed_by_home_today' => $kwh_energy_consumed_by_home_today,
+                                                    'soc_daily_error'                   => $soc_daily_error,
+                                                    'soc_value_at_beginning_of_today'   => $soc_value_at_beginning_of_today,
+                                                    'kwh_accumulated_in_battery_today'  => $kwh_accumulated_in_battery_today,
+                                                  ) ,
+                          );
+
+          $post_id = wp_insert_post($post_arr);
+
+          if(!is_wp_error($post_id))
+          {
+            //the post is valid
+            error_log("Today's Daily Log CUstom Post was created successfully as Post ID:  $post_id");
+          }
+          else
+          {
+            //there was an error in the post insertion, 
+            error_log("Error in Daily Log CUstom POst CReation: $post_id->get_error_message()");
+          }
+          
+
+          // Then we reset values for the new day
           // reset Shelly EM Home WH counter to present reading in WH. This is only done once in 24h, at midnight
           update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', $shelly_em_home_wh );
 
@@ -2744,12 +2869,12 @@ class class_transindus_eco
           $LVDS = 
               $shelly1pm_acin_switch_status === "OFF"         &&                        // Grid switch is OFF
               $control_shelly               === true          &&                        // Grid Switch is Controllable
-              ( $soc_percentage_now         < $soc_percentage_lvds_setting ||           // SOC is < LVDS setting
-                $batt_voltage_xcomlan_avg   < $average_battery_voltage_lvds_setting );  // Battery Voltage < LVDS setting
+              $soc_percentage_now           <   $soc_percentage_lvds_setting;           // SOC less than threshold setting
 
           $switch_release = 
-              $soc_percentage_now               >= ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered past LVDS
-             // ($batt_amps_shellybm > 6   || $batt_current_xcomlan > 6)                   &&  // battery is charging with at least 0.3 KW Solar
+              $soc_percentage_now               >= ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered 2 points past LVDS minimum setting
+             ($batt_amps_shellybm > 6   || $batt_current_xcomlan > 6)                   &&  // battery is charging. This cannot happen when dark
+              $psolar_kw          > (0.3 + $shelly_em_home_kw)                          &&  // Solar must exceed home consumption by 0.3KW
               $shelly1pm_acin_switch_status     === "ON"            &&                      // Grid switch is ON
               $control_shelly                   === true            &&                      // Grid Switch is Controllable
               $keep_shelly_switch_closed_always === false           &&                      // keep switch ON always is False
@@ -2759,6 +2884,7 @@ class class_transindus_eco
               $soc_percentage_now               >=  $soc_percentage_switch_release_setting  &&    // SOC has reached the float setting value
               $shelly1pm_acin_switch_status     === "ON"                                    &&    // Grid switch is ON
               $control_shelly                   === true                                    &&    // Crid Switch is Controllable
+              // $keep_shelly_switch_closed_always === true                                    &&    // keep switch ON always is true
               $switch_is_flapping               === false;                                        // switch is NOT flapping.
 
           $keep_shelly_switch_closed_till_float = 
@@ -2826,7 +2952,7 @@ class class_transindus_eco
             case ( $keep_shelly_switch_closed_till_float ):
               $success_on = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
               error_log("LogAlways ON: Keep Grid Switch Always ON commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
-              if ( $success_off )
+              if ( $success_on )
               {
                 $switch_tree_obj->switch_tree_exit_condition = "always_on";
                 $present_switch_tree_exit_condition = "always_on";
@@ -4313,7 +4439,7 @@ class class_transindus_eco
       $config = $this->config;
 
       // set the topic to update flags from remote to local
-      $topic_flg_from_remote = $config['accounts'][$user_index]['topic_flg_from_remote'];
+      $topic_flg_from_remote = $config['accounts'][$user_index]['topic_flag_from_remote'];
 
       { 
         // subscribe to the mqtt broker. This is predefined as a localhost 1883 QOS_0 with no authentication connection
@@ -4337,7 +4463,79 @@ class class_transindus_eco
           elseif( json_last_error() === JSON_ERROR_NONE )
           {
             // do all the flag updation here
-            error_log(print_r($flag_object, true));
+            if ( property_exists($flag_object, "keep_shelly_switch_closed_always") )
+            {
+              $keep_shelly_switch_closed_always_from_mqtt_update = (bool) $flag_object->keep_shelly_switch_closed_always;
+
+              $keep_shelly_switch_closed_always_present_setting = (bool) get_user_meta($wp_user_ID, "keep_shelly_switch_closed_always", true);
+
+              // compare the values and update if not the same
+              if ( $keep_shelly_switch_closed_always_from_mqtt_update !== $keep_shelly_switch_closed_always_present_setting )
+              {
+                update_user_meta($wp_user_ID, "keep_shelly_switch_closed_always", $keep_shelly_switch_closed_always_from_mqtt_update);
+                error_log(" Updated flag keep_switch_closed_always From: $keep_shelly_switch_closed_always_present_setting To $keep_shelly_switch_closed_always_from_mqtt_update");
+              }
+            }
+
+            if ( property_exists($flag_object, "average_battery_float_voltage" ) )
+            {
+              $average_battery_float_voltage_from_mqtt_update = (float) $flag_object->average_battery_float_voltage;
+              $average_battery_float_voltage_present_setting = (float) get_user_meta($wp_user_ID, "average_battery_float_voltage", true);
+
+              // compare the values and update if not the same provided update is meaningful
+              if (  $average_battery_float_voltage_from_mqtt_update != $average_battery_float_voltage_present_setting && 
+                    $average_battery_float_voltage_from_mqtt_update >= 51 &&
+                    $average_battery_float_voltage_from_mqtt_update <= 52     )
+              {
+                update_user_meta($wp_user_ID, "average_battery_float_voltage", $average_battery_float_voltage_from_mqtt_update);
+                error_log(" Updated flag average_battery_float_voltage From: $average_battery_float_voltage_present_setting To $average_battery_float_voltage_from_mqtt_update");
+              }
+            }
+
+            if ( property_exists($flag_object, "soc_percentage_switch_release_setting" ) )
+            {
+              $soc_percentage_switch_release_setting_from_mqtt_update = (float) $flag_object->soc_percentage_switch_release_setting;
+              $soc_percentage_switch_release_setting_present_setting = (float) get_user_meta($wp_user_ID, "soc_percentage_switch_release_setting", true);
+
+              // compare the values and update if not the same provided update is meaningful
+              if (  $soc_percentage_switch_release_setting_from_mqtt_update != $soc_percentage_switch_release_setting_present_setting && 
+              $soc_percentage_switch_release_setting_from_mqtt_update < 100 &&
+              $soc_percentage_switch_release_setting_from_mqtt_update > 75      )
+              {
+                update_user_meta($wp_user_ID, "soc_percentage_switch_release_setting", $soc_percentage_switch_release_setting_from_mqtt_update);
+                error_log(" Updated flag soc_percentage_switch_release_setting From: $soc_percentage_switch_release_setting_from_mqtt_update To $soc_percentage_switch_release_setting_from_mqtt_update");
+              }
+            }
+                
+            /*
+            if ( $flag_object->do_shelly === true ||  $flag_object->do_shelly === false )
+            {
+              $do_shelly_from_mqtt_update = (bool) $flag_object->do_shelly;
+
+              $do_shelly_present_setting = (bool) get_user_meta($wp_user_ID, "do_shelly", true);
+
+              // compare the values and update if not the same
+              if ( $do_shelly_from_mqtt_update !== $do_shelly_present_setting )
+              {
+                //update_user_meta($wp_user_ID, "do_shelly", $do_shelly_from_mqtt_update);
+                error_log(" Updated flag do_shelly From: $do_shelly_present_setting To $do_shelly_from_mqtt_update");
+              }
+            }
+            */  
+            
+            if ( ! empty( $flag_object->soc_percentage_lvds_setting ) && $flag_object->soc_percentage_lvds_setting >= 45 && $flag_object->soc_percentage_lvds_setting < 99 )
+            {
+              $soc_percentage_lvds_setting_from_mqtt_update = (float) $flag_object->soc_percentage_lvds_setting;
+              $soc_percentage_lvds_setting_present_setting  = (float) get_user_meta($wp_user_ID, "soc_percentage_lvds_setting", true);
+
+              // compare the values and update if not the same
+              if ( $soc_percentage_lvds_setting_from_mqtt_update != $soc_percentage_lvds_setting_present_setting )
+              {
+                update_user_meta($wp_user_ID, "soc_percentage_lvds_setting", $soc_percentage_lvds_setting_from_mqtt_update);
+                error_log(" Updated soc_percentage_lvds_setting From: $soc_percentage_lvds_setting_present_setting To $soc_percentage_lvds_setting_from_mqtt_update");
+              }
+            }
+              
           }
           else
           {

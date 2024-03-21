@@ -177,7 +177,7 @@ class my_mqtt {
             ->setUseTls(true)                   // No TLS to encrypt the communications
             ->setTlsSelfSignedAllowed(false)     //  No self-signed certifciates
             ->setTlsVerifyPeer(true)            // Do  NOTrequire the certificate to match the host
-            ->setConnectTimeout(5)               // timeout for establishing socket
+            ->setConnectTimeout(10)               // timeout for establishing socket
             ->setSocketTimeout(10)               // If no data is read or sent for the given amount of seconds, the socket will be closed.
             ->setResendTimeout(10)               // number of seconds the client will wait before sending a duplicate
             ->setKeepAliveInterval(10)          
@@ -227,10 +227,10 @@ class my_mqtt {
             ->setUseTls(true)                   // No TLS to encrypt the communications
             ->setTlsSelfSignedAllowed(false)     //  No self-signed certifciates
             ->setTlsVerifyPeer(true)            // Do  NOTrequire the certificate to match the host
-            ->setConnectTimeout(5)               // timeout for establishing socket
+            ->setConnectTimeout(10)               // timeout for establishing socket
             ->setSocketTimeout(10)               // If no data is read or sent for the given amount of seconds, the socket will be closed.
             ->setResendTimeout(10)               // number of seconds the client will wait before sending a duplicate
-            ->setKeepAliveInterval(10)          
+            ->setKeepAliveInterval(5)          
             ->setTlsVerifyPeerName(true)
             ->setTlsCertificateAuthorityPath("/etc/ssl/certs/")
             ->setUsername($authorization_username)

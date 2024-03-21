@@ -1133,6 +1133,15 @@ class class_transindus_eco
 
         $shelly_3p_grid_energy_measurement_obj->home_grid_voltage         = $home_grid_voltage;
 
+        // 3 phase voltage properties for returned object
+        $shelly_3p_grid_energy_measurement_obj->red_phase_grid_voltage    = $car_charger_grid_voltage;
+        $shelly_3p_grid_energy_measurement_obj->yellow_phase_grid_voltage = $wallcharger_grid_voltage;
+        $shelly_3p_grid_energy_measurement_obj->blue_phase_grid_voltage   = $home_grid_voltage;
+
+        // present grid status and how long it has been in that state since last changed
+        $shelly_3p_grid_energy_measurement_obj->grid_present_status         = $grid_present_status;
+        $shelly_3p_grid_energy_measurement_obj->seconds_elapsed_grid_status = $seconds_elapsed_grid_status;
+
         $shelly_3p_grid_energy_measurement_obj->home_grid_wh_accumulated_since_midnight   = $home_grid_wh_accumulated_since_midnight;
         $shelly_3p_grid_energy_measurement_obj->home_grid_kwh_accumulated_since_midnight  = $home_grid_kwh_accumulated_since_midnight;
 
@@ -2393,6 +2402,13 @@ class class_transindus_eco
 
             $shelly_readings_obj->home_grid_wh_accumulated_since_midnight    = $home_grid_wh_accumulated_since_midnight;
             $shelly_readings_obj->home_grid_kwh_accumulated_since_midnight   = $home_grid_kwh_accumulated_since_midnight;
+
+            $shelly_readings_obj->blue_phase_grid_voltage   = $shelly_3p_grid_wh_measurement_obj->blue_phase_grid_voltage;
+            $shelly_readings_obj->red_phase_grid_voltage    = $shelly_3p_grid_wh_measurement_obj->red_phase_grid_voltage;
+            $shelly_readings_obj->yellow_phase_grid_voltage = $shelly_3p_grid_wh_measurement_obj->yellow_phase_grid_voltage;
+
+            $shelly_readings_obj->grid_present_status         = $shelly_3p_grid_wh_measurement_obj->grid_present_status;
+            $shelly_readings_obj->seconds_elapsed_grid_status = $shelly_3p_grid_wh_measurement_obj->seconds_elapsed_grid_status;
 
             $this->verbose ? error_log("Log-home_grid_wh_counter_now: $home_grid_wh_counter_now, wh since midnight: $home_grid_wh_accumulated_since_midnight, Home Grid PowerKW: $home_grid_kw_power"): false;
           }

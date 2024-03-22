@@ -6152,10 +6152,12 @@ class class_transindus_eco
     
       // Calculate the remaining seconds 
       // into minutes 
-      $minutes = floor(($seconds % 3600) / 60); 
+      $minutes = floor(($seconds % 3600) / 60);
+
+      $secs = $seconds - $hours * 3600 -  $minutes * 60;
     
       // Return the result as a string
-      $hms_string = (string) $hours . "h:" . $minutes . "m";
+      $hms_string = (string) $hours . "h:" . $minutes . "m" . $secs . "s";
 
       return $hms_string;
     }

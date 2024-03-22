@@ -6239,6 +6239,10 @@ class class_transindus_eco
 
         $grid_obj->phase_voltage_peak_percentage_array = $phase_voltage_peak_percentage_array;
 
+        $grid_obj->a_phase_voltage_peak_percentage = $phase_voltage_peak_percentage_array[0];
+        $grid_obj->b_phase_voltage_peak_percentage = $phase_voltage_peak_percentage_array[1];
+        $grid_obj->c_phase_voltage_peak_percentage = $phase_voltage_peak_percentage_array[2];
+
         $grid_obj->time_formatted_string = $time_formatted_string;
         
         return $grid_obj;

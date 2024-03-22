@@ -3901,7 +3901,35 @@ class class_transindus_eco
          }
       </style>';
 
-      //
+      // read in the object from transient if it exists process the grid values for display
+      if ( false !== ( $shelly_readings_obj = get_transient( 'shelly_readings_obj' ) ) )
+      {
+        $present_grid_status = $shelly_readings_obj->present_grid_status;
+        if ( $present_grid_status === "online" )
+        {
+          $a_phase_grid_voltage = $shelly_readings_obj->red_phase_grid_voltage;
+          $b_phase_grid_voltage = $shelly_readings_obj->yellow_phase_grid_voltage;
+          $c_phase_grid_voltage = $shelly_readings_obj->blue_phase_grid_voltage;
+
+          $a_phase_grid_voltage = (int) round( (float) $a_phase_grid_voltage, 0 );
+          $b_phase_grid_voltage = (int) round( (float) $b_phase_grid_voltage, 0 );
+          $c_phase_grid_voltage = (int) round( (float) $c_phase_grid_voltage, 0 );
+
+          // voltage processing for fluctuations and averages
+          $phase_voltage_peak_percentage_array = $this->grid_voltage_processing(  $a_phase_grid_voltage, 
+                                                                                  $b_phase_grid_voltage, 
+                                                                                  $c_phase_grid_voltage );
+        }
+        else
+        {
+            $a_phase_grid_voltage = 'Offline';
+            $b_phase_grid_voltage = 'Offline';
+            $c_phase_grid_voltage = 'Offline';
+        }
+        
+      }
+
+      
 
       $datetime_battery_last_measured = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
 
@@ -3909,32 +3937,13 @@ class class_transindus_eco
 
       $datetime_battery_last_measured->setTimeStamp($timestamp);
 
-      $time_formatted_string = $datetime_battery_last_measured->format("H:i:s");
+      $time_last_measured_formatted_string = $datetime_battery_last_measured->format("H:i:s");
 
 
-      if (  false !== $a_phase_grid_voltage = get_transient( 'a_phase_grid_voltage' ) && 
-            false !== $b_phase_grid_voltage = get_transient( 'b_phase_grid_voltage' ) &&
-            false !== $c_phase_grid_voltage = get_transient( 'c_phase_grid_voltage' )
-          )
-          {
-            $a_phase_grid_voltage = (int) round( (float) $a_phase_grid_voltage, 0 );
-            $b_phase_grid_voltage = (int) round( (float) $b_phase_grid_voltage, 0 );
-            $c_phase_grid_voltage = (int) round( (float) $c_phase_grid_voltage, 0 );
-
-            // voltage processing for fluctuations and averages
-            $phase_voltage_peak_percentage_array = $this->grid_voltage_processing(  $a_phase_grid_voltage, 
-                                                                                    $b_phase_grid_voltage, 
-                                                                                    $c_phase_grid_voltage );
-          }
-        else
-        {
-            $a_phase_grid_voltage = 'Offline';
-            $b_phase_grid_voltage = 'Offline';
-            $c_phase_grid_voltage = 'Offline';
-        }
+      
 
       // define all the icon styles and colors based on STuder and Switch values
-      $output .= '<div id="my-desscription"><h3>'. '3P AC voltages at FP1 feeder'     . '</h3></div>';
+      $output .= '<div id="my-desscription"><h3>'. '3P AC voltages at FB feeder'     . '</h3></div>';
       $output .= '
       <table id="my-grid-voltage-readings-table">
           <tr>

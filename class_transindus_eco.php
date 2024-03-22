@@ -3919,7 +3919,7 @@ class class_transindus_eco
       $output .= '
       <table id="my-grid-voltage-readings-table">
           <tr>
-              <th>'   . 'Item'                . '</th>
+              <th>'   . 'Status'  . '</th>
               <th>'   . 'Red'     . '</th>  
               <th>'   . 'Yellow'  . '</th>
               <th>'   . 'Blue'    . '</th>

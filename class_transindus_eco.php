@@ -6171,7 +6171,7 @@ class class_transindus_eco
         $grid_present_status          = (string)  $shelly_readings_obj->grid_present_status;
         $seconds_elapsed_grid_status  = (int)     $shelly_readings_obj->seconds_elapsed_grid_status;
 
-        $secs_elapsed_formatted_string = $this->format_seconds_to_hms_format( $seconds_elapsed_grid_status );
+        $time_formatted_string = $this->format_seconds_to_hms_format( $seconds_elapsed_grid_status );
 
         if ( $grid_present_status === "online" && ! empty( $shelly_readings_obj ) )
         {
@@ -6237,7 +6237,7 @@ class class_transindus_eco
 
         $grid_obj->phase_voltage_peak_percentage_array = $phase_voltage_peak_percentage_array;
 
-        $grid_obj->time_formatted_string = $secs_elapsed_formatted_string;
+        $grid_obj->time_formatted_string = $time_formatted_string;
         
         return $grid_obj;
       }

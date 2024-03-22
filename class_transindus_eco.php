@@ -3902,44 +3902,16 @@ class class_transindus_eco
       </style>';
 
       // read in the object from transient if it exists process the grid values for display
-      if ( false !== ( $shelly_readings_obj = get_transient( 'shelly_readings_obj' ) ) )
-      {
-        $present_grid_status = $shelly_readings_obj->present_grid_status;
-        if ( $present_grid_status === "online" )
-        {
-          $a_phase_grid_voltage = $shelly_readings_obj->red_phase_grid_voltage;
-          $b_phase_grid_voltage = $shelly_readings_obj->yellow_phase_grid_voltage;
-          $c_phase_grid_voltage = $shelly_readings_obj->blue_phase_grid_voltage;
+      // get grid voltage processed object
+      $grid_obj = $this->get_grid_voltage_data_from_obj_in_transient();
 
-          $a_phase_grid_voltage = (int) round( (float) $a_phase_grid_voltage, 0 );
-          $b_phase_grid_voltage = (int) round( (float) $b_phase_grid_voltage, 0 );
-          $c_phase_grid_voltage = (int) round( (float) $c_phase_grid_voltage, 0 );
+      $time_formatted_string      = $grid_obj->time_formatted_string;
 
-          // voltage processing for fluctuations and averages
-          $phase_voltage_peak_percentage_array = $this->grid_voltage_processing(  $a_phase_grid_voltage, 
-                                                                                  $b_phase_grid_voltage, 
-                                                                                  $c_phase_grid_voltage );
-        }
-        else
-        {
-            $a_phase_grid_voltage = 'Offline';
-            $b_phase_grid_voltage = 'Offline';
-            $c_phase_grid_voltage = 'Offline';
-        }
-        
-      }
+      $a_phase_grid_voltage_html  = $grid_obj->a_phase_grid_voltage_html;
+      $b_phase_grid_voltage_html  = $grid_obj->b_phase_grid_voltage_html;
+      $c_phase_grid_voltage_html  = $grid_obj->c_phase_grid_voltage_html;
 
-      
-
-      $datetime_battery_last_measured = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-
-      $timestamp = get_transient( 'timestamp_battery_last_measurement' );
-
-      $datetime_battery_last_measured->setTimeStamp($timestamp);
-
-      $time_last_measured_formatted_string = $datetime_battery_last_measured->format("H:i:s");
-
-
+      $phase_voltage_peak_percentage_array  = $grid_obj->phase_voltage_peak_percentage_array;
       
 
       // define all the icon styles and colors based on STuder and Switch values
@@ -3953,7 +3925,7 @@ class class_transindus_eco
               <th>'   . 'Blue'    . '</th>
           </tr>
           <tr>
-              <td id="time_formatted_string">'   . $time_formatted_string       . '</td>
+              <td id="time_formatted_string">'   . 'Time in this Grid Status: ' . $time_formatted_string       . '</td>
               <td id="a_phase_grid_voltage">'    . $a_phase_grid_voltage_html   . '</td>
               <td id="b_phase_grid_voltage">'    . $b_phase_grid_voltage_html   . '</td>
               <td id="c_phase_grid_voltage">'    . $c_phase_grid_voltage_html   . '</td>
@@ -3976,100 +3948,16 @@ class class_transindus_eco
      */
     public function ajax_my_grid_cron_update_handler()
     {
-      // check if nonce is OK
+      // check if nonce is OK this is an AJAX call
       check_ajax_referer( 'my_grid_app_script' );
 
-      $data = new stdclass;
-
-      // create a now datetime object with local timezone
-      $datetime_battery_last_measured = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-      $newTimezone = new DateTimeZone("Asia/Kolkata");
-      $datetime_battery_last_measured->setTimezone($newTimezone);
-
-      // This is already available and so is being used as time of measurement to display on screen
-      $timestamp = get_transient( 'timestamp_battery_last_measurement' );
-
-      // set the timestamp for the datetime object
-      $datetime_battery_last_measured->setTimeStamp($timestamp);
-
-      $time_formatted_string = $datetime_battery_last_measured->format('H:i:s');
-
-      // this is an AJAX call
       // get grid voltages from transients if they exist
-      if (  false !== ( $a_phase_grid_voltage = get_transient( 'a_phase_grid_voltage' ) ) && 
-            false !== ( $b_phase_grid_voltage = get_transient( 'b_phase_grid_voltage' ) ) &&
-            false !== ( $c_phase_grid_voltage = get_transient( 'c_phase_grid_voltage' ) )
-          )
-      { // valid transients exist presumable from recent measurements
-        $a_phase_grid_voltage = (int) round( (float) $a_phase_grid_voltage, 0 );
-        $b_phase_grid_voltage = (int) round( (float) $b_phase_grid_voltage, 0 );
-        $c_phase_grid_voltage = (int) round( (float) $c_phase_grid_voltage, 0 );
+      $grid_obj = $this->get_grid_voltage_data_from_obj_in_transient();
 
-        // check range and format each number individually for html color
-        if ( $a_phase_grid_voltage < 245 && $a_phase_grid_voltage > 190 )
-        {
-          // in range and so color is green
-          $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Green;"><strong>' . $a_phase_grid_voltage . '</span>';
-        }
-        else 
-        {
-          // cnot in range olor is red
-          $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Red;"><strong>' . $a_phase_grid_voltage . '</span>';
-        }
+      // send the object as a json string as server response to ajax call and die after
+      wp_send_json($grid_obj);
 
-        // p phase range check
-        if ( $b_phase_grid_voltage < 245 && $b_phase_grid_voltage > 190 )
-        {
-          $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Green;"><strong>' . $b_phase_grid_voltage . '</span>';
-        }
-        else 
-        {
-          $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Red;"><strong>' . $b_phase_grid_voltage . '</span>';
-        }
-
-        if ( $c_phase_grid_voltage < 245 && $c_phase_grid_voltage > 190 )
-        {
-          $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Green;"><strong>' . $c_phase_grid_voltage . '</span>';
-        }
-        else 
-        {
-          $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Red;"><strong>' . $c_phase_grid_voltage . '</span>';
-        }
-
-        // voltage processing for fluctuations and averages
-        $phase_voltage_peak_percentage_array = $this->grid_voltage_processing(  $a_phase_grid_voltage, 
-                                                                                $b_phase_grid_voltage, 
-                                                                                $c_phase_grid_voltage );
-
-        $a_phase_voltage_peak_percentage = $phase_voltage_peak_percentage_array[0];
-        $b_phase_voltage_peak_percentage = $phase_voltage_peak_percentage_array[1];
-        $c_phase_voltage_peak_percentage = $phase_voltage_peak_percentage_array[2];
-
-      }
-      else
-      { // measurements don't exist
-        $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Grid DOWN' . '</span>';
-        $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Grid DOWN' . '</span>';
-        $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Grid DOWN' . '</span>';
-
-        $a_phase_voltage_peak_percentage = 'NA';
-        $b_phase_voltage_peak_percentage = 'NA';
-        $c_phase_voltage_peak_percentage = 'NA';
-      }
-
-      $data->a_phase_grid_voltage_html = $a_phase_grid_voltage_html;
-      $data->b_phase_grid_voltage_html = $b_phase_grid_voltage_html;
-      $data->c_phase_grid_voltage_html = $c_phase_grid_voltage_html;
-
-      $data->time_formatted_string = $time_formatted_string;
-
-      $data->a_phase_voltage_peak_percentage = $a_phase_voltage_peak_percentage;
-      $data->b_phase_voltage_peak_percentage = $b_phase_voltage_peak_percentage;
-      $data->c_phase_voltage_peak_percentage = $c_phase_voltage_peak_percentage;
-
-      wp_send_json($data);
-
-      // die is implicit
+      // die is implicit in wp_send_json
     }
 
 
@@ -4103,11 +3991,6 @@ class class_transindus_eco
       if ( sizeof($a_array) > 20 )   array_shift($a_array);
       if ( sizeof($b_array) > 20 )   array_shift($b_array);
       if ( sizeof($c_array) > 20 )   array_shift($c_array);
-
-      // Write it to this object for access elsewhere easily
-      $this->a_array = $a_array;
-      $this->b_array = $b_array;
-      $this->c_array = $c_array;
 
       // Setup transiet to keep previous state for averaging
       set_transient( 'a_array', $a_array, 200 );
@@ -6275,5 +6158,93 @@ class class_transindus_eco
       $hms_string = (string) $hours . "h:" . $minutes . "m";
 
       return $hms_string;
+    }
+
+    /**
+     * 
+     */
+    public function get_grid_voltage_data_from_obj_in_transient()
+    {
+      // read in the object from transient if it exists process the grid values for display
+      if ( false !== ( $shelly_readings_obj = get_transient( 'shelly_readings_obj' ) ) )
+      {
+        $grid_present_status          = (string)  $shelly_readings_obj->grid_present_status;
+        $seconds_elapsed_grid_status  = (int)     $shelly_readings_obj->seconds_elapsed_grid_status;
+
+        $secs_elapsed_formatted_string = $this->format_seconds_to_hms_format( $seconds_elapsed_grid_status );
+
+        if ( $grid_present_status === "online" && ! empty( $shelly_readings_obj ) )
+        {
+          $a_phase_grid_voltage = (float) $shelly_readings_obj->red_phase_grid_voltage;
+          $b_phase_grid_voltage = (float) $shelly_readings_obj->yellow_phase_grid_voltage;
+          $c_phase_grid_voltage = (float) $shelly_readings_obj->blue_phase_grid_voltage;
+
+          if ( ! empty( $a_phase_grid_voltage ) ) $a_phase_grid_voltage = (int) round( $a_phase_grid_voltage ,0 );
+          if ( ! empty( $b_phase_grid_voltage ) ) $b_phase_grid_voltage = (int) round( $b_phase_grid_voltage ,0 );
+          if ( ! empty( $c_phase_grid_voltage ) ) $c_phase_grid_voltage = (int) round( $c_phase_grid_voltage ,0 );
+
+          // voltage processing for fluctuations and averages
+          $phase_voltage_peak_percentage_array = $this->grid_voltage_processing(  $a_phase_grid_voltage, 
+                                                                                  $b_phase_grid_voltage, 
+                                                                                  $c_phase_grid_voltage );
+
+          // check range and format each number individually for html color
+          if ( $a_phase_grid_voltage < 245 && $a_phase_grid_voltage > 190 )
+          {
+            // in range and so color is green
+            $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Green;"><strong>' . $a_phase_grid_voltage . '</span>';
+          }
+          else 
+          {
+            // cnot in range olor is red
+            $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Red;"><strong>' . $a_phase_grid_voltage . '</span>';
+          }
+
+          // p phase range check
+          if ( $b_phase_grid_voltage < 245 && $b_phase_grid_voltage > 190 )
+          {
+            $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Green;"><strong>' . $b_phase_grid_voltage . '</span>';
+          }
+          else 
+          {
+            $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Red;"><strong>' . $b_phase_grid_voltage . '</span>';
+          }
+
+          if ( $c_phase_grid_voltage < 245 && $c_phase_grid_voltage > 190 )
+          {
+            $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Green;"><strong>' . $c_phase_grid_voltage . '</span>';
+          }
+          else 
+          {
+            $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Red;"><strong>' . $c_phase_grid_voltage . '</span>';
+          }
+        }
+        else
+        {
+          $a_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Offline' . '</span>';
+          $b_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Offline' . '</span>';
+          $c_phase_grid_voltage_html = '<span style="font-size: 22px;color: Yellow;"><strong>' . 'Offline' . '</span>'; 
+
+          $phase_voltage_peak_percentage_array = ['NA', 'NA', 'NA'];
+        }
+
+        // prepare object to return data
+        $grid_obj = new stdClass;
+
+        $grid_obj->a_phase_grid_voltage_html = $a_phase_grid_voltage_html;
+        $grid_obj->b_phase_grid_voltage_html = $b_phase_grid_voltage_html;
+        $grid_obj->c_phase_grid_voltage_html = $c_phase_grid_voltage_html;
+
+        $grid_obj->phase_voltage_peak_percentage_array = $phase_voltage_peak_percentage_array;
+
+        $grid_obj->time_formatted_string = $secs_elapsed_formatted_string;
+        
+        return $grid_obj;
+      }
+      else
+      {
+        // could not get object from transient
+        return null;
+      }
     }
 }

@@ -3986,8 +3986,8 @@ class class_transindus_eco
       array_push( $b_array, $b );
       array_push( $c_array, $c );
 
-      // If the array has more than 30 elements then drop the earliest one
-      // We are averaging for only 30 minutes
+      // If the array has more than 20 elements then drop the earliest one
+      // We are averaging over 20 readings roughly 400s or about 5m
       if ( sizeof($a_array) > 20 )   array_shift($a_array);
       if ( sizeof($b_array) > 20 )   array_shift($b_array);
       if ( sizeof($c_array) > 20 )   array_shift($c_array);
@@ -6148,7 +6148,7 @@ class class_transindus_eco
     public function format_seconds_to_hms_format( int $duration_in_seconds ): string
     {
       $hms_string = '';
-      
+
       if( $duration_in_seconds >= 86400 )
       {
         $hms_string = floor($duration_in_seconds / 86400) . 'd:';

@@ -6145,21 +6145,44 @@ class class_transindus_eco
     /**
      * 
      */
-    public function format_seconds_to_hms_format( int $seconds ): string
+    public function format_seconds_to_hms_format( int $duration_in_seconds ): string
     {
+      $hms_string = '';
+      
+      if( $duration_in_seconds >= 86400 )
+      {
+        $hms_string = floor($duration_in_seconds / 86400) . 'd:';
+        $duration_in_seconds = ($duration_in_seconds % 86400);
+      }
+      if( $duration_in_seconds >= 3600 )
+      {
+        $hms_string .= floor($duration_in_seconds / 3600) . 'h:';
+        $duration_in_seconds = ($duration_in_seconds % 3600);
+      }
+      if( $duration_in_seconds >= 60 )
+      {
+        $hms_string .= floor($duration_in_seconds / 60) . 'm:';
+        $duration_in_seconds = ($duration_in_seconds % 60);
+      }
+
+      $hms_string .= floor($duration_in_seconds) . 's';
+
+      return $hms_string;
+      /*
       // Calculate the hours 
-      $hours = floor($seconds / 3600); 
+      $hours = floor($duration_in_seconds / 3600); 
     
       // Calculate the remaining seconds 
       // into minutes 
-      $minutes = floor(($seconds % 3600) / 60);
+      $minutes = floor(($duration_in_seconds % 3600) / 60);
 
-      $secs = $seconds - $hours * 3600 -  $minutes * 60;
+      $secs = $duration_in_seconds - $hours * 3600 -  $minutes * 60;
     
       // Return the result as a string
       $hms_string = (string) $hours . "h:" . $minutes . "m:" . $secs . "s";
 
       return $hms_string;
+      */
     }
 
     /**

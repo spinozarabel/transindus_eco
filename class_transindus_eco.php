@@ -3938,6 +3938,7 @@ class class_transindus_eco
           </tr>
 
       </table>';
+      $output .= '<div id="averaging-text">' . 'The time is since last grid status change. The calculation is over 20 readings over 5 mins' . '</div>';
       return $output;
     }
 

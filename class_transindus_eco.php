@@ -5789,7 +5789,7 @@ class class_transindus_eco
 
           // Car charger is online but no power is being drawn
           case ( $readings_obj->grid_present_status === 'online' && $readings_obj->car_charger_grid_kw_power <= 0.05 ):
-            $ev_charge_icon = '<i class="fa-solid fa-3x fa-charging-station" style="color: Red;"></i>';
+            $ev_charge_icon = '<i class="fa-solid fa-3x fa-charging-station" style="color: Black;"></i>';
 
             $car_charger_grid_kw_power = 0;
           break;
@@ -5818,7 +5818,7 @@ class class_transindus_eco
 
           // when wall charger is ONLINE but not drawing power Indicate Red icon and power to 0
           case ( $readings_obj->grid_present_status === 'online' && $readings_obj->wallcharger_grid_kw_power <= 0.05):
-            $wall_charge_icon = '<i class="fa-solid fa-3x fa-plug-circle-bolt" style="color: Red;"></i>';
+            $wall_charge_icon = '<i class="fa-solid fa-3x fa-plug-circle-bolt" style="color: Black;"></i>';
 
             $wallcharger_grid_kw_power = 0;
           break;

@@ -5798,7 +5798,7 @@ class class_transindus_eco
           case ( $readings_obj->grid_present_status === 'online' && $readings_obj->car_charger_grid_kw_power > 0.05 ):
             $ev_charge_icon = '<i class="fa-solid fa-2x fa-charging-station" style="color: Blue;"></i>';
 
-            $car_charger_grid_kw_power = round( $readings_obj->car_charger_grid_kw_power, 3);
+            $car_charger_grid_kw_power = round( $readings_obj->car_charger_grid_kw_power, 2);
           break;
         }
 
@@ -5827,7 +5827,7 @@ class class_transindus_eco
           case ( $readings_obj->grid_present_status === 'online' && $readings_obj->wallcharger_grid_kw_power > 0.05):
             $wall_charge_icon = '<i class="fa-solid fa-2x fa-plug-circle-bolt" style="color: Blue;"></i>';
 
-            $wallcharger_grid_kw_power = round( $readings_obj->wallcharger_grid_kw_power, 3);
+            $wallcharger_grid_kw_power = round( $readings_obj->wallcharger_grid_kw_power, 2);
           break;
         }
 

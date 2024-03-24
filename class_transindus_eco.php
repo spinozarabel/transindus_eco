@@ -4203,16 +4203,16 @@ class class_transindus_eco
         <table id="my-load-distribution-table">
             <tr>
                 <td id="water_heater_icon">'  . $format_object->water_heater_icon  . '</td>
-                <td></td>
+                <td id="ev_charge_icon">'     . $format_object->ev_charge_icon     .'</td>
                 <td id="ac_icon">'            . $format_object->ac_icon            . '</td>
-                <td></td>
+                <td id="wall_charge_icon">'   . $format_object->wall_charge_icon   . '</td>
                 <td id="pump_icon">'          . $format_object->pump_icon          . '</td>
             </tr>
             <tr>
                 <td id="shelly_water_heater_kw">' . $format_object->shelly_water_heater_kw    . '</td>
-                <td></td>
+                <td id="car_charger_grid_kw_power">'     . $format_object->car_charger_grid_kw_power        .'</td>
                 <td id="power_to_ac_kw">'   . $format_object->power_to_ac_kw      . '</td>
-                <td></td>
+                <td id="wallcharger_grid_kw_power">'   . $format_object->wallcharger_grid_kw_power      .'</td>
                 <td id="power_to_pump_kw">' . $format_object->power_to_pump_kw    . '</td>
             </tr>
             
@@ -5776,6 +5776,65 @@ class class_transindus_eco
 
             $grid_info = '???';
       }
+
+      { // set the ev charge icon and power values based on status
+        switch(true)
+        {
+          // when Car charger is OFFLINE. Indicate Yellow icon
+          case ( $readings_obj->grid_present_status === 'offline'):
+            $ev_charge_icon = '<i class="fa-solid fa-3x fa-charging-station" style="color: Yellow;"></i>';
+
+            $car_charger_grid_kw_power = 0;
+          break;
+
+          // Car charger is online but no power is being drawn
+          case ( $readings_obj->grid_present_status === 'online' && $readings_obj->car_charger_grid_kw_power <= 0.05 ):
+            $ev_charge_icon = '<i class="fa-solid fa-3x fa-charging-station" style="color: Red;"></i>';
+
+            $car_charger_grid_kw_power = 0;
+          break;
+
+          // Car charger is online and power is being drawn
+          case ( $readings_obj->grid_present_status === 'online' && $readings_obj->car_charger_grid_kw_power > 0.05 ):
+            $ev_charge_icon = '<i class="fa-solid fa-3x fa-charging-station" style="color: Blue;"></i>';
+
+            $car_charger_grid_kw_power = round( $readings_obj->car_charger_grid_kw_power, 3);
+          break;
+        }
+
+        $format_object->ev_charge_icon  = $ev_charge_icon;
+        $format_object->car_charger_grid_kw_power    = $car_charger_grid_kw_power;
+      } 
+
+      { // wall socket for EV charging outside Garage from Yellow Phase
+        switch(true)
+        {
+          // when wall charger is OFFLINE. Indicate Yellow icon
+          case ( $readings_obj->grid_present_status === 'offline'):
+            $wall_charge_icon = '<i class="fa-solid fa-3x <i class="fa-solid fa-plug-circle-bolt"></i>" style="color: Yellow;"></i>';
+
+            $wallcharger_grid_kw_power = 0;
+          break;
+
+          // when wall charger is ONLINE but not drawing power Indicate Red icon and power to 0
+          case ( $readings_obj->grid_present_status === 'online' && $readings_obj->wallcharger_grid_kw_power <= 0.05):
+            $wall_charge_icon = '<i class="fa-solid fa-3x <i class="fa-solid fa-plug-circle-bolt"></i>" style="color: Red;"></i>';
+
+            $wallcharger_grid_kw_power = 0;
+          break;
+
+          // when wall charger is ONLINE and drawing power Indicate Blue icon and power actulas
+          case ( $readings_obj->grid_present_status === 'online' && $readings_obj->wallcharger_grid_kw_power > 0.05):
+            $wall_charge_icon = '<i class="fa-solid fa-3x <i class="fa-solid fa-plug-circle-bolt"></i>" style="color: Blue;"></i>';
+
+            $wallcharger_grid_kw_power = round( $readings_obj->wallcharger_grid_kw_power, 3);
+          break;
+        }
+
+        $format_object->wall_charge_icon  = $wall_charge_icon;
+        $format_object->wallcharger_grid_kw_power    = $wallcharger_grid_kw_power;
+      }
+
 
       $format_object->grid_status_icon  = $grid_status_icon;
       $format_object->grid_arrow_icon   = $grid_arrow_icon;

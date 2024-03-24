@@ -5782,21 +5782,21 @@ class class_transindus_eco
         {
           // when Car charger is OFFLINE. Indicate Yellow icon
           case ( $readings_obj->grid_present_status === 'offline'):
-            $ev_charge_icon = '<i class="fa-solid fa-3x fa-charging-station" style="color: Yellow;"></i>';
+            $ev_charge_icon = '<i class="fa-solid fa-2x fa-charging-station" style="color: Yellow;"></i>';
 
             $car_charger_grid_kw_power = 0;
           break;
 
           // Car charger is online but no power is being drawn
           case ( $readings_obj->grid_present_status === 'online' && $readings_obj->car_charger_grid_kw_power <= 0.05 ):
-            $ev_charge_icon = '<i class="fa-solid fa-3x fa-charging-station" style="color: Black;"></i>';
+            $ev_charge_icon = '<i class="fa-solid fa-2x fa-charging-station" style="color: Black;"></i>';
 
             $car_charger_grid_kw_power = 0;
           break;
 
           // Car charger is online and power is being drawn
           case ( $readings_obj->grid_present_status === 'online' && $readings_obj->car_charger_grid_kw_power > 0.05 ):
-            $ev_charge_icon = '<i class="fa-solid fa-3x fa-charging-station" style="color: Blue;"></i>';
+            $ev_charge_icon = '<i class="fa-solid fa-2x fa-charging-station" style="color: Blue;"></i>';
 
             $car_charger_grid_kw_power = round( $readings_obj->car_charger_grid_kw_power, 3);
           break;
@@ -5811,21 +5811,21 @@ class class_transindus_eco
         {
           // when wall charger is OFFLINE. Indicate Yellow icon
           case ( $readings_obj->grid_present_status === 'offline'):
-            $wall_charge_icon = '<i class="fa-solid fa-3x fa-plug-circle-bolt" style="color: Yellow;"></i>';
+            $wall_charge_icon = '<i class="fa-solid fa-2x fa-plug-circle-bolt" style="color: Yellow;"></i>';
 
             $wallcharger_grid_kw_power = 0;
           break;
 
           // when wall charger is ONLINE but not drawing power Indicate Red icon and power to 0
           case ( $readings_obj->grid_present_status === 'online' && $readings_obj->wallcharger_grid_kw_power <= 0.05):
-            $wall_charge_icon = '<i class="fa-solid fa-3x fa-plug-circle-bolt" style="color: Black;"></i>';
+            $wall_charge_icon = '<i class="fa-solid fa-2x fa-plug-circle-bolt" style="color: Black;"></i>';
 
             $wallcharger_grid_kw_power = 0;
           break;
 
           // when wall charger is ONLINE and drawing power Indicate Blue icon and power actulas
           case ( $readings_obj->grid_present_status === 'online' && $readings_obj->wallcharger_grid_kw_power > 0.05):
-            $wall_charge_icon = '<i class="fa-solid fa-3x fa-plug-circle-bolt" style="color: Blue;"></i>';
+            $wall_charge_icon = '<i class="fa-solid fa-2x fa-plug-circle-bolt" style="color: Blue;"></i>';
 
             $wallcharger_grid_kw_power = round( $readings_obj->wallcharger_grid_kw_power, 3);
           break;

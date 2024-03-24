@@ -1037,17 +1037,21 @@ class class_transindus_eco
         $shelly_3p_grid_energy_measurement_obj->home_grid_wh_accumulated_since_midnight  = $home_grid_wh_accumulated_since_midnight;
         $shelly_3p_grid_energy_measurement_obj->home_grid_kwh_accumulated_since_midnight = round( $home_grid_wh_accumulated_since_midnight * 0.001, 3);
 
+        $shelly_3p_grid_energy_measurement_obj->offline = true;
+
+        $grid_present_status = "offline";
+        $home_grid_voltage   = 0;
+
         // offline so no power in all 3 phases
         $shelly_3p_grid_energy_measurement_obj->home_grid_kw_power        = 0;
         $shelly_3p_grid_energy_measurement_obj->car_charger_grid_kw_power = 0;
         $shelly_3p_grid_energy_measurement_obj->wallcharger_grid_kw_power = 0;
+        $shelly_3p_grid_energy_measurement_obj->home_grid_voltage         = 0;
 
-        $home_grid_voltage           = 0;
-
-        $shelly_3p_grid_energy_measurement_obj->offline = true;
-
-        $grid_present_status = "offline";
-
+        $shelly_3p_grid_energy_measurement_obj->red_phase_grid_voltage    = 0;
+        $shelly_3p_grid_energy_measurement_obj->yellow_phase_grid_voltage = 0;
+        $shelly_3p_grid_energy_measurement_obj->blue_phase_grid_voltage   = 0;
+        $shelly_3p_grid_energy_measurement_obj->grid_present_status       = $grid_present_status;
 
         if ( $grid_previous_status !== $grid_present_status )
         {
@@ -2911,7 +2915,7 @@ class class_transindus_eco
           {
             case ( $LVDS ):
               $success_on = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
-              error_log("LogLvds: SOC and or Battery VOltage is LOW, commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
+              error_log("LogLvds: SOC is LOW, commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
               if ( $success_on )
               {
                 $switch_tree_obj->switch_tree_exit_condition = "LVDS";

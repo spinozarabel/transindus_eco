@@ -1858,9 +1858,9 @@ class class_transindus_eco
                                                             float   $home_grid_kw_power,
                                                             bool    $it_is_still_dark,
                                                             ? float $batt_amps_shelly_now,
-                                                            ? int     $ts_shellybm_now,
+                                                            ? int   $ts_shellybm_now,
                                                             ? float $batt_amps_xcomlan_now,
-                                                            ? int     $ts_xcomlan_now 
+                                                            ? int   $ts_xcomlan_now 
                                                           ) : object
     {
       $config = $this->config;
@@ -1885,14 +1885,6 @@ class class_transindus_eco
           $battery_soc_since_midnight_obj->shelly_bm_ok_bool      = (bool) true;
           $battery_soc_since_midnight_obj->shelly_xcomlan_ok_bool = (bool) true;
 
-          // get the unix time stamp when Shelly BM measurement was done
-          // $now_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          // $now_shellybm->setTimestamp($ts_shellybm_now);
-
-          // get the unix time stamp when xcomlan measurement was done
-          // $now_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          // $now_xcomlan->setTimestamp($ts_xcomlan_now);
-
           // get shellybm previous cycle values from transient. Reset to present values if non-existent
           $previous_ts_shellybm         = (int)   get_transient(  'timestamp_battery_last_measurement' )  ?? $ts_shellybm_now;
           $previous_batt_amps_shellybm  = (float) get_transient(  'amps_battery_last_measurement' )       ?? $batt_amps_shelly_now;
@@ -1909,12 +1901,6 @@ class class_transindus_eco
           set_transient( 'timestamp_xcomlan_battery_last_measurement',  $ts_xcomlan_now,        5 * 60 );
           set_transient( 'previous_batt_current_xcomlan',               $batt_amps_xcomlan_now, 5 * 60 );
 
-          $prev_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          $prev_shellybm->setTimestamp($previous_ts_shellybm);
-
-          $prev_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          $prev_xcomlan->setTimestamp($previous_ts_xcomlan);
-
           // duration in seconds between timestamps for shelly_bm method
           $delta_secs_shellybm  = $ts_shellybm_now - $previous_ts_shellybm;
           $delta_hours_shellybm = $delta_secs_shellybm / 3600;
@@ -1930,17 +1916,12 @@ class class_transindus_eco
           error_log("XCOMLAN data has failed so only using Shelly BM method");
 
           $existence_int = 2; // binary 10
+
           $battery_soc_since_midnight_obj->shelly_bm_ok_bool      = (bool) true;
           $battery_soc_since_midnight_obj->shelly_xcomlan_ok_bool = (bool) false;
 
-          // $now_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          // $now_shellybm->setTimestamp($ts_shellybm_now);
-
           $previous_ts_shellybm         = (int)   get_transient(  'timestamp_battery_last_measurement' )  ?? $ts_shellybm_now;
           $previous_batt_amps_shellybm  = (float) get_transient(  'amps_battery_last_measurement' )       ?? $batt_amps_shelly_now;
-
-          // $prev_shellybm = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          // $prev_shellybm->setTimestamp($previous_ts_shellybm);
 
           // duration in seconds between timestamps for shelly_bm method
           $delta_secs_shellybm  = $ts_shellybm_now - $previous_ts_shellybm;
@@ -1961,18 +1942,13 @@ class class_transindus_eco
           error_log("Shelly BM API call has failed so only using XCOM-LAN method");
 
           $existence_int = 1; // binary 01
+
           $battery_soc_since_midnight_obj->shelly_bm_ok_bool      = (bool) false;
           $battery_soc_since_midnight_obj->shelly_xcomlan_ok_bool = (bool) true;
-
-          // $now_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          // $now_xcomlan->setTimestamp($ts_xcomlan_now);
 
           // get previous xcomlan measurements
           $previous_ts_xcomlan =          (int)   get_transient( 'timestamp_xcomlan_battery_last_measurement' ) ?? $ts_xcomlan_now;
           $previous_batt_amps_xcomlan =   (float) get_transient( 'previous_batt_current_xcomlan' )              ?? $batt_amps_xcomlan_now;
-
-          // $prev_xcomlan = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          // $prev_xcomlan->setTimestamp($previous_ts_xcomlan);
 
           // duration in secs between measurements
           $delta_secs_xcomlan   = $ts_xcomlan_now - $previous_ts_xcomlan;
@@ -2013,18 +1989,23 @@ class class_transindus_eco
         break;
       }
 
-      // Determine if battery current is zero because it is dark and Grid is ON supplying the load
+      // Determine if battery current is zero because it is dark and Grid is ON supplying the load and Grid charging of Battery is OFF
       if (  $it_is_still_dark               &&        // No solar
             $shelly_switch_status === 'ON'  &&        // Grid switch is ON
             $home_grid_kw_power > 0.05            )   // Power supplied by grid to home is greater than 0.05 KW
       { // battery is not charging or discharging so delta soc is 0
+        // This assumes that battery charging by Grid is prohibited.
+        // otherwise change this section
+
         $battery_soc_since_midnight_obj->delta_ah_shellybm = 0;
         $battery_soc_since_midnight_obj->delta_soc_shellybm = 0;
+
         // return value read from usermeta, unchanged
         $battery_soc_since_midnight_obj->soc_shellybm_since_midnight = $soc_shellybm_since_midnight;
 
         $battery_soc_since_midnight_obj->delta_ah_xcomlan = 0;
         $battery_soc_since_midnight_obj->delta_soc_xcomlan = 0;
+
         // return value read from usermetaunchanged this cycle
         $battery_soc_since_midnight_obj->soc_xcomlan_since_midnight = $soc_xcomlan_since_midnight;
 
@@ -2036,6 +2017,7 @@ class class_transindus_eco
       { // battery is charging or discharging so do account for it
         if ( $existence_int === 3 )
         { // both methods are working and valid this cycle
+
           $delta_ah_shellybm = 0.5 * ( $previous_batt_amps_shellybm + $batt_amps_shelly_now ) * $delta_hours_shellybm;
           $delta_soc_shellybm = $delta_ah_shellybm / $battery_capacity_ah * 100;    // delta soc% from delta AH
           $soc_shellybm_since_midnight += $delta_soc_shellybm;                      // accumulate delta soc shellyBM
@@ -2066,6 +2048,7 @@ class class_transindus_eco
 
         if ( $existence_int === 2 )
         { // only shellybm method is working this cycle
+
           $delta_ah_shellybm = 0.5 * ( $previous_batt_amps_shellybm + $batt_amps_shelly_now ) * $delta_hours_shellybm;
           $delta_soc_shellybm = $delta_ah_shellybm / $battery_capacity_ah * 100;
           $soc_shellybm_since_midnight += $delta_soc_shellybm;                      // accumulate
@@ -2092,6 +2075,7 @@ class class_transindus_eco
 
         if ( $existence_int === 1 )
         { // only xcomlan method is valid this cycle
+
           $delta_ah_xcomlan = 0.5 * ( $previous_batt_amps_xcomlan + $batt_amps_xcomlan_now ) * $delta_hours_xcomlan;
           $delta_soc_xcomlan = $delta_ah_xcomlan / $battery_capacity_ah * 100;
           $soc_xcomlan_since_midnight += $delta_soc_xcomlan;
@@ -2537,13 +2521,13 @@ class class_transindus_eco
 
               if ( $batt_current_xcomlan >= 0 )
               {
-                // increse the measured current by 2.5%
-                $batt_current_xcomlan = round( $batt_current_xcomlan * 1.025, 1);
+                // increse the measured current by 2%
+                $batt_current_xcomlan = round( $batt_current_xcomlan * 1.02, 1);
               }
               else
               {
-                // reduce the measured current by 2.5%
-                $batt_current_xcomlan = round( $batt_current_xcomlan * 0.975, 1);
+                // reduce the measured current by 3%
+                $batt_current_xcomlan = round( $batt_current_xcomlan * 0.970, 1);
               }
 
               // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging

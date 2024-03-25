@@ -2526,8 +2526,8 @@ class class_transindus_eco
               }
               else
               {
-                // reduce the measured current by 3%
-                $batt_current_xcomlan = round( $batt_current_xcomlan * 0.970, 1);
+                // reduce the measured current by 0%
+                $batt_current_xcomlan = round( $batt_current_xcomlan * 1.0, 1);
               }
 
               // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging

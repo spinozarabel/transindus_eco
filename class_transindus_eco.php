@@ -2511,24 +2511,13 @@ class class_transindus_eco
 
               $pv_current_now_total_xcomlan     = round( $studer_data_via_xcomlan->pv_current_now_total, 1 );
 
-              $inverter_current_xcomlan         = round( $studer_data_via_xcomlan->inverter_current, 1);
+              $inverter_current_xcomlan         = round( 0.975 * $studer_data_via_xcomlan->inverter_current, 1);
 
               $xcomlan_ts = (int) $studer_data_via_xcomlan->timestamp_xcomlan_call;
 
               // battery current as measured by xcom-lan is got by adding + PV DC current amps and - inverter DC current amps
               // 
               $batt_current_xcomlan = ( $pv_current_now_total_xcomlan + $inverter_current_xcomlan );
-
-              if ( $batt_current_xcomlan >= 0 )
-              {
-                // increse the measured current by 2%
-                $batt_current_xcomlan = round( $batt_current_xcomlan * 1.02, 1);
-              }
-              else
-              {
-                // reduce the measured current by 0%
-                $batt_current_xcomlan = round( $batt_current_xcomlan * 1.0, 1);
-              }
 
               // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging
               // $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);

@@ -2511,7 +2511,7 @@ class class_transindus_eco
 
               $pv_current_now_total_xcomlan     = round( $studer_data_via_xcomlan->pv_current_now_total, 1 );
 
-              $inverter_current_xcomlan         = round( 0.975 * $studer_data_via_xcomlan->inverter_current, 1);
+              $inverter_current_xcomlan         = round( 0.970 * $studer_data_via_xcomlan->inverter_current, 1);
 
               $xcomlan_ts = (int) $studer_data_via_xcomlan->timestamp_xcomlan_call;
 

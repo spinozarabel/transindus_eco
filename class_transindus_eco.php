@@ -2519,6 +2519,11 @@ class class_transindus_eco
               // 
               $batt_current_xcomlan = ( $pv_current_now_total_xcomlan + $inverter_current_xcomlan );
 
+              if ( $batt_current_xcomlan <= 0 )
+              {
+                $batt_current_xcomlan = round( $batt_current_xcomlan * 0.975 , 1);
+              }
+
               // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging
               // $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);
 

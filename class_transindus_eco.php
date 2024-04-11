@@ -5713,7 +5713,8 @@ class class_transindus_eco
       $battery_avg_voltage    =   $readings_obj->batt_voltage_xcomlan_avg;
 
       $home_grid_kw_power     =   $readings_obj->home_grid_kw_power;
-      $home_grid_voltage      =   $readings_obj->home_grid_voltage;
+      // $home_grid_voltage      =   $readings_obj->home_grid_voltage;
+      $home_grid_voltage      =   $shelly_switch_acin_details_arr['shelly1pm_acin_voltage'];
 
       $seconds_elapsed_grid_status = (int) $readings_obj->seconds_elapsed_grid_status;
       $grid_seconds_in_hms = $this->format_seconds_to_hms_format ($seconds_elapsed_grid_status );
@@ -5799,6 +5800,10 @@ class class_transindus_eco
             $ev_charge_icon = '<i class="fa-solid fa-2x fa-charging-station" style="color: Blue;"></i>';
 
             $car_charger_grid_kw_power = round( $readings_obj->car_charger_grid_kw_power, 2);
+
+            $car_charger_grid_kw_power = '<span style="font-size: 18px;color: Black;">
+                                            <strong>' . $car_charger_grid_kw_power . '</strong>
+                                          </span>';
           break;
         }
 
@@ -5828,6 +5833,10 @@ class class_transindus_eco
             $wall_charge_icon = '<i class="fa-solid fa-2x fa-plug-circle-bolt" style="color: Blue;"></i>';
 
             $wallcharger_grid_kw_power = round( $readings_obj->wallcharger_grid_kw_power, 2);
+
+            $wallcharger_grid_kw_power = '<span style="font-size: 18px;color: Black;">
+                                            <strong>' . $wallcharger_grid_kw_power . '</strong>
+                                          </span>';
           break;
         }
 
@@ -6072,19 +6081,19 @@ class class_transindus_eco
                                             </span>';
 
       $format_object->power_to_home_kw = '<span style="font-size: 18px;color: Black;">
-                                              <strong>' . $readings_obj->power_to_home_kw . ' KW</strong>
+                                              <strong>' . $readings_obj->power_to_home_kw . '</strong>
                                           </span>';
 
       $format_object->power_to_ac_kw = '<span style="font-size: 18px;color: Black;">
-                                              <strong>' . $readings_obj->power_to_ac_kw . ' KW</strong>
+                                              <strong>' . $readings_obj->power_to_ac_kw . '</strong>
                                           </span>';
 
       $format_object->power_to_pump_kw = '<span style="font-size: 18px;color: Black;">
-                                            <strong>' . $pump_ON_duration_mins . ' mins</strong>
+                                            <strong>' . $pump_ON_duration_mins . ' m</strong>
                                         </span>';
 
       $format_object->shelly_water_heater_kw = '<span style="font-size: 18px;color: Black;">
-                                                  <strong>' . $shelly_water_heater_kw . ' KW</strong>
+                                                  <strong>' . $shelly_water_heater_kw . '</strong>
                                                 </span>';
 
       if ( ! empty( $readings_obj->cloudiness_average_percentage_weighted ) )

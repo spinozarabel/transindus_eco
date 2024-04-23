@@ -2411,6 +2411,8 @@ class class_transindus_eco
             
             $shelly_battery_measurement_object = $this->get_shelly_battery_measurement_over_lan(  $user_index );
 
+            error_log(print_r($shelly_battery_measurement_object, true));
+
             if ( $shelly_battery_measurement_object )
             { // valid shelly battery measurement - load object with battery measurement data
               $batt_amps_shellybm   = (float) $shelly_battery_measurement_object->batt_amps_shellybm;

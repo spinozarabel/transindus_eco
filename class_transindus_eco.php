@@ -55,6 +55,11 @@ class class_transindus_eco
   public $datetime;
   public $valid_shelly_config;
   public $do_soc_cal_now_arr;
+  public $user_meta_defaults_arr;
+  public $timezone;
+  public $verbose, $lat, $lon, $utc_offset, $cloudiness_forecast;
+  public $index_of_logged_in_user, $wp_user_name_logged_in_user, $wp_user_obj;
+  public $shelly_switch_acin_details;
 
   public $all_usermeta;
 
@@ -232,20 +237,46 @@ class class_transindus_eco
       $this->cloudiness_forecast->sunset_plus_10_minutes_hms_format = $sunset_plus_10_minutes_hms_format;
       $this->cloudiness_forecast->sunset_plus_15_minutes_hms_format = $sunset_plus_15_minutes_hms_format;
       
-      // error_log(print_r($this->cloudiness_forecast, true));;
-      
-
+      // error_log(print_r($this->cloudiness_forecast, true));
     }
-
 
 
     /**
+     *  @param int:$ts is the timestamp referenced to whatever TZ, but shall be in the past to now
+     *  @param int:$duration_in_seconds is the given duration
      * 
+     *  @param int:obj
+     * 
+     *  The function checks that the time elapsed in seconds from now in Kolkata to the given timestamp in the past
+     *  It returns the elapsed time and also whether the elapsed time has exceeded the given duration.
+     *  If it exceeds then true is returned if not a false is returned.
      */
-    public static function set_default_timezone()
+    public function check_validity_of_timestamp( int $ts, int $duration_in_seconds) : object
     {
-      //
+      $obj = new stdClass;
+
+      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+
+      $now_ts = $now->getTimestamp();
+
+      // The number of seconds is positive if timestamp given is in the past
+      $seconds_elapsed = ( $now_ts - $ts );
+
+      if ( $seconds_elapsed > $duration_in_seconds )
+        {
+          $obj->elapsed_time_exceeds_duration_given = true;
+        }
+      else
+        { 
+          $obj->elapsed_time_exceeds_duration_given = false;
+        }
+
+      $obj->seconds_elapsed = $seconds_elapsed;
+
+      return $obj;
     }
+
+
 
     /**
      *  This shoercode checks the user meta for studer settings to see if they are set.
@@ -413,6 +444,7 @@ class class_transindus_eco
         return $user_index;
     }
 
+
     /**
      * 
      */
@@ -446,6 +478,7 @@ class class_transindus_eco
 
         return $wp_user_obj;
     }
+    
 
     /**
      *  add submenu page for testing various application API needed
@@ -508,15 +541,9 @@ class class_transindus_eco
                               ! empty( $config['accounts'][$user_index]['shelly_device_id_homepwr'] ) &&
                               ! empty( $config['accounts'][$user_index]['shelly_server_uri']  )       &&
                               ! empty( $config['accounts'][$user_index]['shelly_auth_key']    );
-    
-      if ( $valid_shelly_config && $all_usermeta['do_shelly'] ) 
-      {  // Cotrol Shelly TRUE if usermeta AND valid config
-        $control_shelly = true;
-      }
-      else 
-      {    // Cotrol Shelly FALSE if usermeta AND valid config FALSE
-        $control_shelly = false;
-      }
+
+      // control of shelly Grid Switch is possible when config is set and enable flag is set
+      $control_shelly = $valid_shelly_config && $all_usermeta["do_shelly"];
 
       // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
       if ( $valid_shelly_config ) 
@@ -530,7 +557,6 @@ class class_transindus_eco
               error_log("Shelly Grid Switch API call failed - Grid power failure Assumed");
 
               $shelly_api_device_status_ON = null;
-
               $shelly_switch_status             = "OFFLINE";
               $shelly_api_device_status_voltage = "NA";
           }
@@ -539,6 +565,9 @@ class class_transindus_eco
               
               $shelly_api_device_status_ON      = $shelly_api_device_response->data->device_status->{'switch:0'}->output;
               $shelly_api_device_status_voltage = $shelly_api_device_response->data->device_status->{'switch:0'}->voltage;
+
+              $shelly_api_device_status_minute_ts = $shelly_api_device_response->data->device_status->{'switch:0'}->aenergy->minute_ts;
+              $shelly_api_device_status_power_kw  = round( $shelly_api_device_response->data->device_status->{'switch:0'}->apower * 0.001, 3);
 
               if ($shelly_api_device_status_ON)
               {
@@ -559,11 +588,12 @@ class class_transindus_eco
           $shelly_api_device_status_voltage = "NA";    
       }  
 
-      $return_array['valid_shelly_config']              = $valid_shelly_config;
-      $return_array['control_shelly']                   = $control_shelly;
-      $return_array['shelly_switch_status']             = $shelly_switch_status;
-      $return_array['shelly_api_device_status_voltage'] = $shelly_api_device_status_voltage;
-      $return_array['shelly_api_device_status_ON']      = $shelly_api_device_status_ON;
+      $return_array['shelly1pm_acin_switch_config']   = $valid_shelly_config;
+      $return_array['control_shelly']                 = $control_shelly;
+      $return_array['shelly1pm_acin_switch_status']   = $shelly_switch_status;
+      $return_array['shelly1pm_acin_voltage']         = $shelly_api_device_status_voltage;
+      $return_array['shelly1pm_acin_power_kw']        = $shelly_api_device_status_power_kw;
+      $return_array['shelly1pm_acin_minute_ts']       = $shelly_api_device_status_minute_ts;
 
       $this->shelly_switch_acin_details = $return_array;
 

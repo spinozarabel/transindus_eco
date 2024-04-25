@@ -632,403 +632,43 @@ class class_transindus_eco
             (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0) <= 0
           )
       {
-        $this->verbose ? error_log("Shelly EM Grid Energy API call failed"): false;
-
-        // since no grid get value from user meta. Also readings will not change since grid is absent :-)
-        $returned_obj->grid_wh_since_midnight = $previous_grid_wh_since_midnight;
-        $returned_obj->grid_kw_shelly_em = 0;
-        $returned_obj->grid_voltage_em = 0;
-
-        return $returned_obj;
+        // Shelly Load EM did not respond to API call, log and return null
+        $this->verbose ? error_log( "LogApi: Shelly EM Load Energy API call failed - See below for response" ): false;
+        $this->verbose ? error_log( print_r($shelly_api_device_response , true) ): false;
+        return null;
       }
 
       // Shelly API call was successfull and we have useful data
-      $present_grid_wh_reading = (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0);
+      $shelly_em_home_wh = (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0);
 
-      // get the energy counter value set at midnight. Assumes that this is an integer
-      $grid_wh_counter_midnight = (int) round(get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true), 0);
+      // get the energy counter value set at midnight
+      $shelly_em_home_energy_counter_at_midnight = (int) round(get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', true), 0);
 
-      $returned_obj->grid_voltage_em = round($shelly_api_device_response->data->device_status->emeters[0]->voltage, 0);
+      $returned_obj->shelly_em_home_voltage = (float) round($shelly_api_device_response->data->device_status->emeters[0]->voltage,        0);
+      $returned_obj->shelly_em_home_kw      = (float) round($shelly_api_device_response->data->device_status->emeters[0]->power * 0.001,  3 );
 
       // subtract the 2 integer counter readings to get the accumulated WH since midnight
-      $grid_wh_since_midnight = $present_grid_wh_reading - $grid_wh_counter_midnight;
+      $shelly_em_home_wh_since_midnight = $shelly_em_home_wh - $shelly_em_home_energy_counter_at_midnight;
 
-      if ( $grid_wh_since_midnight >=  0 )
-      {
-        // the value is positive so counter did not reset due to software update etc.
-        $returned_obj->grid_wh_since_midnight = $grid_wh_since_midnight;
+      $returned_obj->shelly_em_home_wh  = $shelly_em_home_wh;   // update object property for present wh energy counter reading
+        
+      $returned_obj->shelly_em_home_wh_since_midnight           = $shelly_em_home_wh_since_midnight;          // object property for energy since midnight
+      $returned_obj->shelly_em_home_energy_counter_at_midnight  = $shelly_em_home_energy_counter_at_midnight; // object property for energy counter at midnight
 
-        update_user_meta( $wp_user_ID, 'grid_wh_since_midnight', $grid_wh_since_midnight);
+      if ( $shelly_em_home_wh_since_midnight >=  0 )
+      { // the value is positive so counter did not reset due to software update etc.
+        update_user_meta( $wp_user_ID, 'shelly_em_home_wh_since_midnight', $shelly_em_home_wh_since_midnight);
       }
       else 
       {
         // value must be negative so cannot be possible set it to 0
-        $returned_obj->grid_wh_since_midnight   = 0;
+        $returned_obj->shelly_em_home_wh_since_midnight   = 0;
       }
-
-      $grid_kw_shelly_em = round( 0.001 * $shelly_api_device_response->data->device_status->emeters[0]->power, 3 );
-      $returned_obj->grid_kw_shelly_em        = $grid_kw_shelly_em;
-      $returned_obj->present_grid_wh_reading  = $present_grid_wh_reading;
 
       return $returned_obj;
     }
 
 
-    /**
-     *  @param float:energy_total_to_home_ts is the total energy measured by Shelly4PM energy meter upto this point
-     *  @param int:user_index
-     *  @param int:wp_user_ID
-     *  @return int:shelly_energy_counter_midnight is the accumulated load energy as measured by Shelly Pro 4PM
-     */
-    public function get_accumulated_wh_since_midnight_shelly4pm(  float $energy_total_to_home_ts, int $user_index, int $wp_user_ID ) : ? int
-    {
-      // set default timezone to Asia Kolkata
-      //
-
-      // read in the config array from the class property
-      $config = $this->config;
-
-      $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
-
-      // get the energy consumed since midnight stored in user meta
-      $shelly_energy_counter_midnight = $all_usermeta[ 'shelly_energy_counter_midnight' ];
-
-      // get the previous cycle energy counter value. 1st time when not set yet set to current value
-      $previous_energy_counter_wh_tmp = $all_usermeta[ 'shelly_energy_counter_now' ] ?? $current_energy_counter_wh;
-
-      $previous_energy_counter_wh     = (int) round( $previous_energy_counter_wh_tmp, 0 );
-
-      // this is passed in so just round it off
-      $current_energy_counter_wh      = (int) round( $energy_total_to_home_ts, 0 );
-
-      if ( ( $current_energy_counter_wh - $previous_energy_counter_wh ) >= 0 )
-      {
-        // the counter has not reset so calculate the energy consumed since last measurement
-        $delta_increase_wh = $current_energy_counter_wh - $previous_energy_counter_wh;
-      }
-      else
-      {
-        // counter has reset so ignore the previous counter reading we lose a little bit of the reading
-        $delta_increase_wh = $current_energy_counter_wh;
-      }
-
-      // check that the increase in energy WH is reasonable
-      // The increase should be greater than 0 and less than 1KWH
-      // The assumption is that between any 2 readings the difference shouldnt be more. 
-      // The only way the difference can be more is if the internet was down and readings get separated in time very long
-      // That is not being handled currently
-      if ( $delta_increase_wh < 0 || $delta_increase_wh > 500 )
-      {
-        error_log( "Delta Increase in shelly_energy_counter_midnight is Bad: " . $delta_increase_wh . "And was ignored");
-        // we ignore this accumulation
-        // update the current energy counter with current reading for next cycle
-        update_user_meta( $wp_user_ID, 'shelly_energy_counter_now', $current_energy_counter_wh );
-
-        return (int) $shelly_energy_counter_midnight;
-      }
-
-      // accumulate the energy from this cycle to accumulator
-      $shelly_energy_counter_midnight = (int) ($shelly_energy_counter_midnight + $delta_increase_wh);
-
-      // update the accumulator user meta for next cycle
-      update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', $shelly_energy_counter_midnight );
-
-      // update the current energy counter with current reading for next cycle
-      update_user_meta( $wp_user_ID, 'shelly_energy_counter_now', $current_energy_counter_wh );
-
-      // return the energy consumed since midnight in WH
-      return (int) $shelly_energy_counter_midnight;
-    }
-
-
-
-
-    /**
-     *  @param int:$user_index of user in the config array
-     *  @param int:$wp_user_ID of above user
-     *  @param string:$wp_user_name of above user
-     *  @param string:$shelly_switch_status is 'ON' 'OFF' or 'OFFLINE'
-     *  @param object:$return_obj has as properties, values from API call on Shelly 4PM and calculations thereof
-     * 
-     *  1. Calculate SOC making an API call for Shelly energy readings -  usermeta for soc_percentage_now not updated here
-     *  2. the update happens if SOC after dark baselining has happened and it is still dark now
-     *  3. The check to see if it is dark and if SOC capture after dark etc., should be done before comin here
-     *  4 This routine is typically called when it is still dark and Solar is not present
-     *  4. If GRID is ON then SOC is kept constant but SOC after dark reference is reset to current values
-     *  5. Shelly 4PM energy counter reset is checked for and baseline values (after dark values) updated just after any reset.
-     *  6. SOC@6AM is estimated using averaged load values. If value is less than 40% a flag is set. No action is taken here on this
-     */
-    public function compute_soc_from_shelly_energy_readings(  int     $user_index, 
-                                                              int     $wp_user_ID, 
-                                                              string  $wp_user_name,
-                                                              string  $shelly_switch_status ) : ? object
-    {
-      // set default timezone to Asia Kolkata
-      //
-
-      // instantiate the return object
-      $return_obj = new stdClass;
-
-      // Initialize return object properties to defaults
-      $return_obj->soc_predicted_at_6am   = 0.0; // 
-      $return_obj->minutes_now_to_6am     = 0.0;
-      $return_obj->load_kw_avg            = 0.0;
-
-      // The default value of boolean flag indicating if Shelly energy counter has reset due to Studer overload shutdown or OTA update
-      $shelly_energy_counter_has_reset =  false;
-
-      //  default value of  ACIN switch due to soc at 6am prediction
-      $turn_on_acin_switch_soc6am_low = false;
-
-      // set the flag to see if OSC discharge rate needs to be calculated. This is between 8PM and 5AM
-      // permanantly disable this function
-      $check_for_soc_rate_bool = false; // $this->nowIsWithinTimeLimits( "23:00", "midnight tomorrow" ) || $this->nowIsWithinTimeLimits( "midnight today", "05:00" );
-
-      // read in the config array from the class property
-      $config = $this->config;
-
-      // The main foreach loop should have triggered a refresh so just read the user meta array from class property
-      $all_usermeta = $this->get_all_usermeta( $wp_user_ID );
-
-      // get the energy consumed since midnight stored in user meta
-      $shelly_energy_counter_midnight     = $all_usermeta[ 'shelly_energy_counter_midnight' ];
-
-      // get the installed battery capacity in KWH from config
-      $SOC_capacity_KWH                   = $config['accounts'][$user_index]['battery_capacity'];
-
-      // This is the value of the SOC as updated by Studer API, captured just after dark.
-      // This reference gets reset each time there is a Shelly 4PM reset and or if ACIN switch is ON
-      $soc_update_from_studer_after_dark  = $all_usermeta[ 'soc_update_from_studer_after_dark' ];
-
-      // This is the tiestamp at the moent of SOC capture just after dark or when reference is reset
-      $timestamp_soc_capture_after_dark   = $all_usermeta[ 'timestamp_soc_capture_after_dark' ];
-
-      // Keep the SOC from previous update handy for when the SOC does not change due to ACIN swith ON status
-      $SOC_percentage_previous            = $all_usermeta[ 'soc_percentage_now' ];
-
-      // This is the Shelly energy counter at the moment of SOC capture just after dark or when reference reset
-      $tmp_shelly_energy_counter_after_dark   = $all_usermeta[ 'shelly_energy_counter_after_dark' ];
-      $shelly_energy_counter_after_dark       = (int) round( $tmp_shelly_energy_counter_after_dark, 0 );
-
-      // get the previous cycle energy counter value. 1st time when not set yet set to current value
-      $previous_energy_counter_wh_tmp = $all_usermeta[ 'shelly_energy_counter_now' ] ?? $current_energy_counter_wh;
-      $previous_energy_counter_wh     = (int) round($previous_energy_counter_wh_tmp, 0);
-      
-
-      // API call to get a reading now from the Shelly 4PM device for energy, power, and timestamp
-      $shelly_homwpwr_obj = $this->get_shelly_device_status_homepwr( $user_index );
-
-      if ( empty( $shelly_homwpwr_obj ) )
-      {   // API call returned an empty object
-        return null;
-      }
-
-      // Also check and control pump ON duration
-      $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_homwpwr_obj);
-
-      // exctract needed properties from Shelly homepower object
-      $current_energy_counter_wh  = (int) round($shelly_homwpwr_obj->energy_total_to_home_ts, 0);
-
-      if ( ( $current_energy_counter_wh - $previous_energy_counter_wh ) >= 0 )
-      {
-        // the counter has not reset so calculate the energy consumed since last measurement
-        $delta_increase_wh = $current_energy_counter_wh - $previous_energy_counter_wh;
-      }
-      else
-      {
-        // counter has reset so ignore the previous counter reading we lose a little bit of the reading
-        $delta_increase_wh = $current_energy_counter_wh;
-      }
-
-      // accumulate the energy from this cycle to accumulator
-      $shelly_energy_counter_midnight = $shelly_energy_counter_midnight + $delta_increase_wh;
-
-      // update the accumulator user meta for next cycle
-      update_user_meta( $wp_user_ID, 'shelly_energy_counter_midnight', $shelly_energy_counter_midnight );
-
-      $current_power_to_home_wh   = $shelly_homwpwr_obj->power_total_to_home;
-      $current_timestamp          = $shelly_homwpwr_obj->minute_ts;
-      $current_power_to_home_kw   = $current_power_to_home_wh * 0.001;
-
-      // Check if energy counter has reset due to OTA update or power reset. The counter monoticity will break
-      // we add compare integers here not floats, see above for int conversion
-      if ( ( $current_energy_counter_wh ) < ( $shelly_energy_counter_after_dark  ) ) // SOC after dark happened before roll over
-      {
-        // Yes the counter has reset. This flow does NOT happen often. The Flag default value is false
-        $shelly_energy_counter_has_reset =  true;
-      }
-
-      // Check if energy counter has reset OR the ACIN switch was ON. In both cases SOC after dark needs to be rest to current values
-      // if the ACIN switch was ON then we want to keep the SOC the same since the Grid is supplying the HOME at night
-      //                           but we still want to reset the after dark reference values continuously
-      //                           till the switch is OFF again and when the SOC discharge happens and needs updating
-      
-      if ( ! $shelly_energy_counter_has_reset && ! ($shelly_switch_status === 'ON' ) )      // 0 0 state Most common flow
-      { // Update SOC usng counters. DO NOT reset SOC after dark values, they are still valid
-        $energy_consumed_since_after_dark_update_kwh = ( $current_energy_counter_wh - $shelly_energy_counter_after_dark ) * 0.001;
-
-        $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH * 107, 3);
-
-        // Change in SOC ( a decrease) from value captured just after dark to now based on energy consumed by home during dark
-        $soc_percentage_now_computed_using_shelly  = round($soc_update_from_studer_after_dark - $soc_percentage_discharged, 3);
-    
-        // no need to worry about SOC clamp to 100 since value will only decrease never increase, no solar
-        // update_user_meta( $wp_user_ID, 'soc_percentage_now', $soc_percentage_now_computed_using_shelly );
-
-        // log if verbose is set to true
-        $this->verbose ? error_log( "SOC at dusk: " . $soc_update_from_studer_after_dark . 
-                                    "%,  SOC NOW using Shelly: " . 
-                                    $soc_percentage_now_computed_using_shelly . " %") : false;
-
-        // SOc usermeta is updated in calling routine and counter is updated commonly below
-      }
-      elseif ( $shelly_energy_counter_has_reset && ! ($shelly_switch_status === 'ON' ) )  // 1 0 state
-      {
-        // Compute updated SOC using modified counter and reset SOC after dark to current readings
-        // Since the energy counter reset we need to add this to our previous energy counter value for correct curremt value
-        $modified_energy_counter_due_to_reset_wh = $previous_energy_counter_wh + $current_energy_counter_wh;
-
-        // Calculate the energy in KWH from now to the reference point  which is after dark if no shelly reset happened
-        $energy_consumed_since_after_dark_update_kwh = (  $modified_energy_counter_due_to_reset_wh - $shelly_energy_counter_after_dark ) * 0.001;
-
-        // Energy in terms of percentage Battery SOC capacity discharged from battery. 107 is 1.07 for inverter loss * 100%
-        $soc_percentage_discharged = round( $energy_consumed_since_after_dark_update_kwh / $SOC_capacity_KWH * 107, 3);
-
-        // Change in SOC ( a decrease) from just after dark (reference) to now based on energy consumed only
-        $soc_percentage_now_computed_using_shelly  = $soc_update_from_studer_after_dark - $soc_percentage_discharged;
-
-        // reset reference counter sto current value
-        update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $current_energy_counter_wh );
-        update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $current_timestamp );
-
-        if ( $soc_percentage_now_computed_using_shelly >= 20 && $soc_percentage_now_computed_using_shelly <= 100 )
-        {
-          // reset reference SOC to updated value calculated using modified counter due to reset
-          update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_computed_using_shelly );
-
-          error_log("Shelly SOC after dark value has been reset to Curr: "    . $soc_percentage_now_computed_using_shelly );
-        }
-        else 
-        {
-          error_log("Shelly SOC after dark value has NOT been reset due to bad SOC: " . $soc_percentage_now_computed_using_shelly );
-        }
-
-        error_log("Shelly Energy Counter has reset ");
-        error_log("Shelly Energy Counter after dark - value before reset: " . $previous_energy_counter_wh );
-        error_log("Shelly Energy Counter after dark - value is reset to: "  . $current_energy_counter_wh );
-        error_log("Shelly timestamp after dark has been reset to NOW: "     . $current_timestamp );
-        error_log("Shelly SOC after dark - value before reset: "            . $soc_update_from_studer_after_dark );
-        
-      }
-      elseif ( $shelly_switch_status === 'ON' )    // 0 1 or 1 1 states are same
-      {
-        // ACIN switch is ON so keep SOC same as previous cycle but reset SOC after dark values to current readings
-        $energy_consumed_since_after_dark_update_kwh = ( $current_energy_counter_wh - $shelly_energy_counter_after_dark ) * 0.001;
-
-        $soc_percentage_discharged = 0; // set value to not get a ,notice due to undefined variable in returned object
-        
-        $soc_percentage_now_computed_using_shelly  = $SOC_percentage_previous;
-
-        $this->verbose ? error_log( "Shelly SOC not updated since ACIN switch was ON and kept at previous value of: "
-                                    . $SOC_percentage_previous ) : false;
-
-        // reset reference counters to current values
-        update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $current_energy_counter_wh );
-        update_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', $current_timestamp );
-
-        // reset reference SOC to SOC now 
-        update_user_meta( $wp_user_ID, 'soc_update_from_studer_after_dark', $soc_percentage_now_computed_using_shelly );
-
-        // No SOC after dark reference update since unchanged
-      }
-
-      // end of IF ELSEIF ELSE tree
-
-      // finally we also update the current energy counter This is common to all cases
-      update_user_meta( $wp_user_ID, 'shelly_energy_counter_now', $current_energy_counter_wh );
-      
-      // no need to worry about SOC clamp to 100 since value will only decrease never increase, no solar
-
-      // do the check only between 10PM and 5AM
-      if ( $check_for_soc_rate_bool )
-      { // Predict the SOC at 6AM based on load averaged over last 10 readings
-
-        $load_kw_avg = $this->get_load_average( $wp_user_name, $current_power_to_home_kw );
-
-        // how many minutes from now to 6AM. We will only do thiss if now is between 10PM to 5AM. Expect positive number of minutes
-        $minutes_now_to_6am = $this->minutes_now_to_future('06:00');
-
-        // Energy consumed in KWH by load during this time
-        $est_kwh_discharged_till_6am = $load_kw_avg * $minutes_now_to_6am / 60.0;
-
-        // estimated SOC% points discharged assuming usuaul conversion efficiency of 107%
-        $est_soc_percentage_discharged_till_6am = $est_kwh_discharged_till_6am / $SOC_capacity_KWH * 107;
-        
-        // how many elapsed minutes from Past reference timestamp given to now. Positive minutes if timestamp is in past
-        $delta_minutes_from_reference_time = abs( $this->minutes_from_reference_to_now( $timestamp_soc_capture_after_dark ) );
-
-        $soc_predicted_at_6am_raw = $soc_percentage_now_computed_using_shelly - $est_soc_percentage_discharged_till_6am;
-
-        $soc_predicted_at_6am = round( $soc_predicted_at_6am_raw , 1 );
-
-        // $return_obj->turn_on_acin_switch_soc6am_low    = $turn_on_acin_switch_soc6am_low;
-        $return_obj->soc_predicted_at_6am              = $soc_predicted_at_6am;
-        $return_obj->minutes_now_to_6am                = $minutes_now_to_6am;
-        $return_obj->load_kw_avg                       = $load_kw_avg;
-
-        $return_obj->delta_minutes_from_reference_time = $delta_minutes_from_reference_time;
-
-        $this->verbose ? error_log( "SOC predicted for 0600: "  . $soc_predicted_at_6am . " %"): false;
-        $this->verbose ? error_log( "Minutes NOW to 0600: "     . $minutes_now_to_6am . " mins"): false;
-        $this->verbose ? error_log( "delta_minutes_from_reference_time: "     . $delta_minutes_from_reference_time . " mins"): false;
-        $this->verbose ? error_log( "load_kw_avg: "     . $load_kw_avg . " KW"): false;
-        // $this->verbose ? error_log( "Flag to turn-ON ACIN due to low Predicted SOC at 6AM: " . $turn_on_acin_switch_soc6am_low ): false;
-      }
-
-      $return_obj->check_for_soc_rate_bool           = $check_for_soc_rate_bool;
-
-      $return_obj->SOC_percentage_previous           = $SOC_percentage_previous;
-      $return_obj->SOC_percentage_now                = $soc_percentage_now_computed_using_shelly;
-
-      $return_obj->previous_energy_counter_wh        = $previous_energy_counter_wh;
-      $return_obj->current_energy_counter_wh         = $current_energy_counter_wh;
-      $return_obj->current_power_to_home_wh          = $current_power_to_home_wh;
-      $return_obj->current_timestamp                 = $current_timestamp;
-      $return_obj->soc_percentage_discharged         = $soc_percentage_discharged;
-      $return_obj->energy_consumed_since_after_dark_update_kwh = $energy_consumed_since_after_dark_update_kwh;
-
-      $return_obj->shelly_energy_counter_has_reset = $shelly_energy_counter_has_reset;
-      $return_obj->modified_energy_counter_due_to_reset_wh = $modified_energy_counter_due_to_reset_wh ?? null;
-
-      // the variable name is due to compatibility with Studer values for display purposes. Power is calculated from Shelly 4PM
-      $return_obj->pout_inverter_ac_kw               = round( $current_power_to_home_kw, 2);
-
-      // power to main and Gadigappa's home from channels 2 and 3 of Shelly 4PM
-      $return_obj->power_to_home_kw = $shelly_homwpwr_obj->power_to_home_kw;
-
-      // power to ACs from channel 1 of Shelly 4PM
-      $return_obj->power_to_ac_kw   = $shelly_homwpwr_obj->power_to_ac_kw;
-
-      // power to pump in kw
-      $return_obj->power_to_pump_kw = $shelly_homwpwr_obj->power_to_pump_kw;
-
-      // pump switch status boolean
-      $return_obj->pump_switch_status_bool = $shelly_homwpwr_obj->pump_switch_status_bool;
-
-      // AC switch status boolean
-      $return_obj->ac_switch_status_bool = $shelly_homwpwr_obj->ac_switch_status_bool;
-
-      // Home switch status boolean
-      $return_obj->home_switch_status_bool = $shelly_homwpwr_obj->home_switch_status_bool;
-
-      // total power from Shelly 4PM
-      $return_obj->power_total_to_home_kw = $shelly_homwpwr_obj->power_total_to_home_kw;
-
-      // pump duration time
-      $return_obj->pump_ON_duration_secs = $shelly_homwpwr_obj->pump_ON_duration_secs;
-      
-      return $return_obj;
-    }
 
 
     /**
@@ -1155,18 +795,12 @@ class class_transindus_eco
      *  
      *  The current is measured using a hall effect sensor. The sensor output voltage is rread by the ADC in the shelly UNI
      *  The transducer function is: V(A) = (Vout - 2.5)/0.0294 using 29.375 mv/A around 2.5V reference
-     *  Trapezoidal rule is used to calculate Area
-     *  Current measurements are used to update user meta for accumulated SOlar AH since Studer Midnight
-     *  in user meta 'battery_accumulated_percent_since_midnight'. This must be reset to 0 just aftermidnight elsewhere.
      */
     public function get_shelly_battery_measurement( int $user_index, string $wp_user_name, int $wp_user_ID, 
                                                     string $shelly_switch_status, bool $it_is_still_dark) : ? object
     {
-        // set default timezone to Asia Kolkata
-        //
-
         // initialize the object to be returned
-        $battery_measurements_object = new stdClass;
+        $shelly_bm_measurement_obj = new stdClass;
 
         // Make an API call on the Shelly UNI device
         $config = $this->config;
@@ -1186,13 +820,14 @@ class class_transindus_eco
         // check to make sure that it exists. If null API call was fruitless
         if ( empty( $shelly_api_device_response ) )
         {
-          error_log("Shelly Battery Measurement API call failed");
+          error_log("LogApi: Danger-Shelly Battery Measurement API call over LAN failed");
 
           return null;
         }
 
         // The measure ADC voltage is in percent of 10V. So a 25% reading indicates 2.5V measured
-        $adc_voltage_shelly = $shelly_api_device_response->data->device_status->{"input:100"}->percent;
+        $adc_voltage_shelly =         $shelly_api_device_response->data->device_status->{"input:100"}->percent;
+        $timestamp_shellybm = (int)   $shelly_api_device_response->data->device_status->sys->unixtime;
 
         // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
         $delta_voltage = $adc_voltage_shelly * 0.1 - 2.54;
@@ -1203,78 +838,15 @@ class class_transindus_eco
         // Convert Volts to Amps using the value above. SUbtract an offest of 8A noticed, probably due to DC offset
         $battery_amps_raw_measurement = ($delta_voltage / $volts_per_amp);
 
-        // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign. 0.9 is empirical correction
-        $battery_amps = -1.0 * round( $battery_amps_raw_measurement * 0.9, 1);
+        // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign and educe the current by 5%
+        // This is because the battery SOC numbers tend about 4 points more from about a value of 40% which indicates about 10% over measurement
+        // so to be conservative we are using a 10% reduction to see if this corrects the tendency.
+        $batt_amps_shellybm = -1.0 * round( $battery_amps_raw_measurement, 1) * 0.90;
 
-        // get the unix time stamp when measurement was made
-        $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-        $timestamp = $now->getTimestamp();
-
-        // get the previous reading's timestamp from transient. If transient doesnt exist set the value to current measurement
-        $previous_timestamp = get_transient( 'timestamp_battery_last_measurement' ) ?? $timestamp;
-
-        // get the previous reading from transient. If doesnt exist set it to current measurement
-        $previous_battery_amps = (float) get_transient(  'amps_battery_last_measurement' ) ?? $battery_amps;
-
-        $prev_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-        $prev_datetime_obj->setTimeStamp($previous_timestamp);
-
-        // get accumulated value till last measurement
-        $battery_accumulated_percent_since_midnight = (float) get_user_meta(  $wp_user_ID, 
-                                                                              'battery_accumulated_percent_since_midnight', true);
-
-        if (  $it_is_still_dark             &&  // No solar
-              $shelly_switch_status = 'ON'  &&  // Grid switch is ON and supplying the Load
-              abs($battery_amps)  < 5 )         // The battery current is < 5A and probably noise
-        {
-          // There is no solar and the grid is supplying the load.
-          // Any small battery current is just noise and so can be set to 0 for accuracy
-          $battery_amps = 0;                // set battery current to truly 0 for more accurate calculation
-
-          $previous_battery_amps = 0;       // also 0 this
-
-          $battery_ah_this_measurement = 0; // accumulation of charge this cycle is 0
-
-          $battery_percent_this_measurement = 0;
-        }
-        else
-        { // Battery probably charging or discharhing so take into account
-          // find out the time interval between the last timestamp and the present one in seconds
-          $diff = $now->diff( $prev_datetime_obj );
-
-          // take total seconds of difference between timestamp and divide by 3600
-          $hours_between_measurement = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 ) / 3600;
-
-          // AH of battery charge - +ve is charging and -ve is discharging
-          // use trapezoidal rule for integration
-          $battery_ah_this_measurement = 0.5 * ( $previous_battery_amps + $battery_amps ) * $hours_between_measurement;
-
-          $battery_percent_this_measurement = $battery_ah_this_measurement / $battery_capacity_ah * 100;
-
-          
-          // accumulate  present measurement
-          $battery_accumulated_percent_since_midnight += $battery_percent_this_measurement;
-
-          // update accumulated battery charge back to user meta
-          update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $battery_accumulated_percent_since_midnight);
-        }
-
-        $this->verbose ? error_log("Battery % added today: $battery_accumulated_percent_since_midnight, 
-                                    % accumulated just now: $battery_percent_this_measurement, 
-                                    Batt Amps: $battery_amps"
-                                  ) : false;
-
-        // update transients with current measurements. These will be used as previous measurements for next cycle
-        set_transient(  'timestamp_battery_last_measurement',  $timestamp,      60 * 60 );
-        set_transient(  'amps_battery_last_measurement',       $battery_amps,   60 * 60 );
-
-        // write variables as properties to returned object
-        $battery_measurements_object->battery_ah_this_measurement                = $battery_ah_this_measurement;
-        $battery_measurements_object->battery_accumulated_percent_since_midnight = $battery_accumulated_percent_since_midnight;
-        $battery_measurements_object->battery_amps              = $battery_amps;
-        $battery_measurements_object->battery_capacity_ah       = $battery_capacity_ah;
-
-        return $battery_measurements_object;
+        $shelly_bm_measurement_obj->batt_amps_shellybm  = $batt_amps_shellybm;
+        $shelly_bm_measurement_obj->timestamp_shellybm  = $timestamp_shellybm;
+        
+        return $shelly_bm_measurement_obj;
     }
 
     /**
@@ -1299,7 +871,7 @@ class class_transindus_eco
         // check to make sure that it exists. If null API call was fruitless
         if ( empty( $shelly_api_device_response ) || empty( $shelly_api_device_response->data->device_status->{"switch:3"}->aenergy->total ) )
         {
-          $this->verbose ? error_log("Shelly Homepwr switch API call failed"): false;
+          error_log("LogApi: Shelly Homepwr switch API call failed");
 
           return null;
         }
@@ -1336,27 +908,27 @@ class class_transindus_eco
         // Unix minute time stamp for the power and energy readings
         $minute_ts = $shelly_api_device_response->data->device_status->{"switch:0"}->aenergy->minute_ts;
 
-        $energy_obj = new stdClass;
+        $shelly_4pm_obj = new stdClass;
 
         // add these to returned object for later use in calling program
-        $energy_obj->power_total_to_home_kw   = $power_total_to_home_kw;
-        $energy_obj->power_total_to_home      = $power_total_to_home;
-        $energy_obj->power_to_home_kw         = $power_to_home_kw;
-        $energy_obj->power_to_ac_kw           = $power_to_ac_kw;
-        $energy_obj->power_to_pump_kw         = $power_to_pump_kw;
+        $shelly_4pm_obj->power_total_to_home_kw   = $power_total_to_home_kw;
+        $shelly_4pm_obj->power_total_to_home      = $power_total_to_home;
+        $shelly_4pm_obj->power_to_home_kw         = $power_to_home_kw;
+        $shelly_4pm_obj->power_to_ac_kw           = $power_to_ac_kw;
+        $shelly_4pm_obj->power_to_pump_kw         = $power_to_pump_kw;
 
-        $energy_obj->energy_total_to_home_ts  = $energy_total_to_home_ts;
-        $energy_obj->minute_ts                = $minute_ts;
-        $energy_obj->current_total_home       = $current_total_home;
-        $energy_obj->voltage_home             = $shelly_api_device_response->data->device_status->{"switch:3"}->voltage;
+        $shelly_4pm_obj->energy_total_to_home_ts  = $energy_total_to_home_ts;
+        $shelly_4pm_obj->minute_ts                = $minute_ts;
+        $shelly_4pm_obj->current_total_home       = $current_total_home;
+        $shelly_4pm_obj->voltage_home             = $shelly_api_device_response->data->device_status->{"switch:3"}->voltage;
 
         // set the state of the channel if OFF or ON. ON switch will be true and OFF will be false
-        $energy_obj->pump_switch_status_bool  = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
-        $energy_obj->ac_switch_status_bool    = $shelly_api_device_response->data->device_status->{"switch:1"}->output;
-        $energy_obj->home_switch_status_bool  = $shelly_api_device_response->data->device_status->{"switch:2"}->output || 
+        $shelly_4pm_obj->pump_switch_status_bool  = $shelly_api_device_response->data->device_status->{"switch:0"}->output;
+        $shelly_4pm_obj->ac_switch_status_bool    = $shelly_api_device_response->data->device_status->{"switch:1"}->output;
+        $shelly_4pm_obj->home_switch_status_bool  = $shelly_api_device_response->data->device_status->{"switch:2"}->output || 
                                                 $shelly_api_device_response->data->device_status->{"switch:3"}->output;
 
-        return $energy_obj;
+        return $shelly_4pm_obj;
     }
 
     /**
@@ -1368,7 +940,7 @@ class class_transindus_eco
                                                           string  $wp_user_name, 
                                                           int     $wp_user_ID,  ): ? object
     {
-      // Blue phase of RYB is assigned to home so this corresponds to c phase of abc
+      // Blue phase of RYB is assigned to home so this corresponds to c phase of abc. This goes directly to the Studer AC input
       $home_em      = "em1:2";
       $home_emdata  = "em1data:2";
 
@@ -1376,13 +948,16 @@ class class_transindus_eco
       $car_em      = "em1:0";
       $car_emdata  = "em1data:0";
 
-      $car_outside_em      = "em1:1";
-      $car_outside_emdata  = "em1data:1";
+      // Yellow phase feeds the wall charger outside the garage, with a 15A plug inside a box.
+      // we will call this wall_charger_3kw
+
+      $wallcharger_3kw_em      = "em1:1";
+      $wallcharger_3kw_emdata  = "em1data:1";
 
 
 
       // get value of Shelly Pro 3EM Red phase watt hour counter as set at midnight
-      $grid_wh_counter_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true), 0);
+      $grid_wh_counter_at_midnight = (int) round( (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', true), 0);
 
       // get API and device ID from config based on user index
       $config = $this->config;
@@ -1396,7 +971,10 @@ class class_transindus_eco
       // this is $curl_response.
       $shelly_api_device_response = $shelly_api->get_shelly_device_status();
 
-      $shelly_3p_grid_wh_measurement_obj = new stdClass;
+      $shelly_3p_grid_energy_measurement_obj = new stdClass;
+
+      // get the grid status in the previous measurement
+      $grid_previous_status = (string) get_transient( 'grid_status' );
 
       // check to make sure that it exists. If null API call was fruitless
       if ( empty( $shelly_api_device_response ) )
@@ -1407,18 +985,18 @@ class class_transindus_eco
         $home_grid_wh_counter_now_from_transient        = (float) get_transient('home_grid_wh_counter');
         $car_charger_grid_wh_counter_now_from_transient = (float) get_transient('car_charger_grid_wh_counter');
 
-        $shelly_3p_grid_wh_measurement_obj->home_grid_wh_counter_now        = $home_grid_wh_counter_now_from_transient;
-        $shelly_3p_grid_wh_measurement_obj->car_charger_grid_wh_counter_now = $car_charger_grid_wh_counter_now_from_transient;
+        $shelly_3p_grid_energy_measurement_obj->home_grid_wh_counter_now        = $home_grid_wh_counter_now_from_transient;
+        $shelly_3p_grid_energy_measurement_obj->car_charger_grid_wh_counter_now = $car_charger_grid_wh_counter_now_from_transient;
 
         $home_grid_wh_accumulated_since_midnight = $home_grid_wh_counter_now_from_transient - $grid_wh_counter_midnight;
 
-        $shelly_3p_grid_wh_measurement_obj->home_grid_wh_accumulated_since_midnight = $home_grid_wh_accumulated_since_midnight;
+        $shelly_3p_grid_energy_measurement_obj->home_grid_wh_accumulated_since_midnight = $home_grid_wh_accumulated_since_midnight;
 
-        $shelly_3p_grid_wh_measurement_obj->home_grid_kw_power         = 0;
+        $shelly_3p_grid_energy_measurement_obj->home_grid_kw_power         = 0;
 
-        $shelly_3p_grid_wh_measurement_obj->car_charger_grid_kw_power  = 0;
+        $shelly_3p_grid_energy_measurement_obj->car_charger_grid_kw_power  = 0;
 
-        return $shelly_3p_grid_wh_measurement_obj;
+        return $shelly_3p_grid_energy_measurement_obj;
       }
       else
       {

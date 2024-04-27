@@ -2819,7 +2819,7 @@ class class_transindus_eco
             $soc_after_dark_update_valid =  $soc_percentage_now_using_dark_shelly < 100 &&
                                             $soc_percentage_now_using_dark_shelly > 30;
 
-            if ( $soc_after_dark_update_valid === true )
+            if ( false && $soc_after_dark_update_valid === true )   // Never Happens
             {
               // set the switch tree conditions for this mode of update
               $LVDS = $soc_percentage_now_using_dark_shelly <= $soc_percentage_lvds_setting &&  // less than LVDS setting
@@ -2832,7 +2832,10 @@ class class_transindus_eco
               }
             }
             else
-            { // invalid Sdark OC value, use soc using shelly BM as fallback since soc dark seems invalid
+            { // invalid Sdark OC value, use soc using shelly BM ONLY
+
+              $soc_percentage_now_using_dark_shelly = $soc_percentage_now_shelly;
+
               $LVDS = $soc_percentage_now_shelly <= $soc_percentage_lvds_setting &&  // less than LVDS setting
                       $shelly_switch_status == "OFF" ; 
                       
@@ -2994,7 +2997,7 @@ class class_transindus_eco
           $LVDS_soc_6am_grid_on   = false;
           $LVDS_soc_6am_grid_off  = false;
           $switch_override  = false;
-          $LVDS             = false;
+          $LVDS             = false;  // note that shelly-after-dark really is using shelly BM values so already set above
 
 
           $shelly_readings_obj->battery_voltage_avg  = get_transient( $wp_user_name . '_' . 'battery_voltage_avg' ) ?? 49.8;
@@ -6467,7 +6470,7 @@ class class_transindus_eco
         if ( $soc_update_method === "studer" )
         {
           // display normal Studer SOC along with tuder current based SOC
-          $soc_percentage_now_disp = round($SOC_percentage_now, 1) . "-" . $studer_readings_obj->studer_current_based_soc_percentage_now;
+          $soc_percentage_now_disp = round($SOC_percentage_now, 1);
         }
         elseif ( $soc_update_method === "shelly-after-dark" )
         {   // display Shelly BM and Shelly after dark values

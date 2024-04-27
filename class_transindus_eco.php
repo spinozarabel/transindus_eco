@@ -177,68 +177,89 @@ class class_transindus_eco
 
       // ................................ CLoudiness management ---------------------------------------------->
 
-      if ( $this->nowIsWithinTimeLimits("05:00", "05:05") )
-      {   // Get the weather forecast if time is between 5 to 5:05 in the morning
-        $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
+      $window_open  = $this->nowIsWithinTimeLimits("05:00", "05:15");
 
-        // write the weatehr forecast to a transient valid for 24h
-        set_transient( 'cloudiness_forecast', $this->cloudiness_forecast, 24*60*60 );
+      if ( false !== get_transient( 'timestamp_of_last_weather_forecast_acquisition' ) )
+      { // transient exists, get it and check its validity
+
+        $ts           = get_transient( 'timestamp_of_last_weather_forecast_acquisition' );
+        $invalid_ts   = $this->check_validity_of_timestamp( $ts, 86400 )->elapsed_time_exceeds_duration_given;
       }
-      else  
-      {   // it is not between 5-5:05 so get the transient instead
-        if ( false === get_transient( 'cloudiness_forecast' ) )
-        {
-          // Transient does not exist or has expired, so regenerate the cloud forecast
-          $this->cloudiness_forecast = $this->check_if_forecast_is_cloudy();
+      else
+      { // timestamp transient does not exist. 
+        $invalid_ts = true;
+      }
+      
+      switch(true)  
+      {
+        case ( $window_open === true &&  $invalid_ts === true ):
+          //  window is open and timestamp is invalid. This happens everyday at least once after 0500
+          // so get a new forecast from API
+          $cloudiness_forecast = $this->check_if_forecast_is_cloudy();
 
-          // write the weatehr forecast to a transient valid for 24h
-          set_transient( 'cloudiness_forecast', $this->cloudiness_forecast, 24*60*60 );
-        }
-        else
-        {
-          // transient exists so just read it in to object property
-          $this->cloudiness_forecast = get_transient( 'cloudiness_forecast' );
-        }
+          // a null can result from a bad API call check for this
+          if ( $cloudiness_forecast )
+          { // we have a valid new forecast. Write the values to transients. This is the most probable case
+            $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+            $ts = $now->getTimestamp();
+
+            set_transient( 'timestamp_of_last_weather_forecast_acquisition',  $ts,                  20 * 60 );
+            set_transient( 'cloudiness_forecast',                             $cloudiness_forecast, 27*60*60 );
+
+            error_log("Log-Captured cloudiness forecast");
+            error_log( print_r( $cloudiness_forecast, true ) );
+          }
+          else
+          { // bad API call. try again as long as window is open on next cron iteration
+            // till then get yesterdays value from transient which must exist
+            $cloudiness_forecast = get_transient( 'cloudiness_forecast' );
+          }
+        break;
+
+        case ( $window_open === true &&  $invalid_ts === false ):
+          //  window is open and timestamp is valid. We usually get here on the 2nd iteration after capturing in 1st
+          //  we readin the existing forecast as a transient at the end
+          $cloudiness_forecast = get_transient( 'cloudiness_forecast' );
+        break;
+
+
+        case ( $window_open === false ):
+          //  window is closed. Try reading in the forecast from transient. If unavilable make it up
+          //  lets just make up the forecast for today
+
+          // lets see if we have the old yesterday's forecast still lying around
+          if ( false !== ( $cloudiness_forecast = get_transient( 'cloudiness_forecast' ) ) )
+          { // Yes, we do. renew the old transient since all our API's failed
+            // transient is read in and so all is OK
+          }
+          else
+          {
+            // so make up a weather forecast
+            $cloudiness_forecast = new stdClass;
+
+            // now stuff made up properties
+            $cloudiness_forecast->sunrise_hms_format                = "06:00:00";
+
+            $cloudiness_forecast->sunset_hms_format                 = "18:00:00";
+            $cloudiness_forecast->sunset_plus_10_minutes_hms_format = "18:10:00";
+            $cloudiness_forecast->sunset_plus_15_minutes_hms_format = "18:15:00";
+
+            $cloudiness_forecast->cloudiness_average_percentage           = 10;
+            $cloudiness_forecast->cloudiness_average_percentage_weighted  = 10;
+
+            $cloudiness_forecast->it_is_a_cloudy_day                      = false;
+            $cloudiness_forecast->it_is_a_cloudy_day_weighted_average     = false;
+
+            // now save the madeup one as a transient
+            set_transient( 'cloudiness_forecast', $cloudiness_forecast, 27*60*60 );
+
+            error_log("Log-made up cloudiness forecast due to API failure over time window and lack of yesterdays forecast");
+            error_log( print_r( $cloudiness_forecast, true ) );
+          }
+        break;  
       }
 
-      // we either got the forecast from API between 05-0500 or read it from the transient at other times.
-      $sunset_timestamp = $this->cloudiness_forecast->sunset_timestamp;
-      $sunset_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-      $sunset_datetime_obj->setTimeStamp($sunset_timestamp);
-
-      $sunset_plus_10_minutes_timestamp = $sunset_timestamp + 10 * 60;
-      $sunset_plus_10_minutes_datetime_object = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-      $sunset_plus_10_minutes_datetime_object->setTimeStamp($sunset_plus_10_minutes_timestamp);
-
-      $sunset_plus_15_minutes_timestamp = $sunset_timestamp + 15 * 60;
-      $sunset_plus_15_minutes_datetime_object = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-      $sunset_plus_15_minutes_datetime_object->setTimeStamp($sunset_plus_15_minutes_timestamp);
-
-
-      // sunset time in hours:minutes:seconds format
-      $sunset_hms_format                  = $sunset_datetime_obj->format('H:i:s');
-      $sunset_plus_10_minutes_hms_format  = $sunset_plus_10_minutes_datetime_object->format('H:i:s');
-      $sunset_plus_15_minutes_hms_format  = $sunset_plus_15_minutes_datetime_object->format('H:i:s');
-
-      // error_log ("Sunset: $sunset_hms_format, Sunset plus 10m: $sunset_plus_10_minutes_hms_format, Sunset plus 15m: $sunset_plus_15_minutes_hms_format");
-
-      $sunrise_timestamp = $this->cloudiness_forecast->sunrise_timestamp;
-      $sunrise_timestamp_delayed = $sunrise_timestamp + 20 * 60;
-      $sunrise_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-      $sunrise_datetime_obj->setTimeStamp($sunrise_timestamp);
-      $sunrise_hms_format = $sunrise_datetime_obj->format('H:i:s');
-
-
-
-      $this->cloudiness_forecast->sunrise_hms_format                = $sunrise_hms_format;
-
-      $this->cloudiness_forecast->sunset_hms_format                 = $sunset_hms_format;
-      $this->cloudiness_forecast->sunset_plus_10_minutes_hms_format = $sunset_plus_10_minutes_hms_format;
-      $this->cloudiness_forecast->sunset_plus_15_minutes_hms_format = $sunset_plus_15_minutes_hms_format;
-      
-      // error_log(print_r($this->cloudiness_forecast, true));;
-      
-
+      $this->cloudiness_forecast = $cloudiness_forecast;
     }
 
 

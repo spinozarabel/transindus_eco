@@ -5,12 +5,15 @@
  *
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
- * Ver 3.0
- *     Added Shelly EM and removed Shelly 1PM for ACIN control
- *     Added Shelly 4 PM for energy readings to home. 
- *      During dark SOC updates can use this if Studer API calls fail
- *     
- * 
+ * Ver internet-master-ver1
+ *  1. Nominally, cloud site gets state from local linux pc using pub/sub via mqtt on both servers.
+ *  2. Nominally, control is by local linux PC only. The cloud site is only for display and UI settings relay back.
+ *  3. Nominally, The settings from cloud PC override those of the local. These are: All flags and settings values.
+ *  4. When internet fails, the local linux PC deals exclusively. There is no UI other than locally.
+ *  5. When local linux PC fails but the LAN and the internet is functional the remote site must sense this
+ *  6. When remote site takes over control it controls all devices using the internet. The local linux PC is unreacheable.
+ *  7. When the local PC functionality is restored it needs to take over the control
+ *  8. It needs to get the environment variables from the remote PC not just the flags and settings for reset.
  *
  */
 
@@ -4406,14 +4409,7 @@ class class_transindus_eco
                 $this->verbose = false;
             break;
 
-            case "estimated_solar_power":
-              $est_solar_kw = $this->estimated_solar_power($config_index);
-              foreach ($est_solar_kw as $key => $value)
-              {
-                echo "<pre>" . "Est Solar Power, Clear Day (KW): " .    $value . "</pre>";
-              }
-              echo "<pre>" . "Total Est Solar Power Clear Day (KW): " .    array_sum($est_solar_kw) . "</pre>";
-            break;
+            
 
             case "check_if_cloudy_day":
               $cloudiness_forecast= $this->check_if_forecast_is_cloudy();
@@ -4446,23 +4442,7 @@ class class_transindus_eco
               print_r( $this->get_shelly_device_status_homepwr($config_index) );
             break;
 
-            case "check_if_soc_after_dark_happened":
-
-              // get timestamp for soc after dark capture
-              $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
-
-              $timestamp_soc_capture_after_dark = get_user_meta( $wp_user_ID, 'timestamp_soc_capture_after_dark', true );
-
-              if ( $this->check_if_soc_after_dark_happened( $timestamp_soc_capture_after_dark ) )
-              {
-                print ("SOC after dark already happened");
-              }
-              else
-              {
-                print ("SOC after dark DID NOT happen yet");
-              }
-
-            break;
+            
 
             case "get_studer_clock_offset":
 
@@ -4470,32 +4450,6 @@ class class_transindus_eco
 
               print( "Studer time offset in mins lagging = " . $studer_time_offset_in_mins_lagging);
               
-            break;
-
-            case "get_shelly_battery_measurement":
-
-              $count = 1;
-
-              
-
-              $wp_user_ID = $this->get_wp_user_from_user_index( $config_index )->ID;
-
-              
-                
-                $est_solar_kw = $this->estimated_solar_power($config_index);
-
-                // $ratio_west_total = array_sum( $est_solar_kw ) / $est_solar_kw[1];
-
-                $solar_measurement_object = $this->get_shelly_battery_measurement( $config_index, 'transindus_admin', $wp_user_ID, $ratio_west_total );
-
-                $total_solar_current = 1.00 * round( $solar_measurement_object->solar_amps, 1);
-
-                // print( "ADC voltage (V): " .                                $battery_measurement_object->voltage . PHP_EOL );
-                print( $total_solar_current . PHP_EOL);
-                print( " Time interval (H: " .                              $solar_measurement_object->hours_between_measurement . PHP_EOL);
-                print( " Solar (AH) accumulated since last measurement: " . $solar_measurement_object->solar_ah_this_measurement .PHP_EOL);
-                
-
             break;
 
         }

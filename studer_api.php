@@ -17,7 +17,11 @@ if (!defined( "ABSPATH" ) && !defined( "MOODLE_INTERNAL" ) )
 // class definition begins
 class studer_api
 {
-    const VERBOSE     = false;
+  const VERBOSE     = false;
+
+  public $verbose;
+  public $uhash, $phash, $baseurl;
+  public $installation_id, $name, $guid, $paramId, $device, $paramPart, $body;
 
     public function __construct(string $uhash, string $phash, string $baseurl)
     {

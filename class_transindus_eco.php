@@ -263,6 +263,43 @@ class class_transindus_eco
     }
 
 
+
+    /**
+     *  @param int:$ts is the timestamp referenced to whatever TZ, but shall be in the past to now
+     *  @param int:$duration_in_seconds is the given duration
+     * 
+     *  @param int:obj
+     * 
+     *  The function checks that the time elapsed in seconds from now in Kolkata to the given timestamp in the past
+     *  It returns the elapsed time and also whether the elapsed time has exceeded the given duration.
+     *  If it exceeds then true is returned if not a false is returned.
+     */
+    public function check_validity_of_timestamp( int $ts, int $duration_in_seconds) : object
+    {
+      $obj = new stdClass;
+
+      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+
+      $now_ts = $now->getTimestamp();
+
+      // The number of seconds is positive if timestamp given is in the past
+      $seconds_elapsed = ( $now_ts - $ts );
+
+      if ( $seconds_elapsed > $duration_in_seconds )
+        {
+          $obj->elapsed_time_exceeds_duration_given = true;
+        }
+      else
+        { 
+          $obj->elapsed_time_exceeds_duration_given = false;
+        }
+
+      $obj->seconds_elapsed = $seconds_elapsed;
+
+      return $obj;
+    }
+
+
     /**
      *  This shoercode checks the user meta for studer settings to see if they are set.
      *  If not set the user meta are set using defaults.
@@ -509,9 +546,6 @@ class class_transindus_eco
     {
       $return_array = [];
 
-      // set default timezone to Asia Kolkata
-      //
-
       $config     = $this->config;
 
       // get WP user object and so get its ID
@@ -618,43 +652,40 @@ class class_transindus_eco
             (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0) <= 0
           )
       {
-        $this->verbose ? error_log("Shelly EM Grid Energy API call failed"): false;
 
         // since no grid get value from user meta. Also readings will not change since grid is absent :-)
-        $returned_obj->grid_wh_since_midnight = $previous_grid_wh_since_midnight;
-        $returned_obj->grid_kw_shelly_em = 0;
-        $returned_obj->grid_voltage_em = 0;
+        error_log( "LogApi: Shelly EM Load Energy API call failed - See below for response" );
+        $this->verbose ? error_log( print_r($shelly_api_device_response , true) ): false;
 
-        return $returned_obj;
+        return null;
       }
 
-      // Shelly API call was successfull and we have useful data
-      $present_grid_wh_reading = (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0);
+      // If you get here, the Shelly API call was successfull and we have useful data
+      $shelly_em_home_wh = (int) round($shelly_api_device_response->data->device_status->emeters[0]->total, 0);
 
       // get the energy counter value set at midnight. Assumes that this is an integer
-      $grid_wh_counter_midnight = (int) round(get_user_meta( $wp_user_ID, 'grid_wh_counter_midnight', true), 0);
+      $shelly_em_home_energy_counter_at_midnight = (int) round(get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', true), 0);
 
-      $returned_obj->grid_voltage_em = round($shelly_api_device_response->data->device_status->emeters[0]->voltage, 0);
+      $returned_obj->shelly_em_home_voltage = (int)   round($shelly_api_device_response->data->device_status->emeters[0]->voltage,        0);
+      $returned_obj->shelly_em_home_kw      = (float) round($shelly_api_device_response->data->device_status->emeters[0]->power * 0.001,  3);
 
       // subtract the 2 integer counter readings to get the accumulated WH since midnight
-      $grid_wh_since_midnight = $present_grid_wh_reading - $grid_wh_counter_midnight;
+      $shelly_em_home_wh_since_midnight = $shelly_em_home_wh - $shelly_em_home_energy_counter_at_midnight;
 
-      if ( $grid_wh_since_midnight >=  0 )
-      {
-        // the value is positive so counter did not reset due to software update etc.
-        $returned_obj->grid_wh_since_midnight = $grid_wh_since_midnight;
+      $returned_obj->shelly_em_home_wh  = $shelly_em_home_wh;   // update object property for present wh energy counter reading
+        
+      $returned_obj->shelly_em_home_wh_since_midnight           = $shelly_em_home_wh_since_midnight;          // object property for energy since midnight
+      $returned_obj->shelly_em_home_energy_counter_at_midnight  = $shelly_em_home_energy_counter_at_midnight; // object property for energy counter at midnight
 
-        update_user_meta( $wp_user_ID, 'grid_wh_since_midnight', $grid_wh_since_midnight);
+      if ( $shelly_em_home_wh_since_midnight >=  0 )
+      { // the value is positive so counter did not reset due to software update etc.
+        update_user_meta( $wp_user_ID, 'shelly_em_home_wh_since_midnight', $shelly_em_home_wh_since_midnight);
       }
       else 
       {
         // value must be negative so cannot be possible set it to 0
-        $returned_obj->grid_wh_since_midnight   = 0;
+        $returned_obj->shelly_em_home_wh_since_midnight   = 0;
       }
-
-      $grid_kw_shelly_em = round( 0.001 * $shelly_api_device_response->data->device_status->emeters[0]->power, 3 );
-      $returned_obj->grid_kw_shelly_em        = $grid_kw_shelly_em;
-      $returned_obj->present_grid_wh_reading  = $present_grid_wh_reading;
 
       return $returned_obj;
     }
@@ -783,46 +814,38 @@ class class_transindus_eco
      *  @param bool:$it_is_still_dark indicates if it is daylight or dark at present
      *  @return object:$battery_measurements_object contains the measurements of the battery using the Shelly UNI device
      *  
-     *  The current is measured using a hall effect sensor. The sensor output voltage is rread by the ADC in the shelly UNI
-     *  The transducer function is: V(A) = (Vout - 2.5)/0.0294 using 29.375 mv/A around 2.5V reference
-     *  Trapezoidal rule is used to calculate Area
-     *  Current measurements are used to update user meta for accumulated SOlar AH since Studer Midnight
-     *  in user meta 'battery_accumulated_percent_since_midnight'. This must be reset to 0 just aftermidnight elsewhere.
+     *  The current is measured using a hall effect sensor. The sensor output voltage is read by the ADC in the shelly Plus Addon
+     *  The transducer function is used to translate the ADC voltage to Battery current estimated.
+     *  No integrated AH is done, This is done elsewhere. Just the battery current in Amps along with unixts is returned
      */
-    public function get_shelly_battery_measurement( int $user_index, string $wp_user_name, int $wp_user_ID, 
-                                                    string $shelly_switch_status, bool $it_is_still_dark) : ? object
+    public function get_shelly_battery_measurement( int $user_index ) : ? object
     {
-        // set default timezone to Asia Kolkata
-        //
+         // initialize the object to be returned
+         $shelly_bm_measurement_obj = new stdClass;
 
-        // initialize the object to be returned
-        $battery_measurements_object = new stdClass;
-
-        // Make an API call on the Shelly UNI device
-        $config = $this->config;
+         // Make an API call on the Shelly UNI device
+         $config = $this->config;
 
         $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
         $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
         $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_plus_addon'];
-
-        // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
-        $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH
 
         $shelly_api    =  new shelly_cloud_api($shelly_auth_key, $shelly_server_uri, $shelly_device_id);
 
         // this is $curl_response.
         $shelly_api_device_response = $shelly_api->get_shelly_device_status();
 
-        // check to make sure that it exists. If null API call was fruitless
+        // check to make sure that it exists. If null call was fruitless
         if ( empty( $shelly_api_device_response ) )
         {
-          error_log("Shelly Battery Measurement API call failed");
+          error_log("LogApi: Danger-Shelly Battery Measurement API call over LAN failed");
 
           return null;
         }
 
-        // The measure ADC voltage is in percent of 10V. So a 25% reading indicates 2.5V measured
+        // The measure ADC voltage is in percent of 10V. So a 25% reading indicates 2.5V measured. Also get timestamp
         $adc_voltage_shelly = $shelly_api_device_response->data->device_status->{"input:100"}->percent;
+        $timestamp_shellybm = $shelly_api_device_response->data->device_status->sys->unixtime;
 
         // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
         $delta_voltage = $adc_voltage_shelly * 0.1 - 2.54;
@@ -833,78 +856,15 @@ class class_transindus_eco
         // Convert Volts to Amps using the value above. SUbtract an offest of 8A noticed, probably due to DC offset
         $battery_amps_raw_measurement = ($delta_voltage / $volts_per_amp);
 
-        // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign. 0.9 is empirical correction
-        $battery_amps = -1.0 * round( $battery_amps_raw_measurement * 0.9, 1);
+        // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign and educe the current by 5%
+        // This is because the battery SOC numbers tend about 4 points more from about a value of 40% which indicates about 10% over measurement
+        // so to be conservative we are using a 10% reduction to see if this corrects the tendency.
+        $batt_amps_shellybm = -1.0 * round( $battery_amps_raw_measurement, 1) * 0.90;
 
-        // get the unix time stamp when measurement was made
-        $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-        $timestamp = $now->getTimestamp();
-
-        // get the previous reading's timestamp from transient. If transient doesnt exist set the value to current measurement
-        $previous_timestamp = get_transient( 'timestamp_battery_last_measurement' ) ?? $timestamp;
-
-        // get the previous reading from transient. If doesnt exist set it to current measurement
-        $previous_battery_amps = (float) get_transient(  'amps_battery_last_measurement' ) ?? $battery_amps;
-
-        $prev_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-        $prev_datetime_obj->setTimeStamp($previous_timestamp);
-
-        // get accumulated value till last measurement
-        $battery_accumulated_percent_since_midnight = (float) get_user_meta(  $wp_user_ID, 
-                                                                              'battery_accumulated_percent_since_midnight', true);
-
-        if (  $it_is_still_dark             &&  // No solar
-              $shelly_switch_status = 'ON'  &&  // Grid switch is ON and supplying the Load
-              abs($battery_amps)  < 5 )         // The battery current is < 5A and probably noise
-        {
-          // There is no solar and the grid is supplying the load.
-          // Any small battery current is just noise and so can be set to 0 for accuracy
-          $battery_amps = 0;                // set battery current to truly 0 for more accurate calculation
-
-          $previous_battery_amps = 0;       // also 0 this
-
-          $battery_ah_this_measurement = 0; // accumulation of charge this cycle is 0
-
-          $battery_percent_this_measurement = 0;
-        }
-        else
-        { // Battery probably charging or discharhing so take into account
-          // find out the time interval between the last timestamp and the present one in seconds
-          $diff = $now->diff( $prev_datetime_obj );
-
-          // take total seconds of difference between timestamp and divide by 3600
-          $hours_between_measurement = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 ) / 3600;
-
-          // AH of battery charge - +ve is charging and -ve is discharging
-          // use trapezoidal rule for integration
-          $battery_ah_this_measurement = 0.5 * ( $previous_battery_amps + $battery_amps ) * $hours_between_measurement;
-
-          $battery_percent_this_measurement = $battery_ah_this_measurement / $battery_capacity_ah * 100;
-
-          
-          // accumulate  present measurement
-          $battery_accumulated_percent_since_midnight += $battery_percent_this_measurement;
-
-          // update accumulated battery charge back to user meta
-          update_user_meta( $wp_user_ID, 'battery_accumulated_percent_since_midnight', $battery_accumulated_percent_since_midnight);
-        }
-
-        $this->verbose ? error_log("Battery % added today: $battery_accumulated_percent_since_midnight, 
-                                    % accumulated just now: $battery_percent_this_measurement, 
-                                    Batt Amps: $battery_amps"
-                                  ) : false;
-
-        // update transients with current measurements. These will be used as previous measurements for next cycle
-        set_transient(  'timestamp_battery_last_measurement',  $timestamp,      60 * 60 );
-        set_transient(  'amps_battery_last_measurement',       $battery_amps,   60 * 60 );
-
-        // write variables as properties to returned object
-        $battery_measurements_object->battery_ah_this_measurement                = $battery_ah_this_measurement;
-        $battery_measurements_object->battery_accumulated_percent_since_midnight = $battery_accumulated_percent_since_midnight;
-        $battery_measurements_object->battery_amps              = $battery_amps;
-        $battery_measurements_object->battery_capacity_ah       = $battery_capacity_ah;
-
-        return $battery_measurements_object;
+        $shelly_bm_measurement_obj->batt_amps_shellybm  = $batt_amps_shellybm;
+        $shelly_bm_measurement_obj->timestamp_shellybm  = $timestamp_shellybm;
+        
+        return $shelly_bm_measurement_obj;
     }
 
     /**
@@ -1756,41 +1716,6 @@ class class_transindus_eco
       }
     }
 
-
-     /**
-     *  @param int:$ts is the timestamp referenced to whatever TZ, but shall be in the past to now
-     *  @param int:$duration_in_seconds is the given duration
-     * 
-     *  @param int:obj
-     * 
-     *  The function checks that the time elapsed in seconds from now in Kolkata to the given timestamp in the past
-     *  It returns the elapsed time and also whether the elapsed time has exceeded the given duration.
-     *  If it exceeds then true is returned if not a false is returned.
-     */
-    public function check_validity_of_timestamp( int $ts, int $duration_in_seconds) : ? object
-    {
-      $obj = new stdClass;
-
-      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-
-      $now_ts = $now->getTimestamp();
-
-      // The number of seconds is positive if timestamp given is in the past
-      $seconds_elapsed = ( $now_ts - $ts );
-
-      if ( $seconds_elapsed > $duration_in_seconds )
-        {
-          $obj->elapsed_time_exceeds_duration_given = true;
-        }
-      else
-        { 
-          $obj->elapsed_time_exceeds_duration_given = false;
-        }
-
-      $obj->seconds_elapsed = $seconds_elapsed;
-
-      return $obj;
-    } 
 
 
     /**

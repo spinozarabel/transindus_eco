@@ -2510,8 +2510,6 @@ class class_transindus_eco
           { // Get studer data using xcomlan. A CRON MQTT on localhost publisher and a WP CRON MQTT subscriber
             $studer_data_via_xcomlan = $this->get_studer_readings_over_xcomlan();
 
-            error_log(print_r($studer_data_via_xcomlan, true));
-
             if ( ! empty( $studer_data_via_xcomlan ) && $studer_data_via_xcomlan->battery_voltage_xtender > 45.0 )
             { // we seem to have valid data
               $raw_batt_voltage_xcomlan = $studer_data_via_xcomlan->battery_voltage_xtender;

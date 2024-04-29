@@ -2362,7 +2362,7 @@ class class_transindus_eco
           $shelly1pm_acin_switch_status     = (string)  $shelly_switch_acin_details_arr['shelly1pm_acin_switch_status'];  // ON/OFF/OFFLINE/Not COnfigured
 
           $shelly_readings_obj->shelly_switch_acin_details_arr = $shelly_switch_acin_details_arr;
-          // error_log(print_r($shelly_switch_acin_details_arr, true));
+          $this->verbose ? error_log("Shelly Switch ACIN State: $shelly1pm_acin_switch_status"): false;
         }
 
         
@@ -2412,12 +2412,12 @@ class class_transindus_eco
             
             $shelly_battery_measurement_object = $this->get_shelly_battery_measurement_over_lan(  $user_index );
 
-            // error_log(print_r($shelly_battery_measurement_object, true));
-
             if ( $shelly_battery_measurement_object )
             { // valid shelly battery measurement - load object with battery measurement data
               $batt_amps_shellybm   = (float) $shelly_battery_measurement_object->batt_amps_shellybm;
               $timestamp_shellybm   = (int)   $shelly_battery_measurement_object->timestamp_shellybm;
+
+              $this->verbose ? error_log("Shelly BM Batt_AMPS: $batt_amps_shellybm"): false;
             }
 
             $shelly_readings_obj->battery_capacity_ah       = $battery_capacity_ah; // this is obtianed from config
@@ -2434,9 +2434,11 @@ class class_transindus_eco
                 
                 // Also check and control pump ON duration
                 // $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object);
-                error_log(print_r($shelly_battery_measurement_object, true));
+                
 
                 $power_total_to_home_kw = $shelly_4pm_readings_object->power_total_to_home_kw;
+
+                $this->verbose ? error_log("Shelly4PM Power to Home KW:  $power_total_to_home_kw"): false;
 
                 { // Load the Object with properties from the Shelly 4PM object
                   $shelly_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;
@@ -2499,6 +2501,8 @@ class class_transindus_eco
 
               // energy consumed in KWH by home since midnight as measured by Shelly EM 
               $shelly_readings_obj->shelly_em_home_kwh_since_midnight = $shelly_em_home_kwh_since_midnight;
+
+              $this->verbose ? error_log("Shelly EM Power to Home KW:  $shelly_em_home_kw"): false;
             }
           }
 
@@ -2529,6 +2533,8 @@ class class_transindus_eco
               {
                 $batt_current_xcomlan = round( $batt_current_xcomlan * 0.960 , 1);
               }
+
+              $this->verbose ? error_log("Studer XCOM-LAN BM Batt_AMPS: $batt_current_xcomlan"): false;
 
               // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging
               // $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);

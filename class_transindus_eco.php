@@ -679,7 +679,7 @@ class class_transindus_eco
       $shelly_em_home_wh = (int) round($shelly_api_device_response->emeters[0]->total, 0);
 
       // get the energy counter value set at midnight. Assumes that this is an integer
-      $shelly_em_home_energy_counter_at_midnight = (int) (get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', true);
+      $shelly_em_home_energy_counter_at_midnight = (int) ( get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', true) );
 
       $returned_obj->shelly_em_home_voltage = (int)   round($shelly_api_device_response->emeters[0]->voltage, 0);
       $returned_obj->shelly_em_home_kw      = (float) round( 0.001 * $shelly_api_device_response->emeters[0]->power, 3 );

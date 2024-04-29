@@ -12,7 +12,7 @@ if (!defined( "ABSPATH" ) && !defined( "MOODLE_INTERNAL" ) )
 // class definition begins
 class shelly_cloud_api
 {
-    const VERBOSE     = true;
+    const VERBOSE     = false;
 
     public function __construct(    string $auth_key, 
                                     string $server_uri, 
@@ -235,7 +235,7 @@ class shelly_cloud_api
     */
     protected function getCurl ($endpoint, $headers, $params = [])
     {
-        // check if anything exists in $params. If so make a query string out of it
+        // check if anything exists in $params. $this->verbose ? error_log("Shelly Switch ACIN State: $shelly1pm_acin_switch_status"): false;If so make a query string out of it
        if ($params)
         {
            if ( count($params) )

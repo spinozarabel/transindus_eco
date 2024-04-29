@@ -2362,6 +2362,7 @@ class class_transindus_eco
           $shelly1pm_acin_switch_status     = (string)  $shelly_switch_acin_details_arr['shelly1pm_acin_switch_status'];  // ON/OFF/OFFLINE/Not COnfigured
 
           $shelly_readings_obj->shelly_switch_acin_details_arr = $shelly_switch_acin_details_arr;
+          error_log(print_r($shelly_switch_acin_details_arr, true));
         }
 
         

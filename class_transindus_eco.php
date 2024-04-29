@@ -2425,7 +2425,7 @@ class class_transindus_eco
             $shelly_readings_obj->timestamp_shellybm        = $timestamp_shellybm;
           }
 
-          { // Now make a Shelly 4PM measurement to get individual powers for all channels
+          { /* Now make a Shelly 4PM measurement to get individual powers for all channels
             
             $shelly_4pm_readings_object = $this->get_shelly_device_status_homepwr_over_lan( $user_index );
 
@@ -2462,7 +2462,7 @@ class class_transindus_eco
                   $shelly_readings_obj->pump_ON_duration_secs   = $pump_ON_duration_secs;
                 }
             }
-            //
+            */
           }
 
           { // water heater data acquisition

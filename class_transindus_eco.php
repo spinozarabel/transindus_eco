@@ -2362,7 +2362,7 @@ class class_transindus_eco
           $shelly1pm_acin_switch_status     = (string)  $shelly_switch_acin_details_arr['shelly1pm_acin_switch_status'];  // ON/OFF/OFFLINE/Not COnfigured
 
           $shelly_readings_obj->shelly_switch_acin_details_arr = $shelly_switch_acin_details_arr;
-          error_log(print_r($shelly_switch_acin_details_arr, true));
+          // error_log(print_r($shelly_switch_acin_details_arr, true));
         }
 
         
@@ -2412,7 +2412,7 @@ class class_transindus_eco
             
             $shelly_battery_measurement_object = $this->get_shelly_battery_measurement_over_lan(  $user_index );
 
-            error_log(print_r($shelly_battery_measurement_object, true));
+            // error_log(print_r($shelly_battery_measurement_object, true));
 
             if ( $shelly_battery_measurement_object )
             { // valid shelly battery measurement - load object with battery measurement data
@@ -2434,6 +2434,7 @@ class class_transindus_eco
                 
                 // Also check and control pump ON duration
                 // $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object);
+                error_log(print_r($shelly_battery_measurement_object, true));
 
                 $power_total_to_home_kw = $shelly_4pm_readings_object->power_total_to_home_kw;
 

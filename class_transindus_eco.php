@@ -2018,15 +2018,29 @@ class class_transindus_eco
         if ( $existence_int === 3 )
         { // both methods are working and valid this cycle
 
+          // delta AH charge added this cycle algebraically.
           $delta_ah_shellybm = 0.5 * ( $previous_batt_amps_shellybm + $batt_amps_shelly_now ) * $delta_hours_shellybm;
+
+          // delta charge in %SOC added this cycle algebraically
           $delta_soc_shellybm = $delta_ah_shellybm / $battery_capacity_ah * 100;    // delta soc% from delta AH
+
+          // Total accumulated charge added algebraically since nidnight in %SOC. Note the += accumulation operation
           $soc_shellybm_since_midnight += $delta_soc_shellybm;                      // accumulate delta soc shellyBM
 
           $battery_soc_since_midnight_obj->delta_ah_shellybm = $delta_ah_shellybm;
           $battery_soc_since_midnight_obj->delta_soc_shellybm = $delta_soc_shellybm;
           $battery_soc_since_midnight_obj->soc_shellybm_since_midnight = $soc_shellybm_since_midnight;
-          // update the usermeta
-          update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $soc_shellybm_since_midnight );
+
+          // update the usermeta only delta %SOC added is smaller than what is expected in about 5m gap
+          // So for a discharge of 3KW over 5m is equal to 5%
+          if ( abs( $delta_soc_shellybm ) <= 5.0 )
+          {
+            update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $soc_shellybm_since_midnight );
+          }
+          else
+          {
+            error_log(" Delta SOC% from Shelly BM was unacceptable at: $delta_soc_shellybm, so no update");
+          }
 
 
           $delta_ah_xcomlan = 0.5 * ( $previous_batt_amps_xcomlan + $batt_amps_xcomlan_now ) * $delta_hours_xcomlan;
@@ -2040,8 +2054,17 @@ class class_transindus_eco
           // set the default battery current as xcomlan method
           $battery_soc_since_midnight_obj->batt_amps = $batt_amps_xcomlan_now;
 
-          // update the usermeta
-          update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_xcomlan_since_midnight );
+          /// update the usermeta only delta %SOC added is smaller than what is expected in about 5m gap
+          // So for a discharge of 3KW over 5m is equal to 5%
+          if ( abs( $delta_soc_xcomlan ) <= 5.0 )
+          {
+            update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_xcomlan_since_midnight );
+          }
+          else
+          {
+            error_log(" Delta SOC% from xcom-lan was unacceptable at: $delta_soc_xcomlan, so no update");
+          }
+            
 
           return $battery_soc_since_midnight_obj;
         }
@@ -2058,8 +2081,9 @@ class class_transindus_eco
           $battery_soc_since_midnight_obj->soc_shellybm_since_midnight = $soc_shellybm_since_midnight;
           // set the default battery current
           $battery_soc_since_midnight_obj->batt_amps = $batt_amps_shelly_now;
-          // update the usermeta
-          update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $soc_shellybm_since_midnight );
+
+          
+         
 
           // we use the delta values from shellybm but accumulate to original values from xcomlan
           $battery_soc_since_midnight_obj->delta_ah_xcomlan = $delta_ah_shellybm;
@@ -2067,8 +2091,18 @@ class class_transindus_eco
           $soc_xcomlan_since_midnight += $delta_soc_shellybm;
 
           $battery_soc_since_midnight_obj->soc_xcomlan_since_midnight = $soc_xcomlan_since_midnight;
+
           // update the usermeta
-          update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_xcomlan_since_midnight );
+          if ( abs( $delta_soc_shellybm ) <= 5.0 )
+          {
+            update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight',         $soc_shellybm_since_midnight );
+            update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_xcomlan_since_midnight );
+          }
+          else
+          {
+            error_log(" Delta SOC% from Shelly BM was unacceptable at: $delta_soc_shellybm, so no update");
+          }
+          
 
           return $battery_soc_since_midnight_obj;
         }
@@ -2093,8 +2127,17 @@ class class_transindus_eco
           $battery_soc_since_midnight_obj->delta_soc_shellybm = $delta_soc_xcomlan;
           $soc_shellybm_since_midnight += $delta_soc_xcomlan;                      // accumulate
           $battery_soc_since_midnight_obj->soc_shellybm_since_midnight = $soc_shellybm_since_midnight;
+
           // update the usermeta
-          update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $soc_shellybm_since_midnight );
+          if ( abs( $delta_soc_xcomlan ) <= 5.0 )
+          {
+            update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight',         $soc_shellybm_since_midnight );
+            update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_xcomlan_since_midnight );
+          }
+          else
+          {
+            error_log(" Delta SOC% from xcom-lanwas unacceptable at: $delta_soc_xcomlan, so no update");
+          }
 
           return $battery_soc_since_midnight_obj;
         }
@@ -2347,6 +2390,7 @@ class class_transindus_eco
         { // get the SOCs from the user meta.
 
           // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only just past midnight once
+          // This is used for both shellyBM and xcom-lan battery current based SOC calculations
           $soc_percentage_at_midnight = (float) get_user_meta($wp_user_ID, "soc_percentage_at_midnight",  true);
 
           // SOC percentage after dark. This gets captured at dark and gets updated every cycle
@@ -3093,7 +3137,7 @@ class class_transindus_eco
 
         
 
-        // publish this data to remote server present in config
+        // publish this data to remote server. The remote server in slave mode just displays the data so it is accessible from anywhere
         $this->publish_data_to_avasarala_in_using_mqtt( $shelly_readings_obj );
     }
 

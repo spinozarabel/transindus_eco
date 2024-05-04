@@ -2583,7 +2583,7 @@ class class_transindus_eco
               // $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);
 
               // if battery is charging voltage will decrease and if discharging voltage will increase due to IR compensation
-              $ir_drop_compensated_battery_voltage_xcomlan = $raw_batt_voltage_xcomlan - 0.025 * $batt_current_xcomlan;
+              $ir_drop_compensated_battery_voltage_xcomlan = $raw_batt_voltage_xcomlan - 0.030 * $batt_current_xcomlan;
 
               if ( $ir_drop_compensated_battery_voltage_xcomlan > 48 )
               { // calculate running aerage only if current measurement seems reasonable

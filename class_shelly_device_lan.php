@@ -26,18 +26,18 @@ class shelly_device
     public string   $shelly_device_static_ip;
     public string   $shelly_device_model;
     public string   $shelly_device_type;
-    public bool     $input_0_state_bool;
-    public bool     $switch_0_output_bool;
-    public float    $switch_0_power_w, $switch_0_power_kw;
+
+
     public int      $number_of_channels;
     public object   $shelly_device_details;
+    
 
     public function __construct(    
                                   string $auth_key, 
                                   string $server_uri, 
                                   string $shelly_device_id,
                                   string $shelly_device_static_ip, 
-                                  string $shelly_device_model = "shellyplus1pm",
+                                  string $shelly_device_model = "shellyplus1pm",  // defsult device
                                 )
     {
       $this->verbose  = self::VERBOSE;
@@ -56,65 +56,69 @@ class shelly_device
 
 
     /**
-     * 
+     *  Based on the supplied model fix the device details into an object
      */
     public function get_device_details_from_model(): ? object
     {
-      $shelly_device_type_obj = new stdClass;
+      $shelly_device_details = new stdClass;
 
       $shelly_device_model = $this->shelly_device_model;
 
       switch ( $shelly_device_model )
       {
         case "shellyplus1pm":
-          $shelly_device_type_obj->channels   = (int)   1;
-          $shelly_device_type_obj->switch     = (bool)  true;
-          $shelly_device_type_obj->powermeter = (bool)  true;
-          $shelly_device_type_obj->voltmeter  = (bool)  false;
-          $shelly_device_type_obj->gen        = 2;
+          $shelly_device_details->channels   = (int)   1;
+          $shelly_device_details->switch     = (bool)  true;
+          $shelly_device_details->powermeter = (bool)  true;
+          $shelly_device_details->voltmeter  = (bool)  false;
+          $shelly_device_details->gen        = (int)   2;
+          $shelly_device_details->status_call_method_name = "get_shellyplus1pm_status_over_lan()";
 
           break;
 
         case "shellyplus1-voltmeter":
-          $shelly_device_type_obj->channels   = (int)   1;
-          $shelly_device_type_obj->switch     = (bool)  true;
-          $shelly_device_type_obj->powermeter = (bool)  false;
-          $shelly_device_type_obj->gen        = 2;
+          $shelly_device_details->channels   = (int)   1;
+          $shelly_device_details->switch     = (bool)  true;
+          $shelly_device_details->powermeter = (bool)  false;
+          $shelly_device_details->voltmeter  = (bool)  true;
+          $shelly_device_details->gen        = (int)   2;
           break;
 
         case "shellypro4pm":
-          $shelly_device_type_obj->channels   = (int)   4;
-          $shelly_device_type_obj->switch     = (bool)  true;
-          $shelly_device_type_obj->powermeter = (bool)  true;
-          $shelly_device_type_obj->voltmeter  = (bool)  false;
-          $shelly_device_type_obj->gen        = (int)   2;
+          $shelly_device_details->channels   = (int)   4;
+          $shelly_device_details->switch     = (bool)  true;
+          $shelly_device_details->powermeter = (bool)  true;
+          $shelly_device_details->voltmeter  = (bool)  false;
+          $shelly_device_details->gen        = (int)   2;
           break;
 
         case "shellyem":
-          $shelly_device_type_obj->channels   = (int)   2;
-          $shelly_device_type_obj->switch     = (bool)  true;
-          $shelly_device_type_obj->powermeter = (bool)  true;
-          $shelly_device_type_obj->voltmeter  = (bool)  false;
-          $shelly_device_type_obj->gen        = (int)   1;
+          $shelly_device_details->channels   = (int)   2;
+          $shelly_device_details->switch     = (bool)  true;
+          $shelly_device_details->powermeter = (bool)  true;
+          $shelly_device_details->voltmeter  = (bool)  false;
+          $shelly_device_details->gen        = (int)   1;
           break; 
 
         case "shellypro3em":
-          $shelly_device_type_obj->channels   = (int)   3;
-          $shelly_device_type_obj->switch     = (bool)  false;
-          $shelly_device_type_obj->powermeter = (bool)  true;
-          $shelly_device_type_obj->voltmeter  = (bool)  false;
-          $shelly_device_type_obj->gen        = (int)   2;
+          $shelly_device_details->channels   = (int)   3;
+          $shelly_device_details->switch     = (bool)  false;
+          $shelly_device_details->powermeter = (bool)  true;
+          $shelly_device_details->voltmeter  = (bool)  false;
+          $shelly_device_details->gen        = (int)   2;
           break;
 
         default:
-          $shelly_device_type_obj->channels   = (int)   0;
-          $shelly_device_type_obj->switch     = (bool)  false;
-          $shelly_device_type_obj->powermeter = (bool)  false;
-          $shelly_device_type_obj->voltmeter  = (bool)  false;
-          $shelly_device_type_obj->gen        = (int)   0;
+          $shelly_device_details->channels   = (int)   0;
+          $shelly_device_details->switch     = (bool)  false;
+          $shelly_device_details->powermeter = (bool)  false;
+          $shelly_device_details->voltmeter  = (bool)  false;
+          $shelly_device_details->gen        = (int)   0;
       }
+
+      $this->shelly_device_details = $shelly_device_details;
       
-      return $shelly_device_type_obj;
+      return $shelly_device_details;
     }
 
 
@@ -123,8 +127,36 @@ class shelly_device
      */
     public function get_shelly_device_data() : ? object
     {
+      $shelly_device_data = new stdClass;
 
-        if ( $this->shelly_device_details->gen === '2' )
+      // based on the device model get the name of the function to be called to get device status
+      $status_call_method_name = (string) $this->shelly_device_details->status_call_method_name;
+
+      // call the function to get the device status using variable having method name suitable for intended device
+      $data = $this->$status_call_method_name;
+
+      // build the shelly device object from data obtained
+      $shelly_device_data->switch_0_input_state_bool  = $data->{"input:0"};
+      $shelly_device_data->switch_0_output_state_bool = $data->{"switch:0"}->output;
+      $shelly_device_data->switch_0_power_w           = (int)     round( $data->{"switch:0"}->apower,         0 );
+      $shelly_device_data->switch_0_power_kw          = (float)   round( $data->{"switch:0"}->apower * 0.001, 3 );
+      $shelly_device_data->switch_0_energy_counter    = (int)     round( $data->{"switch:0"}->aenergy->total, 0 );
+      $shelly_device_data->switch_0_voltage           = (int)     round( $data->{"switch:0"}->voltage,         0 );
+      $shelly_device_data->switch_0_current           = (float)   round( $data->{"switch:0"}->current,         1 );
+      $shelly_device_data->timestamp                  = (int)            $data->{"switch:0"}->aenergy->minute_ts;
+      $shelly_device_data->timestamp                  = $this->shelly_device_details;
+
+      $shelly_device_data->static_ip                  = (string) $data->wifi->sta_ip;
+
+      return $shelly_device_data;
+    }
+
+    /**
+     * 
+     */
+    public function get_shellyplus1pm_status_over_lan(): ? object
+    {
+      if ( $this->shelly_device_details->gen === '2' )
         {
             $protocol_method = "/rpc/Shelly.GetStatus";
         }
@@ -133,36 +165,24 @@ class shelly_device
             // assumes gen1
             $protocol_method = "/status";
         }
-        
 
-        // parameters for query string
-        $params   = [];
+      // parameters for query string
+      $params   = [];
 
-        $headers  = [];
+      $headers  = [];
 
-        $endpoint = $this->shelly_device_static_ip . $protocol_method;
+      $endpoint = $this->shelly_device_static_ip . $protocol_method;
 
-        // already json decoded into object or null
-        $curlResponse   = $this->getCurl($endpoint, $headers, $params);
+      // already json decoded into object or null
+      $curlResponse   = $this->getCurl($endpoint, $headers, $params);
 
-        if ( empty( $curlResponse ) )
-        {
-            return null;
-        }
-
-        switch (true)
-        {
-          case 
-        }
-
-
-        // build the shelly device object from data obtained
-        $this->input_0_state_bool   = $curlResponse->{"input:0"};
-        $this->switch_0_output_bool = $curlResponse->{"switch:0"}->output;
-        $this->switch_0_power_w     = (int)     round( $curlResponse->{"switch:0"}->apower, 0 );
-        $this->switch_0_power_kw    = (float)   round( $this->switch_0_power_w * 0.001, 3 );
-
+      return $curlResponse;
     }
+        
+     
+
+
+      
 
 
     /**

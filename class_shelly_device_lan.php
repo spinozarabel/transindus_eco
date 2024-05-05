@@ -11,7 +11,7 @@ if (!defined( "ABSPATH" ) && !defined( "MOODLE_INTERNAL" ) )
     }
 
 
-require_once(__DIR__."/class_my_mqtt.php");
+// require_once(__DIR__."/class_my_mqtt.php");
 
 class shelly_device
 {

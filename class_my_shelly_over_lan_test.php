@@ -25,7 +25,7 @@ defined( 'MyConst' ) or die( 'No script kiddies please!' );
  
 
  // require __DIR__ . '/vendor/autoload.php';
- require __DIR__ . '/shelly_cloud_api.php';
+ require __DIR__ . '/class_shelly_device_lan.php';
  require __DIR__ . '/class_solar_calculation.php';
  require __DIR__ . '/openweather_api.php';
  
@@ -143,7 +143,7 @@ class my_shelly_over_lan_test
      *  Checks the validity of Shelly switch configuration required for program
      *  Makes an API call on the Shelly ACIN switch and return the ststus such as State, Voltage, etc.
      */
-    public function get_shelly_switch_acin_details_over_lan( int $user_index) : array
+    public function get_shelly_grid_switch_details_over_lan( int $user_index) : object
     {
       $return_array = [];
 
@@ -170,66 +170,12 @@ class my_shelly_over_lan_test
           $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
           $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_1pm'];
 
-          $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
+          $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellyplus1pm' );
 
-          // this is curl_response.
-          $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
+          $shelly_device_data = $shelly_device->get_shellyplus1pm_status_over_lan();
 
-          if ( is_null($shelly_api_device_response) ) 
-          { // switch status is unknown
-
-              error_log("Shelly Grid Switch API call failed - Grid power failure Assumed");
-
-              $shelly_api_device_status_ON = null;
-
-              $shelly_switch_status             = "OFFLINE";
-              $shelly_api_device_status_voltage = "NA";
-          }
-          else 
-          {  // Switch is ONLINE - Get its status and Voltage
-              
-              $shelly_api_device_status_ON        = $shelly_api_device_response->{'switch:0'}->output;
-              $shelly_api_device_status_voltage   = $shelly_api_device_response->{'switch:0'}->voltage;
-
-              $shelly_api_device_status_current   = $shelly_api_device_response->{'switch:0'}->current;
-              $shelly_api_device_status_minute_ts = $shelly_api_device_response->{'switch:0'}->aenergy->minute_ts;
-
-              $shelly_api_device_status_power_kw  = round( $shelly_api_device_response->{'switch:0'}->apower * 0.001, 3);
-
-              if ($shelly_api_device_status_ON)
-              {
-                  $shelly_switch_status = "ON";
-              }
-              else
-              {
-                  $shelly_switch_status = "OFF";
-              }
-              
-          }
+          return $shelly_device_data;
       }
-      else 
-      {  // no valid configuration for shelly switch set variables for logging info
-
-          $shelly_api_device_status_ON = null;
-
-          $shelly_switch_status               = "Not Configured";
-          $shelly_api_device_status_voltage   = "NA";
-          $shelly_api_device_status_current   = 'NA';
-          $shelly_api_device_status_power_kw  = 'NA';
-          $shelly_api_device_status_minute_ts = 'NA';   
-      }  
-
-      $return_array['shelly1pm_acin_switch_config']   = $valid_shelly_config;
-      $return_array['control_shelly']                 = $control_shelly;
-      $return_array['shelly1pm_acin_switch_status']   = $shelly_switch_status;
-      $return_array['shelly1pm_acin_voltage']         = $shelly_api_device_status_voltage;
-      $return_array['shelly1pm_acin_current']         = $shelly_api_device_status_current;
-      $return_array['shelly1pm_acin_power_kw']        = $shelly_api_device_status_power_kw;
-      $return_array['shelly1pm_acin_minute_ts']       = $shelly_api_device_status_minute_ts;
-
-      $this->shelly_switch_acin_details = $return_array;
-
-      return $return_array;
     }
 
 
@@ -342,23 +288,23 @@ class my_shelly_over_lan_test
 
 $test = new my_shelly_over_lan_test();
 
-$shelly_3p_grid_energy_measurement_obj = $test->get_shelly_3p_grid_wh_since_midnight_over_lan( 0 );
- print_r($shelly_3p_grid_energy_measurement_obj);
+// $shelly_3p_grid_energy_measurement_obj = $test->get_shelly_3p_grid_wh_since_midnight_over_lan( 0 );
+ // print_r($shelly_3p_grid_energy_measurement_obj);
 
- $home_em = "em1:2";
- $home_emdata = "em1data:2";
+ // $home_em = "em1:2";
+ // $home_emdata = "em1data:2";
 
- $home_ac_voltage = $shelly_3p_grid_energy_measurement_obj->$home_em->voltage;
- $home_ac_power = $shelly_3p_grid_energy_measurement_obj->$home_emdata->total_act_energy;
+ // $home_ac_voltage = $shelly_3p_grid_energy_measurement_obj->$home_em->voltage;
+ // $home_ac_power = $shelly_3p_grid_energy_measurement_obj->$home_emdata->total_act_energy;
 
- print($home_ac_voltage);
- print ($home_ac_power);
+ // print($home_ac_voltage);
+ // print ($home_ac_power);
 
- $shelly_switch_acin_details = $test->get_shelly_switch_acin_details_over_lan(0);
- print_r($shelly_switch_acin_details);
+ $shelly_grid_switch_details = $test->get_shelly_grid_switch_details_over_lan(0);
+ print_r($shelly_grid_switch_details);
 
- $success_off = $test->turn_on_off_shelly1pm_acin_switch_over_lan(0, 'off');
- print ("success turning swithc OFF is: $success_off");
+ // $success_off = $test->turn_on_off_shelly1pm_acin_switch_over_lan(0, 'off');
+ //  print ("success turning swithc OFF is: $success_off");
 
 
 

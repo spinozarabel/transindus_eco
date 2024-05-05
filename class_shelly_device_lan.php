@@ -129,27 +129,51 @@ class shelly_device
     {
       $shelly_device_data = new stdClass;
 
+      $shelly_device_data->shelly_device_details      = $this->shelly_device_details;
+
       // based on the device model get the name of the function to be called to get device status
       $status_call_method_name = (string) $this->shelly_device_details->status_call_method_name;
 
       // call the function to get the device status using variable having method name suitable for intended device
       $data = $this->$status_call_method_name;
 
-      // build the shelly device object from data obtained
-      $shelly_device_data->switch_0_input_state_bool  = $data->{"input:0"};
-      $shelly_device_data->switch_0_output_state_bool = $data->{"switch:0"}->output;
-      $shelly_device_data->switch_0_power_w           = (int)     round( $data->{"switch:0"}->apower,         0 );
-      $shelly_device_data->switch_0_power_kw          = (float)   round( $data->{"switch:0"}->apower * 0.001, 3 );
-      $shelly_device_data->switch_0_energy_counter    = (int)     round( $data->{"switch:0"}->aenergy->total, 0 );
-      $shelly_device_data->switch_0_voltage           = (int)     round( $data->{"switch:0"}->voltage,         0 );
-      $shelly_device_data->switch_0_current           = (float)   round( $data->{"switch:0"}->current,         1 );
-      $shelly_device_data->timestamp                  = (int)            $data->{"switch:0"}->aenergy->minute_ts;
-      $shelly_device_data->timestamp                  = $this->shelly_device_details;
+      if ( ! empty( $data ) )
+      {
+        // build the shelly device object from valid data obtained
+        $shelly_device_data->switch_0_input_state_bool  = $data->{"input:0"};
+        $shelly_device_data->switch_0_output_state_bool = $data->{"switch:0"}->output;
+        $shelly_device_data->switch_0_power_w           = (int)     round( $data->{"switch:0"}->apower,         0 );
+        $shelly_device_data->switch_0_power_kw          = (float)   round( $data->{"switch:0"}->apower * 0.001, 3 );
+        $shelly_device_data->switch_0_energy_counter    = (int)     round( $data->{"switch:0"}->aenergy->total, 0 );
+        $shelly_device_data->switch_0_voltage           = (int)     round( $data->{"switch:0"}->voltage,         0 );
+        $shelly_device_data->switch_0_current           = (float)   round( $data->{"switch:0"}->current,         1 );
+        $shelly_device_data->timestamp                  = (int)            $data->{"switch:0"}->aenergy->minute_ts;
+        $shelly_device_data->static_ip                  = (string) $data->wifi->sta_ip;
 
-      $shelly_device_data->static_ip                  = (string) $data->wifi->sta_ip;
+        if ( $shelly_device_data->switch_0_output_state_bool )
+        {
+            $shelly_device_data->shelly_grid_switch_status_string = "ON";
+        }
+        else
+        {
+          $shelly_device_data->shelly_grid_switch_status_string = "OFF";
+        }
 
-      return $shelly_device_data;
+        return $shelly_device_data;
+      }
+      else
+      {
+        // device is offline or not connected or refused to respond
+        $shelly_device_data->shelly_grid_switch_status_string = "OFFLINE";
+        $shelly_device_data->switch_0_voltage           = (int)   0;
+        $shelly_device_data->switch_0_power_kw          = (float) 0;
+
+        return $shelly_device_data;
+      } 
     }
+
+
+
 
     /**
      * 

@@ -143,7 +143,7 @@ class my_shelly_over_lan_test
      *  Checks the validity of Shelly switch configuration required for program
      *  Makes an API call on the Shelly ACIN switch and return the ststus such as State, Voltage, etc.
      */
-    public function get_shelly_grid_switch_details_over_lan( int $user_index) : object
+    public function get_shelly_grid_switch_details_over_lan( int $user_index) : ? object
     {
       $return_array = [];
 
@@ -172,7 +172,7 @@ class my_shelly_over_lan_test
 
           $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellyplus1pm' );
 
-          $shelly_device_data = $shelly_device->get_shellyplus1pm_status_over_lan();
+          $shelly_device_data = $shelly_device->get_shelly_device_data();
 
           return $shelly_device_data;
       }
@@ -301,6 +301,7 @@ $test = new my_shelly_over_lan_test();
  // print ($home_ac_power);
 
  $shelly_grid_switch_details = $test->get_shelly_grid_switch_details_over_lan(0);
+
  print_r($shelly_grid_switch_details);
 
  // $success_off = $test->turn_on_off_shelly1pm_acin_switch_over_lan(0, 'off');

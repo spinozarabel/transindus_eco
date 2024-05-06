@@ -16,7 +16,7 @@ if (!defined( "ABSPATH" ) && !defined( "MOODLE_INTERNAL" ) )
 class shelly_device
 {
 
-    const VERBOSE     = true;
+    const VERBOSE     = false;
 
     public string   $verbose;
     private string  $server_uri;
@@ -72,7 +72,7 @@ class shelly_device
           $shelly_device_details->powermeter = (bool)  true;
           $shelly_device_details->voltmeter  = (bool)  false;
           $shelly_device_details->gen        = (int)   2;
-          $shelly_device_details->status_call_method_name = "get_shellyplus1pm_status_over_lan()";
+          $shelly_device_details->status_call_method_name = "get_shellyplus1pm_status_over_lan";
 
           break;
 
@@ -134,14 +134,15 @@ class shelly_device
       // based on the device model get the name of the function to be called to get device status
       $status_call_method_name = (string) $this->shelly_device_details->status_call_method_name;
 
-      // call the function to get the device status using variable having method name suitable for intended device
-      $data = $this->$status_call_method_name;
+      // make the status call using method name in variable as below. Note the trick of just adding () at end of variable
+      // to make a function call contained inside of a variable.
+      $data = $this->$status_call_method_name();
 
       if ( ! empty( $data ) )
       {
         // build the shelly device object from valid data obtained
-        $shelly_device_data->switch_0_input_state_bool  = $data->{"input:0"};
-        $shelly_device_data->switch_0_output_state_bool = $data->{"switch:0"}->output;
+        $shelly_device_data->switch_0_input_state_bool  = (bool) $data->{"input:0"}->state;
+        $shelly_device_data->switch_0_output_state_bool = (bool) $data->{"switch:0"}->output;
         $shelly_device_data->switch_0_power_w           = (int)     round( $data->{"switch:0"}->apower,         0 );
         $shelly_device_data->switch_0_power_kw          = (float)   round( $data->{"switch:0"}->apower * 0.001, 3 );
         $shelly_device_data->switch_0_energy_counter    = (int)     round( $data->{"switch:0"}->aenergy->total, 0 );
@@ -180,7 +181,7 @@ class shelly_device
      */
     public function get_shellyplus1pm_status_over_lan(): ? object
     {
-      if ( $this->shelly_device_details->gen === '2' )
+      if ( $this->shelly_device_details->gen === 2 )
         {
             $protocol_method = "/rpc/Shelly.GetStatus";
         }
@@ -245,6 +246,7 @@ class shelly_device
         }
         else
         {
+          error_log("Curl GET failed from Shelly Device" . print_r($curl_response,true));
           return NULL;
         }
     }

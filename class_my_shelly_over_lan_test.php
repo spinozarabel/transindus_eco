@@ -147,9 +147,6 @@ class my_shelly_over_lan_test
     {
       $return_array = [];
 
-      // set default timezone to Asia Kolkata
-      date_default_timezone_set("Asia/Kolkata");
-
       $config     = $this->config;
 
       // ensure that the data below is current before coming here
@@ -177,6 +174,43 @@ class my_shelly_over_lan_test
           return $shelly_device_data;
       }
     }
+
+
+    public function get_shelly_batterty_details_over_lan( int $user_index) : ? object
+    {
+      $return_array = [];
+
+      $config     = $this->config;
+
+      // ensure that the data below is current before coming here
+      $all_usermeta['do_shelly'] = true;
+
+      $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['ip_shelly_addon'] );
+    
+      
+
+      // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
+      if ( $valid_shelly_config ) 
+      {   //  get shelly device status ONLY if valid config for switch
+
+          $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+          $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+          $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_plus_addon'];
+          $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_addon'];
+
+          $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellyplus1-v' );
+
+          $shelly_device_data = $shelly_device->get_shelly_device_data();
+
+          return $shelly_device_data;
+      }
+    }
+
+
+
+    
+
+
 
 
      /**
@@ -284,6 +318,9 @@ class my_shelly_over_lan_test
       return $shelly_api_device_response;
       
     }
+
+
+
 }
 
 $test = new my_shelly_over_lan_test();
@@ -304,8 +341,15 @@ $test = new my_shelly_over_lan_test();
 
  print_r($shelly_grid_switch_details);
 
- // $success_off = $test->turn_on_off_shelly1pm_acin_switch_over_lan(0, 'off');
- //  print ("success turning swithc OFF is: $success_off");
+ $shelly_battery_details = $test->get_shelly_batterty_details_over_lan(0);
+
+ print_r($shelly_battery_details);
+
+ $shelly_battery_details = $test->get_shelly_em_details_over_lan(0);
+
+ print_r($shelly_battery_details);
+
+
 
 
 

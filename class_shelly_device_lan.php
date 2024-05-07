@@ -76,12 +76,13 @@ class shelly_device
 
           break;
 
-        case "shellyplus1-voltmeter":
+        case "shellyplus1-v":
           $shelly_device_details->channels   = (int)   1;
           $shelly_device_details->switch     = (bool)  true;
           $shelly_device_details->powermeter = (bool)  false;
           $shelly_device_details->voltmeter  = (bool)  true;
           $shelly_device_details->gen        = (int)   2;
+          $shelly_device_details->status_call_method_name = "get_shellyplus1_status_over_lan";
           break;
 
         case "shellypro4pm":
@@ -141,6 +142,55 @@ class shelly_device
       return $data;
     }
 
+
+
+    /**
+     *  @param object:$shelly_device_data
+     *  Function takes in an object as parameter.
+     *  An API call over local LAN is made to get the device data.
+     *  The curlresponse is parsed and device data is extracted and added onto passed in object as properties
+     *  This way, the shelly device data object is formed so that its data as properties can be accessed in straightforward manner
+     */
+    public function get_shellyplus1_status_over_lan( $shelly_device_data ): ? object
+    {
+      if ( $this->shelly_device_details->gen === 2 )
+        {
+            $protocol_method = "/rpc/Shelly.GetStatus";
+        }
+        else
+        {
+            // assumes gen1
+            $protocol_method = "/status";
+        }
+
+      // parameters for query string
+      $params   = [];
+
+      $headers  = [];
+
+      $endpoint = $this->shelly_device_static_ip . $protocol_method;
+
+      // already json decoded into object or null
+      $curlResponse   = $this->getCurl($endpoint, $headers, $params);
+
+      if ( ! empty( $curlResponse ) )
+      {
+        // build the shelly device object from valid data obtained
+        $shelly_device_data->input_0_state_bool         = (bool)  $curlResponse->{"input:0"}->state;      // digital input state
+        $shelly_device_data->switch_0_output_state_bool = (bool)  $curlResponse->{"switch:0"}->output;    // switch output state
+        $shelly_device_data->voltmeter_percent          = (float) $curlResponse->{"input:100"}->percent;  // percentage of full-scale of 10V
+
+        $shelly_device_data->timestamp                  = (int)            $curlResponse->sys->unixtime;
+        $shelly_device_data->static_ip                  = (string)         $curlResponse->wifi->sta_ip;
+
+        return $shelly_device_data;
+      }
+      else
+      {
+        // device is offline or not connected or refused to respond
+        return $shelly_device_data;
+      }
+    }
 
 
 

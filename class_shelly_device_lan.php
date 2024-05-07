@@ -185,6 +185,13 @@ class shelly_device
         return $shelly_device_data;   // return passed in object without dynamic addition of API data
       }
 
+      $emeters = array();
+      
+      $emeters[0] = new stdClass;
+      $emeters[1] = new stdClass;
+
+      $shelly_device_data->emeters = $emeters;
+
       // if we get here it means we have valid data from API call over LNA
       {
         // build the shelly device object from valid data obtained
@@ -198,8 +205,8 @@ class shelly_device
         $shelly_device_data->emeters[0]->power_kw = (float) round( $curlResponse->emeters[0]->power * 0.001,  3 );
         $shelly_device_data->emeters[1]->power_kw = (float) round( $curlResponse->emeters[1]->power * 0.001,  3 );
 
-        $shelly_device_data->timestamp           = (int)          $curlResponse->sys->unixtime;
-        $shelly_device_data->static_ip           = (string)       $curlResponse->wifi->sta_ip;
+        $shelly_device_data->timestamp           = (int)          $curlResponse->unixtime;
+        $shelly_device_data->static_ip           = (string)       $curlResponse->wifi_sta->ip;
 
         return $shelly_device_data;
       }

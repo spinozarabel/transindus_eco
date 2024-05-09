@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a7b22d3a21999c31ecd57fd92694f051",
+    "content-hash": "729bd84411999de3208029698b853178",
     "packages": [
         {
             "name": "myclabs/php-enum",
@@ -71,16 +71,16 @@
         },
         {
             "name": "php-mqtt/client",
-            "version": "v2.0.0",
+            "version": "v2.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-mqtt/client.git",
-                "reference": "458afc0bf33075ed8a1ffad72af5e10f2b516220"
+                "reference": "82581417df4fa63a95c7584866a8fd2fdef53105"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-mqtt/client/zipball/458afc0bf33075ed8a1ffad72af5e10f2b516220",
-                "reference": "458afc0bf33075ed8a1ffad72af5e10f2b516220",
+                "url": "https://api.github.com/repos/php-mqtt/client/zipball/82581417df4fa63a95c7584866a8fd2fdef53105",
+                "reference": "82581417df4fa63a95c7584866a8fd2fdef53105",
                 "shasum": ""
             },
             "require": {
@@ -122,9 +122,9 @@
             ],
             "support": {
                 "issues": "https://github.com/php-mqtt/client/issues",
-                "source": "https://github.com/php-mqtt/client/tree/v2.0.0"
+                "source": "https://github.com/php-mqtt/client/tree/v2.1.0"
             },
-            "time": "2023-11-25T20:53:47+00:00"
+            "time": "2024-04-24T16:24:36+00:00"
         },
         {
             "name": "psr/log",
@@ -185,5 +185,5 @@
     "prefer-lowest": false,
     "platform": [],
     "platform-dev": [],
-    "plugin-api-version": "2.2.0"
+    "plugin-api-version": "2.6.0"
 }

@@ -353,47 +353,50 @@ class shelly_device
     public function turn_on_off_shelly_x_plus_pm_switch_over_lan( string $desired_state, int $channel = 0 ) :  bool
     {
         // parse the desired state so end result is 1 or 0
-        if ( $desired_state == "true" || $desired_state === true || $desired_state === 1 || strtolower($desired_state) === "on")
+        if ( strtolower($desired_state)     === "true"  || strtolower($desired_state) === "on")
         {
             $desired_switch_state = "true";
         }
-        elseif ( $desired_state == "false" || $desired_state === false || $desired_state === 0 || strtolower($desired_state) === "off" )
+        elseif ( strtolower($desired_state) === "false" || strtolower($desired_state) === "off" )
         {
             $desired_switch_state = "false";
         }
 
         // form the variable name holders as below
-        $channel_holder_var_bool    = "switch_" . strval( $channel ) . "_output_state_bool";
-        $channel_holder_var_string  = "switch_" . strval( $channel ) . "_output_state_string";
+        $channel_holder_boolvar_string    = "switch_" . strval( $channel ) . "_output_state_bool";    // switch_0_output_state_bool
+        $channel_holder_stringvar_string  = "switch_" . strval( $channel ) . "_output_state_string";  // switch_0_output_state_string
 
-        // make a call to get the the shelly device data over LAN. This includes the device details as an object
+        //-------------------------------------Get the Initial state of switch----------->
         $shelly_device_data = $this->get_shelly_device_data();
 
-        if ( $shelly_device_data->$channel_holder_var_string !== "OFFLINE" )
+        $present_switch_state_string = $shelly_device_data->$channel_holder_stringvar_string;
+
+        if ( $present_switch_state_string !== "OFFLINE" )
         {
           // this is the present boolean state of the switch
-          $initial_switch_state_bool = (bool) $shelly_device_data->$channel_holder_var_bool ;
+          $initial_switch_state_bool = (bool) $shelly_device_data->$channel_holder_boolvar_string ;
 
           // if the existing switch state is same as desired, we simply exit with message
           if (  ( $initial_switch_state_bool === true  &&   strtolower( $desired_switch_state) === "true"  ) || 
                 ( $initial_switch_state_bool === false &&   strtolower( $desired_switch_state) === "false" )      )
           {
             // esisting state is same as desired final state so return
-            error_log( "LogSw: No Action in shelly1pm Switch - Initial Switch State: $initial_switch_state, Desired State: $desired_state" );
+            error_log( "LogSw: No Action in shelly1pm Switch - Initial Switch State: $initial_switch_state_bool, Desired State: $desired_state" );
             return true;
           }
         }
         else
         {
           // we didn't get a valid response but we can continue and try switching
-          error_log( "LogSw: we didn't get a valid response for shellyplus1pm switch initial status  but we can continue and try switching" );
+          error_log( "LogSw: shelly switch initial status:  $present_switch_state_string, Try to switch anyway...");
         }
 
+        //------------ do the switch ----------------------------------------------------->
         // parameters for query string
         $params     = array
         (
-            "id"          => $channel               ,
-            'on'          => $desired_switch_state  ,
+            "id"          => $channel               ,   // 0/1/2/3
+            'on'          => $desired_switch_state  ,   // "true" / "false" values
         );
         
         $headers  = [];
@@ -403,30 +406,37 @@ class shelly_device
         // issue the switch.set command. The response will consist of was_on:true/false
         $curlResponse   = $this->getCurl($endpoint, $headers, $params);
 
-        // make a call to get the the shelly device data over LAN. This includes the device details as an object
-        $shelly_device_data = $this->get_shelly_device_data();
-
-        // Get shelly switch state now
-        $state_after_switch_command = (bool) $shelly_device_data->$channel_holder_string;
-
-        If ( empty( $shelly_api_device_response ) )
+        If ( empty( $curlResponse ) )
         {
           error_log( "LogSw: Danger-we didn't get a valid response for switch turn on/off" );
-
           return false;
         }
-        // we do have a valid response from the switch
-        $final_switch_state = $shelly_api_device_response->{'switch:0'}->output;
 
-        if (  ( $final_switch_state === true  &&  ( strtolower( $desired_state) === "on"  || $desired_state === true  || $desired_state == 1) ) || 
-              ( $final_switch_state === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
+        //-------------------- Verify that the desired switch action took place----------------->
+        $shelly_device_data = $this->get_shelly_device_data();
+
+        $final_switch_state_string = $shelly_device_data->$channel_holder_stringvar_string;
+
+        if ( $final_switch_state_string !== "OFFLINE" )
         {
-          // Final state is same as desired final state so return success
-          return true;
+          // Get shelly switch state now
+          $final_switch_state_bool = (bool) $shelly_device_data->$channel_holder_boolvar_string;
+
+          if (  ( $final_switch_state_bool === true  &&  ( strtolower( $desired_state) === "on"  || $desired_state === true  || $desired_state == 1) ) || 
+                ( $final_switch_state_bool === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
+          {
+            // Final state is same as desired final state so return success
+            return true;
+          }
+          else
+          {
+            error_log( "LogSw: Danger-ACIN Switch to desired state Failed - Desired State: $desired_state, Final State: $final_switch_state_bool" );
+            return false;
+          }
         }
         else
         {
-          error_log( "LogSw: Danger-ACIN Switch to desired state Failed - Desired State: $desired_state, Final State: $final_switch_state" );
+          error_log( "LogSw: Danger-we didn't get a valid response for switch turn on/off" );
           return false;
         }
     }

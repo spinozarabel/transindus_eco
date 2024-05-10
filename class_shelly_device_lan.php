@@ -220,6 +220,7 @@ class shelly_device
      *  Function takes in an object as parameter.
      *  An API call over local LAN is made to get the device data.
      *  The curlresponse is parsed and device data is extracted and added onto passed in object as properties
+     *  If no curlresponse, then the passed in object is returned unmodified except for switch state being OFFLINE
      *  This way, the shelly device data object is formed so that its data as properties can be accessed in straightforward manner
      */
     public function get_shellyplus1_status_over_lan( $shelly_device_data ): ? object
@@ -268,6 +269,7 @@ class shelly_device
       else
       {
         // device is offline or not connected or refused to respond
+        $shelly_device_data->switch_0_output_state_string = "OFFLINE";
         return $shelly_device_data;
       }
     }

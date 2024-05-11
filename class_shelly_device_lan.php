@@ -208,7 +208,16 @@ class shelly_device
         $shelly_device_data->static_ip           = (string)       $curlResponse->wifi_sta->ip;
 
         // update the property of the relay output. This is usually used to control a contactor
-        $shelly_device_data->output              = (bool)         $curlResponse->relays[0]->ison;
+        $shelly_device_data->output_state_bool   = (bool)         $curlResponse->relays[0]->ison;
+
+        if ( $shelly_device_data->output_state_bool === true )
+        {
+            $shelly_device_data->output_state_string = "ON";
+        }
+        elseif ( $shelly_device_data->output_state_bool === false )
+        {
+          $shelly_device_data->output_state_string = "OFF";
+        }
 
         return $shelly_device_data;
       }

@@ -384,8 +384,8 @@ class shelly_device
 
         if ( ! empty( $curlResponse ) )
         {
-          $switch_channel_var = "switch:" . $channel;
-          $input_channel_var = "input:" . $channel;
+          $switch_channel_var = "switch:" . strval($channel);
+          $input_channel_var = "input:" . strval($channel);
 
           $shelly_device_data->switch[$channel]->input_state_bool  = (bool) $curlResponse->$input_channel_var->state;
           $shelly_device_data->switch[$channel]->output_state_bool        = (bool) $curlResponse->$switch_channel_var->output;

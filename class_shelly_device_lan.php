@@ -397,7 +397,7 @@ class shelly_device
       
       // get timestamp outside of channel loop
       $shelly_device_data->timestamp                    = (int)            $curlResponse->aenergy->minute_ts;
-      $shelly_device_data->static_ip                    = (string)         $curlResponse->wifi->sta_ip;
+      // $shelly_device_data->static_ip                    = (string)         $curlResponse->wifi->sta_ip;
       
 
       return  $shelly_device_data;

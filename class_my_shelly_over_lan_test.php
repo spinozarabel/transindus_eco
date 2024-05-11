@@ -261,6 +261,8 @@ class my_shelly_over_lan_test
 
           $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellypro4pm' );
 
+          print_r($shelly_device);
+
           $shelly_device_data = $shelly_device->get_shelly_device_data();
 
           return $shelly_device_data;

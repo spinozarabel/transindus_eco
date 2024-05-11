@@ -118,7 +118,7 @@ class shelly_device
           $shelly_device_details->powermeter = (bool)  true;
           $shelly_device_details->voltmeter  = (bool)  false;
           $shelly_device_details->gen        = (int)   2;
-          $shelly_device_details->status_call_method_name = "get_shelly4pm_status_over_lan";
+          $shelly_device_details->status_call_method_name = "get_shellypro4pm_status_over_lan";
           break;
 
 
@@ -360,7 +360,7 @@ class shelly_device
     /**
      * 
      */
-    public function get_shelly4pm_status_over_lan( $shelly_device_data ): object
+    public function get_shellypro4pm_status_over_lan( $shelly_device_data ): object
     {
      
       $protocol_method = "/rpc/Switch.GetStatus";

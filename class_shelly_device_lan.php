@@ -314,7 +314,7 @@ class shelly_device
       // already json decoded into object or null
       $curlResponse   = $this->getCurl($endpoint, $headers, $params);
 
-      $swith      = array();
+      $switch     = array();
       $switch[0]  = new stdClass;
 
       if ( ! empty( $curlResponse ) )
@@ -365,7 +365,7 @@ class shelly_device
 
       $headers  = [];
 
-      $swith = array();
+      $switch = array();
       
       $switch[0] = new stdClass;
       $switch[1] = new stdClass;
@@ -402,8 +402,7 @@ class shelly_device
       $shelly_device_data->static_ip                    = (string)         $curlResponse->wifi->sta_ip;
       
 
-
-      
+      return  $shelly_device_data;
     }
   
 

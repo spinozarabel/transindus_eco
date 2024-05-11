@@ -257,7 +257,7 @@ class my_shelly_over_lan_test
           $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
           $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
           $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
-          $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_em'];
+          $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_4pm'];
 
           $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellypro4pm' );
 

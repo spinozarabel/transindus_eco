@@ -109,7 +109,19 @@ class shelly_device
           $shelly_device_details->powermeter = (bool)  true;
           $shelly_device_details->voltmeter  = (bool)  false;
           $shelly_device_details->gen        = (int)   2;
+          $shelly_device_details->status_call_method_name = "get_shellypro3em_status_over_lan";
           break;
+
+        case "shellypro4pm":
+          $shelly_device_details->channels   = (int)   4;
+          $shelly_device_details->switch     = (bool)  true;
+          $shelly_device_details->powermeter = (bool)  true;
+          $shelly_device_details->voltmeter  = (bool)  false;
+          $shelly_device_details->gen        = (int)   2;
+          $shelly_device_details->status_call_method_name = "get_shelly4pm_status_over_lan";
+          break;
+
+
 
         default:
           $shelly_device_details->channels   = (int)   0;
@@ -154,15 +166,9 @@ class shelly_device
      */
     public function get_shellyem_status_over_lan( $shelly_device_data ): ? object
     {
-      if ( $this->shelly_device_details->gen === 2 )
-        {
-            $protocol_method = "/rpc/Shelly.GetStatus";
-        }
-        else
-        {
-            // assumes gen1
-            $protocol_method = "/status";
-        }
+      
+      // assumes gen1
+      $protocol_method = "/status";
 
       // parameters for query string
       $params   = [];
@@ -207,6 +213,9 @@ class shelly_device
 
         $shelly_device_data->timestamp           = (int)          $curlResponse->unixtime;
         $shelly_device_data->static_ip           = (string)       $curlResponse->wifi_sta->ip;
+
+        // update the property of the relay output. This is usually used to control a contactor
+        $shelly_device_data->output              = (bool)         $curlResponse->relays[0]->ison;
 
         return $shelly_device_data;
       }
@@ -305,26 +314,29 @@ class shelly_device
       // already json decoded into object or null
       $curlResponse   = $this->getCurl($endpoint, $headers, $params);
 
+      $swith      = array();
+      $switch[0]  = new stdClass;
+
       if ( ! empty( $curlResponse ) )
       {
         // build the shelly device object from valid data obtained
-        $shelly_device_data->switch_0_input_state_bool  = (bool) $curlResponse->{"input:0"}->state;
-        $shelly_device_data->switch_0_output_state_bool = (bool) $curlResponse->{"switch:0"}->output;
-        $shelly_device_data->switch_0_power_w           = (int)     round( $curlResponse->{"switch:0"}->apower,         0 );
-        $shelly_device_data->switch_0_power_kw          = (float)   round( $curlResponse->{"switch:0"}->apower * 0.001, 3 );
-        $shelly_device_data->switch_0_energy_counter    = (int)     round( $curlResponse->{"switch:0"}->aenergy->total, 0 );
-        $shelly_device_data->switch_0_voltage           = (int)     round( $curlResponse->{"switch:0"}->voltage,         0 );
-        $shelly_device_data->switch_0_current           = (float)   round( $curlResponse->{"switch:0"}->current,         1 );
-        $shelly_device_data->timestamp                  = (int)            $curlResponse->{"switch:0"}->aenergy->minute_ts;
-        $shelly_device_data->static_ip                  = (string)         $curlResponse->wifi->sta_ip;
+        $shelly_device_data->switch[0]->input_state_bool  = (bool) $curlResponse->{"input:0"}->state;
+        $shelly_device_data->switch[0]->output_state_bool = (bool) $curlResponse->{"switch:0"}->output;
+        $shelly_device_data->switch[0]->power             = (int)     round( $curlResponse->{"switch:0"}->apower,         0 );
+        $shelly_device_data->switch[0]->power_kw          = (float)   round( $curlResponse->{"switch:0"}->apower * 0.001, 3 );
+        $shelly_device_data->switch[0]->energy            = (int)     round( $curlResponse->{"switch:0"}->aenergy->total, 0 );
+        $shelly_device_data->switch[0]->voltage           = (int)     round( $curlResponse->{"switch:0"}->voltage,         0 );
+        $shelly_device_data->switch[0]->current           = (float)   round( $curlResponse->{"switch:0"}->current,         1 );
+        $shelly_device_data->timestamp                    = (int)            $curlResponse->{"switch:0"}->aenergy->minute_ts;
+        $shelly_device_data->static_ip                    = (string)         $curlResponse->wifi->sta_ip;
 
-        if ( $shelly_device_data->switch_0_output_state_bool === true )
+        if ( $shelly_device_data->switch[0]->output_state_bool === true )
         {
-            $shelly_device_data->switch_0_output_state_string = "ON";
+            $shelly_device_data->switch[0]->output_state_string = "ON";
         }
-        elseif ( $shelly_device_data->switch_0_output_state_bool === false )
+        elseif ( $shelly_device_data->switch[0]->output_state_bool === false )
         {
-          $shelly_device_data->switch_0_output_state_string = "OFF";
+          $shelly_device_data->switch[0]->output_state_string = "OFF";
         }
 
         return $shelly_device_data;
@@ -332,14 +344,68 @@ class shelly_device
       else
       {
         // device is offline or not connected or refused to respond
-        $shelly_device_data->switch_0_output_state_string = "OFFLINE";
-        $shelly_device_data->switch_0_voltage             = (int)   0;
-        $shelly_device_data->switch_0_power_kw            = (float) 0;
-
+        $shelly_device_data->switch[0]->output_state_string = "OFFLINE";
+        $shelly_device_data->switch[0]->voltage             = (int)   0;
+        $shelly_device_data->switch[0]->power               = (int)   0;
+        $shelly_device_data->switch[0]->power_kw            = (float) 0;
+        
         return $shelly_device_data;
       }
     }
 
+
+
+    /**
+     * 
+     */
+    public function get_shelly4pm_status_over_lan( $shelly_device_data ): object
+    {
+     
+      $protocol_method = "/rpc/Switch.GetStatus";
+
+      $headers  = [];
+
+      $swith = array();
+      
+      $switch[0] = new stdClass;
+      $switch[1] = new stdClass;
+      $switch[2] = new stdClass;
+      $switch[3] = new stdClass;
+       
+      for ($channel = 0; $channel <= 3; $channel++) 
+      {
+        // parameters for query string
+        $params     = array
+        (
+            "id"          => $channel                  //         0/1/2/3
+        );
+
+        $endpoint = $this->shelly_device_static_ip . $protocol_method;
+
+        // already json decoded into object or null
+        $curlResponse   = $this->getCurl($endpoint, $headers, $params);
+
+        if ( ! empty( $curlResponse ) )
+        {
+          $shelly_device_data->switch[$channel]->input_state_bool  = (bool) $curlResponse->{"input:"  . $channel}->state;
+          $shelly_device_data->switch[0]->output_state_bool        = (bool) $curlResponse->{"switch:" . $channel}->output;
+          $shelly_device_data->switch[0]->power                    = (int)     round( $curlResponse->{"switch:" . $channel}->apower,         0 );
+          $shelly_device_data->switch[0]->power_kw                 = (float)   round( $curlResponse->{"switch:" . $channel}->apower * 0.001, 3 );
+          $shelly_device_data->switch[0]->energy                   = (int)     round( $curlResponse->{"switch:" . $channel}->aenergy->total, 0 );
+          $shelly_device_data->switch[0]->voltage                  = (int)     round( $curlResponse->{"switch:" . $channel}->voltage,        0 );
+          $shelly_device_data->switch[0]->current                  = (float)   round( $curlResponse->{"switch:" . $channel}->current,        1 );
+        }
+      }
+      
+      // get timestamp outside of channel loop
+      $shelly_device_data->timestamp                    = (int)            $curlResponse->{"switch:0"}->aenergy->minute_ts;
+      $shelly_device_data->static_ip                    = (string)         $curlResponse->wifi->sta_ip;
+      
+
+
+      
+    }
+  
 
 
      /**
@@ -362,32 +428,33 @@ class shelly_device
             $desired_switch_state = "false";
         }
 
-        // form the variable name holders as below
+        // form the variable name holders as below that themselves depend on variable $channel
         $channel_holder_boolvar_string    = "switch_" . strval( $channel ) . "_output_state_bool";    // switch_0_output_state_bool
         $channel_holder_stringvar_string  = "switch_" . strval( $channel ) . "_output_state_string";  // switch_0_output_state_string
 
-        //-------------------------------------Get the Initial state of switch----------->
+        //-------------------------------------Get the cutrrent state of switch ----------->
         $shelly_device_data = $this->get_shelly_device_data();
 
-        $present_switch_state_string = $shelly_device_data->$channel_holder_stringvar_string;
+        // Get the present switch state in a string. Possible values are: "ON"/"OFF"/"OFFLINE"
+        $present_switch_state_string = (string) $shelly_device_data->$channel_holder_stringvar_string;
 
-        if ( $present_switch_state_string !== "OFFLINE" )
+        if ( $present_switch_state_string !== "OFFLINE" )   // we did get a valid response
         {
           // this is the present boolean state of the switch
           $initial_switch_state_bool = (bool) $shelly_device_data->$channel_holder_boolvar_string ;
 
-          // if the existing switch state is same as desired, we simply exit with message
+          // if the existing switch state is same as desired, no need to do anything, we just exit with message
           if (  ( $initial_switch_state_bool === true  &&   strtolower( $desired_switch_state) === "true"  ) || 
                 ( $initial_switch_state_bool === false &&   strtolower( $desired_switch_state) === "false" )      )
           {
             // esisting state is same as desired final state so return
-            error_log( "LogSw: No Action in shelly1pm Switch - Initial Switch State: $initial_switch_state_bool, Desired State: $desired_state" );
+            error_log( "LogSw: No Action required - Initial Switch State: $initial_switch_state_bool, Desired State: $desired_state" );
             return true;
           }
         }
         else
         {
-          // we didn't get a valid response but we can continue and try switching
+          // we didn't get a valid response for the initial state but we can continue and try switching
           error_log( "LogSw: shelly switch initial status:  $present_switch_state_string, Try to switch anyway...");
         }
 
@@ -412,6 +479,8 @@ class shelly_device
           return false;
         }
 
+        $previous_state_was_on = $curlResponse->was_on;
+
         //-------------------- Verify that the desired switch action took place----------------->
         $shelly_device_data = $this->get_shelly_device_data();
 
@@ -422,8 +491,9 @@ class shelly_device
           // Get shelly switch state now
           $final_switch_state_bool = (bool) $shelly_device_data->$channel_holder_boolvar_string;
 
-          if (  ( $final_switch_state_bool === true  &&  ( strtolower( $desired_state) === "on"  || $desired_state === true  || $desired_state == 1) ) || 
-                ( $final_switch_state_bool === false &&  ( strtolower( $desired_state) === "off" || $desired_state === false || $desired_state == 0) ) )
+          if (  ( $final_switch_state_bool === true  &&  ( strtolower( $desired_switch_state) === "true"  ) ) || 
+                ( $final_switch_state_bool === false &&  ( strtolower( $desired_switch_state) === "false" ) )
+              )
           {
             // Final state is same as desired final state so return success
             return true;
@@ -431,6 +501,7 @@ class shelly_device
           else
           {
             error_log( "LogSw: Danger-ACIN Switch to desired state Failed - Desired State: $desired_state, Final State: $final_switch_state_bool" );
+            error_log( "previous_state_was_on: $previous_state_was_on as indicated by was_on property returned" );
             return false;
           }
         }

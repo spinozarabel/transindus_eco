@@ -86,13 +86,6 @@ class shelly_device
           $shelly_device_details->status_call_method_name = "get_shellyplus1_status_over_lan";
           break;
 
-        case "shellypro4pm":
-          $shelly_device_details->channels   = (int)   4;
-          $shelly_device_details->switch     = (bool)  true;
-          $shelly_device_details->powermeter = (bool)  true;
-          $shelly_device_details->voltmeter  = (bool)  false;
-          $shelly_device_details->gen        = (int)   2;
-          break;
 
         case "shellyem":
           $shelly_device_details->channels   = (int)   2;

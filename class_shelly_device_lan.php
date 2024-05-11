@@ -317,6 +317,8 @@ class shelly_device
       $switch     = array();
       $switch[0]  = new stdClass;
 
+      $shelly_device_data->switch = $switch;
+
       if ( ! empty( $curlResponse ) )
       {
         // build the shelly device object from valid data obtained
@@ -371,6 +373,8 @@ class shelly_device
       $switch[1] = new stdClass;
       $switch[2] = new stdClass;
       $switch[3] = new stdClass;
+
+      $shelly_device_data->switch = $switch;
        
       for ($channel = 0; $channel <= 3; $channel++) 
       {

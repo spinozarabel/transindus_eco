@@ -384,13 +384,16 @@ class shelly_device
 
         if ( ! empty( $curlResponse ) )
         {
-          $shelly_device_data->switch[$channel]->input_state_bool  = (bool) $curlResponse->{"input:"  . $channel}->state;
-          $shelly_device_data->switch[$channel]->output_state_bool        = (bool) $curlResponse->{"switch:" . $channel}->output;
-          $shelly_device_data->switch[$channel]->power                    = (int)     round( $curlResponse->{"switch:" . $channel}->apower,         0 );
-          $shelly_device_data->switch[$channel]->power_kw                 = (float)   round( $curlResponse->{"switch:" . $channel}->apower * 0.001, 3 );
-          $shelly_device_data->switch[$channel]->energy                   = (int)     round( $curlResponse->{"switch:" . $channel}->aenergy->total, 0 );
-          $shelly_device_data->switch[$channel]->voltage                  = (int)     round( $curlResponse->{"switch:" . $channel}->voltage,        0 );
-          $shelly_device_data->switch[$channel]->current                  = (float)   round( $curlResponse->{"switch:" . $channel}->current,        1 );
+          $switch_channel_var = "switch:" . $channel;
+          $input_channel_var = "input:" . $channel;
+
+          $shelly_device_data->switch[$channel]->input_state_bool  = (bool) $curlResponse->$input_channel_var->state;
+          $shelly_device_data->switch[$channel]->output_state_bool        = (bool) $curlResponse->$switch_channel_var->output;
+          $shelly_device_data->switch[$channel]->power                    = (int)     round( $curlResponse->$switch_channel_var->apower,         0 );
+          $shelly_device_data->switch[$channel]->power_kw                 = (float)   round( $curlResponse->$switch_channel_var->apower * 0.001, 3 );
+          $shelly_device_data->switch[$channel]->energy                   = (int)     round( $curlResponse->$switch_channel_var->aenergy->total, 0 );
+          $shelly_device_data->switch[$channel]->voltage                  = (int)     round( $curlResponse->$switch_channel_var->voltage,        0 );
+          $shelly_device_data->switch[$channel]->current                  = (float)   round( $curlResponse->$switch_channel_var->current,        1 );
         }
       }
       

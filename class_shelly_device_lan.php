@@ -247,20 +247,30 @@ class shelly_device
       // already json decoded into object or null
       $curlResponse   = $this->getCurl($endpoint, $headers, $params);
 
+      $switch       = array();
+      $switch[0]    = new stdClass;
+
+      $voltmeter     = array();
+      $voltmeter[0]  = new stdClass;
+
+      $shelly_device_data->switch     = $switch;
+
+      $shelly_device_data->voltmeter  = $voltmeter;
+
       if ( ! empty( $curlResponse ) )
       {
         // build the shelly device object from valid data obtained
-        $shelly_device_data->input_0_state_bool         = (bool)  $curlResponse->{"input:0"}->state;      // digital input state
-        $shelly_device_data->switch_0_output_state_bool = (bool)  $curlResponse->{"switch:0"}->output;    // switch output state
+        // $shelly_device_data->input_0_state_bool         = (bool)  $curlResponse->{"input:0"}->state;      // digital input state
+        $shelly_device_data->switch[0]->output_state_bool = (bool)  $curlResponse->{"switch:0"}->output;    // switch output state
 
         // check to see if addon 'input:100' exists in response. If so get it
         if ( property_exists($curlResponse, "input:100" ) )
         {
-          $shelly_device_data->voltmeter_percent        = (float) $curlResponse->{"input:100"}->percent;  // percentage of full-scale of 10V
+          $shelly_device_data->voltmeter[0]->percent        = (float) $curlResponse->{"input:100"}->percent;  // percentage of full-scale of 10V
         }
         else
         {
-          $shelly_device_data->voltmeter_percent = null;
+          $shelly_device_data->voltmeter[0]->percent = null;
         }
 
         $shelly_device_data->timestamp                  = (int)            $curlResponse->sys->unixtime;

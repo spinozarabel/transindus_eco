@@ -384,21 +384,19 @@ class shelly_device
 
         if ( ! empty( $curlResponse ) )
         {
-          $switch_channel_var = "switch:" . strval($channel);
-          $input_channel_var = "input:" . strval($channel);
 
-          $shelly_device_data->switch[$channel]->input_state_bool  = (bool) $curlResponse->$input_channel_var->state;
-          $shelly_device_data->switch[$channel]->output_state_bool        = (bool) $curlResponse->$switch_channel_var->output;
-          $shelly_device_data->switch[$channel]->power                    = (int)     round( $curlResponse->$switch_channel_var->apower,         0 );
-          $shelly_device_data->switch[$channel]->power_kw                 = (float)   round( $curlResponse->$switch_channel_var->apower * 0.001, 3 );
-          $shelly_device_data->switch[$channel]->energy                   = (int)     round( $curlResponse->$switch_channel_var->aenergy->total, 0 );
-          $shelly_device_data->switch[$channel]->voltage                  = (int)     round( $curlResponse->$switch_channel_var->voltage,        0 );
-          $shelly_device_data->switch[$channel]->current                  = (float)   round( $curlResponse->$switch_channel_var->current,        1 );
+          // $shelly_device_data->switch[$channel]->input_state_bool  = (bool) $curlResponse->$input_channel_var->state;
+          $shelly_device_data->switch[$channel]->output_state_bool        = (bool) $curlResponse->output;
+          $shelly_device_data->switch[$channel]->power                    = (int)     round( $curlResponse->apower,         0 );
+          $shelly_device_data->switch[$channel]->power_kw                 = (float)   round( $curlResponse->apower * 0.001, 3 );
+          $shelly_device_data->switch[$channel]->energy                   = (int)     round( $curlResponse->aenergy->total, 0 );
+          $shelly_device_data->switch[$channel]->voltage                  = (int)     round( $curlResponse->voltage,        0 );
+          $shelly_device_data->switch[$channel]->current                  = (float)   round( $curlResponse->current,        1 );
         }
       }
       
       // get timestamp outside of channel loop
-      $shelly_device_data->timestamp                    = (int)            $curlResponse->{"switch:0"}->aenergy->minute_ts;
+      $shelly_device_data->timestamp                    = (int)            $curlResponse->aenergy->minute_ts;
       $shelly_device_data->static_ip                    = (string)         $curlResponse->wifi->sta_ip;
       
 

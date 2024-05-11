@@ -263,6 +263,15 @@ class shelly_device
         // $shelly_device_data->input_0_state_bool         = (bool)  $curlResponse->{"input:0"}->state;      // digital input state
         $shelly_device_data->switch[0]->output_state_bool = (bool)  $curlResponse->{"switch:0"}->output;    // switch output state
 
+        if ( $shelly_device_data->switch[0]->output_state_bool === true )
+        {
+            $shelly_device_data->switch[0]->output_state_string = "ON";
+        }
+        elseif ( $shelly_device_data->switch[0]->output_state_bool === false )
+        {
+          $shelly_device_data->switch[0]->output_state_string = "OFF";
+        }
+
         // check to see if addon 'input:100' exists in response. If so get it
         if ( property_exists($curlResponse, "input:100" ) )
         {
@@ -281,7 +290,7 @@ class shelly_device
       else
       {
         // device is offline or not connected or refused to respond
-        $shelly_device_data->switch_0_output_state_string = "OFFLINE";
+        $shelly_device_data->switch[0]->output_state_string = "OFFLINE";
         return $shelly_device_data;
       }
     }
@@ -402,6 +411,15 @@ class shelly_device
           $shelly_device_data->switch[$channel]->energy                   = (int)     round( $curlResponse->aenergy->total, 0 );
           $shelly_device_data->switch[$channel]->voltage                  = (int)     round( $curlResponse->voltage,        0 );
           $shelly_device_data->switch[$channel]->current                  = (float)   round( $curlResponse->current,        1 );
+
+          if ( $shelly_device_data->switch[$channel]->output_state_bool === true )
+          {
+              $shelly_device_data->switch[$channel]->output_state_string = "ON";
+          }
+          elseif ( $shelly_device_data->switch[$channel]->output_state_bool === false )
+          {
+            $shelly_device_data->sswitch[$channel]->output_state_string = "OFF";
+          }
         }
       }
       

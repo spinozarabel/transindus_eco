@@ -238,6 +238,37 @@ class my_shelly_over_lan_test
 
 
 
+
+
+    public function get_shellypro4pm_details_over_lan ( int $user_index) : ? object
+    {
+      $return_array = [];
+
+      $config     = $this->config;
+
+      $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['ip_shelly_addon'] );
+    
+      
+
+      // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
+      if ( $valid_shelly_config ) 
+      {   //  get shelly device status ONLY if valid config for switch
+
+          $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+          $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+          $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
+          $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_em'];
+
+          $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellypro4pm' );
+
+          $shelly_device_data = $shelly_device->get_shelly_device_data();
+
+          return $shelly_device_data;
+      }
+    }
+
+
+
      /**
      *
      */
@@ -373,6 +404,10 @@ $test = new my_shelly_over_lan_test();
  $shelly_em_details = $test->get_shelly_em_details_over_lan(0);
 
  print_r($shelly_em_details);
+
+ $shellypro4pm_details = $test->get_shellypro4pm_details_over_lan(0);
+
+ print_r($shellypro4pm_details);
 
 
 

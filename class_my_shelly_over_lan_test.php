@@ -246,7 +246,7 @@ class my_shelly_over_lan_test
 
       $config     = $this->config;
 
-      $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['ip_shelly_addon'] );
+      $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['ip_shelly_load_4pm'] );
     
       
 

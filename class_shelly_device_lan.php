@@ -72,7 +72,7 @@ class shelly_device
           $shelly_device_details->powermeter = (bool)  true;
           $shelly_device_details->voltmeter  = (bool)  false;
           $shelly_device_details->gen        = (int)   2;
-          $shelly_device_details->status_call_method_name = "get_shellyplus1pm_status_over_lan";
+          $shelly_device_details->status_call_method_name = "get_shellyplus1pm_data_over_lan";
 
           break;
 
@@ -83,7 +83,7 @@ class shelly_device
           $shelly_device_details->powermeter = (bool)  false;
           $shelly_device_details->voltmeter  = (bool)  true;
           $shelly_device_details->gen        = (int)   2;
-          $shelly_device_details->status_call_method_name = "get_shellyplus1_status_over_lan";
+          $shelly_device_details->status_call_method_name = "get_shellyplus1_data_over_lan";
           break;
 
 
@@ -93,7 +93,7 @@ class shelly_device
           $shelly_device_details->powermeter = (bool)  true;
           $shelly_device_details->voltmeter  = (bool)  false;
           $shelly_device_details->gen        = (int)   1;
-          $shelly_device_details->status_call_method_name = "get_shellyem_status_over_lan";
+          $shelly_device_details->status_call_method_name = "get_shellyem_data_over_lan";
           break; 
 
         case "shellypro3em":
@@ -102,7 +102,7 @@ class shelly_device
           $shelly_device_details->powermeter = (bool)  true;
           $shelly_device_details->voltmeter  = (bool)  false;
           $shelly_device_details->gen        = (int)   2;
-          $shelly_device_details->status_call_method_name = "get_shellypro3em_status_over_lan";
+          $shelly_device_details->status_call_method_name = "get_shellypro3em_data_over_lan";
           break;
 
         case "shellypro4pm":
@@ -111,7 +111,7 @@ class shelly_device
           $shelly_device_details->powermeter = (bool)  true;
           $shelly_device_details->voltmeter  = (bool)  false;
           $shelly_device_details->gen        = (int)   2;
-          $shelly_device_details->status_call_method_name = "get_shellypro4pm_status_over_lan";
+          $shelly_device_details->status_call_method_name = "get_shellypro4pm_data_over_lan";
           break;
 
 
@@ -156,8 +156,10 @@ class shelly_device
      *  An API call over local LAN is made to get the device data.
      *  The curlresponse is parsed and device data is extracted and added onto passed in object as properties
      *  This way, the shelly device data object is formed so that its data as properties can be accessed in straightforward manner
+     *  When device is OFFLINE, check property ($shelly_device_data->output_state_string === "OFFLINE")
+     *  No other property exists when device is OFFLINE
      */
-    public function get_shellyem_status_over_lan( $shelly_device_data ): ? object
+    public function get_shellyem_data_over_lan( $shelly_device_data ): object
     {
       
       // assumes gen1
@@ -181,6 +183,9 @@ class shelly_device
         $this->verbose ? error_log( "LogApi: Shelly EM Load Energy API call failed - See below for response" ): false;
         $this->verbose ? error_log( print_r($curlResponse , true) ): false;
 
+        // check for this property outside to determine whether API call was succesful or not
+        $shelly_device_data->output_state_string = "OFFLINE";
+
         return $shelly_device_data;   // return passed in object without dynamic addition of API data
       }
 
@@ -193,7 +198,7 @@ class shelly_device
 
       // if we get here it means we have valid data from API call over LNA
       {
-        // build the shelly device object from valid data obtained
+        // otal energy WH counter values
         $shelly_device_data->emeters[0]->total = (int) round( $curlResponse->emeters[0]->total, 0 );  // channel 0 total energy WH counter
         $shelly_device_data->emeters[1]->total = (int) round( $curlResponse->emeters[1]->total, 0 );  // channel 1 total energy WH counter
 
@@ -233,8 +238,9 @@ class shelly_device
      *  The curlresponse is parsed and device data is extracted and added onto passed in object as properties
      *  If no curlresponse, then the passed in object is returned unmodified except for switch state being OFFLINE
      *  This way, the shelly device data object is formed so that its data as properties can be accessed in straightforward manner
+     *  check for ($shelly_device_data->switch[0]->output_state_string === "OFFLINE") no other property exists when offline
      */
-    public function get_shellyplus1_status_over_lan( $shelly_device_data ): ? object
+    public function get_shellyplus1_data_over_lan( $shelly_device_data ): object
     {
       if ( $this->shelly_device_details->gen === 2 )
         {
@@ -312,8 +318,10 @@ class shelly_device
      *  An API call over local LAN is made to get the device data.
      *  The curlresponse is parsed and device data is extracted and added onto passed in object as properties
      *  This way, the shelly device data object is formed so that its data as properties can be accessed in straightforward manner
+     *  when offline ($shelly_device_data->switch[0]->output_state_string === "OFFLINE") is TRUE
+     *  
      */
-    public function get_shellyplus1pm_status_over_lan( $shelly_device_data ): ? object
+    public function get_shellyplus1pm_data_over_lan( $shelly_device_data ): ? object
     {
       if ( $this->shelly_device_details->gen === 2 )
         {
@@ -381,7 +389,7 @@ class shelly_device
     /**
      * 
      */
-    public function get_shellypro4pm_status_over_lan( $shelly_device_data ): object
+    public function get_shellypro4pm_data_over_lan( $shelly_device_data ): object
     {
      
       $protocol_method = "/rpc/Switch.GetStatus";
@@ -421,6 +429,8 @@ class shelly_device
           $shelly_device_data->switch[$channel]->voltage                  = (int)     round( $curlResponse->voltage,        0 );
           $shelly_device_data->switch[$channel]->current                  = (float)   round( $curlResponse->current,        1 );
 
+          $shelly_device_data->timestamp                                  = (int)            $curlResponse->aenergy->minute_ts;
+
           if ( $shelly_device_data->switch[$channel]->output_state_bool === true )
           {
               $shelly_device_data->switch[$channel]->output_state_string = "ON";
@@ -430,15 +440,94 @@ class shelly_device
             $shelly_device_data->sswitch[$channel]->output_state_string = "OFF";
           }
         }
+        else
+        {
+          // device is OFFLINE
+          $shelly_device_data->switch[$channel]->output_state_string = "OFFLINE";
+          $shelly_device_data->switch[$channel]->power               = (int) 0;
+          $shelly_device_data->switch[$channel]->power_kw            = (float) 0.0;
+          $shelly_device_data->switch[$channel]->voltage             = (int) 0;
+        }
       }
       
-      // get timestamp outside of channel loop
-      $shelly_device_data->timestamp                    = (int)            $curlResponse->aenergy->minute_ts;
-      // $shelly_device_data->static_ip                    = (string)         $curlResponse->wifi->sta_ip;
-      
-
       return  $shelly_device_data;
     }
+
+
+     /**
+     * 
+     */
+    public function get_shellypro3em_data_over_lan( $shelly_device_data ): object
+    {
+      if ( $this->shelly_device_details->gen === 2 )
+        {
+            $protocol_method = "/rpc/Shelly.GetStatus";
+        }
+        else
+        {
+            // assumes gen1
+            $protocol_method = "/status";
+        }
+
+      // parameters for query string
+      $params   = [];
+
+      $headers  = [];
+
+      $endpoint = $this->shelly_device_static_ip . $protocol_method;
+
+      // already json decoded into object or null
+      $curlResponse   = $this->getCurl($endpoint, $headers, $params);
+      
+      if ( ! empty( $curlResponse ) )
+      {
+        // device returned valid data
+        // prepare data structure ro populate the device data to be returned
+        $em1     = array();
+
+        $em1[0]  = new stdClass;
+        $em1[1]  = new stdClass;
+        $em1[2]  = new stdClass;
+
+        $shelly_device_data->em1 = $em1;
+
+        $em1data = array();
+
+        $em1data[0]  = new stdClass;
+        $em1data[1]  = new stdClass;
+        $em1data[2]  = new stdClass;
+
+        $shelly_device_data->em1data = $em1data;
+
+        $shelly_device_data->em1[0]->current  = (float) $curlResponse->{"em1:0"}->current;
+        $shelly_device_data->em1[0]->voltage  = (float) $curlResponse->{"em1:0"}->voltage;
+        $shelly_device_data->em1[0]->power    = (float) $curlResponse->{"em1:0"}->act_power;
+        $shelly_device_data->em1[0]->power_kw = (float) round( 0.001 * $shelly_device_data->em1[0]->power, 3);
+
+        $shelly_device_data->em1[1]->current  = (float) $curlResponse->{"em1:1"}->current;
+        $shelly_device_data->em1[1]->voltage  = (float) $curlResponse->{"em1:1"}->voltage;
+        $shelly_device_data->em1[1]->power    = (float) $curlResponse->{"em1:1"}->act_power;
+        $shelly_device_data->em1[1]->power_kw = (float) round( 0.001 * $shelly_device_data->em1[1]->power, 3);
+
+        $shelly_device_data->em1[2]->current  = (float) $curlResponse->{"em1:2"}->current;
+        $shelly_device_data->em1[2]->voltage  = (float) $curlResponse->{"em1:2"}->voltage;
+        $shelly_device_data->em1[2]->power    = (float) $curlResponse->{"em1:2"}->act_power;
+        $shelly_device_data->em1[2]->power_kw = (float) round( 0.001 * $shelly_device_data->em1[2]->power, 3);
+
+        $shelly_device_data->em1data[0]->energy =  (int) round( $curlResponse->{"em1data:0"}->total_act_energy, 0 );
+        $shelly_device_data->em1data[1]->energy =  (int) round( $curlResponse->{"em1data:1"}->total_act_energy, 0 );
+        $shelly_device_data->em1data[2]->energy =  (int) round( $curlResponse->{"em1data:2"}->total_act_energy, 0 );
+      }
+      else
+      {
+        // the device API call failed
+        $shelly_device_data->output_state_string = "OFFLINE";
+      }
+
+      return $shelly_device_data;
+    }
+
+
   
 
 
@@ -546,11 +635,7 @@ class shelly_device
         }
     }
         
-     
-
-
       
-
 
     /**
     *  @param string:$endpoint is the full path url of endpoint, not including any parameters

@@ -261,8 +261,6 @@ class my_shelly_over_lan_test
 
           $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellypro4pm' );
 
-          print_r($shelly_device);
-
           $shelly_device_data = $shelly_device->get_shelly_device_data();
 
           return $shelly_device_data;
@@ -356,7 +354,7 @@ class my_shelly_over_lan_test
         }
     }
 
-    public function get_shelly_3p_grid_wh_since_midnight_over_lan(  int     $user_index ): ? object
+    public function get_shellypro3em_details_over_lan(  int     $user_index ): ? object
     {
 
       // get API and device ID from config based on user index
@@ -367,13 +365,11 @@ class my_shelly_over_lan_test
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin_3p'];
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_3em'];
 
-      // gen2 default pass parameter
-      $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
+      $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellypro3em' );
 
-      // this is $curl_response.
-      $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
+      $shelly_device_data = $shelly_device->get_shelly_device_data();
 
-      return $shelly_api_device_response;
+      return $shelly_device_data;
       
     }
 
@@ -410,6 +406,10 @@ $test = new my_shelly_over_lan_test();
  $shellypro4pm_details = $test->get_shellypro4pm_details_over_lan(0);
 
  print_r($shellypro4pm_details);
+
+ $shellypro3em_details = $test->get_shellypro3em_details_over_lan(0);
+
+ print_r($shellypro3em_details);
 
 
 

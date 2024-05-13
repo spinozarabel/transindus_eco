@@ -431,157 +431,6 @@ class class_transindus_eco
     }
 
 
-    
-
-
-    /**
-     *  legacy code - replaced by get_shellyplus1_battery_readings_over_lan
-     * 
-     *  @param int:$user_index index of user in config array
-     *  @param int:$wp_user_ID is the WP user ID
-     *  @param string:$shelly_switch_status is the string indicating the ON OFF or NULL state of the ACIN shelly switch
-     *  @param bool:$it_is_still_dark indicates if it is daylight or dark at present
-     *  @return object:$battery_measurements_object contains the measurements of the battery using the Shelly UNI device
-     *  
-     *  The current is measured using a hall effect sensor. The sensor output voltage is read by the ADC in the shelly Plus Addon
-     *  The transducer function is used to translate the ADC voltage to Battery current estimated.
-     */
-    public function get_shelly_battery_measurement_over_lan( int $user_index ) : ? object
-    {
-        // initialize the object to be returned
-        $shelly_bm_measurement_obj = new stdClass;
-
-        // Make an API call on the Shelly UNI device
-        $config = $this->config;
-
-        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_plus_addon'];
-        $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_addon'];
-
-        // uses default values of 'gen2' and channel 0 for last 2 unsoecified parameters 
-        $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
-
-        // this is $curl_response.
-        $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
-
-        // check to make sure that it exists. If null call was fruitless
-        if ( empty( $shelly_api_device_response ) )
-        {
-          error_log("LogApi: Danger-Shelly Battery Measurement API call over LAN failed");
-
-          return null;
-        }
-
-        // The measure ADC voltage is in percent of 10V. So a 25% reading indicates 2.5V measured
-        $adc_voltage_shelly = (float) $shelly_api_device_response->{"input:100"}->percent;
-        $timestamp_shellybm = (int)   $shelly_api_device_response->sys->unixtime;
-
-        // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
-        $delta_voltage = $adc_voltage_shelly * 0.1 - 2.54;
-
-        // 100 Amps gives a voltage of 0.625V amplified by opamp by 4.7. So voltas/amp measured by Shelly Addon is
-        $volts_per_amp = 0.625 * 4.7 / 100;
-
-        // Convert Volts to Amps using the value above. SUbtract an offest of 8A noticed, probably due to DC offset
-        $battery_amps_raw_measurement = ($delta_voltage / $volts_per_amp);
-
-        // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign and educe the current by 5%
-        // This is because the battery SOC numbers tend about 4 points more from about a value of 40% which indicates about 10% over measurement
-        // so to be conservative we are using a 10% reduction to see if this corrects the tendency.
-        $batt_amps_shellybm = -1.0 * round( $battery_amps_raw_measurement, 1) * 0.87;
-
-        $shelly_bm_measurement_obj->batt_amps_shellybm  = $batt_amps_shellybm;
-        $shelly_bm_measurement_obj->timestamp_shellybm  = $timestamp_shellybm;
-        
-        return $shelly_bm_measurement_obj;
-    }
-
-
-
-    /**
-     *  @param int:$user_index of user in config array
-     *  @return object:$shelly_device_data contains energy counter and its timestamp along with switch status object
-     *  Gets the power readings supplied to Home using Shelly Pro 4PM
-     */
-    public function get_shelly_device_status_homepwr_over_lan(int $user_index): ?object
-    {
-        // get API and device ID from config based on user index
-        $config = $this->config;
-
-        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_homepwr'];
-        $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_4pm'];
-
-        // gen2 is default as pass parameter
-        $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
-
-        // this is $curl_response.
-        $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
-
-        // check to make sure that it exists. If null API call was fruitless
-        if ( empty( $shelly_api_device_response ) || empty( $shelly_api_device_response->{"switch:3"}->aenergy->total ) )
-        {
-          error_log("LogApi: Shelly Homepwr switch API call failed");
-
-          return null;
-        }
-
-        // Since this is the switch that also measures the power and energy to home, let;s extract those details
-        $power_channel_0 = $shelly_api_device_response->{"switch:0"}->apower; // sump pump
-        $power_channel_1 = $shelly_api_device_response->{"switch:1"}->apower; // Ac units except in Dad;s room
-        $power_channel_2 = $shelly_api_device_response->{"switch:2"}->apower; // Home
-        $power_channel_3 = $shelly_api_device_response->{"switch:3"}->apower; // Home
-
-        $power_to_home_kw = round( ( $power_channel_2 + $power_channel_3 ) * 0.001, 3 );  // sum of channels 2 and 3 supplying Home
-        $power_to_ac_kw   = round( ( $power_channel_1 * 0.001 ), 3 );                     // Supplying all ACs except in Dad's BR
-        $power_to_pump_kw = round( ( $power_channel_0 * 0.001 ), 3 );                     // channel 0 supplying Sump Pump
-
-        $power_total_to_home    = $power_channel_0 + $power_channel_1 + $power_channel_2 + $power_channel_3;  // total from Shelly 4PM
-        $power_total_to_home_kw = round( ( $power_total_to_home * 0.001 ), 3 );
-
-        $energy_channel_0_ts = $shelly_api_device_response->{"switch:0"}->aenergy->total;
-        $energy_channel_1_ts = $shelly_api_device_response->{"switch:1"}->aenergy->total;
-        $energy_channel_2_ts = $shelly_api_device_response->{"switch:2"}->aenergy->total;
-        $energy_channel_3_ts = $shelly_api_device_response->{"switch:3"}->aenergy->total;
-
-        $energy_total_to_home_ts = (float) ($energy_channel_0_ts + 
-                                            $energy_channel_1_ts + 
-                                            $energy_channel_2_ts + 
-                                            $energy_channel_3_ts);
-
-        $current_total_home =  $shelly_api_device_response->{"switch:0"}->current;
-        $current_total_home += $shelly_api_device_response->{"switch:1"}->current;
-        $current_total_home += $shelly_api_device_response->{"switch:2"}->current;
-        $current_total_home += $shelly_api_device_response->{"switch:3"}->current;
-
-
-        // Unix minute time stamp for the power and energy readings
-        $minute_ts = $shelly_api_device_response->{"switch:0"}->aenergy->minute_ts;
-
-        $shelly_4pm_obj = new stdClass;
-
-        // add these to returned object for later use in calling program
-        $shelly_4pm_obj->power_total_to_home_kw   = $power_total_to_home_kw;
-        $shelly_4pm_obj->power_total_to_home      = $power_total_to_home;
-
-        $shelly_4pm_obj->power_to_home_kw         = $power_to_home_kw;
-        $shelly_4pm_obj->power_to_ac_kw           = $power_to_ac_kw;
-        $shelly_4pm_obj->power_to_pump_kw         = $power_to_pump_kw;
-
-        $shelly_4pm_obj->energy_total_to_home_ts  = $energy_total_to_home_ts;
-        $shelly_4pm_obj->minute_ts                = $minute_ts;
-        $shelly_4pm_obj->current_total_home       = $current_total_home;
-        $shelly_4pm_obj->voltage_home             = $shelly_api_device_response->{"switch:3"}->voltage;
-
-        // set the state of the channel if OFF or ON. ON switch will be true and OFF will be false
-        $shelly_4pm_obj->pump_switch_status_bool  = $shelly_api_device_response->{"switch:0"}->output;
-        $shelly_4pm_obj->ac_switch_status_bool    = $shelly_api_device_response->{"switch:1"}->output;
-        $shelly_4pm_obj->home_switch_status_bool  = $shelly_api_device_response->{"switch:2"}->output || $shelly_api_device_response->{"switch:3"}->output;
-
-        return $shelly_4pm_obj;
-    }
 
     /**
      * 'grid_wh_counter_midnight' user meta is set at midnight elsewhere using the current reading then
@@ -1762,121 +1611,7 @@ class class_transindus_eco
     }
 
 
-    /**
-     *  Not used anymore replaced by get_battery_delta_soc_for_both_methods function above
-     * 
-     *  @param int:$user_index
-     *  @param int:$wp_user_ID
-     *  @param float:$batt_current_xcomlan is the current measurement of battery current using xcomlan method
-     *  @param int:$timestamp_xcomlan_call is the timestamp around the time that the python script called xcomlan
-     * 
-     *  @return float:battery_xcomlan_soc_percentage_accumulated_since_midnight
-     * 
-     *  The previous values of thehcurrent and timestamp need to be got from transients.
-     *  Average the currents and calculate the delta charge accumulated this cycle.
-     *  Add it to the total accumulated battery charge since midnight using xcomlan data
-     *  return this value and also update the user meta
-     */
-    public function calculate_battery_accumulation_today_xcomlan( $user_index, 
-                                                                  $wp_user_ID, 
-                                                                  $batt_current_xcomlan, 
-                                                                  $timestamp_xcomlan_call ): float
-    {
-      $config = $this->config;
-
-      // get the value that is used for the shelly battery current measurement method to be used as  backup
-      $battery_soc_percentage_accumulated_since_midnight = (float) get_user_meta(  $wp_user_ID, 
-                                                      'battery_soc_percentage_accumulated_since_midnight', true);
-      
-      // This array keeps 3 consecutive values of past timestamps supplied by xcomlan
-      if ( false !== ( $ts_xcomlan_history_array = get_transient("ts_xcomlan_history_array") ) )
-      {
-        // The transient exists and is already loaded into the variable
-      }
-      else
-      {
-        // transient doesnt exist so reset to a blank array.
-        $ts_xcomlan_history_array = [];
-      }
-
-      // push the latest value into the array
-      array_push( $ts_xcomlan_history_array, $timestamp_xcomlan_call );
-
-      // If the array has more than 5 elements then drop the earliest one
-      if ( sizeof($ts_xcomlan_history_array) > 5 )  
-      { 
-        // drop the earliest xcomlan timestamp
-        array_shift($ts_xcomlan_history_array);
-      }
-
-      set_transient( 'ts_xcomlan_history_array', $ts_xcomlan_history_array, 5 * 60 );
-
-      // @TODO check the xcomlan time stamp to ensure that the measurement is not too old
-      // if it is too old then we reset the xcomlan values to the shelly battery measurement values
-
-      // get the residual array that does not hold any of the current time stamp ones
-      $residual_array = array_diff($ts_xcomlan_history_array, array($timestamp_xcomlan_call));
-      
-      // if the array is empty it means that the data is is stale and xcomlan channel is stuck
-      if (empty($residual_array))
-      {
-        // all the last few timestamps sent by xcomlan are the same so it is stuck, no new data. 
-        error_log("LogXl: xcomlan maybe stuck - all the last few TS are the same, returning Shelly based data");
-
-        // we fall back to the shelly battery measurement accumulation
-        update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
-                                        $battery_soc_percentage_accumulated_since_midnight);
-        
-        return $battery_soc_percentage_accumulated_since_midnight;
-      }
-      
-      
-      // Total Installed BAttery capacity in AH, in my case it is 3 x 100 AH or 300 AH
-      $battery_capacity_ah = (float) $config['accounts'][$user_index]['battery_capacity_ah']; // 300AH in our case
-
-      // get the unix time now
-      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-      $now_timestamp = $now->getTimestamp();
-
-      // lets not reuse the battery last timestamp since that has been already updated by its routime
-      $previous_timestamp = (int) get_transient( 'timestamp_xcomlan_battery_last_measurement' ) ?? $now_timestamp;
-
-      // get the previous xcom-lan reading from transient. If doesnt exist set it to current measurement
-      $previous_batt_current_xcomlan = (float) get_transient( 'previous_batt_current_xcomlan' ) ?? $batt_current_xcomlan;
-
-      // update transients with current measurements. These will be used as previous measurements for next cycle
-      set_transient( 'timestamp_xcomlan_battery_last_measurement',  $now_timestamp,   30 * 60 );
-      set_transient( 'previous_batt_current_xcomlan', $batt_current_xcomlan,          30 * 60 );
-
-      $prev_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-      $prev_datetime_obj->setTimeStamp($previous_timestamp);
-
-      // get Battery xcomlan SOC percentage accumulated till last measurement
-      $battery_xcomlan_soc_percentage_accumulated_since_midnight = (float) get_user_meta(  $wp_user_ID, 
-                                                      'battery_xcomlan_soc_percentage_accumulated_since_midnight', true);
-
-      $diff = $now->diff( $prev_datetime_obj );
-
-      // take total seconds of difference between timestamp and divide by 3600
-      $hours_between_measurement = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 ) / 3600;
-
-      // AH of battery charge - +ve is charging and -ve is discharging
-      // use trapezoidal rule for integration
-      $battery_ah_this_measurement = 0.5 * ( $previous_batt_current_xcomlan + $batt_current_xcomlan ) * $hours_between_measurement;
-
-      $battery_soc_percent_this_measurement = $battery_ah_this_measurement / $battery_capacity_ah * 100;
-
-      
-      // accumulate  present measurement
-      $battery_xcomlan_soc_percentage_accumulated_since_midnight += $battery_soc_percent_this_measurement;
-
-      $battery_xcomlan_accumulated_ah_since_midnight = $battery_xcomlan_soc_percentage_accumulated_since_midnight / 100 * $battery_capacity_ah;
-
-      // update accumulated battery charge back to user meta
-      update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $battery_xcomlan_soc_percentage_accumulated_since_midnight);
-
-      return $battery_xcomlan_soc_percentage_accumulated_since_midnight;
-    }
+   
 
     /**
      * Gets all readings from Shelly and Studer and servo's AC IN shelly switch based on conditions
@@ -2100,66 +1835,18 @@ class class_transindus_eco
             // add the object as property to the main readings object
             $shelly_readings_obj->shellypro4pm_load_obj        = $shellypro4pm_load_obj;
 
-            if ( $shellypro4pm_load_obj->switch[3]->output_state_string !== "OFFLINE" )
-            {   // there is a valid response from the Shelly 4PM device
-            
-                
-                // Check and control pump ON duration
+            if ( $shellypro4pm_load_obj->switch[0]->output_state_string !== "OFFLINE" )
+            {   // there is a valid response from the Shelly 4PM device on the pump channel. 
+                // Control Pump ON max duration if enabled
+               
                 $this->control_pump_on_duration( $wp_user_ID, $user_index, $shellypro4pm_load_obj);
-            }
-
-
-            /* Now make a Shelly 4PM measurement to get individual powers for all channels
-            
-            $shelly_4pm_readings_object = $this->get_shelly_device_status_homepwr_over_lan( $user_index );
-
-            if ( ! empty( $shelly_4pm_readings_object ) ) 
-            {   // there is a valid response from the Shelly 4PM switch device
-                
-                // Also check and control pump ON duration
-                // $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object);
-                
-
-                $power_total_to_home_kw = $shelly_4pm_readings_object->power_total_to_home_kw;
-
-                $this->verbose ? error_log("Shelly4PM Power to Home KW:  $power_total_to_home_kw"): false;
-
-                { // Load the Object with properties from the Shelly 4PM object
-                  $shelly_readings_obj->power_to_home_kw    = $shelly_4pm_readings_object->power_to_home_kw;
-                  $shelly_readings_obj->power_to_ac_kw      = $shelly_4pm_readings_object->power_to_ac_kw;
-                  $shelly_readings_obj->power_to_pump_kw    = $shelly_4pm_readings_object->power_to_pump_kw;
-                  $shelly_readings_obj->power_total_to_home = $shelly_4pm_readings_object->power_total_to_home;
-                  $shelly_readings_obj->power_total_to_home_kw  = $shelly_4pm_readings_object->power_total_to_home_kw;
-                  $shelly_readings_obj->current_total_home      = $shelly_4pm_readings_object->current_total_home;
-                  $shelly_readings_obj->energy_total_to_home_ts = $shelly_4pm_readings_object->energy_total_to_home_ts;
-
-                  $shelly_readings_obj->pump_switch_status_bool = $shelly_4pm_readings_object->pump_switch_status_bool;
-                  $shelly_readings_obj->ac_switch_status_bool   = $shelly_4pm_readings_object->ac_switch_status_bool;
-                  $shelly_readings_obj->home_switch_status_bool = $shelly_4pm_readings_object->home_switch_status_bool;
-                  $shelly_readings_obj->voltage_home            = $shelly_4pm_readings_object->voltage_home;
-
-                  // when pump duration control happens change the below property to actula variable
-                  $this->control_pump_on_duration( $wp_user_ID, $user_index, $shelly_4pm_readings_object );
-
-                  $pump_ON_duration_secs = $shelly_4pm_readings_object->pump_ON_duration_secs;
-
-                  $shelly_readings_obj->pump_ON_duration_secs   = $pump_ON_duration_secs;
-                }
-            }
-            */
+            } 
           }
 
           { // water heater data acquisition
-            $shelly_water_heater_data       = $this->get_shelly_device_status_water_heater_over_lan($user_index);
+            $shellyplus1pm_water_heater_obj = $this->get_shellyplus1pm_water_heater_data_over_lan( $user_index );
 
-            if ( $shelly_water_heater_data )
-            {
-              $shelly_water_heater_status_ON  = $shelly_water_heater_data->shelly_water_heater_status_ON;
-              $shelly_water_heater_voltage    = $shelly_water_heater_data->shelly_water_heater_voltage;
-              $shelly_water_heater_kw         = $shelly_water_heater_data->shelly_water_heater_kw;
-
-              $shelly_readings_obj->shelly_water_heater_data = $shelly_water_heater_data;
-            }
+            $shelly_readings_obj->shellyplus1pm_water_heater_obj = $shellyplus1pm_water_heater_obj;
           }
 
           { // make an API call on the Shelly EM device and calculate energy consumed by Home since midnight
@@ -4055,7 +3742,7 @@ class class_transindus_eco
     /**
      * 
      */
-    public function get_shelly_device_status_water_heater_over_lan(int $user_index): ? object
+    public function get_shellyplus1pm_water_heater_data_over_lan(int $user_index): ? object
     {
       // get API and device ID from config based on user index
       $config = $this->config;
@@ -4064,48 +3751,11 @@ class class_transindus_eco
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_water_heater'];
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_water_heater'];
 
-      $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly );
+      $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellyplus1pm' );
 
-      // this is $curl_response.
-      $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
+      $shellyplus1pm_water_heater_obj = $shelly_device->get_shelly_device_data();
 
-      if ( is_null($shelly_api_device_response) ) 
-      { // No response for Shelly water heater switch API call
-
-        // error_log("LogApi: Shelly Water Heater Switch over LAN call failed - Reason unknown");
-        return null;
-      }
-      else 
-      {  // Switch is ONLINE - Get its status, Voltage, and Power
-          // switch ON is true OFF is false boolean variable
-          $shelly_water_heater_status         = $shelly_api_device_response->{'switch:0'}->output;
-          
-
-          if ($shelly_water_heater_status)
-          {
-              $shelly_water_heater_status_ON      = (string) "ON";
-              $shelly_water_heater_voltage        = $shelly_api_device_response->{'switch:0'}->voltage;
-              $shelly_water_heater_current        = $shelly_api_device_response->{'switch:0'}->current;
-              $shelly_water_heater_w              = $shelly_api_device_response->{'switch:0'}->apower;
-              $shelly_water_heater_kw             = round( $shelly_water_heater_w * 0.001, 3);
-          }
-          else
-          {
-              $shelly_water_heater_status_ON      = (string) "OFF";
-              $shelly_water_heater_voltage        = $shelly_api_device_response->{'switch:0'}->voltage;
-              $shelly_water_heater_current        = 0;
-              $shelly_water_heater_kw             = 0;
-          }
-      }
-
-      $shelly_water_heater_data =  new stdclass;
-      $shelly_water_heater_data->shelly_water_heater_status     = $shelly_water_heater_status;
-      $shelly_water_heater_data->shelly_water_heater_status_ON  = $shelly_water_heater_status_ON;
-      $shelly_water_heater_data->shelly_water_heater_kw         = $shelly_water_heater_kw;
-      $shelly_water_heater_data->shelly_water_heater_current    = $shelly_water_heater_current;
-      $shelly_water_heater_data->shelly_water_heater_voltage    = $shelly_water_heater_voltage;
-
-      return $shelly_water_heater_data;
+      return $shellyplus1pm_water_heater_obj;
     }
 
     /**
@@ -4888,12 +4538,12 @@ class class_transindus_eco
         $shelly_water_heater_status   = null;
 
         // extract and process Shelly 1PM switch water heater data
-        if ( ! empty($readings_obj->shelly_water_heater_data) )
+        if ( ! empty($readings_obj->shellyplus1pm_water_heater_obj) )
         {
-          $shelly_water_heater_data     = $readings_obj->shelly_water_heater_data;     // data object
-          $shelly_water_heater_kw       = $shelly_water_heater_data->shelly_water_heater_kw;
-          $shelly_water_heater_status   = $shelly_water_heater_data->shelly_water_heater_status;  // boolean variable
-          $shelly_water_heater_current  = $shelly_water_heater_data->shelly_water_heater_current; // in Amps
+          $shellyplus1pm_water_heater_obj = $readings_obj->shellyplus1pm_water_heater_obj;                  // data object
+          $shelly_water_heater_kw         = $shellyplus1pm_water_heater_obj->switch[0]->power_kw;
+          $shelly_water_heater_status     = $shellyplus1pm_water_heater_obj->switch[0]->output_state_bool;  // boolean variable
+          $shelly_water_heater_current    = $shellyplus1pm_water_heater_obj->switch[0]->current;            // in Amps
         }
         
 

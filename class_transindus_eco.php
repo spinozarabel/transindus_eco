@@ -5158,9 +5158,9 @@ class class_transindus_eco
 
 
         // $load_arrow_size = $this->get_arrow_size_based_on_power($pout_inverter_ac_kw);
-        $load_arrow_size = $this->get_arrow_size_based_on_power($power_total_to_home_kw);
+        $load_arrow_size = $this->get_arrow_size_based_on_power($shelly_em_home_kw);
 
-        $load_info = '<span style="font-size: 18px;color: Black;"><strong>' . $power_total_to_home_kw . ' KW</strong></span>';
+        $load_info = '<span style="font-size: 18px;color: Black;"><strong>' . $shelly_em_home_kw . ' KW</strong></span>';
         $load_arrow_icon = '<i class="fa-solid' . $load_arrow_size . 'fa-arrow-right-long fa-rotate-by"
                                                                           style="--fa-rotate-angle: 45deg;">
                             </i>';
@@ -5232,7 +5232,7 @@ class class_transindus_eco
                                               </span>';
 
         $format_object->power_to_home_kw = '<span style="font-size: 18px;color: Black;">
-                                                <strong>' . $shelly_em_home_kw . ' KW</strong>
+                                                <strong>' . $power_to_home_kw . ' KW</strong>
                                             </span>';
 
         $format_object->power_to_ac_kw = '<span style="font-size: 18px;color: Black;">

@@ -32,6 +32,7 @@ require_once(__DIR__."/shelly_cloud_api.php");        // contains Shelly Cloud A
 require_once(__DIR__."/class_solar_calculation.php"); // contains studer api class
 require_once(__DIR__."/openweather_api.php");         // contains openweather class
 require_once(__DIR__."/class_my_mqtt.php");
+require_once(__DIR__."/class_shelly_device_lan.php"); // contains the class to get shelly device data over LAN
 
 class class_transindus_eco
 {
@@ -1847,6 +1848,66 @@ class class_transindus_eco
       }
     }
 
+
+    /**
+     *  @param int:$user_index index of user in config array
+     *  @param int:$wp_user_ID is the WP user ID
+     *  @param string:$shelly_switch_status is the string indicating the ON OFF or NULL state of the ACIN shelly switch
+     *  @param bool:$it_is_still_dark indicates if it is daylight or dark at present
+     *  @return object:$battery_measurements_object contains the measurements of the battery using the Shelly UNI device
+     *  
+     *  The current is measured using a hall effect sensor. The sensor output voltage is read by the ADC in the shelly Plus Addon
+     *  The transducer function is used to translate the ADC voltage to Battery current estimated.
+     */
+    public function get_shellyplus1_battery_readings_over_lan( int $user_index ) : ? object
+    {
+        // Make an API call on the Shelly UNI device
+        $config = $this->config;
+
+        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_plus_addon'];
+        $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_addon'];
+
+        $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellyplus1-v' );
+
+        $shellyplus1_batt_obj = $shelly_device->get_shelly_device_data();
+
+        // check to make sure that response exists. If null call was fruitless
+        if (  $shellyplus1_batt_obj->switch[0]->output_state_string === "OFFLINE")
+        {
+          error_log("LogApi: Danger-Shelly Battery Measurement API call over LAN failed");
+
+          $shellyplus1_batt_obj->batt_amps = null;
+          $shellyplus1_batt_obj->timestamp = null;
+
+          return $shellyplus1_batt_obj;
+        }
+
+        // The measure ADC voltage is in percent of 10V. So a 25% reading indicates 2.5V measured
+        $adc_voltage_shelly = (float) $shellyplus1_batt_obj->voltmeter[0]->percent;
+        $timestamp          = (int)   $shellyplus1_batt_obj->timestamp;
+
+        // calculate the current using the 65mV/A formula around 2.5V. Positive current is battery discharge
+        $delta_voltage = $adc_voltage_shelly * 0.1 - 2.54;
+
+        // 100 Amps gives a voltage of 0.625V amplified by opamp by 4.7. So voltas/amp measured by Shelly Addon is
+        $volts_per_amp = 0.625 * 4.7 / 100;
+
+        // Convert Volts to Amps using the value above. SUbtract an offest of 8A noticed, probably due to DC offset
+        $battery_amps_raw_measurement = ($delta_voltage / $volts_per_amp);
+
+        // +ve value indicates battery is charging. Due to our inverting opamp we have to reverse sign and educe the current by 5%
+        // This is because the battery SOC numbers tend about 4 points more from about a value of 40% which indicates about 10% over measurement
+        // so to be conservative we are using a 10% reduction to see if this corrects the tendency.
+        $batt_amps = -1.0 * round( $battery_amps_raw_measurement, 1) * 0.87;
+
+        $shellyplus1_batt_obj->batt_amps = $batt_amps;
+        $shellyplus1_batt_obj->timestamp = $timestamp;
+        
+        return $shellyplus1_batt_obj;
+    }
+
     
 
      /**
@@ -2467,6 +2528,9 @@ class class_transindus_eco
             $shelly_readings_obj->battery_capacity_ah       = $battery_capacity_ah; // this is obtianed from config
             $shelly_readings_obj->batt_amps_shellybm        = $batt_amps_shellybm;  
             $shelly_readings_obj->timestamp_shellybm        = $timestamp_shellybm;
+
+            $shellyplus1_batt_obj = $this->get_shellyplus1_battery_readings_over_lan(  $user_index );
+            error_log( print_r( $shellyplus1_batt_obj, true ) );
           }
 
           { /* Now make a Shelly 4PM measurement to get individual powers for all channels

@@ -5612,9 +5612,10 @@ class class_transindus_eco
 
       $battery_avg_voltage    =   $readings_obj->batt_voltage_xcomlan_avg;
 
-      $home_grid_kw_power     =   $readings_obj->home_grid_kw_power;
+      $home_grid_kw_power     =   $readings_obj->shellypro3em_3p_grid_obj->home_grid_kw_power;
+
       // $home_grid_voltage      =   $readings_obj->home_grid_voltage;
-      $home_grid_voltage      =   $shelly_switch_acin_details_arr['shelly1pm_acin_voltage'];
+      $home_grid_voltage      =   $readings_obj->shellypro3em_3p_grid_obj->home_grid_voltage;
 
       $seconds_elapsed_grid_status = (int) $readings_obj->seconds_elapsed_grid_status;
       $grid_seconds_in_hms = $this->format_seconds_to_hms_format ($seconds_elapsed_grid_status );
@@ -5682,24 +5683,26 @@ class class_transindus_eco
         switch(true)
         {
           // when Car charger is OFFLINE. Indicate Yellow icon
-          case ( $readings_obj->grid_present_status === 'offline'):
+          case ( $readings_obj->shellypro3em_3p_grid_obj->grid_present_status === 'OFFLINE'):
             $ev_charge_icon = '<i class="fa-solid fa-2x fa-charging-station" style="color: Yellow;"></i>';
 
             $car_charger_grid_kw_power = 0;
           break;
 
           // Car charger is online but no power is being drawn
-          case ( $readings_obj->grid_present_status === 'online' && $readings_obj->car_charger_grid_kw_power <= 0.05 ):
+          case (  $readings_obj->shellypro3em_3p_grid_obj->grid_present_status === 'ONLINE' && 
+                  $readings_obj->shellypro3em_3p_grid_obj->evcharger_grid_kw_power <= 0.05 ):
             $ev_charge_icon = '<i class="fa-solid fa-2x fa-charging-station" style="color: Black;"></i>';
 
             $car_charger_grid_kw_power = 0;
           break;
 
           // Car charger is online and power is being drawn
-          case ( $readings_obj->grid_present_status === 'online' && $readings_obj->car_charger_grid_kw_power > 0.05 ):
+          case (  $readings_obj->shellypro3em_3p_grid_obj->grid_present_status === 'ONLINE' && 
+                  $readings_obj->shellypro3em_3p_grid_obj->evcharger_grid_kw_power > 0.05 ):
             $ev_charge_icon = '<i class="fa-solid fa-2x fa-charging-station" style="color: Blue;"></i>';
 
-            $car_charger_grid_kw_power = round( $readings_obj->car_charger_grid_kw_power, 2);
+            $car_charger_grid_kw_power = round( $readings_obj->shellypro3em_3p_grid_obj->evcharger_grid_kw_power, 2);
 
             $car_charger_grid_kw_power = '<span style="font-size: 18px;color: Black;">
                                             <strong>' . $car_charger_grid_kw_power . '</strong>

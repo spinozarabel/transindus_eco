@@ -2516,9 +2516,12 @@ class class_transindus_eco
           { // Measure Battery current. Postitive is charging. Returns battery current and associated timestamp
 
             $shellyplus1_batt_obj = $this->get_shellyplus1_battery_readings_over_lan(  $user_index );
-            
-            $batt_amps_shellybm   = $shellyplus1_batt_obj->batt_amps;
-            $timestamp_shellybm   = $shellyplus1_batt_obj->timestamp;
+
+            // add the object as property to the main readings object
+            $shelly_readings_obj->shellyplus1_batt_obj        = $shellyplus1_batt_obj;
+
+            $batt_amps_shellybm   = (float) $shellyplus1_batt_obj->batt_amps;
+            $timestamp_shellybm   = (int)   $shellyplus1_batt_obj->timestamp;
             
             // $shelly_battery_measurement_object = $this->get_shelly_battery_measurement_over_lan(  $user_index );
             /*

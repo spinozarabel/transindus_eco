@@ -271,282 +271,6 @@ class class_transindus_eco
     }
 
 
-    /**
-     *  @param int:$ts is the timestamp referenced to whatever TZ, but shall be in the past to now
-     *  @param int:$duration_in_seconds is the given duration
-     * 
-     *  @param int:obj
-     * 
-     *  The function checks that the time elapsed in seconds from now in Kolkata to the given timestamp in the past
-     *  It returns the elapsed time and also whether the elapsed time has exceeded the given duration.
-     *  If it exceeds then true is returned if not a false is returned.
-     */
-    public function check_validity_of_timestamp( int $ts, int $duration_in_seconds) : object
-    {
-      $obj = new stdClass;
-
-      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-
-      $now_ts = $now->getTimestamp();
-
-      // The number of seconds is positive if timestamp given is in the past
-      $seconds_elapsed = ( $now_ts - $ts );
-
-      if ( $seconds_elapsed > $duration_in_seconds )
-        {
-          $obj->elapsed_time_exceeds_duration_given = true;
-        }
-      else
-        { 
-          $obj->elapsed_time_exceeds_duration_given = false;
-        }
-
-      $obj->seconds_elapsed = $seconds_elapsed;
-
-      return $obj;
-    } 
-
-
-    
-
-    /**
-     *  This shoercode checks the user meta for studer settings to see if they are set.
-     *  If not set the user meta are set using defaults.
-     *  When the Ninja Forms opens it uses the user meta. If a user meta was not set, now it will be, with programmed defaults
-     */
-    public function my_studer_settings()
-    {
-      $defaults     = [];   // Initialize the defaults array
-      $current_user = wp_get_current_user();
-      $wp_user_ID   = $current_user->ID;
-
-      if ( empty($this->user_meta_defaults_arr) || in_array(null, $this->user_meta_defaults_arr, true) )
-      {
-
-        $defaults['soc_percentage_lvds_setting']                      = ['default' => 30,   'lower_limit' =>10,   'upper_limit' =>90];  // lower Limit of SOC for LVDS
-        $defaults['battery_voltage_avg_lvds_setting']                 = ['default' => 48.3, 'lower_limit' =>47,   'upper_limit' =>54];  // lower limit of BV for LVDS
-        $defaults['soc_percentage_rdbc_setting']                      = ['default' => 85,   'lower_limit' =>30,   'upper_limit' =>90];  // upper limit of SOC for RDBC activation
-        $defaults['soh_percentage_setting']                           = ['default' => 100,  'lower_limit' =>0,    'upper_limit' =>100]; // Current SOH of battery
-        $defaults['soc_percentage_switch_release_setting']            = ['default' => 95,   'lower_limit' =>90,   'upper_limit' =>100]; // Upper limit of SOC for switch release
-        $defaults['min_soc_percentage_for_switch_release_after_rdbc'] = ['default' => 32,   'lower_limit' =>20,   'upper_limit' =>90];  // Lower limit of SOC for switch release after RDBC
-        $defaults['min_solar_surplus_for_switch_release_after_rdbc']  = ['default' => 0.2,  'lower_limit' =>0,    'upper_limit' =>4];   // Lower limit of Psurplus for switch release after RDBC
-        $defaults['battery_voltage_avg_float_setting']                = ['default' => 51.9, 'lower_limit' =>50.5, 'upper_limit' =>54];  // Upper limit of BV for SOC clamp/recal takes place
-        $defaults['acin_min_voltage_for_rdbc']                        = ['default' => 199,  'lower_limit' =>190,  'upper_limit' =>210]; // Lower limit of ACIN for RDBC
-        $defaults['acin_max_voltage_for_rdbc']                        = ['default' => 241,  'lower_limit' =>230,  'upper_limit' =>250]; // Upper limit of ACIN for RDBC
-        $defaults['psolar_surplus_for_rdbc_setting']                  = ['default' => -0.5, 'lower_limit' =>-4,   'upper_limit' =>0];   // Lower limit of Psurplus for surplus for RDBC
-        $defaults['psolar_min_for_rdbc_setting']                      = ['default' => 0.3,  'lower_limit' =>0.1,  'upper_limit' =>4];   // lower limit of Psolar for RDBC activation
-        $defaults['do_minutely_updates']                              = ['default' => true,  'lower_limit' =>true,  'upper_limit' =>true];
-        $defaults['do_shelly']                                        = ['default' => false,  'lower_limit' =>true,  'upper_limit' =>true];
-        $defaults['keep_shelly_switch_closed_always']                 = ['default' => false,  'lower_limit' =>true,  'upper_limit' =>true];
-        $defaults['pump_duration_control']                            = ['default' => true,   'lower_limit' =>true,  'upper_limit' =>true];
-        $defaults['pump_duration_secs_max']                           = ['default' => 2700,   'lower_limit' => 0,    'upper_limit' =>7200];
-        $defaults['pump_power_restart_interval_secs']                 = ['default' => 120,    'lower_limit' => 0,    'upper_limit' =>86400];
-        
-        // save the data in a transient indexed by the user ID. Expiration is 30 minutes
-        set_transient( $wp_user_ID . 'user_meta_defaults_arr', $defaults, 30*60 );
-
-        foreach ($defaults as $user_meta_key => $default_row) {
-          $user_meta_value  = get_user_meta($wp_user_ID, $user_meta_key,  true);
-  
-          if ( empty( $user_meta_value ) ) {
-            update_user_meta( $wp_user_ID, $user_meta_key, $default_row['default']);
-          }
-        }
-      }
-      add_action( 'nf_get_form_id', function( $form_id )
-      {
-
-        // Check for a specific Form ID.
-        if( 2 !== $form_id ) return;
-      
-        /**
-         * Change a field's settings when localized to the page.
-         *   ninja_forms_localize_field_{$field_type}
-         *
-         * @param array $field [ id, settings => [ type, key, label, etc. ] ]
-         * @return array $field
-         */
-        add_filter( 'ninja_forms_localize_field_checkbox', function( $field )
-        {
-          $wp_user_ID = get_current_user_id();
-
-          switch ( true )
-            {
-              case ( stripos( $field[ 'settings' ][ 'key' ], 'keep_shelly_switch_closed_always' )!== false ):
-                // get the user's metadata for this flag
-                $user_meta_value = get_user_meta($wp_user_ID, 'keep_shelly_switch_closed_always',  true);
-
-                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
-                if ($user_meta_value == true)
-                {
-                  $field[ 'settings' ][ 'default_value' ] = 'checked';
-                }
-                else
-                {
-                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
-                }
-              break;
-
-              case ( stripos( $field[ 'settings' ][ 'key' ], 'do_minutely_updates' )!== false ):
-                // get the user's metadata for this flag
-                $user_meta_value = get_user_meta($wp_user_ID, 'do_minutely_updates',  true);
-
-                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
-                if ($user_meta_value == true)
-                {
-                  $field[ 'settings' ][ 'default_value' ] = 'checked';
-                }
-                else
-                {
-                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
-                }
-              break;
-
-              case ( stripos( $field[ 'settings' ][ 'key' ], 'do_shelly' )!== false ):
-                // get the user's metadata for this flag
-                $user_meta_value = get_user_meta($wp_user_ID, 'do_shelly',  true);
-
-                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
-                if ($user_meta_value == true)
-                {
-                  $field[ 'settings' ][ 'default_value' ] = 'checked';
-                }
-                else
-                {
-                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
-                }
-              break;
-
-              case ( stripos( $field[ 'settings' ][ 'key' ], 'do_soc_cal_now' )!== false ):
-                // get the user's metadata for this flag
-                $user_meta_value = get_user_meta($wp_user_ID, 'do_soc_cal_now',  true);
-
-                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
-                if ($user_meta_value == true)
-                {
-                  $field[ 'settings' ][ 'default_value' ] = 'checked';
-                }
-                else
-                {
-                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
-                }
-              break;
-
-              case ( stripos( $field[ 'settings' ][ 'key' ], 'pump_duration_control' ) !== false ):
-                // get the user's metadata for this flag
-                $user_meta_value = get_user_meta($wp_user_ID, 'pump_duration_control',  true);
-
-                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
-                if ($user_meta_value == true)
-                {
-                  $field[ 'settings' ][ 'default_value' ] = 'checked';
-                }
-                else
-                {
-                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
-                }
-              break;
-            }
-          return $field;
-        } );  // Add filter to check for checkbox field and set the default using user meta
-      } );    // Add Action to check form ID
-      
-    }
-
-
-    /**
-     * 
-     */
-    public function get_user_index_of_logged_in_user() : int
-    {  // get my user index knowing my login name
-
-        $current_user = wp_get_current_user();
-        $wp_user_name = $current_user->user_login;
-
-        $config       = $this->config;
-
-        // Now to find the index in the config array using the above
-        $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
-
-        $this->index_of_logged_in_user = $user_index;
-        $this->wp_user_name_logged_in_user = $wp_user_name;
-        $this->wp_user_obj = $current_user;
-
-        return $user_index;
-    }
-
-    /**
-     * 
-     */
-    public function get_index_from_wp_user_ID( int $wp_user_ID ) : int
-    {
-        $wp_user_object = get_user_by( 'id', $wp_user_ID);
-
-        $wp_user_name   = $wp_user_object->user_login;
-
-        $config         = $this->config;
-
-        // Now to find the index in the config array using the above
-        $user_index     = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
-
-        return $user_index;
-    }
-
-
-    /**
-     * @param int:user_index
-     * @return object:wp_user_obj
-     */
-    public function get_wp_user_from_user_index( int $user_index): ? object
-    {
-        $config = $this->get_config();
-
-        $wp_user_name = $config['accounts'][$user_index]['wp_user_name'];
-
-        // Get the wp user object given the above username
-        $wp_user_obj  = get_user_by('login', $wp_user_name);
-
-        return $wp_user_obj;
-    }
-
-    /**
-     *  add submenu page for testing various application API needed
-     */
-    public function add_my_menu()
-    {
-        // add submenu page for testing various application API needed
-        add_submenu_page(
-            'tools.php',	                    // parent slug
-            'My API Tools',                     // page title
-            'My API Tools',	                    // menu title
-            'manage_options',	                // capability
-            'my-api-tools',	                    // menu slug
-            [$this, 'my_api_tools_render']
-        );
-    }
-
-
-    /**
-     *  @param int:$wp_user_ID is the WP user ID
-     *  @return array:$all_usermeta is the return array containing all of the user meta for the user with user ID passed in.
-     * 
-     *  The property of $this is also set for what its worth
-     */
-    public function get_all_usermeta( int $wp_user_ID ) : array
-    {
-      $all_usermeta = [];
-
-      // set default timezone to Asia Kolkata
-      //
-
-      $all_usermeta = array_map( function( $a ){ return $a[0]; }, get_user_meta( $wp_user_ID ) );
-
-      // Set this as class property valid for the user index under consideration.
-      $this->all_usermeta = $all_usermeta;
-
-      return $all_usermeta;
-    }
-
 
     /**
      *  @param int:$user_index is the user of ineterst in the config array
@@ -707,122 +431,12 @@ class class_transindus_eco
     }
 
 
+    
+
+
     /**
+     *  legacy code - replaced by get_shellyplus1_battery_readings_over_lan
      * 
-     */
-    public function get_load_average( string $wp_user_name, float $new_load_kw_reading ): ? float
-    {
-      // Load the voltage array that might have been pushed into transient space
-      $load_kw_arr_transient = get_transient( $wp_user_name . '_' . 'load_kw_avg_arr' ); 
-
-      // If transient doesnt exist rebuild
-      if ( ! is_array($load_kw_arr_transient))
-      {
-        $load_kw_avg_arr = [];
-      }
-      else
-      {
-        // it exists so populate
-        $load_kw_avg_arr = $load_kw_arr_transient;
-      }
-      
-      // push the new voltage reading to the holding array
-      array_push( $load_kw_avg_arr, $new_load_kw_reading );
-
-      // If the array has more than 30 elements then drop the earliest one
-      // We are averaging for only 30 minutes
-      if ( sizeof($load_kw_avg_arr) > 10 )  
-      {   // drop the earliest reading
-          array_shift($load_kw_avg_arr);
-      }
-      // Write it to this object for access elsewhere easily
-      $this->load_kw_avg_arr = $load_kw_avg_arr;
-
-      // Setup transiet to keep previous state for averaging
-      set_transient( $wp_user_name . '_' . 'load_kw_avg_arr', $load_kw_avg_arr, 5*60 );
-
-      $count  = 0.00001;    // prevent division by 0 error
-      $sum    = 0;
-      foreach ($load_kw_avg_arr as $key => $value)
-      {
-         if ( $value > 0.010 )  // greater than 10W
-         {
-            // average all values that are meaningful
-            $sum    +=  $value;   // accumulate
-            $count  +=  1;        // increase count by 1
-         }
-      }
-      unset($value);
-
-      $load_kw_avg = round( $sum / $count, 2);
-
-      return $load_kw_avg;
-    }
-
-
-    /**
-     *  @param string:$future_time is in the typical format of hh:mm:ss
-     *  @return int:$minutes_now_to_future is the number of minutes from now to future time passed in
-     */
-    public function minutes_now_to_future( $future_time ) : float
-    {
-      //
-
-      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-
-      if ( $this->nowIsWithinTimeLimits( '00:00', $future_time ) )
-      {
-        $future_datetime_object = new DateTime($future_time, new DateTimeZone('Asia/Kolkata'));
-
-        // we are past midnight so we just calulcate mins from now to future time
-        // form interval object between now and  time stamp under investigation
-        $diff = $now->diff( $future_datetime_object );
-
-        $minutes_now_to_future = $diff->s / 60  + $diff->i  + $diff->h *60;
-
-        return $minutes_now_to_future;
-      }
-      else
-      {
-        // we are not past midnight of today so future time is past 23:59:59 into tomorrow
-        $future_datetime_object = new DateTime( "tomorrow " . $future_time, new DateTimeZone('Asia/Kolkata'));
-
-        $diff = $now->diff( $future_datetime_object );
-
-        $minutes_now_to_future = $diff->s / 60  + $diff->i  + $diff->h * 60 + $diff->d * 24 * 60;
-
-        return $minutes_now_to_future;
-      }
-
-    }
-
-
-    /**
-     *  @param int:$timestamp is the timestamp of event past
-     *  @return int:$elapsed_time_mins is the elapsed time from the reference timestamp to NOW
-     */
-    public function minutes_from_reference_to_now( int $timestamp ) : float
-    {
-      //
-
-      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-
-      $reference_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-
-      // This should be in the past
-      $reference_datetime_obj->setTimeStamp( $timestamp );
-
-      // form interval object between now and  time stamp under investigation
-      $diff = $now->diff( $reference_datetime_obj );
-
-      // Get the elapsed time in minutes
-      $elapsed_time_mins = $diff->s / 60  + $diff->i  + $diff->h *60;
-
-      return $elapsed_time_mins;
-    }
-
-
-    /**
      *  @param int:$user_index index of user in config array
      *  @param int:$wp_user_ID is the WP user ID
      *  @param string:$shelly_switch_status is the string indicating the ON OFF or NULL state of the ACIN shelly switch
@@ -1156,109 +770,7 @@ class class_transindus_eco
     }
 
 
-    /**
-     *  @param int:$user_index in the config file
-     *  @return int:$studer_time_offset_in_mins_lagging is the number of minutes that the Studer CLock is Lagging the server
-     */
-    public function get_studer_clock_offset( int $user_index )
-    {
-      $config = $this->config;
-
-      $wp_user_name = $config['accounts'][$user_index]['wp_user_name'];
-
-      // Get transient of Studer offset if it exists
-      if ( false === get_transient( $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' ) )
-      {
-        // make an API call to get value of parameter 5002 which is the UNIX time stamp including the UTC offest
-        $base_url  = $config['studer_api_baseurl'];
-        $uhash     = $config['accounts'][$user_index]['uhash'];
-        $phash     = $config['accounts'][$user_index]['phash'];
-
-        $studer_api = new studer_api($uhash, $phash, $base_url);
-          $studer_api->paramId = 5002;
-          $studer_api->device = "RCC1";
-          $studer_api->paramPart = "Value";
-
-        // Make the API call to get the parameter value
-        $studer_clock_unix_timestamp_with_utc_offset = $studer_api->get_parameter_value();
-
-        $this->verbose ? error_log( "studer_clock_unix_timestamp_with_utc_offset: " . $studer_clock_unix_timestamp_with_utc_offset ): false;
-        
-        // if the value is null due to a bad API response then do nothing and return
-        if ( empty( $studer_clock_unix_timestamp_with_utc_offset )) return;
-
-        // create datetime object from studer timestamp. Note that this already has the UTC offeset for India
-        $rcc_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-        $rcc_datetime_obj->setTimeStamp($studer_clock_unix_timestamp_with_utc_offset);
-
-        $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-
-        // form interval object between now and Studer's time stamp under investigation
-        $diff = $now->diff( $rcc_datetime_obj );
-
-        // positive means lagging behind, negative means leading ahead, of correct server time.
-        // If Studer clock was correctr the offset should be 0 but Studer clock seems slow for some reason
-        // 330 comes from pre-existing UTC offest of 5:30 already present in Studer's time stamp
-        $studer_time_offset_in_mins_lagging = 330 - ( $diff->i  + $diff->h *60);
-
-        set_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging',  
-                        $studer_time_offset_in_mins_lagging, 
-                        1*60*60 );
-
-        $this->verbose ? error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins"): false;
-      }
-      else
-      {
-        // offset already computed and transient still valid, just read in the value
-        $studer_time_offset_in_mins_lagging = get_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' );
-      }
-      return $studer_time_offset_in_mins_lagging;
-    }
-
-
-    /**
-     *  @todo implement lagging and leading studer offset, at present only lagging is pmplemented
-     *  @param int:$user_index
-     *  @param string:$wp_user_name is the user name for current loop's user
-     *  We check to see if Studer clock is just past midnight. This will be true only once in 24h.
-     *  Typically it happens close to Servers's midnight due to any offset in Studers clock.
-     *  So we check in a window of 30mr on either side of server midnight.
-     *  Transient for Studer CLock offset expires every hour and gets recalculated by API call if needed.
-     *  So if Studer clock was adjusted during day it will be correctly acquired by API call
-     */
-    public function is_time_just_pass_midnight( int $user_index, string $wp_user_name ): bool
-    {
-      // if not within an hour of server clocks midnight return false. Studer offset will never be allowed to be more than 1h
-      if ($this->nowIsWithinTimeLimits("00:03:00", "23:59:00") )
-      {
-        return false;
-      }
-      // we only get here betweeon 23:59:00 and 00:02:59
-      // if the transient is expired it means we need to check
-      if ( false === get_transient( 'is_time_just_pass_midnight' ) )
-      {
-        // this could also be leading in which case the sign will be automatically negative
-        $studer_time_offset_in_mins_lagging = (int) 0;
-
-        // get current time compensated for our timezone
-        $test = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-        $h=$test->format('H');
-        $m=$test->format('i');
-        $s=$test->format('s');
-
-        // if hours are 0 and offset adjusted minutes are 0 then we are just pass midnight per Studer clock
-        // we added an additional offset just to be sure to account for any seconds offset
-        if( $h == 0 && $m  > 0 ) 
-        {
-          // We are just past midnight on Studer clock, so return true after setiimg the transient
-          set_transient( 'is_time_just_pass_midnight',  'yes', 5 * 60 );
-          return true;
-        }
-      }
-
-      //  If we het here it means that the transient exists and so we are way past midnight, check was triggered already
-      return false;
-    }
+    
 
     /**
      *  @param int:$user_index
@@ -1405,41 +917,7 @@ class class_transindus_eco
       return false;
     }
 
-    /**
-     *  Each time the function is called increment the cron 5s counter modulo 12. 
-     */
-    public function count_cron_cycles_modulo( int $modulo = 3 ):bool
-    {
-        $modulo_cron_cycles_completed = false;
-
-        // We need to keep track of the count each time we land here. The CRON interval is nominally 5s
-        // We need a counter to count to 1 minute
-        $count_cron_cycles = get_transient( 'count_cron_cycles' );
-        
-        if ( false === $count_cron_cycles )
-        {
-            // this is 1st time or transient somehow got deleted or expired
-            $count_cron_cycles = 1;
-        }
-        else
-        {
-            // increment the counter by 1
-            $count_cron_cycles += get_transient( 'count_cron_cycles' );
-
-            if ( $count_cron_cycles >= $modulo ) 
-            {
-                // the counter overflows past 1 minute so roll sback to 1 or 5sec
-                $count_cron_cycles = 1;
-
-                $modulo_cron_cycles_completed = true;
-            }
-        }
-
-        // set transient with the above value for 60s
-        set_transient( 'count_cron_cycles', $count_cron_cycles, 2 * 60 );
-
-        return $modulo_cron_cycles_completed;
-    }
+    
 
 
     /**
@@ -1571,9 +1049,9 @@ class class_transindus_eco
     /**
      * 
      */
-    public function control_pump_on_duration( int $wp_user_ID, int $user_index, object $shelly_4pm_readings_object )
+    public function control_pump_on_duration( int $wp_user_ID, int $user_index, object $shellypro4pm_load_obj )
     {
-      if ( empty( $shelly_4pm_readings_object ) )
+      if ( $shellypro4pm_load_obj->switch[3]->output_state_string === "OFFLINE" )
       {
         // bad data passed in do nothing
         error_log( "Log-Pump bad data passed in do nothing in function control_pump_on_duration" );
@@ -1596,22 +1074,19 @@ class class_transindus_eco
       $pump_duration_secs_max           = $all_usermeta['pump_duration_secs_max'];
 
       // pump_duration_control flag
-      $pump_duration_control            = $all_usermeta['pump_duration_control'];
+      $pump_duration_control            = false;  // $all_usermeta['pump_duration_control'];
 
       // pump_power_restart_interval_secs
       $pump_power_restart_interval_secs = $all_usermeta['pump_power_restart_interval_secs'];
 
       // set property in case pump was off so that this doesnt give a php notice otherwise
-      $shelly_4pm_readings_object->pump_ON_duration_secs = 0;
-
-      // set default timezone
-      //
+      $shellypro4pm_load_obj->pump_ON_duration_secs = 0;
 
       // Is the pump enabled or not?
-      $power_to_pump_is_enabled = $shelly_4pm_readings_object->pump_switch_status_bool;
+      $power_to_pump_is_enabled = (bool) $shellypro4pm_load_obj->switch[0]->output_state_bool;
 
       // Pump power consumption in watts
-      $pump_power_watts = (int) round(  $shelly_4pm_readings_object->power_to_pump_kw * 1000, 0 );
+      $pump_power_watts = (int) round(  $shellypro4pm_load_obj->switch[0]->power, 0 );
 
       // determine if pump is drawing power or not
       $pump_is_drawing_power = ( $pump_power_watts > 50 );
@@ -1629,7 +1104,7 @@ class class_transindus_eco
         // $timestamp = $now->getTimestamp();
 
         // set pump start time as curreny time stamp
-        // set_transient( 'timestamp_pump_ON_start',  $timestamp,  12 * 60 * 60 );
+        // set_transient( 'tiget_shellyplus1_battery_readings_over_lanmestamp_pump_ON_start',  $timestamp,  12 * 60 * 60 );
         // set_transient( 'timestamp_pump_OFF',  $timestamp,  12 * 60 * 60 );
       }
       else
@@ -1664,7 +1139,7 @@ class class_transindus_eco
             $pump_ON_duration_secs = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 );
 
             // Write the duration time as property of the object
-            $shelly_4pm_readings_object->pump_ON_duration_secs = $pump_ON_duration_secs;
+            $shellypro4pm_load_obj->pump_ON_duration_secs = $pump_ON_duration_secs;
 
             $this->verbose ? error_log("Log-Pump ON for: $pump_ON_duration_secs Seconds") : false;
 
@@ -1744,12 +1219,12 @@ class class_transindus_eco
           $pump_ON_duration_secs = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 );
 
           // Write the duration time as property of the object
-          $shelly_4pm_readings_object->pump_ON_duration_secs = $pump_ON_duration_secs;
+          $shellypro4pm_load_obj->pump_ON_duration_secs = $pump_ON_duration_secs;
 
           $this->verbose ? error_log("Log-Pump ON for: $pump_ON_duration_secs Seconds") : false;
 
           // if pump ON duration is more than 1h then switch the pump power OFF in Shelly 4PM channel 0
-          if ( $pump_ON_duration_secs > 3600 && $this->check_if_main_control_site_avasarala_is_offline_for_long() && $pump_duration_control)
+          if ( $pump_ON_duration_secs > 3600 && $pump_duration_control )
           {
             // turn shelly power for pump OFF and update transients but only if control site is offline for more than 15m
             $status_turn_pump_off = $this->turn_pump_on_off_over_lan( $user_index, 'off' );
@@ -1906,6 +1381,87 @@ class class_transindus_eco
         $shellyplus1_batt_obj->timestamp = $timestamp;
         
         return $shellyplus1_batt_obj;
+    }
+
+
+    /**
+     *  @param int:$user_index of user in config array
+     *  @return object:$shelly_device_data contains energy counter and its timestamp along with switch status object
+     *  Gets the power readings supplied to Home using Shelly Pro 4PM
+     */
+    public function get_shellypro4pm_readings_over_lan(int $user_index): object
+    {
+        // get API and device ID from config based on user index
+        $config = $this->config;
+
+        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
+        $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_4pm'];
+
+        $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellypro4pm' );
+
+        $shellypro4pm_load_obj = $shelly_device->get_shelly_device_data();
+
+        // check to make sure that it exists. If null API call was fruitless
+        if ( $shellypro4pm_load_obj->switch[3]->output_state_string === "OFFLINE" )
+        {
+          error_log("LogApi: ShellyPro4PM LOAD switch API call failed");
+
+          // no further processing. Object contains properties with no data except OFFLINE status as in above
+          
+        }
+        return $shellypro4pm_load_obj;
+
+        /*
+        $power_to_home_kw = round( ( $power_channel_2 + $power_channel_3 ) * 0.001, 3 );  // sum of channels 2 and 3 supplying Home
+        $power_to_ac_kw   = round( ( $power_channel_1 * 0.001 ), 3 );                     // Supplying all ACs except in Dad's BR
+        $power_to_pump_kw = round( ( $power_channel_0 * 0.001 ), 3 );                     // channel 0 supplying Sump Pump
+
+        $power_total_to_home    = $power_channel_0 + $power_channel_1 + $power_channel_2 + $power_channel_3;  // total from Shelly 4PM
+        $power_total_to_home_kw = round( ( $power_total_to_home * 0.001 ), 3 );
+
+        $energy_channel_0_ts = $shelly_api_device_response->{"switch:0"}->aenergy->total;
+        $energy_channel_1_ts = $shelly_api_device_response->{"switch:1"}->aenergy->total;
+        $energy_channel_2_ts = $shelly_api_device_response->{"switch:2"}->aenergy->total;
+        $energy_channel_3_ts = $shelly_api_device_response->{"switch:3"}->aenergy->total;
+
+        $energy_total_to_home_ts = (float) ($energy_channel_0_ts + 
+                                            $energy_channel_1_ts + 
+                                            $energy_channel_2_ts + 
+                                            $energy_channel_3_ts);
+
+        $current_total_home =  $shelly_api_device_response->{"switch:0"}->current;
+        $current_total_home += $shelly_api_device_response->{"switch:1"}->current;
+        $current_total_home += $shelly_api_device_response->{"switch:2"}->current;
+        $current_total_home += $shelly_api_device_response->{"switch:3"}->current;
+
+
+        // Unix minute time stamp for the power and energy readings
+        $minute_ts = $shelly_api_device_response->{"switch:0"}->aenergy->minute_ts;
+
+        $shelly_4pm_obj = new stdClass;
+
+        // add these to returned object for later use in calling program
+        $shelly_4pm_obj->power_total_to_home_kw   = $power_total_to_home_kw;
+        $shelly_4pm_obj->power_total_to_home      = $power_total_to_home;
+
+        $shelly_4pm_obj->power_to_home_kw         = $power_to_home_kw;
+        $shelly_4pm_obj->power_to_ac_kw           = $power_to_ac_kw;
+        $shelly_4pm_obj->power_to_pump_kw         = $power_to_pump_kw;
+
+        $shelly_4pm_obj->energy_total_to_home_ts  = $energy_total_to_home_ts;
+        $shelly_4pm_obj->minute_ts                = $minute_ts;
+        $shelly_4pm_obj->current_total_home       = $current_total_home;
+        $shelly_4pm_obj->voltage_home             = $shelly_api_device_response->{"switch:3"}->voltage;
+
+        // set the state of the channel if OFF or ON. ON switch will be true and OFF will be false
+        $shelly_4pm_obj->pump_switch_status_bool  = $shelly_api_device_response->{"switch:0"}->output;
+        $shelly_4pm_obj->ac_switch_status_bool    = $shelly_api_device_response->{"switch:1"}->output;
+        $shelly_4pm_obj->home_switch_status_bool  = $shelly_api_device_response->{"switch:2"}->output || $shelly_api_device_response->{"switch:3"}->output;
+
+        return $shelly_4pm_obj;
+        */
     }
 
     
@@ -2473,9 +2029,6 @@ class class_transindus_eco
         
         
         {  // make all measurements
-          
-          $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          $studer_measured_battery_amps_now_timestamp = $now->getTimestamp();
 
           { // Make Shelly pro 3EM energy measuremnts of 3phase Grid
             $shelly_3p_grid_wh_measurement_obj = $this->get_shelly_3p_grid_wh_since_midnight_over_lan( $user_index, $wp_user_name, $wp_user_ID );
@@ -2541,7 +2094,24 @@ class class_transindus_eco
             
           }
 
-          { /* Now make a Shelly 4PM measurement to get individual powers for all channels
+          { // ..................... ShellyPro4PM Home Load Measurement ..............................................
+            $shellypro4pm_load_obj = $this->get_shellypro4pm_readings_over_lan( $user_index );
+
+            // add the object as property to the main readings object
+            $shelly_readings_obj->shellypro4pm_load_obj        = $shellypro4pm_load_obj;
+
+            error_log(print_r($shellypro4pm_load_obj, true));
+
+            if ( $shellypro4pm_load_obj->switch[3]->output_state_string !== "OFFLINE" )
+            {   // there is a valid response from the Shelly 4PM device
+            
+                
+                // Check and control pump ON duration
+                $this->control_pump_on_duration( $wp_user_ID, $user_index, $shellypro4pm_load_obj);
+            }
+
+
+            /* Now make a Shelly 4PM measurement to get individual powers for all channels
             
             $shelly_4pm_readings_object = $this->get_shelly_device_status_homepwr_over_lan( $user_index );
 
@@ -5781,6 +5351,538 @@ class class_transindus_eco
       if ($interval->s) { $result += $interval->s / 60; }
 
       return round( $result, 2);
+    }
+
+    /**
+     *  @param int:$ts is the timestamp referenced to whatever TZ, but shall be in the past to now
+     *  @param int:$duration_in_seconds is the given duration
+     * 
+     *  @param int:obj
+     * 
+     *  The function checks that the time elapsed in seconds from now in Kolkata to the given timestamp in the past
+     *  It returns the elapsed time and also whether the elapsed time has exceeded the given duration.
+     *  If it exceeds then true is returned if not a false is returned.
+     */
+    public function check_validity_of_timestamp( int $ts, int $duration_in_seconds) : object
+    {
+      $obj = new stdClass;
+
+      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+
+      $now_ts = $now->getTimestamp();
+
+      // The number of seconds is positive if timestamp given is in the past
+      $seconds_elapsed = ( $now_ts - $ts );
+
+      if ( $seconds_elapsed > $duration_in_seconds )
+        {
+          $obj->elapsed_time_exceeds_duration_given = true;
+        }
+      else
+        { 
+          $obj->elapsed_time_exceeds_duration_given = false;
+        }
+
+      $obj->seconds_elapsed = $seconds_elapsed;
+
+      return $obj;
+    } 
+
+
+    
+
+    /**
+     *  This shoercode checks the user meta for studer settings to see if they are set.
+     *  If not set the user meta are set using defaults.
+     *  When the Ninja Forms opens it uses the user meta. If a user meta was not set, now it will be, with programmed defaults
+     */
+    public function my_studer_settings()
+    {
+      $defaults     = [];   // Initialize the defaults array
+      $current_user = wp_get_current_user();
+      $wp_user_ID   = $current_user->ID;
+
+      if ( empty($this->user_meta_defaults_arr) || in_array(null, $this->user_meta_defaults_arr, true) )
+      {
+
+        $defaults['soc_percentage_lvds_setting']                      = ['default' => 30,   'lower_limit' =>10,   'upper_limit' =>90];  // lower Limit of SOC for LVDS
+        $defaults['battery_voltage_avg_lvds_setting']                 = ['default' => 48.3, 'lower_limit' =>47,   'upper_limit' =>54];  // lower limit of BV for LVDS
+        $defaults['soc_percentage_rdbc_setting']                      = ['default' => 85,   'lower_limit' =>30,   'upper_limit' =>90];  // upper limit of SOC for RDBC activation
+        $defaults['soh_percentage_setting']                           = ['default' => 100,  'lower_limit' =>0,    'upper_limit' =>100]; // Current SOH of battery
+        $defaults['soc_percentage_switch_release_setting']            = ['default' => 95,   'lower_limit' =>90,   'upper_limit' =>100]; // Upper limit of SOC for switch release
+        $defaults['min_soc_percentage_for_switch_release_after_rdbc'] = ['default' => 32,   'lower_limit' =>20,   'upper_limit' =>90];  // Lower limit of SOC for switch release after RDBC
+        $defaults['min_solar_surplus_for_switch_release_after_rdbc']  = ['default' => 0.2,  'lower_limit' =>0,    'upper_limit' =>4];   // Lower limit of Psurplus for switch release after RDBC
+        $defaults['battery_voltage_avg_float_setting']                = ['default' => 51.9, 'lower_limit' =>50.5, 'upper_limit' =>54];  // Upper limit of BV for SOC clamp/recal takes place
+        $defaults['acin_min_voltage_for_rdbc']                        = ['default' => 199,  'lower_limit' =>190,  'upper_limit' =>210]; // Lower limit of ACIN for RDBC
+        $defaults['acin_max_voltage_for_rdbc']                        = ['default' => 241,  'lower_limit' =>230,  'upper_limit' =>250]; // Upper limit of ACIN for RDBC
+        $defaults['psolar_surplus_for_rdbc_setting']                  = ['default' => -0.5, 'lower_limit' =>-4,   'upper_limit' =>0];   // Lower limit of Psurplus for surplus for RDBC
+        $defaults['psolar_min_for_rdbc_setting']                      = ['default' => 0.3,  'lower_limit' =>0.1,  'upper_limit' =>4];   // lower limit of Psolar for RDBC activation
+        $defaults['do_minutely_updates']                              = ['default' => true,  'lower_limit' =>true,  'upper_limit' =>true];
+        $defaults['do_shelly']                                        = ['default' => false,  'lower_limit' =>true,  'upper_limit' =>true];
+        $defaults['keep_shelly_switch_closed_always']                 = ['default' => false,  'lower_limit' =>true,  'upper_limit' =>true];
+        $defaults['pump_duration_control']                            = ['default' => true,   'lower_limit' =>true,  'upper_limit' =>true];
+        $defaults['pump_duration_secs_max']                           = ['default' => 2700,   'lower_limit' => 0,    'upper_limit' =>7200];
+        $defaults['pump_power_restart_interval_secs']                 = ['default' => 120,    'lower_limit' => 0,    'upper_limit' =>86400];
+        
+        // save the data in a transient indexed by the user ID. Expiration is 30 minutes
+        set_transient( $wp_user_ID . 'user_meta_defaults_arr', $defaults, 30*60 );
+
+        foreach ($defaults as $user_meta_key => $default_row) {
+          $user_meta_value  = get_user_meta($wp_user_ID, $user_meta_key,  true);
+  
+          if ( empty( $user_meta_value ) ) {
+            update_user_meta( $wp_user_ID, $user_meta_key, $default_row['default']);
+          }
+        }
+      }
+      add_action( 'nf_get_form_id', function( $form_id )
+      {
+
+        // Check for a specific Form ID.
+        if( 2 !== $form_id ) return;
+      
+        /**
+         * Change a field's settings when localized to the page.
+         *   ninja_forms_localize_field_{$field_type}
+         *
+         * @param array $field [ id, settings => [ type, key, label, etc. ] ]
+         * @return array $field
+         */
+        add_filter( 'ninja_forms_localize_field_checkbox', function( $field )
+        {
+          $wp_user_ID = get_current_user_id();
+
+          switch ( true )
+            {
+              case ( stripos( $field[ 'settings' ][ 'key' ], 'keep_shelly_switch_closed_always' )!== false ):
+                // get the user's metadata for this flag
+                $user_meta_value = get_user_meta($wp_user_ID, 'keep_shelly_switch_closed_always',  true);
+
+                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
+                if ($user_meta_value == true)
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'checked';
+                }
+                else
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
+                }
+              break;
+
+              case ( stripos( $field[ 'settings' ][ 'key' ], 'do_minutely_updates' )!== false ):
+                // get the user's metadata for this flag
+                $user_meta_value = get_user_meta($wp_user_ID, 'do_minutely_updates',  true);
+
+                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
+                if ($user_meta_value == true)
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'checked';
+                }
+                else
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
+                }
+              break;
+
+              case ( stripos( $field[ 'settings' ][ 'key' ], 'do_shelly' )!== false ):
+                // get the user's metadata for this flag
+                $user_meta_value = get_user_meta($wp_user_ID, 'do_shelly',  true);
+
+                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
+                if ($user_meta_value == true)
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'checked';
+                }
+                else
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
+                }
+              break;
+
+              case ( stripos( $field[ 'settings' ][ 'key' ], 'do_soc_cal_now' )!== false ):
+                // get the user's metadata for this flag
+                $user_meta_value = get_user_meta($wp_user_ID, 'do_soc_cal_now',  true);
+
+                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
+                if ($user_meta_value == true)
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'checked';
+                }
+                else
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
+                }
+              break;
+
+              case ( stripos( $field[ 'settings' ][ 'key' ], 'pump_duration_control' ) !== false ):
+                // get the user's metadata for this flag
+                $user_meta_value = get_user_meta($wp_user_ID, 'pump_duration_control',  true);
+
+                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
+                if ($user_meta_value == true)
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'checked';
+                }
+                else
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
+                }
+              break;
+            }
+          return $field;
+        } );  // Add filter to check for checkbox field and set the default using user meta
+      } );    // Add Action to check form ID
+      
+    }
+
+
+    /**
+     * 
+     */
+    public function get_user_index_of_logged_in_user() : int
+    {  // get my user index knowing my login name
+
+        $current_user = wp_get_current_user();
+        $wp_user_name = $current_user->user_login;
+
+        $config       = $this->config;
+
+        // Now to find the index in the config array using the above
+        $user_index = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
+
+        $this->index_of_logged_in_user = $user_index;
+        $this->wp_user_name_logged_in_user = $wp_user_name;
+        $this->wp_user_obj = $current_user;
+
+        return $user_index;
+    }
+
+    /**
+     * 
+     */
+    public function get_index_from_wp_user_ID( int $wp_user_ID ) : int
+    {
+        $wp_user_object = get_user_by( 'id', $wp_user_ID);
+
+        $wp_user_name   = $wp_user_object->user_login;
+
+        $config         = $this->config;
+
+        // Now to find the index in the config array using the above
+        $user_index     = array_search( $wp_user_name, array_column($config['accounts'], 'wp_user_name')) ;
+
+        return $user_index;
+    }
+
+
+    /**
+     * @param int:user_index
+     * @return object:wp_user_obj
+     */
+    public function get_wp_user_from_user_index( int $user_index): ? object
+    {
+        $config = $this->get_config();
+
+        $wp_user_name = $config['accounts'][$user_index]['wp_user_name'];
+
+        // Get the wp user object given the above username
+        $wp_user_obj  = get_user_by('login', $wp_user_name);
+
+        return $wp_user_obj;
+    }
+
+
+    /**
+     *  @param int:$wp_user_ID is the WP user ID
+     *  @return array:$all_usermeta is the return array containing all of the user meta for the user with user ID passed in.
+     * 
+     *  The property of $this is also set for what its worth
+     */
+    public function get_all_usermeta( int $wp_user_ID ) : array
+    {
+      $all_usermeta = [];
+
+      // set default timezone to Asia Kolkata
+      //
+
+      $all_usermeta = array_map( function( $a ){ return $a[0]; }, get_user_meta( $wp_user_ID ) );
+
+      // Set this as class property valid for the user index under consideration.
+      $this->all_usermeta = $all_usermeta;
+
+      return $all_usermeta;
+    }
+
+    /**
+     *  add submenu page for testing various application API needed
+     */
+    public function add_my_menu()
+    {
+        // add submenu page for testing various application API needed
+        add_submenu_page(
+            'tools.php',	                    // parent slug
+            'My API Tools',                     // page title
+            'My API Tools',	                    // menu title
+            'manage_options',	                // capability
+            'my-api-tools',	                    // menu slug
+            [$this, 'my_api_tools_render']
+        );
+    }
+
+
+    /**
+     * 
+     */
+    public function get_load_average( string $wp_user_name, float $new_load_kw_reading ): ? float
+    {
+      // Load the voltage array that might have been pushed into transient space
+      $load_kw_arr_transient = get_transient( $wp_user_name . '_' . 'load_kw_avg_arr' ); 
+
+      // If transient doesnt exist rebuild
+      if ( ! is_array($load_kw_arr_transient))
+      {
+        $load_kw_avg_arr = [];
+      }
+      else
+      {
+        // it exists so populate
+        $load_kw_avg_arr = $load_kw_arr_transient;
+      }
+      
+      // push the new voltage reading to the holding array
+      array_push( $load_kw_avg_arr, $new_load_kw_reading );
+
+      // If the array has more than 30 elements then drop the earliest one
+      // We are averaging for only 30 minutes
+      if ( sizeof($load_kw_avg_arr) > 10 )  
+      {   // drop the earliest reading
+          array_shift($load_kw_avg_arr);
+      }
+      // Write it to this object for access elsewhere easily
+      $this->load_kw_avg_arr = $load_kw_avg_arr;
+
+      // Setup transiet to keep previous state for averaging
+      set_transient( $wp_user_name . '_' . 'load_kw_avg_arr', $load_kw_avg_arr, 5*60 );
+
+      $count  = 0.00001;    // prevent division by 0 error
+      $sum    = 0;
+      foreach ($load_kw_avg_arr as $key => $value)
+      {
+         if ( $value > 0.010 )  // greater than 10W
+         {
+            // average all values that are meaningful
+            $sum    +=  $value;   // accumulate
+            $count  +=  1;        // increase count by 1
+         }
+      }
+      unset($value);
+
+      $load_kw_avg = round( $sum / $count, 2);
+
+      return $load_kw_avg;
+    }
+
+
+    /**
+     *  @param string:$future_time is in the typical format of hh:mm:ss
+     *  @return int:$minutes_now_to_future is the number of minutes from now to future time passed in
+     */
+    public function minutes_now_to_future( $future_time ) : float
+    {
+      //
+
+      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+
+      if ( $this->nowIsWithinTimeLimits( '00:00', $future_time ) )
+      {
+        $future_datetime_object = new DateTime($future_time, new DateTimeZone('Asia/Kolkata'));
+
+        // we are past midnight so we just calulcate mins from now to future time
+        // form interval object between now and  time stamp under investigation
+        $diff = $now->diff( $future_datetime_object );
+
+        $minutes_now_to_future = $diff->s / 60  + $diff->i  + $diff->h *60;
+
+        return $minutes_now_to_future;
+      }
+      else
+      {
+        // we are not past midnight of today so future time is past 23:59:59 into tomorrow
+        $future_datetime_object = new DateTime( "tomorrow " . $future_time, new DateTimeZone('Asia/Kolkata'));
+
+        $diff = $now->diff( $future_datetime_object );
+
+        $minutes_now_to_future = $diff->s / 60  + $diff->i  + $diff->h * 60 + $diff->d * 24 * 60;
+
+        return $minutes_now_to_future;
+      }
+
+    }
+
+
+    /**
+     *  @param int:$timestamp is the timestamp of event past
+     *  @return int:$elapsed_time_mins is the elapsed time from the reference timestamp to NOW
+     */
+    public function minutes_from_reference_to_now( int $timestamp ) : float
+    {
+      //
+
+      $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+
+      $reference_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+
+      // This should be in the past
+      $reference_datetime_obj->setTimeStamp( $timestamp );
+
+      // form interval object between now and  time stamp under investigation
+      $diff = $now->diff( $reference_datetime_obj );
+
+      // Get the elapsed time in minutes
+      $elapsed_time_mins = $diff->s / 60  + $diff->i  + $diff->h *60;
+
+      return $elapsed_time_mins;
+    }
+
+    /**
+     *  @param int:$user_index in the config file
+     *  @return int:$studer_time_offset_in_mins_lagging is the number of minutes that the Studer CLock is Lagging the server
+     */
+    public function get_studer_clock_offset( int $user_index )
+    {
+      $config = $this->config;
+
+      $wp_user_name = $config['accounts'][$user_index]['wp_user_name'];
+
+      // Get transient of Studer offset if it exists
+      if ( false === get_transient( $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' ) )
+      {
+        // make an API call to get value of parameter 5002 which is the UNIX time stamp including the UTC offest
+        $base_url  = $config['studer_api_baseurl'];
+        $uhash     = $config['accounts'][$user_index]['uhash'];
+        $phash     = $config['accounts'][$user_index]['phash'];
+
+        $studer_api = new studer_api($uhash, $phash, $base_url);
+          $studer_api->paramId = 5002;
+          $studer_api->device = "RCC1";
+          $studer_api->paramPart = "Value";
+
+        // Make the API call to get the parameter value
+        $studer_clock_unix_timestamp_with_utc_offset = $studer_api->get_parameter_value();
+
+        $this->verbose ? error_log( "studer_clock_unix_timestamp_with_utc_offset: " . $studer_clock_unix_timestamp_with_utc_offset ): false;
+        
+        // if the value is null due to a bad API response then do nothing and return
+        if ( empty( $studer_clock_unix_timestamp_with_utc_offset )) return;
+
+        // create datetime object from studer timestamp. Note that this already has the UTC offeset for India
+        $rcc_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+        $rcc_datetime_obj->setTimeStamp($studer_clock_unix_timestamp_with_utc_offset);
+
+        $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+
+        // form interval object between now and Studer's time stamp under investigation
+        $diff = $now->diff( $rcc_datetime_obj );
+
+        // positive means lagging behind, negative means leading ahead, of correct server time.
+        // If Studer clock was correctr the offset should be 0 but Studer clock seems slow for some reason
+        // 330 comes from pre-existing UTC offest of 5:30 already present in Studer's time stamp
+        $studer_time_offset_in_mins_lagging = 330 - ( $diff->i  + $diff->h *60);
+
+        set_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging',  
+                        $studer_time_offset_in_mins_lagging, 
+                        1*60*60 );
+
+        $this->verbose ? error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins"): false;
+      }
+      else
+      {
+        // offset already computed and transient still valid, just read in the value
+        $studer_time_offset_in_mins_lagging = get_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' );
+      }
+      return $studer_time_offset_in_mins_lagging;
+    }
+
+
+    /**
+     *  @todo implement lagging and leading studer offset, at present only lagging is pmplemented
+     *  @param int:$user_index
+     *  @param string:$wp_user_name is the user name for current loop's user
+     *  We check to see if Studer clock is just past midnight. This will be true only once in 24h.
+     *  Typically it happens close to Servers's midnight due to any offset in Studers clock.
+     *  So we check in a window of 30mr on either side of server midnight.
+     *  Transient for Studer CLock offset expires every hour and gets recalculated by API call if needed.
+     *  So if Studer clock was adjusted during day it will be correctly acquired by API call
+     */
+    public function is_time_just_pass_midnight( int $user_index, string $wp_user_name ): bool
+    {
+      // if not within an hour of server clocks midnight return false. Studer offset will never be allowed to be more than 1h
+      if ($this->nowIsWithinTimeLimits("00:03:00", "23:59:00") )
+      {
+        return false;
+      }
+      // we only get here betweeon 23:59:00 and 00:02:59
+      // if the transient is expired it means we need to check
+      if ( false === get_transient( 'is_time_just_pass_midnight' ) )
+      {
+        // this could also be leading in which case the sign will be automatically negative
+        $studer_time_offset_in_mins_lagging = (int) 0;
+
+        // get current time compensated for our timezone
+        $test = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+        $h=$test->format('H');
+        $m=$test->format('i');
+        $s=$test->format('s');
+
+        // if hours are 0 and offset adjusted minutes are 0 then we are just pass midnight per Studer clock
+        // we added an additional offset just to be sure to account for any seconds offset
+        if( $h == 0 && $m  > 0 ) 
+        {
+          // We are just past midnight on Studer clock, so return true after setiimg the transient
+          set_transient( 'is_time_just_pass_midnight',  'yes', 5 * 60 );
+          return true;
+        }
+      }
+
+      //  If we het here it means that the transient exists and so we are way past midnight, check was triggered already
+      return false;
+    }
+
+
+    /**
+     *  Each time the function is called increment the cron 5s counter modulo 12. 
+     */
+    public function count_cron_cycles_modulo( int $modulo = 3 ):bool
+    {
+        $modulo_cron_cycles_completed = false;
+
+        // We need to keep track of the count each time we land here. The CRON interval is nominally 5s
+        // We need a counter to count to 1 minute
+        $count_cron_cycles = get_transient( 'count_cron_cycles' );
+        
+        if ( false === $count_cron_cycles )
+        {
+            // this is 1st time or transient somehow got deleted or expired
+            $count_cron_cycles = 1;
+        }
+        else
+        {
+            // increment the counter by 1
+            $count_cron_cycles += get_transient( 'count_cron_cycles' );
+
+            if ( $count_cron_cycles >= $modulo ) 
+            {
+                // the counter overflows past 1 minute so roll sback to 1 or 5sec
+                $count_cron_cycles = 1;
+
+                $modulo_cron_cycles_completed = true;
+            }
+        }
+
+        // set transient with the above value for 60s
+        set_transient( 'count_cron_cycles', $count_cron_cycles, 2 * 60 );
+
+        return $modulo_cron_cycles_completed;
     }
     
 }

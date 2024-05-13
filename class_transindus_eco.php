@@ -2514,9 +2514,14 @@ class class_transindus_eco
           }
           
           { // Measure Battery current. Postitive is charging. Returns battery current and associated timestamp
-            
-            $shelly_battery_measurement_object = $this->get_shelly_battery_measurement_over_lan(  $user_index );
 
+            $shellyplus1_batt_obj = $this->get_shellyplus1_battery_readings_over_lan(  $user_index );
+            
+            $batt_amps_shellybm   = $shellyplus1_batt_obj->batt_amps;
+            $timestamp_shellybm   = $shellyplus1_batt_obj->timestamp;
+            
+            // $shelly_battery_measurement_object = $this->get_shelly_battery_measurement_over_lan(  $user_index );
+            /*
             if ( $shelly_battery_measurement_object )
             { // valid shelly battery measurement - load object with battery measurement data
               $batt_amps_shellybm   = (float) $shelly_battery_measurement_object->batt_amps_shellybm;
@@ -2524,12 +2529,13 @@ class class_transindus_eco
 
               $this->verbose ? error_log("Shelly BM Batt_AMPS: $batt_amps_shellybm"): false;
             }
+            */
 
             $shelly_readings_obj->battery_capacity_ah       = $battery_capacity_ah; // this is obtianed from config
             $shelly_readings_obj->batt_amps_shellybm        = $batt_amps_shellybm;  
             $shelly_readings_obj->timestamp_shellybm        = $timestamp_shellybm;
 
-            $shellyplus1_batt_obj = $this->get_shellyplus1_battery_readings_over_lan(  $user_index );
+            
           }
 
           { /* Now make a Shelly 4PM measurement to get individual powers for all channels

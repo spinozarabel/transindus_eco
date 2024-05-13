@@ -4607,10 +4607,9 @@ class class_transindus_eco
 
 
     /**
-     *  This function is scheduled and called by WPCRON in the main plugin file once every 60s
-     *  However the function performs mqtt subscription 3 times in a loop about every 20s
+     *  This function is scheduled by the main measurement loop
      * 
-     *  This function subscribes to a pre-defined topic and extracts a message that was published.
+     *  This function subscribes to a pre-defined MQTT topic and extracts a message that was published.
      *  The publisher is a System triggered PHP CLI that runs a python program using <shell_exec.
      *  This way, the shell_exec doesn't seem to have any issues as compared to running Apache PHP
      *  The python takls to XCOM-LAN of Studer and gets the pre-set data into a JSOn string that is decoded by the PHP CLI

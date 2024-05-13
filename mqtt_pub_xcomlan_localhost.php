@@ -1,4 +1,9 @@
 <?php
+/*  this code is called by an external CRON script on the local Linux server with acess to LAN
+*   It runs a python code to extract data over LAN using TCP using an external library.
+*   The python script is executed using PHP's shell_exec command and the data is piped into a JSON string.
+*   Thisstuder xcom-lan measurement JSON string is then published to the local MQTT broker with retention of last message.
+*/
 
 // define a unique constant to check inside of config
 define('MyConst', TRUE);

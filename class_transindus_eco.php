@@ -5683,14 +5683,14 @@ class class_transindus_eco
         switch(true)
         {
           // when Car charger is OFFLINE. Indicate Yellow icon
-          case ( $readings_obj->shellypro3em_3p_grid_obj->grid_present_status === 'OFFLINE'):
+          case ( $readings_obj->shellypro3em_3p_grid_obj->output_state_string === 'OFFLINE'):
             $ev_charge_icon = '<i class="fa-solid fa-2x fa-charging-station" style="color: Yellow;"></i>';
 
             $car_charger_grid_kw_power = 0;
           break;
 
           // Car charger is online but no power is being drawn
-          case (  $readings_obj->shellypro3em_3p_grid_obj->grid_present_status === 'ONLINE' && 
+          case (  $readings_obj->shellypro3em_3p_grid_obj->output_state_string === 'ONLINE' && 
                   $readings_obj->shellypro3em_3p_grid_obj->evcharger_grid_kw_power <= 0.05 ):
             $ev_charge_icon = '<i class="fa-solid fa-2x fa-charging-station" style="color: Black;"></i>';
 
@@ -5698,7 +5698,7 @@ class class_transindus_eco
           break;
 
           // Car charger is online and power is being drawn
-          case (  $readings_obj->shellypro3em_3p_grid_obj->grid_present_status === 'ONLINE' && 
+          case (  $readings_obj->shellypro3em_3p_grid_obj->output_state_string === 'ONLINE' && 
                   $readings_obj->shellypro3em_3p_grid_obj->evcharger_grid_kw_power > 0.05 ):
             $ev_charge_icon = '<i class="fa-solid fa-2x fa-charging-station" style="color: Blue;"></i>';
 
@@ -5718,24 +5718,26 @@ class class_transindus_eco
         switch(true)
         {
           // when wall charger is OFFLINE. Indicate Yellow icon
-          case ( $readings_obj->grid_present_status === 'offline'):
+          case ( $readings_obj->shellypro3em_3p_grid_obj->output_state_string === 'OFFLINE'):
             $wall_charge_icon = '<i class="fa-solid fa-2x fa-plug-circle-bolt" style="color: Yellow;"></i>';
 
             $wallcharger_grid_kw_power = 0;
           break;
 
           // when wall charger is ONLINE but not drawing power Indicate Red icon and power to 0
-          case ( $readings_obj->grid_present_status === 'online' && $readings_obj->wallcharger_grid_kw_power <= 0.05):
+          case (  $readings_obj->shellypro3em_3p_grid_obj->output_state_string === 'ONLINE' && 
+                  $readings_obj->shellypro3em_3p_grid_obj->wallcharger_grid_kw_power <= 0.05):
             $wall_charge_icon = '<i class="fa-solid fa-2x fa-plug-circle-bolt" style="color: Black;"></i>';
 
             $wallcharger_grid_kw_power = 0;
           break;
 
           // when wall charger is ONLINE and drawing power Indicate Blue icon and power actulas
-          case ( $readings_obj->grid_present_status === 'online' && $readings_obj->wallcharger_grid_kw_power > 0.05):
+          case (  $readings_obj->shellypro3em_3p_grid_obj->output_state_string === 'ONLINE' && 
+                  $readings_obj->shellypro3em_3p_grid_obj->wallcharger_grid_kw_power > 0.05):
             $wall_charge_icon = '<i class="fa-solid fa-2x fa-plug-circle-bolt" style="color: Blue;"></i>';
 
-            $wallcharger_grid_kw_power = round( $readings_obj->wallcharger_grid_kw_power, 2);
+            $wallcharger_grid_kw_power = round( $readings_obj->shellypro3em_3p_grid_obj->wallcharger_grid_kw_power, 2);
 
             $wallcharger_grid_kw_power = '<span style="font-size: 18px;color: Black;">
                                             <strong>' . $wallcharger_grid_kw_power . '</strong>

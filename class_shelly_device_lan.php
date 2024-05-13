@@ -437,7 +437,7 @@ class shelly_device
           }
           elseif ( $shelly_device_data->switch[$channel]->output_state_bool === false )
           {
-            $shelly_device_data->sswitch[$channel]->output_state_string = "OFF";
+            $shelly_device_data->switch[$channel]->output_state_string = "OFF";
           }
         }
         else

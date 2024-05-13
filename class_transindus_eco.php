@@ -2530,7 +2530,6 @@ class class_transindus_eco
             $shelly_readings_obj->timestamp_shellybm        = $timestamp_shellybm;
 
             $shellyplus1_batt_obj = $this->get_shellyplus1_battery_readings_over_lan(  $user_index );
-            error_log( print_r( $shellyplus1_batt_obj, true ) );
           }
 
           { /* Now make a Shelly 4PM measurement to get individual powers for all channels

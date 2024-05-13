@@ -2095,19 +2095,19 @@ class class_transindus_eco
           }
 
           { // ..................... ShellyPro4PM Home Load Measurement ..............................................
-            $shellypro4pm_load_obj = $this->get_shellypro4pm_readings_over_lan( $user_index );
+            // $shellypro4pm_load_obj = $this->get_shellypro4pm_readings_over_lan( $user_index );
 
             // add the object as property to the main readings object
-            $shelly_readings_obj->shellypro4pm_load_obj        = $shellypro4pm_load_obj;
+            // $shelly_readings_obj->shellypro4pm_load_obj        = $shellypro4pm_load_obj;
 
-            error_log(print_r($shellypro4pm_load_obj, true));
+            // error_log(print_r($shellypro4pm_load_obj, true));
 
-            if ( $shellypro4pm_load_obj->switch[3]->output_state_string !== "OFFLINE" )
+            // if ( $shellypro4pm_load_obj->switch[3]->output_state_string !== "OFFLINE" )
             {   // there is a valid response from the Shelly 4PM device
             
                 
                 // Check and control pump ON duration
-                $this->control_pump_on_duration( $wp_user_ID, $user_index, $shellypro4pm_load_obj);
+                // $this->control_pump_on_duration( $wp_user_ID, $user_index, $shellypro4pm_load_obj);
             }
 
 

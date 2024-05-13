@@ -5232,7 +5232,7 @@ class class_transindus_eco
                                               </span>';
 
         $format_object->power_to_home_kw = '<span style="font-size: 18px;color: Black;">
-                                                <strong>' . $power_to_home_kw . ' KW</strong>
+                                                <strong>' . $shelly_em_home_kw . ' KW</strong>
                                             </span>';
 
         $format_object->power_to_ac_kw = '<span style="font-size: 18px;color: Black;">

@@ -499,24 +499,26 @@ class shelly_device
 
         $shelly_device_data->em1data = $em1data;
 
-        $shelly_device_data->em1[0]->current  = (float) $curlResponse->{"em1:0"}->current;
-        $shelly_device_data->em1[0]->voltage  = (float) $curlResponse->{"em1:0"}->voltage;
-        $shelly_device_data->em1[0]->power    = (float) $curlResponse->{"em1:0"}->act_power;
+        $shelly_device_data->em1[0]->current  = (float)       $curlResponse->{"em1:0"}->current;
+        $shelly_device_data->em1[0]->voltage  = (int) round(  $curlResponse->{"em1:0"}->voltage, 0);
+        $shelly_device_data->em1[0]->power    = (float)       $curlResponse->{"em1:0"}->act_power;
         $shelly_device_data->em1[0]->power_kw = (float) round( 0.001 * $shelly_device_data->em1[0]->power, 3);
 
-        $shelly_device_data->em1[1]->current  = (float) $curlResponse->{"em1:1"}->current;
-        $shelly_device_data->em1[1]->voltage  = (float) $curlResponse->{"em1:1"}->voltage;
-        $shelly_device_data->em1[1]->power    = (float) $curlResponse->{"em1:1"}->act_power;
+        $shelly_device_data->em1[1]->current  = (float)       $curlResponse->{"em1:1"}->current;
+        $shelly_device_data->em1[1]->voltage  = (int) round(  $curlResponse->{"em1:1"}->voltage, 0);
+        $shelly_device_data->em1[1]->power    = (float)       $curlResponse->{"em1:1"}->act_power;
         $shelly_device_data->em1[1]->power_kw = (float) round( 0.001 * $shelly_device_data->em1[1]->power, 3);
 
-        $shelly_device_data->em1[2]->current  = (float) $curlResponse->{"em1:2"}->current;
-        $shelly_device_data->em1[2]->voltage  = (float) $curlResponse->{"em1:2"}->voltage;
-        $shelly_device_data->em1[2]->power    = (float) $curlResponse->{"em1:2"}->act_power;
+        $shelly_device_data->em1[2]->current  = (float)       $curlResponse->{"em1:2"}->current;
+        $shelly_device_data->em1[2]->voltage  = (int) round(  $curlResponse->{"em1:2"}->voltage, 0);
+        $shelly_device_data->em1[2]->power    = (float)       $curlResponse->{"em1:2"}->act_power;
         $shelly_device_data->em1[2]->power_kw = (float) round( 0.001 * $shelly_device_data->em1[2]->power, 3);
 
         $shelly_device_data->em1data[0]->energy =  (int) round( $curlResponse->{"em1data:0"}->total_act_energy, 0 );
         $shelly_device_data->em1data[1]->energy =  (int) round( $curlResponse->{"em1data:1"}->total_act_energy, 0 );
         $shelly_device_data->em1data[2]->energy =  (int) round( $curlResponse->{"em1data:2"}->total_act_energy, 0 );
+
+        $shelly_device_data->output_state_string = "ONLINE";
       }
       else
       {

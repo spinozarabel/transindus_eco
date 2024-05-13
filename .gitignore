@@ -4,8 +4,8 @@ pods.export
 *config.php
 # ignore all files that have config.php anywhere in between
 *config.php*
-junk.php
 temp.php
+junk.php
 vendor/
 check_avasarala_in*
 mystuder.py

@@ -2354,8 +2354,13 @@ class class_transindus_eco
           update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', $shelly_em_home_wh );
 
           // reset Shelly 3EM Grid Energy counter to present reading. This is only done once in 24h, at midnight
-          update_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', $shellypro3em_3p_grid_obj->home_grid_wh_counter_now );
+          $update_operation = 
+            update_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', $shellypro3em_3p_grid_obj->home_grid_wh_counter_now );
 
+          if ($update_operation === false )
+          {
+            error_log("Cal-Midnight - The midnight update for Grid Home WH counter either failed or was unchanged");
+          }
           // reset the SOC at midnight value to current update. This is only done once in 24h, at midnight
           // we also have the option of using the variable: $soc_percentage_now_using_dark_shelly
           update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $soc_percentage_now );

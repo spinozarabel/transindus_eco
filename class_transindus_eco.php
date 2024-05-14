@@ -5897,15 +5897,16 @@ class class_transindus_eco
       $power_total_to_home    = $readings_obj->power_total_to_home;
       $power_total_to_home_kw = $readings_obj->shelly_em_home_kw; // round( $power_total_to_home * 0.001, 2);
 
-      $power_to_home_kw = $readings_obj->shellypro4pm_load_obj->power_to_home_kw;
-      $power_to_ac_kw   = $readings_obj->shellypro4pm_load_obj->power_to_ac_kw;
-      $power_to_pump_kw = $readings_obj->shellypro4pm_load_obj->power_to_pump_kw;
+      $power_to_home_kw = $readings_obj->shellypro4pm_load_obj->switch[2]->power_kw + 
+                          $readings_obj->shellypro4pm_load_obj->switch[3]->power_kw;
+      $power_to_ac_kw   = $readings_obj->shellypro4pm_load_obj->switch[1]->power_kw;
+      $power_to_pump_kw = $readings_obj->shellypro4pm_load_obj->switch[0]->power_kw;
 
-      $pump_ON_duration_mins = (int) round( $readings_obj->pump_ON_duration_secs / 60, 0);
+      $pump_ON_duration_mins = (int) round( $readings_obj->shellypro4pm_load_obj->pump_ON_duration_secs / 60, 0);
 
-      $pump_switch_status_bool  = $readings_obj->shellypro4pm_load_obj->pump_switch_status_bool;
-      $ac_switch_status_bool    = $readings_obj->shellypro4pm_load_obj->ac_switch_status_bool;
-      $home_switch_status_bool  = $readings_obj->shellypro4pm_load_obj->home_switch_status_bool;
+      $pump_switch_status_bool  = $readings_obj->shellypro4pm_load_obj->switch[0]->output_state_bool;
+      $ac_switch_status_bool    = $readings_obj->shellypro4pm_load_obj->switch[1]->output_state_bool;
+      $home_switch_status_bool  = $readings_obj->shellypro4pm_load_obj->switch[2]->output_state_bool;
 
       $switch_tree_obj            = $readings_obj->switch_tree_obj;
       $switch_tree_exit_condition = $switch_tree_obj->switch_tree_exit_condition;

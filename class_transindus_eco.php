@@ -6167,16 +6167,16 @@ class class_transindus_eco
       // read in the object from transient if it exists process the grid values for display
       if ( false !== ( $shelly_readings_obj = get_transient( 'shelly_readings_obj' ) ) )
       {
-        $grid_present_status          = (string)  $shelly_readings_obj->grid_present_status;
-        $seconds_elapsed_grid_status  = (int)     $shelly_readings_obj->seconds_elapsed_grid_status;
+        $grid_present_status          = (string)  $shelly_readings_obj->shellypro3em_3p_grid_obj->grid_present_status;
+        $seconds_elapsed_grid_status  = (int)     $shelly_readings_obj->shellypro3em_3p_grid_obj->seconds_elapsed_grid_status;
 
         $time_formatted_string = $this->format_seconds_to_hms_format( $seconds_elapsed_grid_status );
 
-        if ( $grid_present_status === "online" && ! empty( $shelly_readings_obj ) )
+        if ( $grid_present_status === "ONLINE" && ! empty( $shelly_readings_obj->shellypro3em_3p_grid_obj ) )
         {
-          $a_phase_grid_voltage = (float) $shelly_readings_obj->red_phase_grid_voltage;
-          $b_phase_grid_voltage = (float) $shelly_readings_obj->yellow_phase_grid_voltage;
-          $c_phase_grid_voltage = (float) $shelly_readings_obj->blue_phase_grid_voltage;
+          $a_phase_grid_voltage = (float) $shelly_readings_obj->shellypro3em_3p_grid_obj->red_phase_grid_voltage;
+          $b_phase_grid_voltage = (float) $shelly_readings_obj->shellypro3em_3p_grid_obj->yellow_phase_grid_voltage;
+          $c_phase_grid_voltage = (float) $shelly_readings_obj->shellypro3em_3p_grid_obj->blue_phase_grid_voltage;
 
           if ( ! empty( $a_phase_grid_voltage ) ) $a_phase_grid_voltage = (int) round( $a_phase_grid_voltage ,0 );
           if ( ! empty( $b_phase_grid_voltage ) ) $b_phase_grid_voltage = (int) round( $b_phase_grid_voltage ,0 );

@@ -1808,11 +1808,17 @@ class class_transindus_eco
           }
 
           { // run python script directly and get xcom-lan data without using mqtt
-            // $this->get_studer_readings_over_xcomlan_without_mqtt();
+            $xcomlan_studer_data_obj = $this->get_studer_readings_over_xcomlan_without_mqtt();
+
+            $this->verbose ? error_log("Studer XCOM-LAN BM Batt_AMPS: $xcomlan_studer_data_obj->batt_current_xcomlan"): false;
+
+            // write this as property to the main readings object
+            $shelly_readings_obj->xcomlan_studer_data_obj = $xcomlan_studer_data_obj;
           }
 
-          { // Get studer data using xcomlan. A CRON MQTT on localhost publisher and a WP CRON MQTT subscriber
-            $studer_data_via_xcomlan = $this->get_studer_readings_over_xcomlan();
+          { /* legacy code for xcomlan studer data using CRON MQTT
+            // Get studer data using xcomlan. A CRON MQTT on localhost publisher and a WP CRON MQTT subscriber
+            $xcomlan_studer_data_obj = $this->get_studer_readings_over_xcomlan();
 
             if ( ! empty( $studer_data_via_xcomlan ) && $studer_data_via_xcomlan->battery_voltage_xtender > 45.0 )
             { // we seem to have valid data
@@ -1866,7 +1872,7 @@ class class_transindus_eco
               $shelly_readings_obj->batt_current_xcomlan              = $batt_current_xcomlan;
               $shelly_readings_obj->xcomlan_ts                        = $xcomlan_ts;
             }
-            
+            */
           }
         }
 
@@ -1881,8 +1887,8 @@ class class_transindus_eco
                                                                   $it_is_still_dark,
                                                                   $batt_amps_shellybm,
                                                                   $timestamp_shellybm,
-                                                                  $batt_current_xcomlan,
-                                                                  $xcomlan_ts             );
+                                                                  $xcomlan_studer_data_obj->batt_current_xcomlan,
+                                                                  $xcomlan_studer_data_obj->xcomlan_ts             );
 
           $soc_shellybm_since_midnight                    = $batt_soc_accumulation_obj->soc_shellybm_since_midnight;
           $soc_percentage_now_calculated_using_shelly_bm  = $soc_percentage_at_midnight + $soc_shellybm_since_midnight;
@@ -3893,24 +3899,109 @@ class class_transindus_eco
     /**
      * 
      */
-    public function get_studer_readings_over_xcomlan_without_mqtt(): ? object
+    public function get_studer_readings_over_xcomlan_without_mqtt():  object
     {
       // load the script name from config. Not needed for anything right now.
       $config = $this->config;
 
+      $xcomlan_studer_data_obj = new stdClass;
+
+      // form the string containing the phthon3 command and the python script file including the full path
       $script_file_path = "/usr/bin/python3 " . plugin_dir_path(__FILE__) . "mystuder.py";
 
+      // escape the path
       $command = escapeshellcmd( $script_file_path );
 
-
+      // perform the shell_exec using the command string containing the script file name. The expected output is a JSON
       $mystuder_readings_json_string = shell_exec( $command );
 
-      $xcomlan_studer_data_obj = json_decode( $mystuder_readings_json_string );
+      // Check that the message is not empty
+      if ( empty( $mystuder_readings_json_string ) )
+      {
+          error_log( " Null output received from shell_exec command of python script " );
 
-      error_log("Below is the Studer data object obtained by running py script from WP plugin directly");
-      error_log( print_r( $xcomlan_studer_data_obj, true ) );
+          $xcomlan_studer_data_obj->batt_current_xcomlan = null;
+          $xcomlan_studer_data_obj->xcomlan_ts           = null;
 
-      return $xcomlan_studer_data_obj;
+          return $xcomlan_studer_data_obj;
+      }
+      
+      // we have non-empty output string from shell_exec. Lets decode it into an object
+      $studer_data_via_xcomlan = json_decode($mystuder_readings_json_string);
+
+      if ( $studer_data_via_xcomlan === null ) 
+      {
+        error_log( 'Error parsing JSON from studerxcomlan: '. json_last_error_msg() );
+        error_log( print_r($studer_data_via_xcomlan , true) );
+
+        $xcomlan_studer_data_obj->batt_current_xcomlan = null;
+        $xcomlan_studer_data_obj->xcomlan_ts           = null;
+
+        return $xcomlan_studer_data_obj;
+      }
+      elseif( json_last_error() === JSON_ERROR_NONE )
+      {
+        // we have a non-empty object to work with
+        $raw_batt_voltage_xcomlan     =         $studer_data_via_xcomlan->battery_voltage_xtender;
+
+        $east_panel_current_xcomlan   = round(  $studer_data_via_xcomlan->pv_current_now_1, 1 );
+
+        $west_panel_current_xcomlan   = round(  $studer_data_via_xcomlan->pv_current_now_2, 1 );
+
+        $pv_current_now_total_xcomlan = round(  $studer_data_via_xcomlan->pv_current_now_total, 1 );
+
+        $inverter_current_xcomlan     = round(  $studer_data_via_xcomlan->inverter_current, 1);
+
+        $xcomlan_ts                   = (int)   $studer_data_via_xcomlan->timestamp_xcomlan_call;
+
+        // battery current as measured by xcom-lan is got by adding + PV DC current amps and - inverter DC current amps
+      
+        $batt_current_xcomlan = ( $pv_current_now_total_xcomlan + $inverter_current_xcomlan );
+
+        if ( $batt_current_xcomlan <= 0 )
+        {
+          $batt_current_xcomlan = round( $batt_current_xcomlan * 0.960 , 1);
+        }
+
+        // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging
+        // $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);
+
+        // if battery is charging voltage will decrease and if discharging voltage will increase due to IR compensation
+        $ir_drop_compensated_battery_voltage_xcomlan = $raw_batt_voltage_xcomlan - 0.030 * $batt_current_xcomlan;
+
+        if ( $ir_drop_compensated_battery_voltage_xcomlan > 48 )
+        { // calculate running aerage only if current measurement seems reasonable
+          // calculate the running average over the last 5 readings including this one. Return is rounded to 2 decimals
+          $batt_voltage_xcomlan_avg = $this->get_battery_voltage_avg( $ir_drop_compensated_battery_voltage_xcomlan );
+        }
+        else
+        {
+          $batt_voltage_xcomlan_avg = 49;   // this is a safety catch in case the xcomlan voltage measurement fails
+        }
+
+        $psolar_kw = round( $pv_current_now_total_xcomlan * $ir_drop_compensated_battery_voltage_xcomlan * 0.001, 2);
+
+        // pack these as properties onto the shelly readings object
+        $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg          = $batt_voltage_xcomlan_avg;
+        $xcomlan_studer_data_obj->east_panel_current_xcomlan        = $east_panel_current_xcomlan;
+        $xcomlan_studer_data_obj->west_panel_current_xcomlan        = $west_panel_current_xcomlan;
+        $xcomlan_studer_data_obj->pv_current_now_total_xcomlan      = $pv_current_now_total_xcomlan;
+        $xcomlan_studer_data_obj->inverter_current_xcomlan          = $inverter_current_xcomlan;
+        $xcomlan_studer_data_obj->batt_current_xcomlan              = $batt_current_xcomlan;
+        $xcomlan_studer_data_obj->xcomlan_ts                        = $xcomlan_ts;
+
+        return $xcomlan_studer_data_obj;
+      }
+      else
+      {
+        // we have some JSON errors so return null
+        error_log( 'Error parsing JSON from studerxcomlan: '. json_last_error_msg() );
+        error_log( print_r($studer_data_via_xcomlan , true) );
+        $xcomlan_studer_data_obj->batt_current_xcomlan = null;
+        $xcomlan_studer_data_obj->xcomlan_ts           = null;
+
+         return $xcomlan_studer_data_obj;
+      }
     }
 
 

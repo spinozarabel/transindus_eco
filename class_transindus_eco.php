@@ -1730,7 +1730,8 @@ class class_transindus_eco
             $this->verbose ? error_log("Log-home_grid_wh_counter_now: $home_grid_wh_counter_now, wh since midnight: $home_grid_wh_since_midnight, Home Grid PowerKW: $home_grid_kw_power"): false;
           }
           
-          { // Measure Battery current. Postitive is charging. Returns battery current and associated timestamp
+          { // .....................shellyplus1 w/addon Battery current measurement using Hall Effect sensor
+            // Measure Battery current. Postitive is charging. Returns battery current and associated timestamp
 
             $shellyplus1_batt_obj = $this->get_shellyplus1_battery_readings_over_lan(  $user_index );
 
@@ -1739,23 +1740,10 @@ class class_transindus_eco
 
             $batt_amps_shellybm   = (float) $shellyplus1_batt_obj->batt_amps;
             $timestamp_shellybm   = (int)   $shellyplus1_batt_obj->timestamp;
-            
-            // $shelly_battery_measurement_object = $this->get_shelly_battery_measurement_over_lan(  $user_index );
-            /*
-            if ( $shelly_battery_measurement_object )
-            { // valid shelly battery measurement - load object with battery measurement data
-              $batt_amps_shellybm   = (float) $shelly_battery_measurement_object->batt_amps_shellybm;
-              $timestamp_shellybm   = (int)   $shelly_battery_measurement_object->timestamp_shellybm;
-
-              $this->verbose ? error_log("Shelly BM Batt_AMPS: $batt_amps_shellybm"): false;
-            }
-            */
 
             $shelly_readings_obj->battery_capacity_ah       = $battery_capacity_ah; // this is obtianed from config
             $shelly_readings_obj->batt_amps_shellybm        = $batt_amps_shellybm;  
             $shelly_readings_obj->timestamp_shellybm        = $timestamp_shellybm;
-
-            
           }
 
           { // ..................... ShellyPro4PM Home Load Measurement ..............................................
@@ -1825,8 +1813,6 @@ class class_transindus_eco
             $shelly_readings_obj->xcomlan_studer_data_obj = $xcomlan_studer_data_obj;
 
             $shelly_readings_obj->psolar_kw = $psolar_kw;
-
-           
           }
 
           { /* legacy code for xcomlan studer data using CRON MQTT
@@ -1934,17 +1920,6 @@ class class_transindus_eco
             $shelly_readings_obj->battery_power_kw = round( 49.8 * $batt_amps * 0.001, 3 );
           }
         }
-
-        /*
-        if ( $soc_percentage_now_calculated_using_shelly_bm > 100 || $batt_voltage_xcomlan_avg >= $average_battery_float_voltage )
-        { // 100% SOC clamp
-          // recalculate Battery SOC % accumulated since midnight
-          $recal_battery_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
-
-          // write this value back to the user meta
-          update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
-        }
-        */
 
         if ( $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg >= $average_battery_float_voltage || $soc_percentage_now_calculated_using_studer_xcomlan > 100.1 )
         {   // battery float voltage achieved OR soc-xcom-lan greater than 100% so use 100% clamp
@@ -2054,7 +2029,6 @@ class class_transindus_eco
         // This is the preferred SOC value as it is backed by shelly BM.
         $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
         $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;
-        $soc_percentage_now_display = round( $soc_percentage_now, 1);
 
         // midnight actions
         if ( $this->is_time_just_pass_midnight( $user_index, $wp_user_name ) )

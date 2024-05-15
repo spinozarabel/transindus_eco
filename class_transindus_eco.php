@@ -1808,7 +1808,7 @@ class class_transindus_eco
           }
 
           { // run python script directly and get xcom-lan data without using mqtt
-            $this->get_studer_readings_over_xcomlan_without_mqtt();
+            // $this->get_studer_readings_over_xcomlan_without_mqtt();
           }
 
           { // Get studer data using xcomlan. A CRON MQTT on localhost publisher and a WP CRON MQTT subscriber

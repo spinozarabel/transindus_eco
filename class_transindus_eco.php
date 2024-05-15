@@ -1810,10 +1810,23 @@ class class_transindus_eco
           { // run python script directly and get xcom-lan data without using mqtt
             $xcomlan_studer_data_obj = $this->get_studer_readings_over_xcomlan_without_mqtt();
 
-            $this->verbose ? error_log("Studer XCOM-LAN BM Batt_AMPS: $xcomlan_studer_data_obj->batt_current_xcomlan"): false;
+            $batt_voltage_xcomlan_avg     = $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg;
+            $east_panel_current_xcomlan   = $xcomlan_studer_data_obj->east_panel_current_xcomlan;
+            $west_panel_current_xcomlan   = $xcomlan_studer_data_obj->west_panel_current_xcomlan;
+            $pv_current_now_total_xcomlan = $xcomlan_studer_data_obj->pv_current_now_total_xcomlan;
+            $inverter_current_xcomlan     = $xcomlan_studer_data_obj->inverter_current_xcomlan;
+            $psolar_kw                    = $xcomlan_studer_data_obj->psolar_kw;
+            $batt_current_xcomlan         = $xcomlan_studer_data_obj->batt_current_xcomlan;
+            $xcomlan_ts                   = $xcomlan_studer_data_obj->xcomlan_ts;
+
+            $this->verbose ? error_log("Studer XCOM-LAN BM Batt_AMPS: $batt_current_xcomlan"): false;
 
             // write this as property to the main readings object
             $shelly_readings_obj->xcomlan_studer_data_obj = $xcomlan_studer_data_obj;
+
+            $shelly_readings_obj->psolar_kw = $psolar_kw;
+
+           
           }
 
           { /* legacy code for xcomlan studer data using CRON MQTT
@@ -1887,8 +1900,8 @@ class class_transindus_eco
                                                                   $it_is_still_dark,
                                                                   $batt_amps_shellybm,
                                                                   $timestamp_shellybm,
-                                                                  $xcomlan_studer_data_obj->batt_current_xcomlan,
-                                                                  $xcomlan_studer_data_obj->xcomlan_ts             );
+                                                                  $batt_current_xcomlan,
+                                                                  $xcomlan_ts             );
 
           $soc_shellybm_since_midnight                    = $batt_soc_accumulation_obj->soc_shellybm_since_midnight;
           $soc_percentage_now_calculated_using_shelly_bm  = $soc_percentage_at_midnight + $soc_shellybm_since_midnight;
@@ -1910,10 +1923,10 @@ class class_transindus_eco
           $shelly_readings_obj->soc_percentage_now_calculated_using_studer_xcomlan  = $soc_percentage_now_calculated_using_studer_xcomlan;
           $shelly_readings_obj->batt_amps  = $batt_amps;
 
-          if ($batt_voltage_xcomlan_avg > 45 )
+          if ($xcomlan_studer_data_obj->batt_voltage_xcomlan_avg > 47 )
           {
             // if xcomlan measurements get a valid battery voltage use it for best accuracy
-            $shelly_readings_obj->battery_power_kw = round( $batt_voltage_xcomlan_avg * $batt_amps * 0.001, 3 );
+            $shelly_readings_obj->battery_power_kw = round( $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg * $batt_amps * 0.001, 3 );
           }
           else
           {
@@ -1933,7 +1946,7 @@ class class_transindus_eco
         }
         */
 
-        if ( $batt_voltage_xcomlan_avg >= $average_battery_float_voltage || $soc_percentage_now_calculated_using_studer_xcomlan > 100.1 )
+        if ( $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg >= $average_battery_float_voltage || $soc_percentage_now_calculated_using_studer_xcomlan > 100.1 )
         {   // battery float voltage achieved OR soc-xcom-lan greater than 100% so use 100% clamp
             $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
 
@@ -2181,7 +2194,7 @@ class class_transindus_eco
 
           $switch_release = 
               $soc_percentage_now               >= ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered 2 points past LVDS minimum setting
-             ($batt_amps_shellybm > 6   || $batt_current_xcomlan > 6)                   &&  // battery is charging. This cannot happen when dark
+             ($batt_amps_shellybm > 6   || $xcomlan_studer_data_obj->batt_current_xcomlan > 6) &&  // battery is charging. This cannot happen when dark
               $psolar_kw          > (0.3 + $shelly_em_home_kw)                          &&  // Solar must exceed home consumption by 0.3KW
               $shelly1pm_acin_switch_status     === "ON"            &&                      // Grid switch is ON
               $control_shelly                   === true            &&                      // Grid Switch is Controllable
@@ -3987,6 +4000,7 @@ class class_transindus_eco
         $xcomlan_studer_data_obj->west_panel_current_xcomlan        = $west_panel_current_xcomlan;
         $xcomlan_studer_data_obj->pv_current_now_total_xcomlan      = $pv_current_now_total_xcomlan;
         $xcomlan_studer_data_obj->inverter_current_xcomlan          = $inverter_current_xcomlan;
+        $xcomlan_studer_data_obj->psolar_kw                         = $psolar_kw;
         $xcomlan_studer_data_obj->batt_current_xcomlan              = $batt_current_xcomlan;
         $xcomlan_studer_data_obj->xcomlan_ts                        = $xcomlan_ts;
 

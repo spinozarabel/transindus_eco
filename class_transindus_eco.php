@@ -1752,7 +1752,7 @@ class class_transindus_eco
           // data is valid if the timestamp from object received using mqtt, is not stale.
 
           // get the ts that was sent by xcomlan and shellybm
-          $xcomlan_ts   = $object_from_linux_home_desktop->xcomlan_ts;
+          $xcomlan_ts   = $object_from_linux_home_desktop->xcomlan_studer_data_obj->xcomlan_ts;
           $shellybm_ts  = $object_from_linux_home_desktop->timestamp_shellybm;
 
           $obj_check_ts_validity_xcomlan  = $this->check_validity_of_timestamp( $xcomlan_ts,  120 );

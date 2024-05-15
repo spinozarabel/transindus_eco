@@ -4640,7 +4640,7 @@ class class_transindus_eco
 
         $battery_power_kw       = abs(round($readings_obj->battery_power_kw, 2));
 
-        $battery_avg_voltage    =   $readings_obj->batt_voltage_xcomlan_avg;
+        $battery_avg_voltage    =   $readings_obj->xcomlan_studer_data_obj->batt_voltage_xcomlan_avg;
 
         $home_grid_kw_power     =   $readings_obj->shellypro3em_3p_grid_obj->home_grid_kw_power;
         $home_grid_voltage      =   $readings_obj->shellypro3em_3p_grid_obj->home_grid_voltage;

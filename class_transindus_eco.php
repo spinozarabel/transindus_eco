@@ -3898,7 +3898,9 @@ class class_transindus_eco
       // load the script name from config. Not needed for anything right now.
       $config = $this->config;
 
-      $command = escapeshellcmd( "python3 mystuder.py" );
+      $script_file_path = "/usr/bin/python3 " . plugin_dir_path(__FILE__) . "mystuder.py";
+
+      $command = escapeshellcmd( $script_file_path );
 
 
       $mystuder_readings_json_string = shell_exec( $command );

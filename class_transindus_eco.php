@@ -5987,11 +5987,11 @@ class class_transindus_eco
                                             </span>';
 
       $format_object->power_to_home_kw = '<span style="font-size: 18px;color: Black;">
-                                              <strong>' . $readings_obj->power_to_home_kw . '</strong>
+                                              <strong>' . $power_to_home_kw . '</strong>
                                           </span>';
 
       $format_object->power_to_ac_kw = '<span style="font-size: 18px;color: Black;">
-                                              <strong>' . $readings_obj->power_to_ac_kw . '</strong>
+                                              <strong>' . $power_to_ac_kw . '</strong>
                                           </span>';
 
       $format_object->power_to_pump_kw = '<span style="font-size: 18px;color: Black;">

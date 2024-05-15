@@ -5572,15 +5572,16 @@ class class_transindus_eco
       $shelly_switch_acin_details_arr = (array) $readings_obj->shelly_switch_acin_details_arr;
 
       $shelly_water_heater_kw       = 0;
-      $shelly_water_heater_status   = null;
+      $shelly_water_heater_status_bool   = null;
 
       // extract and process Shelly 1PM switch water heater data
       if ( ! empty($readings_obj->shelly_water_heater_data) )
       {
-        $shelly_water_heater_data          = $readings_obj->shelly_water_heater_data;     // data object
-        $shelly_water_heater_kw           = $shelly_water_heater_data->shelly_water_heater_kw;
-        $shelly_water_heater_status_bool  = $shelly_water_heater_data->switch[0]->output_state_bool;  // boolean variable
-        $shelly_water_heater_current      = $shelly_water_heater_data->shelly_water_heater_current; // in Amps
+        $shellyplus1pm_water_heater_obj          = $readings_obj->shellyplus1pm_water_heater_obj;     // data object
+        $shelly_water_heater_kw           = $shellyplus1pm_water_heater_obj->switch[0]->power_kw;
+        $shelly_water_heater_status_bool  = $shellyplus1pm_water_heater_obj->switch[0]->output_state_bool;  // boolean variable
+        $shelly_water_heater_status_string = $shellyplus1pm_water_heater_obj->switch[0]->output_state_string;  // boolean variable
+        $shelly_water_heater_current      = $shellyplus1pm_water_heater_obj->switch[0]->current; // in Amps
       }
       
 
@@ -5959,11 +5960,11 @@ class class_transindus_eco
       {
         $water_heater_icon_color = 'blue';
       }
-      elseif ( $shelly_water_heater_status === false )
+      elseif ( $shelly_water_heater_status_bool === false )
       {
         $water_heater_icon_color = 'red';
       }
-      else
+      elseif ( $shelly_water_heater_status_string === 'OFFLINE' )
       {
         $water_heater_icon_color = 'yellow';
       }

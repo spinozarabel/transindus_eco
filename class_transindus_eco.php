@@ -5577,10 +5577,10 @@ class class_transindus_eco
       // extract and process Shelly 1PM switch water heater data
       if ( ! empty($readings_obj->shelly_water_heater_data) )
       {
-        $shelly_water_heater_data     = $readings_obj->shelly_water_heater_data;     // data object
-        $shelly_water_heater_kw       = $shelly_water_heater_data->shelly_water_heater_kw;
-        $shelly_water_heater_status   = $shelly_water_heater_data->shelly_water_heater_status;  // boolean variable
-        $shelly_water_heater_current  = $shelly_water_heater_data->shelly_water_heater_current; // in Amps
+        $shelly_water_heater_data          = $readings_obj->shelly_water_heater_data;     // data object
+        $shelly_water_heater_kw           = $shelly_water_heater_data->shelly_water_heater_kw;
+        $shelly_water_heater_status_bool  = $shelly_water_heater_data->switch[0]->output_state_bool;  // boolean variable
+        $shelly_water_heater_current      = $shelly_water_heater_data->shelly_water_heater_current; // in Amps
       }
       
 

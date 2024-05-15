@@ -1807,6 +1807,10 @@ class class_transindus_eco
             }
           }
 
+          { // run python script directly and get xcom-lan data without using mqtt
+            $this->get_studer_readings_over_xcomlan_without_mqtt();
+          }
+
           { // Get studer data using xcomlan. A CRON MQTT on localhost publisher and a WP CRON MQTT subscriber
             $studer_data_via_xcomlan = $this->get_studer_readings_over_xcomlan();
 
@@ -3885,6 +3889,27 @@ class class_transindus_eco
       }
     }
 
+
+    /**
+     * 
+     */
+    public function get_studer_readings_over_xcomlan_without_mqtt(): ? object
+    {
+      // load the script name from config. Not needed for anything right now.
+      $config = $this->config;
+
+      $command = escapeshellcmd( "python3 mystuder.py" );
+
+
+      $mystuder_readings_json_string = shell_exec( $command );
+
+      $xcomlan_studer_data_obj = json_decode( $mystuder_readings_json_string );
+
+      error_log("Below is the Studer data object obtained by running py script from WP plugin directly");
+      error_log( print_r( $xcomlan_studer_data_obj, true ) );
+
+      return $xcomlan_studer_data_obj;
+    }
 
 
 

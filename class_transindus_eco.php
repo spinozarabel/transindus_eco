@@ -4627,7 +4627,7 @@ class class_transindus_eco
         $excess_solar_kw        = $readings_obj->excess_solar_kw;
 
         // approximate solar current into battery
-        $solar_amps_at_49V      = $readings_obj->pv_current_now_total_xcomlan;
+        $solar_amps_at_49V      = $readings_obj->xcomlan_studer_data_obj->pv_current_now_total_xcomlan;
 
         // 
         $shelly_em_home_kw      =   $readings_obj->shelly_em_home_kw;

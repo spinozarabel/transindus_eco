@@ -3891,13 +3891,15 @@ class class_transindus_eco
       // load the script name from config. Not needed for anything right now.
       $config = $this->config;
 
+      $studer_xcomlan_script_path = $config['accounts'][0]["studer_xcomlan_script_path"];
+
       $xcomlan_studer_data_obj = new stdClass;
 
       // form the string containing the phthon3 command and the python script file including the full path
-      $script_file_path = "/usr/bin/python3 " . plugin_dir_path(__FILE__) . "mystuder.py";
+      // $script_file_path = "/usr/bin/python3 " . plugin_dir_path(__FILE__) . "mystuder.py";
 
       // escape the path
-      $command = escapeshellcmd( $script_file_path );
+      $command = escapeshellcmd( $studer_xcomlan_script_path );
 
       // perform the shell_exec using the command string containing the script file name. The expected output is a JSON
       $mystuder_readings_json_string = shell_exec( $command );

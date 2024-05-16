@@ -1696,7 +1696,6 @@ class class_transindus_eco
         { // --------------------- Shelly1PM ACIN SWITCH data after making a Shelly API call -------------------
           $shellyplus1pm_grid_switch_obj          = $this->get_shellyplus1pm_grid_switch_data_over_lan( $user_index );
           $shelly_readings_obj->shellyplus1pm_grid_switch_obj = $shellyplus1pm_grid_switch_obj;
-          error_log(print_r($shellyplus1pm_grid_switch_obj, true));
 
           $shellyplus1pm_grid_switch_state_string = $shellyplus1pm_grid_switch_obj->switch[0]->output_state_string;
           $this->verbose ? error_log("Shelly Grid Switch State: $shellyplus1pm_grid_switch_state_string"): false;

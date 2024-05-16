@@ -3753,7 +3753,7 @@ class class_transindus_eco
 
             if ( property_exists($flag_object, "studer_battery_charging_current" ) )
             {
-              $studer_battery_charging_current_from_mqtt_update = (float) $flag_object->average_battery_float_voltage;
+              $studer_battery_charging_current_from_mqtt_update = (float) $flag_object->studer_battery_charging_current;
               $studer_battery_charging_current_present_setting  = (float) get_user_meta($wp_user_ID, "studer_battery_charging_current", true);
 
               // compare the values and update if not the same provided update is meaningful

@@ -3735,6 +3735,36 @@ class class_transindus_eco
               }
             }
 
+            if ( property_exists($flag_object, "studer_charger_enabled") )
+            {
+              $studer_charger_enabled_from_mqtt_update = (bool) $flag_object->studer_charger_enabled;
+
+              $studer_charger_enabled_present_setting = (bool) get_user_meta($wp_user_ID, "studer_charger_enabled", true);
+
+              // compare the values and update if not the same
+              if ( $studer_charger_enabled_from_mqtt_update !== $studer_charger_enabled_present_setting )
+              {
+                update_user_meta($wp_user_ID, "studer_charger_enabled", $studer_charger_enabled_from_mqtt_update);
+                error_log(" Updated flag studer_charger_enabled From: $studer_charger_enabled_present_setting To $studer_charger_enabled_from_mqtt_update");
+              }
+            }
+
+            if ( property_exists($flag_object, "studer_battery_charging_current" ) )
+            {
+              $studer_battery_charging_current_from_mqtt_update = (float) $flag_object->average_battery_float_voltage;
+              $studer_battery_charging_current_present_setting  = (float) get_user_meta($wp_user_ID, "studer_battery_charging_current", true);
+
+              // compare the values and update if not the same provided update is meaningful
+              if (  $studer_battery_charging_current_from_mqtt_update != $studer_battery_charging_current_present_setting && 
+                    $studer_battery_charging_current_from_mqtt_update >= 0 &&
+                    $studer_battery_charging_current_from_mqtt_update <= 40     )
+              {
+                update_user_meta($wp_user_ID, "studer_battery_charging_current", $studer_battery_charging_current_from_mqtt_update);
+                error_log(" Updated flag studer_battery_charging_current From: $studer_battery_charging_current_present_setting To $studer_battery_charging_current_from_mqtt_update");
+              }
+            }
+
+
             if ( property_exists($flag_object, "average_battery_float_voltage" ) )
             {
               $average_battery_float_voltage_from_mqtt_update = (float) $flag_object->average_battery_float_voltage;

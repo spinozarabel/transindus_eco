@@ -3894,10 +3894,7 @@ class class_transindus_eco
       $studer_xcomlan_script_path = $config['accounts'][0]["studer_xcomlan_script_path"];
 
       $xcomlan_studer_data_obj = new stdClass;
-
-      // form the string containing the phthon3 command and the python script file including the full path
-      // $script_file_path = "/usr/bin/python3 " . plugin_dir_path(__FILE__) . "mystuder.py";
-
+      
       // escape the path
       $command = escapeshellcmd( $studer_xcomlan_script_path );
 

@@ -2388,6 +2388,8 @@ class class_transindus_eco
           $shelly_readings_obj->soc_capture_after_dark_happened = $soc_capture_after_dark_happened; // boolean value
           $shelly_readings_obj->shelly_bm_ok_bool       = $batt_soc_accumulation_obj->shelly_bm_ok_bool;
           $shelly_readings_obj->shelly_xcomlan_ok_bool  = $batt_soc_accumulation_obj->shelly_xcomlan_ok_bool;
+          $shelly_readings_obj->studer_charger_enabled = get_user_meta($wp_user_ID, 'studer_charger_enabled', true);
+          $shelly_readings_obj->studer_battery_charging_current = get_user_meta($wp_user_ID, 'studer_battery_charging_current', true);
         }
 
         // update transient with new data. Validity is 10m

@@ -1694,6 +1694,14 @@ class class_transindus_eco
         }
 
         { // --------------------- Shelly1PM ACIN SWITCH data after making a Shelly API call -------------------
+          $shellyplus1pm_grid_switch_obj          = $this->get_shellyplus1pm_grid_switch_data_over_lan( $user_index );
+
+          $shelly_readings_obj->shellyplus1pm_grid_switch_obj = $shellyplus1pm_grid_switch_obj;
+
+          $shellyplus1pm_grid_switch_state_string = $shellyplus1pm_grid_switch_obj->switch[0]->output_state_string;
+          
+          $this->verbose ? error_log("Shelly Grid Switch State: $shellyplus1pm_grid_switch_state_string"): false;
+
 
           $shelly_switch_acin_details_arr = $this->get_shelly_switch_acin_details_over_lan( $user_index );
 
@@ -3672,6 +3680,26 @@ class class_transindus_eco
     }
 
 
+     /**
+     * 
+     */
+    public function get_shellyplus1pm_grid_switch_data_over_lan(int $user_index): ? object
+    {
+      // get API and device ID from config based on user index
+      $config = $this->config;
+      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
+      $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_1pm'];
+
+      $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellyplus1pm' );
+
+      $shellyplus1pm_grid_switch_obj = $shelly_device->get_shelly_device_data();
+
+      return $shellyplus1pm_grid_switch_obj;
+    }
+
+
     /**
      * 
      */
@@ -3690,6 +3718,8 @@ class class_transindus_eco
 
       return $shellyplus1pm_water_heater_obj;
     }
+
+
 
     /**
      * 
@@ -3797,21 +3827,9 @@ class class_transindus_eco
               }
             }
                 
-            /*
-            if ( $flag_object->do_shelly === true ||  $flag_object->do_shelly === false )
-            {
-              $do_shelly_from_mqtt_update = (bool) $flag_object->do_shelly;
-
-              $do_shelly_present_setting = (bool) get_user_meta($wp_user_ID, "do_shelly", true);
-
-              // compare the values and update if not the same
-              if ( $do_shelly_from_mqtt_update !== $do_shelly_present_setting )
-              {
-                //update_user_meta($wp_user_ID, "do_shelly", $do_shelly_from_mqtt_update);
-                error_log(" Updated flag do_shelly From: $do_shelly_present_setting To $do_shelly_from_mqtt_update");
-              }
-            }
-            */  
+          
+            // do_shelly flag DOES NOT mirror the remote site
+             
             
             if ( ! empty( $flag_object->soc_percentage_lvds_setting ) && $flag_object->soc_percentage_lvds_setting >= 45 && $flag_object->soc_percentage_lvds_setting < 99 )
             {

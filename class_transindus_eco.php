@@ -6125,7 +6125,7 @@ class class_transindus_eco
                       '</span>';
 
       $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
-                          'Grid Status unchanged'   . ' ' . $grid_seconds_in_hms  .
+                          'Stdr Batt Chgng Amps:'   . ' ' . $$readings_obj->studer_battery_charging_current  . 'Enabled?: ' . $$readings_obj->studer_charger_enabled .
                       '</span>';               
   
       $format_object->status = $status_html;

@@ -3942,9 +3942,16 @@ class class_transindus_eco
 
 
     /**
-     * 
+     *  This method takes in an array of key value pairs and sends them to Studer over xcom-lan.
+     *  Typical use is to enablor disable the Studer CHarger or to change the value of the charging current from the Grid
+     *  This routine should be called when there is a change in the settings that need to be passed on to Studer
+     *  The settings array is converted to a JSON string and then passed in as argument to the python script.
+     *  The python script processes the decoded array to write array values to Studer via xcom-lan
+     *  @param int:$wp_user_ID is not used so can be removed in future
+     *  @param array:$settings_array contains key value pairs of parameters that need to be set in STuder using xcom-lan
+     *  
      */
-    public function set_studer_settings_over_xcomlan( int $wp_user_ID, array $settings_array )
+    public function set_studer_settings_over_xcomlan( int $wp_user_ID, array $settings_array ): void
     {
       // load the script name from config
       $config = $this->config;
@@ -3954,6 +3961,10 @@ class class_transindus_eco
       $args_as_json = json_encode($settings_array);
 
       $command = $studer_xcomlan_set_settings_script_path . " " . escapeshellarg($args_as_json);
+
+      error_log("Settings Array to be sent via xcom-lan");
+      error_log(print_r($settings_array, true));
+      error_log("Shell_exec command for Settings Array to be sent via xcom-lan : $command");
 
       $output_from_settings_py_script = shell_exec( $command );
 

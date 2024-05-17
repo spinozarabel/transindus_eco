@@ -34,4 +34,4 @@ with XcomLANTCP(port=4001) as xcom:
             if amps <= 40 and amps >= 0:
                 xcom.setValue(param.BATTERY_CHARGE_CURR, amps)
         else:
-            print("key value equal to:", key)
+            print("key value does not match any - is equal to:", key, studer_settings_array[key] ) 

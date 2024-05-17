@@ -3726,6 +3726,8 @@ class class_transindus_eco
     {
       $config = $this->config;
 
+      $studer_settings_array = [];
+
       // set the topic to update flags from remote to local
       $topic_flg_from_remote = $config['accounts'][$user_index]['topic_flag_from_remote'];
 
@@ -3776,6 +3778,9 @@ class class_transindus_eco
               {
                 update_user_meta($wp_user_ID, "studer_charger_enabled", $studer_charger_enabled_from_mqtt_update);
                 error_log(" Updated flag studer_charger_enabled From: $studer_charger_enabled_present_setting To $studer_charger_enabled_from_mqtt_update");
+
+                // add item to studer xcomlan set settings array
+                $studer_charger_enabled_from_mqtt_update ? $studer_settings_array["CHARGER_ALLOWED"] = 1: $studer_settings_array["CHARGER_ALLOWED"] = 0;
               }
             }
 
@@ -3791,6 +3796,9 @@ class class_transindus_eco
               {
                 update_user_meta($wp_user_ID, "studer_battery_charging_current", $studer_battery_charging_current_from_mqtt_update);
                 error_log(" Updated flag studer_battery_charging_current From: $studer_battery_charging_current_present_setting To $studer_battery_charging_current_from_mqtt_update");
+
+                // add item to studer xcomlan set settings array
+                $studer_settings_array["BATTERY_CHARGE_CURR"] = $studer_battery_charging_current_from_mqtt_update;
               }
             }
 
@@ -3841,7 +3849,9 @@ class class_transindus_eco
                 error_log(" Updated soc_percentage_lvds_setting From: $soc_percentage_lvds_setting_present_setting To $soc_percentage_lvds_setting_from_mqtt_update");
               }
             }
-              
+
+            // Write settings if any updated, to xcom-lan if settings array is not empty
+            if ( ! empty( $studer_settings_array ) ) $this->set_studer_settings_over_xcomlan( $wp_user_ID, $studer_settings_array ); 
           }
           else
           {
@@ -3930,6 +3940,25 @@ class class_transindus_eco
       }
     }
 
+
+    /**
+     * 
+     */
+    public function set_studer_settings_over_xcomlan( int $wp_user_ID, array $settings_array )
+    {
+      // load the script name from config
+      $config = $this->config;
+
+      $studer_xcomlan_set_settings_script_path = $config['accounts'][0]["studer_xcomlan_set_settings_script_path"];
+
+      $args_as_json = json_encode($settings_array);
+
+      $command = $studer_xcomlan_set_settings_script_path . " " . escapeshellarg($args_as_json);
+
+      $output_from_settings_py_script = shell_exec( $command );
+
+      error_log("Any output from Studer Settings Python Script: $output_from_settings_py_script");
+    }
 
     /**
      * 

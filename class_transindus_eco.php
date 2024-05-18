@@ -5645,7 +5645,8 @@ class class_transindus_eco
 
       $status = "";
 
-      $shellyplus1pm_grid_switch_obj = $readings_obj->shellyplus1pm_grid_switch_obj;
+      $shellyplus1pm_grid_switch_obj  = $readings_obj->shellyplus1pm_grid_switch_obj;
+      $shellyem_readings_obj          = $readings_obj->shellyem_readings_obj;
 
       $shelly_water_heater_kw       = 0;
       $shelly_water_heater_status_bool   = null;
@@ -5677,10 +5678,7 @@ class class_transindus_eco
       $solar_amps_at_49V      = $readings_obj->xcomlan_studer_data_obj->pv_current_now_total_xcomlan;
 
       // 
-      $shelly_em_home_kw      =   $readings_obj->shelly_em_home_kw;
-
-      // changed to avg July 15 2023 was battery_voltage_vdc before that
-      // $battery_voltage_vdc    =   round( (float) $readings_obj->battery_voltage_avg, 1);
+      $shelly_em_home_kw      =   $shellyem_readings_obj->emeters[0]->power_kw;
 
       // Positive is charging and negative is discharging We use this as the readings have faster update rate
       $battery_amps           =   $readings_obj->batt_amps;
@@ -5689,9 +5687,10 @@ class class_transindus_eco
 
       $battery_avg_voltage    =   $readings_obj->xcomlan_studer_data_obj->batt_voltage_xcomlan_avg;
 
+      // $home_grid_kw_power  is as measured by ShellyPro3PM at the busbars just after the energy meter
       $home_grid_kw_power     =   $readings_obj->shellypro3em_3p_grid_obj->home_grid_kw_power;
 
-      // $home_grid_voltage      =   $readings_obj->home_grid_voltage;
+      // $home_grid_voltage  is as measured by ShellyPro3PM at the busbars just after the energy meter
       $home_grid_voltage      =   $readings_obj->shellypro3em_3p_grid_obj->home_grid_voltage;
 
       $seconds_elapsed_grid_status = (int) $readings_obj->seconds_elapsed_grid_status;
@@ -5699,7 +5698,7 @@ class class_transindus_eco
 
       $shellyplus1pm_grid_switch_output_status_string = (string) $shellyplus1pm_grid_switch_obj->switch[0]->output_state_string;
 
-      // This is the AC voltage of switch:0 of Shelly 4PM
+      // This is the AC voltage as measured by the Grid Switch to Studer AC IN
       $shellyplus1pm_grid_switch_voltage = (int) $shellyplus1pm_grid_switch_obj->switch[0]->voltage;
 
       $do_shelly         = (bool) $readings_obj->do_shelly;

@@ -364,6 +364,22 @@ class class_transindus_eco
       }   
     }
 
+
+    public function turn_on_off_shellyplus1pm_grid_switch_over_lan( int $user_index, string $desired_state ) :  bool
+    {
+      $config = $this->config;
+
+      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
+      $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_1pm'];
+
+      $shellyplus1pm_grid_switch =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellyplus1pm' );
+
+      $operation_result = $shellyplus1pm_grid_switch->turn_on_off_shelly_x_plus_pm_switch_over_lan( $desired_state, 0 );
+
+      return $operation_result;
+
     /**
      *  Measure current energy counter of Shelly EM measuring load consumption in WH
      *  Obtain the energy counter reading stored just after midnight

@@ -5647,6 +5647,7 @@ class class_transindus_eco
 
       $shellyplus1pm_grid_switch_obj  = $readings_obj->shellyplus1pm_grid_switch_obj;
       $shellyem_readings_obj          = $readings_obj->shellyem_readings_obj;
+      $shellyplus1pm_water_heater_obj = $readings_obj->shellyplus1pm_water_heater_obj;
 
       $shelly_water_heater_kw       = 0;
       $shelly_water_heater_status_bool   = null;
@@ -5654,11 +5655,12 @@ class class_transindus_eco
       // extract and process Shelly 1PM switch water heater data
       if ( ! empty($readings_obj->shelly_water_heater_data) )
       {
-        $shellyplus1pm_water_heater_obj    = $readings_obj->shellyplus1pm_water_heater_obj;     // data object
+        
+
         $shelly_water_heater_kw            = (float)  $shellyplus1pm_water_heater_obj->switch[0]->power_kw;
-        $shelly_water_heater_status_bool   = (bool)   $shellyplus1pm_water_heater_obj->switch[0]->output_state_bool;  // boolean variable
+        $shelly_water_heater_status_bool   = (bool)   $shellyplus1pm_water_heater_obj->switch[0]->output_state_bool;    // boolean variable
         $shelly_water_heater_status_string = (string) $shellyplus1pm_water_heater_obj->switch[0]->output_state_string;  // boolean variable
-        $shelly_water_heater_current       = (float)  $shellyplus1pm_water_heater_obj->switch[0]->current; // in Amps
+        $shelly_water_heater_current       = (float)  $shellyplus1pm_water_heater_obj->switch[0]->current;              // in Amps
       }
       
 

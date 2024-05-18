@@ -4545,7 +4545,8 @@ class class_transindus_eco
 
         $status = "";
 
-        $shellyplus1pm_grid_switch_obj = $readings_obj->shellyplus1pm_grid_switch_obj;
+        $shellyplus1pm_grid_switch_obj  = $readings_obj->shellyplus1pm_grid_switch_obj;
+        $shellem_readings_obj           = $readings_obj->shellem_readings_obj;
 
         $shelly_water_heater_kw       = 0;
         $shelly_water_heater_status   = null;
@@ -4577,7 +4578,7 @@ class class_transindus_eco
         $solar_amps_at_49V      = $readings_obj->xcomlan_studer_data_obj->pv_current_now_total_xcomlan;
 
         // 
-        $shelly_em_home_kw      =   $readings_obj->shelly_em_home_kw;
+        $shelly_em_home_kw      =   $shellem_readings_obj->emeters[0]->power_kw;
 
         // changed to avg July 15 2023 was battery_voltage_vdc before that
         // $battery_voltage_vdc    =   round( (float) $readings_obj->battery_voltage_avg, 1);

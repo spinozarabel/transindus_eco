@@ -605,12 +605,12 @@ class shelly_device
         //-------------------- Verify that the desired switch action took place----------------->
         $shelly_device_data = $this->get_shelly_device_data();
 
-        $final_switch_state_string = $shelly_device_data->$channel_holder_stringvar_string;
+        $final_switch_state_string = $shelly_device_data->switch[$channel]->output_state_string;
 
         if ( $final_switch_state_string !== "OFFLINE" )
         {
           // Get shelly switch state now
-          $final_switch_state_bool = (bool) $shelly_device_data->$channel_holder_boolvar_string;
+          $final_switch_state_bool = (bool) $shelly_device_data->switch[$channel]->output_state_bool;
 
           if (  ( $final_switch_state_bool === true  &&  ( strtolower( $desired_switch_state) === "true"  ) ) || 
                 ( $final_switch_state_bool === false &&  ( strtolower( $desired_switch_state) === "false" ) )

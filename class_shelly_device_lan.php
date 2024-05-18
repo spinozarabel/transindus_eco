@@ -553,20 +553,16 @@ class shelly_device
             $desired_switch_state = "false";
         }
 
-        // form the variable name holders as below that themselves depend on variable $channel
-        $channel_holder_boolvar_string    = "switch_" . strval( $channel ) . "_output_state_bool";    // switch_0_output_state_bool
-        $channel_holder_stringvar_string  = "switch_" . strval( $channel ) . "_output_state_string";  // switch_0_output_state_string
-
         //-------------------------------------Get the cutrrent state of switch ----------->
         $shelly_device_data = $this->get_shelly_device_data();
 
         // Get the present switch state in a string. Possible values are: "ON"/"OFF"/"OFFLINE"
-        $present_switch_state_string = (string) $shelly_device_data->$channel_holder_stringvar_string;
+        $present_switch_state_string = (string) $shelly_device_data->switch[$channel]->output_state_string;
 
         if ( $present_switch_state_string !== "OFFLINE" )   // we did get a valid response
         {
           // this is the present boolean state of the switch
-          $initial_switch_state_bool = (bool) $shelly_device_data->$channel_holder_boolvar_string ;
+          $initial_switch_state_bool = (bool) $shelly_device_data->switch[$channel]->output_state_bool;
 
           // if the existing switch state is same as desired, no need to do anything, we just exit with message
           if (  ( $initial_switch_state_bool === true  &&   strtolower( $desired_switch_state) === "true"  ) || 

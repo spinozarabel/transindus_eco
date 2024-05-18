@@ -4,12 +4,12 @@ pods.export
 *config.php
 # ignore all files that have config.php anywhere in between
 *config.php*
-junk.php
 temp.php
+localonly_working_file.php
 vendor/
 check_avasarala_in*
-mystuder.py
 xcom_proto*
 class_my_shelly_over_lan_test.php
 shelly_over_lan_test.php
 locallinux-github-workspace*
+test*

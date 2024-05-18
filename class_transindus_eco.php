@@ -1766,7 +1766,7 @@ class class_transindus_eco
             } 
           }
 
-          { // water heater data acquisition
+          { // ...................... water heater data acquisition
             $shellyplus1pm_water_heater_obj = $this->get_shellyplus1pm_water_heater_data_over_lan( $user_index );
 
             $shelly_readings_obj->shellyplus1pm_water_heater_obj = $shellyplus1pm_water_heater_obj;
@@ -1819,65 +1819,6 @@ class class_transindus_eco
             $shelly_readings_obj->xcomlan_studer_data_obj = $xcomlan_studer_data_obj;
 
             $shelly_readings_obj->psolar_kw = $psolar_kw;
-          }
-
-          { /* legacy code for xcomlan studer data using CRON MQTT
-            // Get studer data using xcomlan. A CRON MQTT on localhost publisher and a WP CRON MQTT subscriber
-            $xcomlan_studer_data_obj = $this->get_studer_readings_over_xcomlan();
-
-            if ( ! empty( $studer_data_via_xcomlan ) && $studer_data_via_xcomlan->battery_voltage_xtender > 45.0 )
-            { // we seem to have valid data
-              $raw_batt_voltage_xcomlan = $studer_data_via_xcomlan->battery_voltage_xtender;
-
-              $east_panel_current_xcomlan       = round( $studer_data_via_xcomlan->pv_current_now_1, 1 );
-
-              $west_panel_current_xcomlan       = round( $studer_data_via_xcomlan->pv_current_now_2, 1 );
-
-              $pv_current_now_total_xcomlan     = round( $studer_data_via_xcomlan->pv_current_now_total, 1 );
-
-              $inverter_current_xcomlan         = round( $studer_data_via_xcomlan->inverter_current, 1);
-
-              $xcomlan_ts = (int) $studer_data_via_xcomlan->timestamp_xcomlan_call;
-
-              // battery current as measured by xcom-lan is got by adding + PV DC current amps and - inverter DC current amps
-              // 
-              $batt_current_xcomlan = ( $pv_current_now_total_xcomlan + $inverter_current_xcomlan );
-
-              if ( $batt_current_xcomlan <= 0 )
-              {
-                $batt_current_xcomlan = round( $batt_current_xcomlan * 0.960 , 1);
-              }
-
-              $this->verbose ? error_log("Studer XCOM-LAN BM Batt_AMPS: $batt_current_xcomlan"): false;
-
-              // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging
-              // $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);
-
-              // if battery is charging voltage will decrease and if discharging voltage will increase due to IR compensation
-              $ir_drop_compensated_battery_voltage_xcomlan = $raw_batt_voltage_xcomlan - 0.030 * $batt_current_xcomlan;
-
-              if ( $ir_drop_compensated_battery_voltage_xcomlan > 48 )
-              { // calculate running aerage only if current measurement seems reasonable
-                // calculate the running average over the last 5 readings including this one. Return is rounded to 2 decimals
-                $batt_voltage_xcomlan_avg = $this->get_battery_voltage_avg( $ir_drop_compensated_battery_voltage_xcomlan );
-              }
-              else
-              {
-                $batt_voltage_xcomlan_avg = 49;   // this is a safety catch in case the xcomlan voltage measurement fails
-              }
-
-              $psolar_kw = round( $pv_current_now_total_xcomlan * $ir_drop_compensated_battery_voltage_xcomlan * 0.001, 2);
-
-              // pack these as properties onto the shelly readings object
-              $shelly_readings_obj->batt_voltage_xcomlan_avg          = $batt_voltage_xcomlan_avg;
-              $shelly_readings_obj->east_panel_current_xcomlan        = $east_panel_current_xcomlan;
-              $shelly_readings_obj->west_panel_current_xcomlan        = $west_panel_current_xcomlan;
-              $shelly_readings_obj->pv_current_now_total_xcomlan      = $pv_current_now_total_xcomlan;
-              $shelly_readings_obj->inverter_current_xcomlan          = $inverter_current_xcomlan;
-              $shelly_readings_obj->batt_current_xcomlan              = $batt_current_xcomlan;
-              $shelly_readings_obj->xcomlan_ts                        = $xcomlan_ts;
-            }
-            */
           }
         }
 

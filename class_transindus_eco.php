@@ -5693,7 +5693,7 @@ class class_transindus_eco
       // $home_grid_voltage  is as measured by ShellyPro3PM at the busbars just after the energy meter
       $home_grid_voltage      =   $readings_obj->shellypro3em_3p_grid_obj->home_grid_voltage;
 
-      $seconds_elapsed_grid_status = (int) $readings_obj->seconds_elapsed_grid_status;
+      $seconds_elapsed_grid_status = (int) $readings_obj->shellypro3em_3p_grid_obj->seconds_elapsed_grid_status;
       $grid_seconds_in_hms = $this->format_seconds_to_hms_format ($seconds_elapsed_grid_status );
 
       $shellyplus1pm_grid_switch_output_status_string = (string) $shellyplus1pm_grid_switch_obj->switch[0]->output_state_string;
@@ -5970,7 +5970,7 @@ class class_transindus_eco
       
 
       // Shelly 4PM load breakout data
-      $power_total_to_home_kw = $readings_obj->shelly_em_home_kw; // round( $power_total_to_home * 0.001, 2);
+      $power_total_to_home_kw = $shellyem_readings_obj->emeters[0]->power_kw; // round( $power_total_to_home * 0.001, 2);
 
       $power_to_home_kw = $readings_obj->shellypro4pm_load_obj->switch[2]->power_kw + 
                           $readings_obj->shellypro4pm_load_obj->switch[3]->power_kw;

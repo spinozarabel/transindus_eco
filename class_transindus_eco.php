@@ -5653,7 +5653,7 @@ class class_transindus_eco
       $shelly_water_heater_status_bool   = null;
 
       // extract and process Shelly 1PM switch water heater data
-      if ( ! empty($readings_obj->shelly_water_heater_data) )
+      if ( ! empty( $shellyplus1pm_water_heater_obj ) )
       {
         
 

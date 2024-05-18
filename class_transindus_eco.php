@@ -5654,11 +5654,11 @@ class class_transindus_eco
       // extract and process Shelly 1PM switch water heater data
       if ( ! empty($readings_obj->shelly_water_heater_data) )
       {
-        $shellyplus1pm_water_heater_obj          = $readings_obj->shellyplus1pm_water_heater_obj;     // data object
-        $shelly_water_heater_kw           = $shellyplus1pm_water_heater_obj->switch[0]->power_kw;
-        $shelly_water_heater_status_bool  = $shellyplus1pm_water_heater_obj->switch[0]->output_state_bool;  // boolean variable
+        $shellyplus1pm_water_heater_obj    = $readings_obj->shellyplus1pm_water_heater_obj;     // data object
+        $shelly_water_heater_kw            = $shellyplus1pm_water_heater_obj->switch[0]->power_kw;
+        $shelly_water_heater_status_bool   = $shellyplus1pm_water_heater_obj->switch[0]->output_state_bool;  // boolean variable
         $shelly_water_heater_status_string = $shellyplus1pm_water_heater_obj->switch[0]->output_state_string;  // boolean variable
-        $shelly_water_heater_current      = $shellyplus1pm_water_heater_obj->switch[0]->current; // in Amps
+        $shelly_water_heater_current       = $shellyplus1pm_water_heater_obj->switch[0]->current; // in Amps
       }
       
 
@@ -5970,7 +5970,6 @@ class class_transindus_eco
       
 
       // Shelly 4PM load breakout data
-      $power_total_to_home    = $readings_obj->power_total_to_home;
       $power_total_to_home_kw = $readings_obj->shelly_em_home_kw; // round( $power_total_to_home * 0.001, 2);
 
       $power_to_home_kw = $readings_obj->shellypro4pm_load_obj->switch[2]->power_kw + 

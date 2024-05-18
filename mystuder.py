@@ -22,7 +22,7 @@ with XcomLANTCP(port=4001) as xcom:
     inverter_current        = xcom.getValue(param.DC_CURRENT_INVERTER)
     grid_kwh_today          = xcom.getValue(param.AC_ENERGY_IN_CURR_DAY)
 
-    xcom.setValue(param.PARAMS_SAVED_IN_FLASH, 0) # disable writing to flash
+    # xcom.setValue(param.PARAMS_SAVED_IN_FLASH, 0) # disable writing to flash
     # xcom.setValue(param.CHARGER_ALLOWED, 0)
     # xcom.setValue(param.BATTERY_CHARGE_CURR, 5)   # writes into RAM the float value for the Battery charge current supplied from GRID when GRID connected
 

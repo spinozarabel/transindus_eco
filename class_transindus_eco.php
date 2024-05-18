@@ -379,6 +379,7 @@ class class_transindus_eco
       $operation_result = $shellyplus1pm_grid_switch->turn_on_off_shelly_x_plus_pm_switch_over_lan( $desired_state, 0 );
 
       return $operation_result;
+    }
 
     /**
      *  Measure current energy counter of Shelly EM measuring load consumption in WH

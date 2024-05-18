@@ -5645,7 +5645,7 @@ class class_transindus_eco
 
       $status = "";
 
-      $shelly_switch_acin_details_arr = (array) $readings_obj->shelly_switch_acin_details_arr;
+      $shellyplus1pm_grid_switch_obj = $readings_obj->shellyplus1pm_grid_switch_obj;
 
       $shelly_water_heater_kw       = 0;
       $shelly_water_heater_status_bool   = null;
@@ -5697,12 +5697,12 @@ class class_transindus_eco
       $seconds_elapsed_grid_status = (int) $readings_obj->seconds_elapsed_grid_status;
       $grid_seconds_in_hms = $this->format_seconds_to_hms_format ($seconds_elapsed_grid_status );
 
-      $shelly1pm_acin_switch_status = (string) $shelly_switch_acin_details_arr['shelly1pm_acin_switch_status'];
+      $shellyplus1pm_grid_switch_output_status_string = (string) $shellyplus1pm_grid_switch_obj->switch[0]->output_state_string;
 
       // This is the AC voltage of switch:0 of Shelly 4PM
-      $shelly1pm_acin_voltage = $shelly_switch_acin_details_arr['shelly1pm_acin_voltage'];
+      $shellyplus1pm_grid_switch_voltage = (int) $shellyplus1pm_grid_switch_obj->switch[0]->voltage;
 
-      $control_shelly         = (bool) $shelly_switch_acin_details_arr['control_shelly'];
+      $do_shelly         = (bool) $readings_obj->do_shelly;
 
       $soc_percentage_now     = round($readings_obj->soc_percentage_now, 1);
 
@@ -5718,7 +5718,7 @@ class class_transindus_eco
 
       switch (true)
       {   // choose grid icon info based on switch status
-          case ( $shelly1pm_acin_switch_status === "OFFLINE" ): // No Grid OR switch is OFFLINE
+          case ( $shellyplus1pm_grid_switch_output_status_string === "OFFLINE" ): // No Grid OR switch is OFFLINE
               $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Yellow;"></i>';
 
               $grid_arrow_icon = ''; //'<i class="fa-solid fa-3x fa-circle-xmark"></i>';
@@ -5728,7 +5728,7 @@ class class_transindus_eco
               break;
 
 
-          case ( $shelly1pm_acin_switch_status === "ON" ): // Switch is ON
+          case ( $shellyplus1pm_grid_switch_output_status_string === "ON" ): // Switch is ON
               $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Blue;"></i>';
 
               $grid_arrow_icon  = '<i class="fa-solid' . $grid_arrow_size .  'fa-arrow-right-long fa-rotate-by"
@@ -5739,7 +5739,7 @@ class class_transindus_eco
               break;
 
 
-          case ( $shelly1pm_acin_switch_status === "OFF" ):   // Switch is online and OFF
+          case ( $shellyplus1pm_grid_switch_output_status_string === "OFF" ):   // Switch is online and OFF
               $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Red;"></i>';
 
               $grid_arrow_icon = '';  // '<i class="fa-solid fa-1x fa-circle-xmark"></i>';
@@ -5871,7 +5871,7 @@ class class_transindus_eco
       $studer_icon = '<i style="display:block; text-align: center;" class="clickableIcon fa-solid fa-3x fa-cog" style="color: Green;"></i>';
       $format_object->studer_icon = $studer_icon;
 
-      if ( $control_shelly === true )
+      if ( $do_shelly === true )
       {
           // Local computer over LAN will be controlling the ACIN switch
           // a green cloud icon signifies that local site is in control

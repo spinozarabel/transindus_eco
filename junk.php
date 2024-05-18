@@ -1700,7 +1700,7 @@ class class_transindus_eco
           $shellyplus1pm_grid_switch_state_string = $shellyplus1pm_grid_switch_obj->switch[0]->output_state_string;
           $this->verbose ? error_log("Shelly Grid Switch State: $shellyplus1pm_grid_switch_state_string"): false;
 
-          $control_shelly = $do_shelly;
+          $control_shelly = $do_shelly; 
 
 
 

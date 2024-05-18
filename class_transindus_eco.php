@@ -271,100 +271,9 @@ class class_transindus_eco
     }
 
 
-
     /**
-     *  @param int:$user_index is the user of ineterst in the config array
-     *  @return array:$return_array containing values from API call on Shelly ACIN Transfer switch
-     * 
-     *  Checks the validity of Shelly switch configuration required for program
-     *  Makes an API call on the Shelly ACIN switch and return the ststus such as State, Voltage, etc.
+     *  
      */
-    public function get_shelly_switch_acin_details_over_lan( int $user_index) : array
-    {
-      $return_array = [];
-
-      $config     = $this->config;
-
-      // get WP user object and so get its ID
-      $wp_user_ID = $this->get_wp_user_from_user_index( $user_index )->ID;
-
-      // ensure that the data below is current before coming here
-      $all_usermeta = $this->all_usermeta ?? $this->get_all_usermeta( $wp_user_ID );
-
-      $valid_shelly_config  = ! empty( $config['accounts'][$user_index]['ip_shelly_acin_1pm'] );
-
-      $control_shelly = $valid_shelly_config && $all_usermeta["do_shelly"];
-    
-     
-
-      // get the current ACIN Shelly Switch Status. This returns null if not a valid response or device offline
-
-      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
-      $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_1pm'];
-
-      // Shelly Pro 1PM is a Gen2 device and we only have 1 channel=0
-      $shelly_api    =  new shelly_cloud_api( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'gen2', 0 );
-
-      // this is curl_response.
-      $shelly_api_device_response = $shelly_api->get_shelly_device_status_over_lan();
-
-      if ( is_null($shelly_api_device_response) ) 
-      { // switch status is unknown
-
-          $shelly_api_device_status_ON = null;  // other possible values are true/false
-
-          $shelly_switch_status             = "OFFLINE";  // other possible values are "ON" / "OFF"
-          $shelly_api_device_status_voltage = "NA";
-
-          $return_array['shelly1pm_acin_switch_config']   = $valid_shelly_config;
-          $return_array['control_shelly']                 = $control_shelly;
-          $return_array['shelly1pm_acin_switch_status']   = $shelly_switch_status;
-          $return_array['shelly1pm_acin_voltage']         = $shelly_api_device_status_voltage;
-          $return_array['shelly1pm_acin_current']         = 'NA';
-          $return_array['shelly1pm_acin_power_kw']        = 'NA';
-          $return_array['shelly1pm_acin_minute_ts']       = 'NA';
-
-          $this->shelly_switch_acin_details = $return_array;
-
-          return $return_array;
-      }
-      else 
-      {  // Switch is ONLINE - Get its status and Voltage
-          
-          $shelly_api_device_status_ON        = $shelly_api_device_response->{'switch:0'}->output;
-          $shelly_api_device_status_voltage   = $shelly_api_device_response->{'switch:0'}->voltage;
-
-          // $shelly_api_device_status_current   = $shelly_api_device_response->{'switch:0'}->current;
-          $shelly_api_device_status_minute_ts = $shelly_api_device_response->{'switch:0'}->aenergy->minute_ts;
-
-          $shelly_api_device_status_power_kw  = round( $shelly_api_device_response->{'switch:0'}->apower * 0.001, 3);
-
-          if ($shelly_api_device_status_ON)   // NULL case already captured above here it can only be true/false
-          {
-              $shelly_switch_status = "ON";
-          }
-          else
-          {
-              $shelly_switch_status = "OFF";
-          }
-
-          $return_array['shelly1pm_acin_switch_config']   = $valid_shelly_config;
-          $return_array['control_shelly']                 = $control_shelly;
-          $return_array['shelly1pm_acin_switch_status']   = $shelly_switch_status;
-          $return_array['shelly1pm_acin_voltage']         = $shelly_api_device_status_voltage;
-          // $return_array['shelly1pm_acin_current']         = $shelly_api_device_status_current;
-          $return_array['shelly1pm_acin_power_kw']        = $shelly_api_device_status_power_kw;
-          $return_array['shelly1pm_acin_minute_ts']       = $shelly_api_device_status_minute_ts;
-
-          $this->shelly_switch_acin_details = $return_array;
-
-          return $return_array;
-      }   
-    }
-
-
     public function turn_on_off_shellyplus1pm_grid_switch_over_lan( int $user_index, string $desired_state ) :  bool
     {
       $config = $this->config;
@@ -380,6 +289,49 @@ class class_transindus_eco
 
       return $operation_result;
     }
+
+
+    /**
+     * 
+     */
+    public function get_shellyem_readings_over_lan( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
+    {
+      // get API and device ID from config based on user index
+      $config = $this->config;
+
+      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
+      $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_em'];
+
+      $shelly_device =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellyem' );
+
+      $shellyem_data_obj = $shelly_device->get_shelly_device_data();
+
+      // check to make sure that it exists. If null API call was fruitless
+      if ( $shellyem_data_obj->output_state_string === "OFFLINE" )
+      {
+        $this->verbose ? error_log( "LogApi: Shelly EM Load Energy API call failed - See below for response" ): false;
+        return null;
+      }
+
+      // Shelly EM API call was successfull and we have useful data. Round to 0 and convert to integer to get WattHours
+      $shelly_em_home_wh = (int) $shellyem_data_obj->emeters[0]->total;
+
+      // get the energy counter value set at midnight. Assumes that this is an integer
+      $shelly_em_home_energy_counter_at_midnight = (int) ( get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', true) );
+
+      // subtract the 2 integer counter readings to get the accumulated WH since midnight
+      $shelly_em_home_wh_since_midnight = $shelly_em_home_wh - $shelly_em_home_energy_counter_at_midnight;
+        
+      $shellyem_data_obj->wh_since_midnight      = $shelly_em_home_wh_since_midnight;
+      $shellyem_data_obj->wh_counter_at_midnight = $shelly_em_home_energy_counter_at_midnight;
+
+      update_user_meta( $wp_user_ID, 'shelly_em_home_wh_since_midnight', $shelly_em_home_wh_since_midnight);
+
+      return $shellyem_data_obj;
+    }
+
 
     /**
      *  Measure current energy counter of Shelly EM measuring load consumption in WH
@@ -1776,34 +1728,18 @@ class class_transindus_eco
 
           { // ...................... water heater data acquisition
             $shellyplus1pm_water_heater_obj = $this->get_shellyplus1pm_water_heater_data_over_lan( $user_index );
-
             $shelly_readings_obj->shellyplus1pm_water_heater_obj = $shellyplus1pm_water_heater_obj;
           }
 
-          { // make an API call on the Shelly EM device and calculate energy consumed by Home since midnight
-            $shelly_em_readings_object = $this->get_shellyem_accumulated_load_wh_since_midnight_over_lan( $user_index, $wp_user_name, $wp_user_ID );
+          { // ....................... Shelly EM device that captures total energy and power delivered to Home at Panel
+            $shellyem_readings_obj = $this->get_shellyem_readings_over_lan( $user_index, $wp_user_name, $wp_user_ID );
 
-            if ( $shelly_em_readings_object )
-            {   // there is a valid response from the Shelly EM home energy WH meter
-              // current home energy WH counter reading
-              $shelly_em_home_kwh_since_midnight = round( $shelly_em_readings_object->shelly_em_home_wh_since_midnight * 0.001, 3 );
+            if ( $shellyem_readings_obj )   
+            { // if API had failed a null would have been returned
+              $shelly_readings_obj->shellyem_readings_obj = $shellyem_readings_obj;
 
-              $shelly_em_home_wh = $shelly_em_readings_object->shelly_em_home_wh;
-              $shelly_readings_obj->shelly_em_home_wh = $shelly_em_home_wh;
-
-              // current home power in KW supplied to home
-              $shelly_em_home_kw = $shelly_em_readings_object->shelly_em_home_kw;
-              $shelly_readings_obj->shelly_em_home_kw = $shelly_em_home_kw;
-              
-              // present AC RMS phase voltage at panel, after Studer output
-              $shelly_em_home_voltage = $shelly_em_readings_object->shelly_em_home_voltage;
-              $shelly_readings_obj->shelly_em_home_voltage = $shelly_em_home_voltage;
-
-              // Energy consumed in WH by home since midnight
-              $shelly_readings_obj->shelly_em_home_wh_since_midnight = $shelly_em_readings_object->shelly_em_home_wh_since_midnight;
-
-              // energy consumed in KWH by home since midnight as measured by Shelly EM 
-              $shelly_readings_obj->shelly_em_home_kwh_since_midnight = $shelly_em_home_kwh_since_midnight;
+              $shelly_em_home_kwh_since_midnight = round( $shellyem_readings_obj->wh_since_midnight * 0.001, 3 );
+              $shelly_em_home_kw = (float) $shellyem_readings_obj->emeters[0]->power_kw;
 
               $this->verbose ? error_log("Shelly EM Power to Home KW:  $shelly_em_home_kw"): false;
             }
@@ -1914,7 +1850,7 @@ class class_transindus_eco
           // check if capture happened. now-event time < 12h since event can happen at 7PM and last till 6:30AM
           $soc_capture_after_dark_happened = $this->check_if_soc_after_dark_happened($user_index, $wp_user_name, $wp_user_ID);
 
-          if (  $soc_capture_after_dark_happened === false  && $shelly_em_home_wh && $time_window_for_soc_dark_capture_open )
+          if (  $soc_capture_after_dark_happened === false  && $shelly_readings_obj->emeters[0]->total && $time_window_for_soc_dark_capture_open )
           { // event not happened yet so make it happen with valid value for the home energy EM counter reading
 
             // 1st preference is given to SOC value calculated by xcom-LAN method. So let's check its value
@@ -1936,7 +1872,7 @@ class class_transindus_eco
                                                     $wp_user_name, 
                                                     $wp_user_ID, 
                                                     $soc_used_for_dark_capture, 
-                                                    $shelly_em_home_wh,
+                                                    $shelly_readings_obj->emeters[0]->total,
                                                     $time_window_for_soc_dark_capture_open );
           }
 
@@ -1948,7 +1884,7 @@ class class_transindus_eco
             { // Grid is supplying Load and since Solar is 0, battery current is 0 so no change in battery SOC
               
               // update the after dark energy counter to latest value
-              update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_em_home_wh);
+              update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_readings_obj->emeters[0]->total);
 
               // SOC is unchanging due to Grid ON however set the variables using the user meta since they are undefined.
               $soc_percentage_now_using_dark_shelly = (float) get_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  true);
@@ -1963,7 +1899,7 @@ class class_transindus_eco
               $shelly_energy_counter_after_dark = (float) get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark',   true);
 
               // get the difference in energy consumed since last reading
-              $home_consumption_wh_after_dark_using_shellyem = $shelly_em_home_wh - $shelly_energy_counter_after_dark;
+              $home_consumption_wh_after_dark_using_shellyem = $shelly_readings_obj->emeters[0]->total - $shelly_energy_counter_after_dark;
 
               // convert to KW and round to 3 decimal places
               $home_consumption_kwh_after_dark_using_shellyem = round( $home_consumption_wh_after_dark_using_shellyem * 0.001, 3);
@@ -1993,7 +1929,7 @@ class class_transindus_eco
             Then write all of this daily data into a custom post for the day that just ended
           */
           // get the difference in counter redings to get home energy WH over last 24h before counter resets at midnight
-          $wh_energy_consumed_by_home_today  = $shelly_em_home_wh - (float) get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', true );
+          $wh_energy_consumed_by_home_today  = $shelly_readings_obj->wh_since_midnight;
           $kwh_energy_consumed_by_home_today = round( 0.001 * $wh_energy_consumed_by_home_today, 2) ?? 0;
 
           $wh_energy_from_grid_last_24h   = $shellypro3em_3p_grid_obj->home_grid_wh_counter_now - (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', true );
@@ -2064,7 +2000,7 @@ class class_transindus_eco
 
           // Then we reset values for the new day
           // reset Shelly EM Home WH counter to present reading in WH. This is only done once in 24h, at midnight
-          update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', $shelly_em_home_wh );
+          update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', $shelly_readings_obj->emeters[0]->total );
 
           // reset Shelly 3EM Grid Energy counter to present reading. This is only done once in 24h, at midnight
           $update_operation = 
@@ -2084,7 +2020,7 @@ class class_transindus_eco
           // reset battery accumulated using xcomlan measurements
           update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 0);
 
-          error_log("Cal-Midnight - shelly_em_home_energy_counter_at_midnight: $shelly_em_home_wh");
+          error_log("Cal-Midnight - shelly_em_home_energy_counter_at_midnight: $shelly_readings_obj->emeters[0]->total");
           error_log("Cal-Midnight - grid_wh_counter_at_midnight: $shellypro3em_3p_grid_obj->home_grid_wh_counter_now");
           error_log("Cal-Midnight - soc_percentage_at_midnight: $soc_percentage_now_calculated_using_shelly_bm");
           error_log("Cal-Midnight - battery_soc_percentage_accumulated_since_midnight: 0");

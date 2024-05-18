@@ -1259,7 +1259,7 @@ class class_transindus_eco
     
 
      /**
-     * 
+     *  @TODO fix SOC values even if dark due to battery current from Studer from Grid
      */
     public function get_battery_delta_soc_for_both_methods( int     $user_index, 
                                                             int     $wp_user_ID, 
@@ -1699,15 +1699,6 @@ class class_transindus_eco
 
           $shellyplus1pm_grid_switch_state_string = $shellyplus1pm_grid_switch_obj->switch[0]->output_state_string;
           $this->verbose ? error_log("Shelly Grid Switch State: $shellyplus1pm_grid_switch_state_string"): false;
-
-
-
-          $shelly_switch_acin_details_arr = $this->get_shelly_switch_acin_details_over_lan( $user_index );
-          $control_shelly                   = (bool)    $shelly_switch_acin_details_arr['control_shelly'];                // is switch set to be controllable?
-          $shelly1pm_acin_switch_status     = (string)  $shelly_switch_acin_details_arr['shelly1pm_acin_switch_status'];  // ON/OFF/OFFLINE/Not COnfigured
-
-          $shelly_readings_obj->shelly_switch_acin_details_arr = $shelly_switch_acin_details_arr;
-          $this->verbose ? error_log("Shelly Switch ACIN State: $shelly1pm_acin_switch_status"): false;
         }
 
         
@@ -1725,7 +1716,7 @@ class class_transindus_eco
             $evcharger_grid_wh_counter_now          = $shellypro3em_3p_grid_obj->evcharger_grid_wh_counter_now;
 
             $home_grid_wh_since_midnight              = $shellypro3em_3p_grid_obj->home_grid_wh_since_midnight;
-            $home_grid_kwh_accumulated_since_midnight = $shellypro3em_3p_grid_obj->home_grid_kwh_since_midnight;
+            $home_grid_kwh_since_midnight             = $shellypro3em_3p_grid_obj->home_grid_kwh_since_midnight;
             $home_grid_kw_power                       = $shellypro3em_3p_grid_obj->home_grid_kw_power;
             $evcharger_grid_kw_power                  = $shellypro3em_3p_grid_obj->evcharger_grid_kw_power;
             $wallcharger_grid_kw_power                = $shellypro3em_3p_grid_obj->wallcharger_grid_kw_power;
@@ -1820,65 +1811,6 @@ class class_transindus_eco
 
             $shelly_readings_obj->psolar_kw = $psolar_kw;
           }
-
-          { /* legacy code for xcomlan studer data using CRON MQTT
-            // Get studer data using xcomlan. A CRON MQTT on localhost publisher and a WP CRON MQTT subscriber
-            $xcomlan_studer_data_obj = $this->get_studer_readings_over_xcomlan();
-
-            if ( ! empty( $studer_data_via_xcomlan ) && $studer_data_via_xcomlan->battery_voltage_xtender > 45.0 )
-            { // we seem to have valid data
-              $raw_batt_voltage_xcomlan = $studer_data_via_xcomlan->battery_voltage_xtender;
-
-              $east_panel_current_xcomlan       = round( $studer_data_via_xcomlan->pv_current_now_1, 1 );
-
-              $west_panel_current_xcomlan       = round( $studer_data_via_xcomlan->pv_current_now_2, 1 );
-
-              $pv_current_now_total_xcomlan     = round( $studer_data_via_xcomlan->pv_current_now_total, 1 );
-
-              $inverter_current_xcomlan         = round( $studer_data_via_xcomlan->inverter_current, 1);
-
-              $xcomlan_ts = (int) $studer_data_via_xcomlan->timestamp_xcomlan_call;
-
-              // battery current as measured by xcom-lan is got by adding + PV DC current amps and - inverter DC current amps
-              // 
-              $batt_current_xcomlan = ( $pv_current_now_total_xcomlan + $inverter_current_xcomlan );
-
-              if ( $batt_current_xcomlan <= 0 )
-              {
-                $batt_current_xcomlan = round( $batt_current_xcomlan * 0.960 , 1);
-              }
-
-              $this->verbose ? error_log("Studer XCOM-LAN BM Batt_AMPS: $batt_current_xcomlan"): false;
-
-              // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging
-              // $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);
-
-              // if battery is charging voltage will decrease and if discharging voltage will increase due to IR compensation
-              $ir_drop_compensated_battery_voltage_xcomlan = $raw_batt_voltage_xcomlan - 0.030 * $batt_current_xcomlan;
-
-              if ( $ir_drop_compensated_battery_voltage_xcomlan > 48 )
-              { // calculate running aerage only if current measurement seems reasonable
-                // calculate the running average over the last 5 readings including this one. Return is rounded to 2 decimals
-                $batt_voltage_xcomlan_avg = $this->get_battery_voltage_avg( $ir_drop_compensated_battery_voltage_xcomlan );
-              }
-              else
-              {
-                $batt_voltage_xcomlan_avg = 49;   // this is a safety catch in case the xcomlan voltage measurement fails
-              }
-
-              $psolar_kw = round( $pv_current_now_total_xcomlan * $ir_drop_compensated_battery_voltage_xcomlan * 0.001, 2);
-
-              // pack these as properties onto the shelly readings object
-              $shelly_readings_obj->batt_voltage_xcomlan_avg          = $batt_voltage_xcomlan_avg;
-              $shelly_readings_obj->east_panel_current_xcomlan        = $east_panel_current_xcomlan;
-              $shelly_readings_obj->west_panel_current_xcomlan        = $west_panel_current_xcomlan;
-              $shelly_readings_obj->pv_current_now_total_xcomlan      = $pv_current_now_total_xcomlan;
-              $shelly_readings_obj->inverter_current_xcomlan          = $inverter_current_xcomlan;
-              $shelly_readings_obj->batt_current_xcomlan              = $batt_current_xcomlan;
-              $shelly_readings_obj->xcomlan_ts                        = $xcomlan_ts;
-            }
-            */
-          }
         }
 
         { // calculate the SOC from Shelly BM and Xcom-Lan methods of battery current measurement
@@ -1887,7 +1819,7 @@ class class_transindus_eco
           $batt_soc_accumulation_obj = $this->get_battery_delta_soc_for_both_methods(  
                                                                   $user_index, 
                                                                   $wp_user_ID, 
-                                                                  $shelly1pm_acin_switch_status, 
+                                                                  $shellyplus1pm_grid_switch_state_string, 
                                                                   $shellypro3em_3p_grid_obj->home_grid_kw_power,
                                                                   $it_is_still_dark,
                                                                   $batt_amps_shellybm,
@@ -1995,7 +1927,7 @@ class class_transindus_eco
           { // SOC capture after dark is DONE and it is still dark, so use it to compute SOC after dark using only Shelly readings
 
             // grid is supplying power only when switch os ON and Power > 0.1KW
-            if ( $shelly1pm_acin_switch_status == "ON" && $home_grid_kw_power > 0.1 )
+            if ( $shellyplus1pm_grid_switch_state_string == "ON" && $home_grid_kw_power > 0.1 )
             { // Grid is supplying Load and since Solar is 0, battery current is 0 so no change in battery SOC
               
               // update the after dark energy counter to latest value
@@ -2168,32 +2100,32 @@ class class_transindus_eco
           // $shelly_readings_obj->main_control_site_avasarala_is_offline_for_long   = $main_control_site_avasarala_is_offline_for_long;
 
           $LVDS = 
-              $shelly1pm_acin_switch_status === "OFF"         &&                        // Grid switch is OFF
-              $control_shelly               === true          &&                        // Grid Switch is Controllable
-              $soc_percentage_now           <   $soc_percentage_lvds_setting;           // SOC less than threshold setting
+              $shellyplus1pm_grid_switch_state_string === "OFF" &&                        // Grid switch is OFF
+              $do_shelly                              === true  &&                        // Grid Switch is Controllable
+              $soc_percentage_now                     <   $soc_percentage_lvds_setting;   // SOC less than threshold setting
 
           $switch_release = 
-              $soc_percentage_now               >= ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered 2 points past LVDS minimum setting
+              $soc_percentage_now >= ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered 2 points past LVDS minimum setting
              ($batt_amps_shellybm > 6   || $xcomlan_studer_data_obj->batt_current_xcomlan > 6) &&  // battery is charging. This cannot happen when dark
               $psolar_kw          > (0.3 + $shelly_em_home_kw)                          &&  // Solar must exceed home consumption by 0.3KW
-              $shelly1pm_acin_switch_status     === "ON"            &&                      // Grid switch is ON
-              $control_shelly                   === true            &&                      // Grid Switch is Controllable
-              $keep_shelly_switch_closed_always === false           &&                      // keep switch ON always is False
-              $switch_is_flapping               === false;                                  // switch is NOT flapping.
+              $shellyplus1pm_grid_switch_state_string === "ON"            &&                      // Grid switch is ON
+              $do_shelly                              === true            &&                      // Grid Switch is Controllable
+              $keep_shelly_switch_closed_always       === false           &&                      // keep switch ON always is False
+              $switch_is_flapping                     === false;                                  // switch is NOT flapping.
 
           $battery_float_switch_release = 
               $soc_percentage_now               >=  $soc_percentage_switch_release_setting  &&    // SOC has reached the float setting value
-              $shelly1pm_acin_switch_status     === "ON"                                    &&    // Grid switch is ON
-              $control_shelly                   === true                                    &&    // Crid Switch is Controllable
-              // $keep_shelly_switch_closed_always === true                                    &&    // keep switch ON always is true
-              $switch_is_flapping               === false;                                        // switch is NOT flapping.
+              $shellyplus1pm_grid_switch_state_string     === "ON"                          &&    // Grid switch is ON
+              $do_shelly                                  === true                          &&    // Crid Switch is Controllable
+              // $keep_shelly_switch_closed_always === true                                 &&    // keep switch ON always is true
+              $switch_is_flapping                         === false;                              // switch is NOT flapping.
 
           $keep_shelly_switch_closed_till_float = 
               $soc_percentage_now               <  ( $soc_percentage_switch_release_setting - 5 ) &&  // SOC must be 5 points below float to prevent flapping
-              $shelly1pm_acin_switch_status     === "OFF"                                   &&        // Grid switch is OFF
-              $control_shelly                   === true                                    &&        // Grid Switch is Controllable
-              $keep_shelly_switch_closed_always === true                                    &&        // keep switch ON always flag is SET
-              $switch_is_flapping               === false;                                            // switch is NOT flapping.
+              $shellyplus1pm_grid_switch_state_string === "OFF"                                   &&        // Grid switch is OFF
+              $do_shelly                              === true                                    &&        // Grid Switch is Controllable
+              $keep_shelly_switch_closed_always       === true                                    &&        // keep switch ON always flag is SET
+              $switch_is_flapping                     === false;                                            // switch is NOT flapping.
 
           $success_on   = false;
           $success_off  = false;
@@ -2211,7 +2143,9 @@ class class_transindus_eco
           switch (true) 
           {
             case ( $LVDS ):
-              $success_on = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
+
+              $success_on = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'on' );
+
               error_log("LogLvds: SOC is LOW, commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
               if ( $success_on )
               {
@@ -2222,7 +2156,7 @@ class class_transindus_eco
             break;
 
             case ( $switch_release ):
-              $success_off = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'off' );
+              $success_off = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'off' );
               error_log("LogLvds: SOC has recovered, Solar is charging Battery, commanded to turn OFF Shelly 1PM Grid switch - Success: $success_off");
               if ( $success_off )
               {
@@ -2233,7 +2167,7 @@ class class_transindus_eco
             break;
 
             case ( $battery_float_switch_release ):
-              $success_off = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'off' );
+              $success_off = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'off' );
 
               error_log("LogFloat OFF:  commanded to turn OFF Shelly 1PM Grid switch - Success: $success_off");
 
@@ -2251,7 +2185,7 @@ class class_transindus_eco
             break;
 
             case ( $keep_shelly_switch_closed_till_float ):
-              $success_on = $this->turn_on_off_shelly1pm_acin_switch_over_lan( $user_index, 'on' );
+              $success_on = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'on' );
               error_log("LogAlways ON: Keep Grid Switch Always ON commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
               if ( $success_on )
               {
@@ -2371,10 +2305,10 @@ class class_transindus_eco
         
         { // logging
           $log_string = "LogSoc xts: $xcomlan_ts";
-          $log_string .= " E: "       . number_format($east_panel_current_xcomlan,1)   .  " W: "   . number_format($west_panel_current_xcomlan,1);
-          $log_string .= " PV: "      . number_format($pv_current_now_total_xcomlan,1) . " Inv: "  . number_format($inverter_current_xcomlan,1);
-          $log_string .= " X-A: "     . number_format($batt_current_xcomlan,1);
-          $log_string .= " S-A: "     . number_format($batt_amps_shellybm,1) . ' Vbat:'            .  number_format($batt_voltage_xcomlan_avg,1);
+          $log_string .= " E: "     . number_format($east_panel_current_xcomlan,1)   .  " W: "   . number_format($west_panel_current_xcomlan,1);
+          $log_string .= " PV: "    . number_format($pv_current_now_total_xcomlan,1) . " Inv: "  . number_format($inverter_current_xcomlan,1);
+          $log_string .= " X-A: "   . number_format($batt_current_xcomlan,1);
+          $log_string .= " S-A: "   . number_format($batt_amps_shellybm,1) . ' Vbat:'            .  number_format($batt_voltage_xcomlan_avg,1);
           $log_string .= " SOC-S: " . number_format($soc_percentage_now_calculated_using_shelly_bm,1); // this is the shelly BM based soc%
           $log_string .= " SOC-X: " . number_format($soc_percentage_now,1 ) . '%';                     // this is the xcom-lan current based soc%
 
@@ -2396,12 +2330,11 @@ class class_transindus_eco
           $shelly_readings_obj->shelly_xcomlan_ok_bool  = $batt_soc_accumulation_obj->shelly_xcomlan_ok_bool;
           $shelly_readings_obj->studer_charger_enabled = get_user_meta($wp_user_ID, 'studer_charger_enabled', true);
           $shelly_readings_obj->studer_battery_charging_current = get_user_meta($wp_user_ID, 'studer_battery_charging_current', true);
+          $shelly_readings_obj->do_shelly = $do_shelly;
         }
 
         // update transient with new data. Validity is 10m
         set_transient( 'shelly_readings_obj', $shelly_readings_obj, 10 * 60 );
-
-        
 
         // publish this data to remote server. The remote server in slave mode just displays the data so it is accessible from anywhere
         $this->publish_data_to_avasarala_in_using_mqtt( $shelly_readings_obj );
@@ -4659,7 +4592,7 @@ class class_transindus_eco
 
         $status = "";
 
-        $shelly_switch_acin_details_arr = $readings_obj->shelly_switch_acin_details_arr;
+        $shellyplus1pm_grid_switch_obj = $readings_obj->shellyplus1pm_grid_switch_obj;
 
         $shelly_water_heater_kw       = 0;
         $shelly_water_heater_status   = null;
@@ -4706,12 +4639,12 @@ class class_transindus_eco
         $home_grid_kw_power     =   $readings_obj->shellypro3em_3p_grid_obj->home_grid_kw_power;
         $home_grid_voltage      =   $readings_obj->shellypro3em_3p_grid_obj->home_grid_voltage;
 
-        $shelly1pm_acin_switch_status = $shelly_switch_acin_details_arr['shelly1pm_acin_switch_status'];
+        $shellyplus1pm_grid_switch_state_string = $shellyplus1pm_grid_switch_obj->switch[0]->output_state_string;
 
         // This is the AC voltage of switch:0 of Shelly 4PM
-        $shelly1pm_acin_voltage = $shelly_switch_acin_details_arr['shelly1pm_acin_voltage'];
+        $shellyplus1pm_grid_switch_voltage = $shellyplus1pm_grid_switch_obj->switch[0]->voltage;
 
-        $control_shelly         = (bool) $shelly_switch_acin_details_arr['control_shelly'];
+        $do_shelly         = (bool) $readings_obj->do_shelly;
 
         $soc_percentage_now     = round($readings_obj->soc_percentage_now, 1);
 
@@ -4727,7 +4660,7 @@ class class_transindus_eco
 
         switch (true)
         {   // choose grid icon info based on switch status
-            case ( $shelly1pm_acin_switch_status === "OFFLINE" ): // No Grid OR switch is OFFLINE
+            case ( $shellyplus1pm_grid_switch_state_string === "OFFLINE" ): // No Grid OR switch is OFFLINE
                 $grid_status_icon = '<i class="fa-solid fa-3x fa-power-off" style="color: Yellow;"></i>';
 
                 $grid_arrow_icon = ''; //'<i class="fa-solid fa-3x fa-circle-xmark"></i>';
@@ -4737,7 +4670,7 @@ class class_transindus_eco
                 break;
 
 
-            case ( $shelly1pm_acin_switch_status === "ON" ): // Switch is ON
+            case ( $shellyplus1pm_grid_switch_state_string === "ON" ): // Switch is ON
                 $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Blue;"></i>';
 
                 $grid_arrow_icon  = '<i class="fa-solid' . $grid_arrow_size .  'fa-arrow-right-long fa-rotate-by"
@@ -4748,7 +4681,7 @@ class class_transindus_eco
                 break;
 
 
-            case ( $shelly1pm_acin_switch_status === "OFF" ):   // Switch is online and OFF
+            case ( $shellyplus1pm_grid_switch_state_string === "OFF" ):   // Switch is online and OFF
                 $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Red;"></i>';
 
                 $grid_arrow_icon = ''; //'<i class="fa-solid fa-1x fa-circle-xmark"></i>';
@@ -4809,7 +4742,7 @@ class class_transindus_eco
         $studer_icon = '<i style="display:block; text-align: center;" class="clickableIcon fa-solid fa-3x fa-cog" style="color: Green;"></i>';
         $format_object->studer_icon = $studer_icon;
 
-        if ( $control_shelly === true )
+        if ( $do_shelly === true )
         {
             // Local computer over LAN will be controlling the ACIN switch
             // a green cloud icon signifies that local site is in control

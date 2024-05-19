@@ -2078,12 +2078,13 @@ class class_transindus_eco
               $keep_shelly_switch_closed_always       === false           &&                      // keep switch ON always is False
               $switch_is_flapping                     === false;                                  // switch is NOT flapping.
 
-          $battery_float_switch_release = 
-              $soc_percentage_now                         >=  150  &&    // If Grid switch is ON AND KEEP ALWAYS IS false, this variable is TRUE
+          $always_on_switch_release = 
+              $soc_percentage_now                         >= ( $soc_percentage_lvds_setting + 2 )  &&    // If Grid switch is ON AND KEEP ALWAYS IS false, this variable is TRUE
               $shellyplus1pm_grid_switch_state_string     === "ON"                          &&    // Grid switch is ON
               $do_shelly                                  === true                          &&    // Crid Switch is Controllable
-              // $keep_shelly_switch_closed_always === true                                 &&    // keep switch ON always is true
-              $switch_is_flapping                         === false;                              // switch is NOT flapping.
+              $keep_shelly_switch_closed_always           === false                         &&    // keep switch ON always is true
+              $switch_is_flapping                         === false                         &&    // switch is NOT flapping.
+              false;
 
           $keep_shelly_switch_closed_till_float = 
               $soc_percentage_now                     <  ( 150 )      &&  // If Switch is OFF and keep always is True, this variable is TRUE
@@ -2131,7 +2132,7 @@ class class_transindus_eco
               }
             break;
 
-            case ( $battery_float_switch_release ):
+            case ( $always_on_switch_release ):
               $success_off = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'off' );
 
               error_log("LogFloat OFF:  commanded to turn OFF Shelly 1PM Grid switch - Success: $success_off");

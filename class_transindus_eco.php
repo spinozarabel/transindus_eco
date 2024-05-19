@@ -171,7 +171,7 @@ class class_transindus_eco
       //
 
       // set the logging
-      $this->verbose = false;
+      $this->verbose = true;
 
       // lat and lon at Trans Indus from Google Maps
       $this->lat        = 12.83463;

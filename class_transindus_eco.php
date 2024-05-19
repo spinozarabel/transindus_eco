@@ -1238,7 +1238,9 @@ class class_transindus_eco
                                                             ? float $batt_amps_shelly_now,
                                                             ? int   $ts_shellybm_now,
                                                             ? float $batt_amps_xcomlan_now,
-                                                            ? int   $ts_xcomlan_now 
+                                                            ? int   $ts_xcomlan_now,
+                                                            ? bool  $studer_charger_enabled,
+                                                            ? float $studer_battery_charging_current 
                                                           ) : object
     {
       $config = $this->config;
@@ -1368,12 +1370,14 @@ class class_transindus_eco
       }
 
       // Determine if battery current is zero because it is dark and Grid is ON supplying the load and Grid charging of Battery is OFF
-      if (  $it_is_still_dark               &&        // No solar
-            $shelly_switch_status === 'ON'  &&        // Grid switch is ON
-            $home_grid_kw_power > 0.05            )   // Power supplied by grid to home is greater than 0.05 KW
+      if (  $it_is_still_dark                     &&        // No solar
+            $shelly_switch_status === 'ON'        &&        // Grid switch is ON
+            $home_grid_kw_power > 0.05            &&        // power is being drawn from Grid  
+            $studer_charger_enabled === false               // Studer Battery Charger id NOT enabled
+          )   
       { // battery is not charging or discharging so delta soc is 0
-        // This assumes that battery charging by Grid is prohibited.
-        // otherwise change this section
+
+        $this->error_log(" Battery current is 0: No SOC update done"): false;
 
         $battery_soc_since_midnight_obj->delta_ah_shellybm = 0;
         $battery_soc_since_midnight_obj->delta_soc_shellybm = 0;
@@ -1649,6 +1653,9 @@ class class_transindus_eco
 
           $shelly_readings_obj->soc_percentage_lvds_setting           = $soc_percentage_lvds_setting;
           $shelly_readings_obj->average_battery_voltage_lvds_setting  = $average_battery_voltage_lvds_setting;
+
+          $studer_charger_enabled           = (bool)  $all_usermeta['studer_charger_enabled']           ?? false;
+          $studer_battery_charging_current  = (float) $all_usermeta['studer_battery_charging_current']  ?? 0; 
         }
 
         { // get the SOCs from the user meta.
@@ -1778,7 +1785,10 @@ class class_transindus_eco
                                                                   $batt_amps_shellybm,
                                                                   $timestamp_shellybm,
                                                                   $batt_current_xcomlan,
-                                                                  $xcomlan_ts             );
+                                                                  $xcomlan_ts,
+                                                                  $studer_charger_enabled,
+                                                                  $studer_battery_charging_current
+                                                                                      );
 
           $soc_shellybm_since_midnight                    = $batt_soc_accumulation_obj->soc_shellybm_since_midnight;
           $soc_percentage_now_calculated_using_shelly_bm  = $soc_percentage_at_midnight + $soc_shellybm_since_midnight;

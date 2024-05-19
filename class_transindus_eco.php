@@ -2079,18 +2079,18 @@ class class_transindus_eco
               $switch_is_flapping                     === false;                                  // switch is NOT flapping.
 
           $battery_float_switch_release = 
-              $soc_percentage_now               >=  $soc_percentage_switch_release_setting  &&    // SOC has reached the float setting value
+              $soc_percentage_now               >=  150  &&    // SOC is a don't care
               $shellyplus1pm_grid_switch_state_string     === "ON"                          &&    // Grid switch is ON
               $do_shelly                                  === true                          &&    // Crid Switch is Controllable
               // $keep_shelly_switch_closed_always === true                                 &&    // keep switch ON always is true
               $switch_is_flapping                         === false;                              // switch is NOT flapping.
 
           $keep_shelly_switch_closed_till_float = 
-              $soc_percentage_now               <  ( $soc_percentage_switch_release_setting - 5 ) &&  // SOC must be 5 points below float to prevent flapping
-              $shellyplus1pm_grid_switch_state_string === "OFF"                                   &&        // Grid switch is OFF
-              $do_shelly                              === true                                    &&        // Grid Switch is Controllable
-              $keep_shelly_switch_closed_always       === true                                    &&        // keep switch ON always flag is SET
-              $switch_is_flapping                     === false;                                            // switch is NOT flapping.
+              $soc_percentage_now                     <  ( 150 )      &&  // SOC must be 5 points below float to prevent flapping
+              $shellyplus1pm_grid_switch_state_string === "OFF"       &&        // Grid switch is OFF
+              $do_shelly                              === true        &&        // Grid Switch is Controllable
+              $keep_shelly_switch_closed_always       === true        &&        // keep switch ON always flag is SET
+              $switch_is_flapping                     === false;                // switch is NOT flapping.
 
           $success_on   = false;
           $success_off  = false;

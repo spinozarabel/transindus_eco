@@ -333,6 +333,7 @@ class class_transindus_eco
         $defaults['pump_duration_secs_max']                           = ['default' => 2700,   'lower_limit' => 0,    'upper_limit' =>7200];
         $defaults['pump_power_restart_interval_secs']                 = ['default' => 120,    'lower_limit' => 0,    'upper_limit' =>86400];
         $defaults['studer_battery_charging_current']                  = ['default' => 5,      'lower_limit' => 0,    'upper_limit' =>30];   // studer supplied battery charging current DC Amps
+        $defaults['studer_battery_priority_voltage']                  = ['default' => 51.1,   'lower_limit' => 50,   'upper_limit' =>54];   // studer battery priority voltage in Volts DC
 
         // save the data in a transient indexed by the user ID. Expiration is 30 minutes
         set_transient( $wp_user_ID . 'user_meta_defaults_arr', $defaults, 30*60 );
@@ -3230,6 +3231,32 @@ class class_transindus_eco
           break;
 
 
+          case ( stripos( $field[ 'key' ], 'studer_battery_priority_enabled' ) !== false ):
+            if ( $field[ 'value' ] )
+            {
+              $submitted_field_value = true;
+            }
+            else 
+            {
+              $submitted_field_value = false;
+            }
+
+            // get the existing user meta value
+            $existing_user_meta_value = get_user_meta($wp_user_ID, "studer_battery_priority_enabled",  true);
+
+            if ( $existing_user_meta_value != $submitted_field_value )
+            {
+              // update the user meta with value from form since it is different from existing setting
+              update_user_meta( $wp_user_ID, 'studer_battery_priority_enabled', $submitted_field_value);
+
+              // record this in the object that is then sent to the local Linux WP site where it is mirrored for implementation
+              $settings_obj_to_local_wp->studer_battery_priority_enabled =  $submitted_field_value;
+
+              error_log( "Updated User Meta - studer_battery_priority_enabled - from Settings Form: " . $field[ 'value' ] );
+            }
+          break;
+
+
 
           case ( stripos( $field[ 'key' ], 'do_soc_cal_now' ) !== false ):
             if ( $field[ 'value' ] )
@@ -3338,6 +3365,36 @@ class class_transindus_eco
                 error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
 
                 $settings_obj_to_local_wp->studer_battery_charging_current =  $field[ 'value' ];
+              }
+            }
+            else
+            {
+              error_log( "Updated User Meta - " . $user_meta_key . " - NOT Updated - invalid input: " . $field[ 'value' ] );
+            }
+          break;
+
+
+          case ( stripos( $field[ 'key' ], 'studer_battery_priority_voltage' ) !== false ):
+
+            // define the meta key of interest
+            $user_meta_key = 'studer_battery_priority_voltage';
+
+            // look for the defaults using the user meta key
+            $defaults_key = array_search($user_meta_key, $defaults_arr_keys); // get the index of desired row in defaults array
+            $defaults_row = $defaults_arr_values[$defaults_key];
+            // validate user input
+            if ( $field[ 'value' ] >= $defaults_row['lower_limit'] && $field[ 'value' ] <= $defaults_row['upper_limit'] )
+            {
+              // get the existing user meta value
+              $existing_user_meta_value = get_user_meta($wp_user_ID, $user_meta_key,  true);
+
+              // update the user meta with this value if different from existing value only
+              if ($existing_user_meta_value != $field[ 'value' ])
+              {
+                update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
+                error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+
+                $settings_obj_to_local_wp->studer_battery_priority_voltage =  $field[ 'value' ];
               }
             }
             else
@@ -6124,21 +6181,18 @@ class class_transindus_eco
                           $xcomlan_status   . ' ' . $shellybm_status  .
                       '</span>';
 
-      $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
-                          'Stdr Batt Chgng Amps:'  . $readings_obj->studer_battery_charging_current  .
-                      '</span>';
                       
       if ( $readings_obj->studer_charger_enabled )
       {
-        $status_html .= '<span style="color: Green; display:block; text-align: center;">' .
-                          'Charger Enabled:'  . 
-                      '</span>';
+        $status_html .= '<span style="color: green; display:block; text-align: center;">' .
+                          'Charger Enabled: '  . $readings_obj->studer_battery_charging_current . 'A' .
+                        '</span>';
       }
       else
       {
-        $status_html .= '<span style="Red: Green; display:block; text-align: center;">' .
-                          'Charger Disabled:'  . 
-                      '</span>';
+        $status_html .= '<span style="color: red; display:block; text-align: center;">' .
+                          'Charger Disabled: '  . $readings_obj->studer_battery_charging_current . 'A' .
+                        '</span>';
       }
   
       $format_object->status = $status_html;

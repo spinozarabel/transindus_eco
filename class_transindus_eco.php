@@ -2004,7 +2004,8 @@ class class_transindus_eco
           else
           {
             //there was an error in the post insertion, 
-            error_log("Error in Daily Log CUstom POst CReation: $post_id->get_error_message()");
+            error_log("Error in Daily Log CUstom POst CReation:");
+            error_log($post_id->get_error_message());
           }
           
 

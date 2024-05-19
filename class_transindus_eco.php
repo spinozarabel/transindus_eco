@@ -2079,14 +2079,14 @@ class class_transindus_eco
               $switch_is_flapping                     === false;                                  // switch is NOT flapping.
 
           $battery_float_switch_release = 
-              $soc_percentage_now               >=  150  &&    // SOC is a don't care
+              $soc_percentage_now                         >=  150  &&    // If Grid switch is ON AND KEEP ALWAYS IS false, this variable is TRUE
               $shellyplus1pm_grid_switch_state_string     === "ON"                          &&    // Grid switch is ON
               $do_shelly                                  === true                          &&    // Crid Switch is Controllable
               // $keep_shelly_switch_closed_always === true                                 &&    // keep switch ON always is true
               $switch_is_flapping                         === false;                              // switch is NOT flapping.
 
           $keep_shelly_switch_closed_till_float = 
-              $soc_percentage_now                     <  ( 150 )      &&  // SOC must be 5 points below float to prevent flapping
+              $soc_percentage_now                     <  ( 150 )      &&  // If Switch is OFF and keep always is True, this variable is TRUE
               $shellyplus1pm_grid_switch_state_string === "OFF"       &&        // Grid switch is OFF
               $do_shelly                              === true        &&        // Grid Switch is Controllable
               $keep_shelly_switch_closed_always       === true        &&        // keep switch ON always flag is SET
@@ -3681,6 +3681,46 @@ class class_transindus_eco
                 $studer_charger_enabled_from_mqtt_update ? $studer_settings_array["CHARGER_ALLOWED"] = 1: $studer_settings_array["CHARGER_ALLOWED"] = 0;
               }
             }
+
+
+            //                              BATTERY_PRIORITY enable/disable   studer_battery_priority_enabled
+
+            if ( property_exists($flag_object, "studer_battery_priority_enabled") )
+            {
+              $studer_battery_priority_enabled_from_mqtt_update = (bool) $flag_object->studer_battery_priority_enabled;
+
+              $studer_battery_priority_enabled_present_setting = (bool) get_user_meta($wp_user_ID, "studer_battery_priority_enabled", true);
+
+              // compare the values and update if not the same
+              if ( $studer_battery_priority_enabled_from_mqtt_update !== $studer_battery_priority_enabled_present_setting )
+              {
+                update_user_meta($wp_user_ID, "studer_battery_priority_enabled", $studer_battery_priority_enabled_from_mqtt_update);
+                error_log(" Updated flag studer_battery_priority_enabled From: $studer_battery_priority_enabled_present_setting To $studer_battery_priority_enabled_from_mqtt_update");
+
+                // add item to studer xcomlan set settings array
+                $studer_battery_priority_enabled_from_mqtt_update ? $studer_settings_array["BATTERY_PRIORITY"] = 1: $studer_settings_array["BATTERY_PRIORITY"] = 0;
+              }
+            }
+
+            //                            BATTERY_PRIORITY Voltage   studer_battery_priority_voltage
+            if ( property_exists($flag_object, "studer_battery_priority_voltage" ) )
+            {
+              $studer_battery_priority_voltage_from_mqtt_update = (float) $flag_object->studer_battery_priority_voltage;
+              $studer_battery_priority_voltage_present_setting  = (float) get_user_meta($wp_user_ID, "studer_battery_priority_voltage", true);
+
+              // compare the values and update if not the same provided update is meaningful
+              if (  $studer_battery_priority_voltage_from_mqtt_update != $studer_battery_priority_voltage_present_setting && 
+                    $studer_battery_priority_voltage_from_mqtt_update >= 50 &&
+                    $studer_battery_priority_voltage_from_mqtt_update <= 54     )
+              {
+                update_user_meta($wp_user_ID, "studer_battery_priority_voltage", $studer_battery_priority_voltage_from_mqtt_update);
+                error_log(" Updated flag studer_battery_priority_voltage From: $studer_battery_priority_voltage_present_setting To $studer_battery_priority_voltage_from_mqtt_update");
+
+                // add item to studer xcomlan set settings array
+                $studer_settings_array["BATTERY_PRIORITY_VOLTAGE"] = $studer_battery_priority_voltage_from_mqtt_update;
+              }
+            }
+
 
             if ( property_exists($flag_object, "studer_battery_charging_current" ) )
             {

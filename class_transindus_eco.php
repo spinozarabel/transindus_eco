@@ -1377,7 +1377,7 @@ class class_transindus_eco
           )   
       { // battery is not charging or discharging so delta soc is 0
 
-        $this->error_log(" Battery current is 0: No SOC update done"): false;
+        $this->verbose ? error_log(" Battery current is 0: No SOC update done"): false;
 
         $battery_soc_since_midnight_obj->delta_ah_shellybm = 0;
         $battery_soc_since_midnight_obj->delta_soc_shellybm = 0;

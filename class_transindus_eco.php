@@ -28,11 +28,12 @@
  */
 
 require_once(__DIR__."/studer_api.php");              // contains studer api class
-require_once(__DIR__."/shelly_cloud_api.php");        // contains Shelly Cloud API class
 require_once(__DIR__."/class_solar_calculation.php"); // contains studer api class
 require_once(__DIR__."/openweather_api.php");         // contains openweather class
 require_once(__DIR__."/class_my_mqtt.php");
 require_once(__DIR__."/class_shelly_device_lan.php"); // contains the class to get shelly device data over LAN
+
+// require_once(__DIR__."/shelly_cloud_api.php");        // contains Shelly Cloud API class
 
 class class_transindus_eco
 {

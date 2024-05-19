@@ -6125,8 +6125,21 @@ class class_transindus_eco
                       '</span>';
 
       $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
-                          'Stdr Batt Chgng Amps:'  . $readings_obj->studer_battery_charging_current  . ' Enabled?: ' . $readings_obj->studer_charger_enabled .
-                      '</span>';               
+                          'Stdr Batt Chgng Amps:'  . $readings_obj->studer_battery_charging_current  .
+                      '</span>';
+                      
+      if ( $readings_obj->studer_charger_enabled )
+      {
+        $status_html .= '<span style="color: Green; display:block; text-align: center;">' .
+                          'Charger Enabled:'  . 
+                      '</span>';
+      }
+      else
+      {
+        $status_html .= '<span style="Red: Green; display:block; text-align: center;">' .
+                          'Charger Disabled:'  . 
+                      '</span>';
+      }
   
       $format_object->status = $status_html;
 

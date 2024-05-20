@@ -2799,8 +2799,6 @@ class class_transindus_eco
   
       $format_object->status = $status_html;
 
-      $format_object->status = $status_html;
-
       return $format_object;
     }
 

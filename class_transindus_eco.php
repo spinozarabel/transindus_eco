@@ -2145,9 +2145,9 @@ class class_transindus_eco
 
               if ( $success_off )
               {
-                $switch_tree_obj->switch_tree_exit_condition = "always_on_release";
-                $present_switch_tree_exit_condition = "always_on_release";
-                $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
+                $switch_tree_obj->switch_tree_exit_condition  = "always_on_release";
+                $present_switch_tree_exit_condition           = "always_on_release";
+                $switch_tree_obj->switch_tree_exit_timestamp  = $now_timestamp;
               }
             break;
 
@@ -2156,15 +2156,15 @@ class class_transindus_eco
               error_log("Log: Shouldnt be here Investigate commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
               if ( $success_on )
               {
-                $switch_tree_obj->switch_tree_exit_condition = "investigate";
-                $present_switch_tree_exit_condition = "investigate";
-                $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
+                $switch_tree_obj->switch_tree_exit_condition  = "investigate";
+                $present_switch_tree_exit_condition           = "investigate";
+                $switch_tree_obj->switch_tree_exit_timestamp  = $now_timestamp;
               }
             break;
             
             default:
               // no switch action
-              $this->verbose ? error_log("No switch Action was done in this cycle"): false;
+              $this->verbose ? error_log("NOMINAL - No switch Action was done in this cycle"): false;
               $present_switch_tree_exit_condition = "no_action";
 
               // no cchange in switch_tree_obj

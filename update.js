@@ -138,7 +138,7 @@ jQuery(document).ready(function($) {
             $('#cron_exit_condition').html( data.status);
 
             // Update the load splits
-            $('#power_to_home_kw').html( data.shelly_water_heater_kw);
+            $('#shelly_water_heater_kw').html( data.shelly_water_heater_kw);
             $('#power_to_ac_kw').html( data.power_to_ac_kw);
             $('#power_to_pump_kw').html( data.power_to_pump_kw);
 

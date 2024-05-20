@@ -2064,12 +2064,15 @@ class class_transindus_eco
           // $main_control_site_avasarala_is_offline_for_long = $this->check_if_main_control_site_avasarala_is_offline_for_long();
           // $shelly_readings_obj->main_control_site_avasarala_is_offline_for_long   = $main_control_site_avasarala_is_offline_for_long;
 
+          // Turn ON switch if SOC is below limit and Switch is now OFF and Servo control is enabled
+          // ---------- most important Event in entire scheme of things ............
           $LVDS = 
               $shellyplus1pm_grid_switch_state_string === "OFF" &&                        // Grid switch is OFF
               $do_shelly                              === true  &&                        // Grid Switch is Controllable
               $soc_percentage_now                     <   $soc_percentage_lvds_setting;   // SOC less than threshold setting
 
-          $switch_release = 
+          // -- GRID switch OFF as SOC has recovered from LVDS. Solarmust be greater than Load also 
+          $switch_release_LVDS = 
               $soc_percentage_now >= ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered 2 points past LVDS minimum setting
              ($batt_amps_shellybm > 6   || $xcomlan_studer_data_obj->batt_current_xcomlan > 6) &&  // battery is charging. This cannot happen when dark
               $psolar_kw          > (0.3 + $shelly_em_home_kw)                          &&  // Solar must exceed home consumption by 0.3KW
@@ -2078,20 +2081,23 @@ class class_transindus_eco
               $keep_shelly_switch_closed_always       === false           &&                      // keep switch ON always is False
               $switch_is_flapping                     === false;                                  // switch is NOT flapping.
 
+          // GRID switch OFF as keep_shelly_switch_closed_always changed from TRUE to FALSE
+          // As soon as always_on is released if SOC > LVDS + 10 it releases GRID switch
           $always_on_switch_release = 
-              $soc_percentage_now                         >= ( $soc_percentage_lvds_setting + 2 )  &&    // If Grid switch is ON AND KEEP ALWAYS IS false, this variable is TRUE
+              $soc_percentage_now                         >= ( $soc_percentage_lvds_setting + 10 )  &&    // If Grid switch is ON AND KEEP ALWAYS IS false, this variable is TRUE
               $shellyplus1pm_grid_switch_state_string     === "ON"                          &&    // Grid switch is ON
               $do_shelly                                  === true                          &&    // Crid Switch is Controllable
               $keep_shelly_switch_closed_always           === false                         &&    // keep switch ON always is true
-              $switch_is_flapping                         === false                         &&    // switch is NOT flapping.
-              false;
+              $switch_is_flapping                         === false;
 
+          // NOT used anymore disabled
           $keep_shelly_switch_closed_till_float = 
-              $soc_percentage_now                     <  ( 150 )      &&  // If Switch is OFF and keep always is True, this variable is TRUE
+              $soc_percentage_now                     <  97      &&  // If Switch is OFF and keep always is True, this variable is TRUE
               $shellyplus1pm_grid_switch_state_string === "OFF"       &&        // Grid switch is OFF
               $do_shelly                              === true        &&        // Grid Switch is Controllable
               $keep_shelly_switch_closed_always       === true        &&        // keep switch ON always flag is SET
-              $switch_is_flapping                     === false;                // switch is NOT flapping.
+              $switch_is_flapping                     === false       &&        // switch is NOT flapping.
+              false;
 
           $success_on   = false;
           $success_off  = false;
@@ -2121,7 +2127,7 @@ class class_transindus_eco
               }
             break;
 
-            case ( $switch_release ):
+            case ( $switch_release_LVDS ):
               $success_off = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'off' );
               error_log("LogLvds: SOC has recovered, Solar is charging Battery, commanded to turn OFF Shelly 1PM Grid switch - Success: $success_off");
               if ( $success_off )

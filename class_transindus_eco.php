@@ -2141,28 +2141,23 @@ class class_transindus_eco
             case ( $always_on_switch_release ):
               $success_off = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'off' );
 
-              error_log("LogFloat OFF:  commanded to turn OFF Shelly 1PM Grid switch - Success: $success_off");
-
-              // reset the keep always ON flag back to false to prevent flapping
-              update_user_meta( $wp_user_ID, 'keep_shelly_switch_closed_always', false );
-
-              error_log("LogFloat OFF:  reset keep-always-on flag to false");
+              error_log("LogAlways_on OFF:  commanded to turn OFF Shelly 1PM Grid switch - Success: $success_off");
 
               if ( $success_off )
               {
-                $switch_tree_obj->switch_tree_exit_condition = "float_release";
-                $present_switch_tree_exit_condition = "float_release";
+                $switch_tree_obj->switch_tree_exit_condition = "always_on_release";
+                $present_switch_tree_exit_condition = "always_on_release";
                 $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
               }
             break;
 
             case ( $keep_shelly_switch_closed_till_float ):
               $success_on = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'on' );
-              error_log("LogAlways ON: Keep Grid Switch Always ON commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
+              error_log("Log: Shouldnt be here Investigate commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
               if ( $success_on )
               {
-                $switch_tree_obj->switch_tree_exit_condition = "always_on";
-                $present_switch_tree_exit_condition = "always_on";
+                $switch_tree_obj->switch_tree_exit_condition = "investigate";
+                $present_switch_tree_exit_condition = "investigate";
                 $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
               }
             break;

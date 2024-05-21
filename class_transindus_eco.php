@@ -1772,19 +1772,20 @@ class class_transindus_eco
         { // calculate the SOC from Shelly BM and Xcom-Lan methods of battery current measurement
 
           // 1st call the routine to accumulate the battery charge this cycle based on current measurements this cycle
-          $batt_soc_accumulation_obj = $this->get_battery_delta_soc_for_both_methods(  
-                                                                  $user_index, 
-                                                                  $wp_user_ID, 
-                                                                  $shellyplus1pm_grid_switch_state_string, 
-                                                                  $shellypro3em_3p_grid_obj->home_grid_kw_power,
-                                                                  $it_is_still_dark,
-                                                                  $batt_amps_shellybm,
-                                                                  $timestamp_shellybm,
-                                                                  $batt_current_xcomlan,
-                                                                  $xcomlan_ts,
-                                                                  $studer_charger_enabled,
-                                                                  $studer_battery_charging_current
-                                                                                      );
+          $batt_soc_accumulation_obj = $this->get_battery_delta_soc_for_both_methods
+                                              (  
+                                                  $user_index, 
+                                                  $wp_user_ID, 
+                                                  $shellyplus1pm_grid_switch_state_string, 
+                                                  $shellypro3em_3p_grid_obj->home_grid_kw_power,
+                                                  $it_is_still_dark,
+                                                  $batt_amps_shellybm,
+                                                  $timestamp_shellybm,
+                                                  $batt_current_xcomlan,
+                                                  $xcomlan_ts,
+                                                  $studer_charger_enabled,
+                                                  $studer_battery_charging_current,
+                                                );
 
           $soc_shellybm_since_midnight                    = $batt_soc_accumulation_obj->soc_shellybm_since_midnight;
           $soc_percentage_now_calculated_using_shelly_bm  = $soc_percentage_at_midnight + $soc_shellybm_since_midnight;

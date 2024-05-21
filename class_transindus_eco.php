@@ -2090,14 +2090,13 @@ class class_transindus_eco
               $keep_shelly_switch_closed_always           === false                         &&    // keep switch ON always is true
               $switch_is_flapping                         === false;
 
-          // NOT used anymore disabled
-          $keep_shelly_switch_closed_till_float = 
-              $soc_percentage_now                     <  97      &&  // If Switch is OFF and keep always is True, this variable is TRUE
+          //
+          $keep_shelly_switch_closed_always = 
+              $soc_percentage_now                     <  150      &&  // If Switch is OFF and keep always is True, this variable is TRUE
               $shellyplus1pm_grid_switch_state_string === "OFF"       &&        // Grid switch is OFF
               $do_shelly                              === true        &&        // Grid Switch is Controllable
               $keep_shelly_switch_closed_always       === true        &&        // keep switch ON always flag is SET
-              $switch_is_flapping                     === false       &&        // switch is NOT flapping.
-              false;
+              $switch_is_flapping                     === false;
 
           $success_on   = false;
           $success_off  = false;
@@ -2151,13 +2150,13 @@ class class_transindus_eco
               }
             break;
 
-            case ( $keep_shelly_switch_closed_till_float ):
+            case ( $keep_shelly_switch_closed_always ):
               $success_on = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'on' );
-              error_log("Log: Shouldnt be here Investigate commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
+              error_log("Log: Always ON - ommanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
               if ( $success_on )
               {
-                $switch_tree_obj->switch_tree_exit_condition  = "investigate";
-                $present_switch_tree_exit_condition           = "investigate";
+                $switch_tree_obj->switch_tree_exit_condition  = "always_on";
+                $present_switch_tree_exit_condition           = "always_on";
                 $switch_tree_obj->switch_tree_exit_timestamp  = $now_timestamp;
               }
             break;
@@ -2167,14 +2166,14 @@ class class_transindus_eco
               $this->verbose ? error_log("NOMINAL - No switch Action was done in this cycle"): false;
               $present_switch_tree_exit_condition = "no_action";
 
-              // no cchange in switch_tree_obj
+              // no change in switch_tree_obj
             break;
           }
 
           set_transient( 'switch_tree_obj', $switch_tree_obj, 60 * 60 );  // the transient contents get changed only if NOT no_action exit
 
           
-          $shelly_readings_obj->switch_tree_obj = $switch_tree_obj;                             // this is to record how long since last significant event
+          $shelly_readings_obj->switch_tree_obj = $switch_tree_obj;       // this is to record how long since last significant event
 
           $shelly_readings_obj->present_switch_tree_exit_condition = $present_switch_tree_exit_condition; // this is to detect remote notification event
 

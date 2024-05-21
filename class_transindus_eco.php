@@ -1699,9 +1699,6 @@ class class_transindus_eco
             $wallcharger_grid_kw_power                = $shellypro3em_3p_grid_obj->wallcharger_grid_kw_power;
             $seconds_elapsed_grid_status              = $shellypro3em_3p_grid_obj->seconds_elapsed_grid_status;
             $home_grid_voltage                        = $shellypro3em_3p_grid_obj->home_grid_voltage ?? 0;
-
-
-            $this->verbose ? error_log("Log-home_grid_wh_counter_now: $home_grid_wh_counter_now, wh since midnight: $home_grid_wh_since_midnight, Home Grid PowerKW: $home_grid_kw_power"): false;
           }
           
           { // .....................shellyplus1 w/addon Battery current measurement using Hall Effect sensor

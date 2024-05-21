@@ -1762,8 +1762,6 @@ class class_transindus_eco
             $batt_current_xcomlan         = $xcomlan_studer_data_obj->batt_current_xcomlan;
             $xcomlan_ts                   = $xcomlan_studer_data_obj->xcomlan_ts;
 
-            $this->verbose ? error_log("Studer XCOM-LAN BM Batt_AMPS: $batt_current_xcomlan"): false;
-
             // write this as property to the main readings object
             $shelly_readings_obj->xcomlan_studer_data_obj = $xcomlan_studer_data_obj;
 

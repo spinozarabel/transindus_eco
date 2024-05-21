@@ -452,6 +452,21 @@ class class_transindus_eco
                   $field[ 'settings' ][ 'default_value' ] = 'unchecked';
                 }
               break;
+
+              case ( stripos( $field[ 'settings' ][ 'key' ], 'studer_battery_priority_enabled' ) !== false ):
+                // get the user's metadata for this flag
+                $user_meta_value = get_user_meta($wp_user_ID, 'studer_battery_priority_enabled',  true);
+
+                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
+                if ($user_meta_value == true)
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'checked';
+                }
+                else
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
+                }
+              break;
             }
           return $field;
         } );  // Add filter to check for checkbox field and set the default using user meta

@@ -2293,6 +2293,7 @@ class class_transindus_eco
           $shelly_readings_obj->studer_charger_enabled = get_user_meta($wp_user_ID, 'studer_charger_enabled', true);
           $shelly_readings_obj->studer_battery_charging_current = get_user_meta($wp_user_ID, 'studer_battery_charging_current', true);
           $shelly_readings_obj->do_shelly = $do_shelly;
+          $shelly_readings_obj->keep_shelly_switch_closed_always = $keep_shelly_switch_closed_always;
         }
 
         // update transient with new data. Validity is 10m

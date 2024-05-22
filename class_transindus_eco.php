@@ -2081,7 +2081,7 @@ class class_transindus_eco
             </tr>
                 <td id="grid_info">'          . $format_object->grid_info          . '</td>
                 <td id="grid_arrow_icon">'    . $format_object->grid_arrow_icon    . '</td>
-                <td></td>
+                <td id="cloud_info">'         . $format_object->cloud_info         . '</td>
                 <td id="pv_arrow_icon">'      . $format_object->pv_arrow_icon      . '</td>
                 <td id="psolar_info">'        . $format_object->psolar_info        . '</td>
 
@@ -2753,15 +2753,20 @@ class class_transindus_eco
                                                   <strong>' . $shelly_water_heater_kw . '</strong>
                                                 </span>';
 
-      if ( ! empty( $readings_obj->cloudiness_average_percentage_weighted ) )
+      if ( ! empty( $readings_obj->cloudiness_average_percentage_weighted ) && $psolar_kw > 0.1 )
       {
-        $status .= " Cloud: " . round($readings_obj->cloudiness_average_percentage_weighted,1) . "%";
+        if ( ! empty( $readings_obj->est_solar_total_kw ) )
+        {
+          $format_object->cloud_info = $readings_obj->est_solar_total_kw . " KW";
+        }
+        // cloudinesss percentage information to be printed below the cloud servo icon serving 2 purposes
+        $format_object->cloud_info .= '<br>' . round($readings_obj->cloudiness_average_percentage_weighted,1) . "%";
+      }
+      else
+      {
+        $format_object->cloud_info = "";
       }
 
-      if ( ! empty( $readings_obj->est_solar_total_kw ) )
-      {
-        $status .= " Pest: " . $readings_obj->est_solar_total_kw . " KW";
-      }
 
       // present time
       $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
@@ -2776,11 +2781,10 @@ class class_transindus_eco
       $xcomlan_status  = "Xcomlan TS: " . $readings_obj->seconds_elapsed_xcomlan_ts;
       $shellybm_status = "ShellyBM TS: " . $readings_obj->seconds_elapsed_shellybm_ts;
 
-      $status .= " " . $now_format;
+      // $status .= " " . $now_format;
 
       
       $status_html = '<span style="color: Blue; display:block; text-align: center;">' .
-                        $status   . '<br>' . 
                         'LVDS: ' . $readings_obj->soc_percentage_lvds_setting  . '% ' . $readings_obj->average_battery_voltage_lvds_setting . 'V' .
                       '</span>';
 

@@ -131,6 +131,9 @@ jQuery(document).ready(function($) {
             // update Shelly Servo icon
             $('#shelly_servo_icon').html( data.shelly_servo_icon);
 
+            // update the percentage cloudiness information
+            $('#cloud_info').html( data.cloud_info);
+
             // update Shelly Servo icon
             $('#soc_percentage_now').html( data.soc_percentage_now_html);
 

@@ -671,7 +671,7 @@ class shelly_device
         }
         else
         {
-          error_log("Curl GET failed from Shelly Device" . print_r($curl_response,true));
+          error_log("Curl GET failed from Shelly Device: $this->shelly_device_model IP: $this->shelly_device_static_ip");
           return NULL;
         }
     }

@@ -2403,7 +2403,7 @@ class class_transindus_eco
               break;
 
 
-          case ( $shellyplus1pm_grid_switch_output_status_string === "ON" ): // Switch is ON
+          case ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $readings_obj->keep_shelly_switch_closed_always === true ): // Switch is ON
               $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Blue;"></i>';
 
               $grid_arrow_icon  = '<i class="fa-solid' . $grid_arrow_size .  'fa-arrow-right-long fa-rotate-by"
@@ -2412,6 +2412,16 @@ class class_transindus_eco
               $grid_info = '<span style="font-size: 18px;color: Red;"><strong>' . $home_grid_kw_power . 
                             ' KW</strong><br>' . $home_grid_voltage . ' V</span>';
               break;
+
+          case ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $readings_obj->keep_shelly_switch_closed_always === false ): // Switch is ON
+            $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Green;"></i>';
+
+            $grid_arrow_icon  = '<i class="fa-solid' . $grid_arrow_size .  'fa-arrow-right-long fa-rotate-by"
+                                                                              style="--fa-rotate-angle: 45deg;">
+                                </i>';
+            $grid_info = '<span style="font-size: 18px;color: Red;"><strong>' . $home_grid_kw_power . 
+                          ' KW</strong><br>' . $home_grid_voltage . ' V</span>';
+            break;
 
 
           case ( $shellyplus1pm_grid_switch_output_status_string === "OFF" ):   // Switch is online and OFF

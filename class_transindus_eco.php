@@ -1857,7 +1857,7 @@ class class_transindus_eco
           // check if capture happened. now-event time < 12h since event can happen at 7PM and last till 6:30AM
           $soc_capture_after_dark_happened = $this->check_if_soc_after_dark_happened($user_index, $wp_user_name, $wp_user_ID);
 
-          if (  $soc_capture_after_dark_happened === false  && $shelly_readings_obj->emeters[0]->total && $time_window_for_soc_dark_capture_open )
+          if (  $soc_capture_after_dark_happened === false  && $shellyem_readings_obj->emeters[0]->total && $time_window_for_soc_dark_capture_open )
           { // event not happened yet so make it happen with valid value for the home energy EM counter reading
 
             // 1st preference is given to SOC value calculated by xcom-LAN method. So let's check its value
@@ -1879,7 +1879,7 @@ class class_transindus_eco
                                                     $wp_user_name, 
                                                     $wp_user_ID, 
                                                     $soc_used_for_dark_capture, 
-                                                    $shelly_readings_obj->emeters[0]->total,
+                                                    $shellyem_readings_obj->emeters[0]->total,
                                                     $time_window_for_soc_dark_capture_open );
           }
 

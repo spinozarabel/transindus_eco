@@ -27,13 +27,13 @@
  * @author     Madhu Avasarala
  */
 
-require_once(__DIR__."/studer_api.php");              // contains studer api class
-require_once(__DIR__."/class_solar_calculation.php"); // contains studer api class
+// require_once(__DIR__."/studer_api.php");       
+require_once(__DIR__."/class_solar_calculation.php");
 require_once(__DIR__."/openweather_api.php");         // contains openweather class
 require_once(__DIR__."/class_my_mqtt.php");
 require_once(__DIR__."/class_shelly_device_lan.php"); // contains the class to get shelly device data over LAN
 
-// require_once(__DIR__."/shelly_cloud_api.php");        // contains Shelly Cloud API class
+// require_once(__DIR__."/shelly_cloud_api.php");       
 
 class class_transindus_eco
 {
@@ -777,13 +777,13 @@ class class_transindus_eco
             // 4 loops for each wp-cron trigger spaced by 15s due to the sleep function. wp-cron every 60s
             // for ($i=0; $i < 2; $i++) 
             { 
-              $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
+              $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly );
               sleep(11);
 
-              $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
+              $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly );
               sleep(11);
 
-              $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly, false );
+              $this->get_readings_and_servo_grid_switch( 0, $wp_user_ID, $wp_user_name, $do_shelly );
             }
             
           }
@@ -1543,8 +1543,7 @@ class class_transindus_eco
     public function get_readings_and_servo_grid_switch( int     $user_index, 
                                                         int     $wp_user_ID, 
                                                         string  $wp_user_name, 
-                                                        bool    $do_shelly,
-                                                        bool    $make_studer_api_call = true ) : void
+                                                        bool    $do_shelly      ) : void
     {
         // This is the main object that we deal with  for storing and processing data gathered from our IOT devices
         $shelly_readings_obj = new stdClass;

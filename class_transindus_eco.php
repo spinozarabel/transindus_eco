@@ -2383,6 +2383,8 @@ class class_transindus_eco
 
       $soc_percentage_now_calculated_using_shelly_bm  = round($readings_obj->soc_percentage_now_calculated_using_shelly_bm, 1);
 
+      $keep_shelly_switch_closed_always = (bool) $readings_obj->keep_shelly_switch_closed_always;
+
       if ( ! empty( $readings_obj->soc_percentage_now_using_dark_shelly ) )
       {
         $soc_percentage_now_using_dark_shelly = round($readings_obj->soc_percentage_now_using_dark_shelly, 1);
@@ -2403,7 +2405,7 @@ class class_transindus_eco
               break;
 
 
-          case ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $readings_obj->keep_shelly_switch_closed_always === true ): // Switch is ON
+          case ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $keep_shelly_switch_closed_always === true ): // Switch is ON
               $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Blue;"></i>';
 
               $grid_arrow_icon  = '<i class="fa-solid' . $grid_arrow_size .  'fa-arrow-right-long fa-rotate-by"
@@ -2413,7 +2415,7 @@ class class_transindus_eco
                             ' KW</strong><br>' . $home_grid_voltage . ' V</span>';
               break;
 
-          case ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $readings_obj->keep_shelly_switch_closed_always === false ): // Switch is ON
+          case ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $keep_shelly_switch_closed_always === false ): // Switch is ON
             $grid_status_icon = '<i class="clickableIcon fa-solid fa-3x fa-power-off" style="color: Green;"></i>';
 
             $grid_arrow_icon  = '<i class="fa-solid' . $grid_arrow_size .  'fa-arrow-right-long fa-rotate-by"

@@ -3907,7 +3907,11 @@ class class_transindus_eco
     }
 
     /**
-     * 
+     *  @return object:xcomlan_studer_data_obj  contains the Studer measurements
+     *  A shell_exec script execution of a python script containing commands
+     *  To get Studer Data via xcom-lan using serial protocol of Studer
+     *  This needs a local installation of python library https://github.com/zocker-160/xcom-protocol
+     *  
      */
     public function get_studer_readings_over_xcomlan_without_mqtt():  object
     {

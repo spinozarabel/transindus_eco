@@ -1765,6 +1765,8 @@ class class_transindus_eco
             $shelly_readings_obj->xcomlan_studer_data_obj = $xcomlan_studer_data_obj;
 
             $shelly_readings_obj->psolar_kw = $psolar_kw;
+
+            error_log(print_r($xcomlan_studer_data_obj, true));
           }
         }
 

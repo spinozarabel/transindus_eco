@@ -2036,25 +2036,28 @@ class class_transindus_eco
 
         { // Switch control Tree decision
 
-          // Get flap transient - If transient doesnt exist rebuild
-          $switch_flap_array = get_transient( 'switch_flap_array' ); 
+          { // determine if switch is flapping
+            // Get flap transient - If transient doesnt exist rebuild
+            $switch_flap_array = get_transient( 'switch_flap_array' ); 
 
-          if ( ! is_array($switch_flap_array))
-          {
-            $switch_flap_array = [];
-          }
+            if ( ! is_array($switch_flap_array))
+            {
+              $switch_flap_array = [];
+            }
 
-          $switch_flap_amount = array_sum( $switch_flap_array);
+            $switch_flap_amount = array_sum( $switch_flap_array);
 
-          if ( $switch_flap_amount  > 2 )
+            if ( $switch_flap_amount  > 2 )
             {
               // This means that over a 15m running average, there are more than 2 switch operations from ON->OFF or from OFF->ON
               $switch_is_flapping = true;
             }
-          else
+            else
             {
               $switch_is_flapping = false;
             }
+          }
+          
         
           // $main_control_site_avasarala_is_offline_for_long = $this->check_if_main_control_site_avasarala_is_offline_for_long();
           // $shelly_readings_obj->main_control_site_avasarala_is_offline_for_long   = $main_control_site_avasarala_is_offline_for_long;
@@ -2099,66 +2102,87 @@ class class_transindus_eco
           $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
           $now_timestamp = $now->getTimestamp();
 
+          // get the switch tree exit condition from transient. Recreate if it doesn't exist
           if ( false === ( $switch_tree_obj = get_transient( 'switch_tree_obj') ) )
-          {
+          { // doesn't exist so recreate a fresh default one
             $switch_tree_obj = new stdClass;
             $switch_tree_obj->switch_tree_exit_condition = "no_action";
             $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
           }
+          {
+            // switch exit transient exists and has been read into object for use
+          }
 
           switch (true) 
-          {
+          { // decision tree to determine switching based on logic determined above
             case ( $LVDS ):
 
               $success_on = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'on' );
 
-              error_log("LogLvds: SOC is LOW, commanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
               if ( $success_on )
               {
+                error_log("LogLvds: SOC is LOW, commanded to turn ON Shelly 1PM Grid switch - SUCCESS");
                 $switch_tree_obj->switch_tree_exit_condition = "LVDS";
                 $present_switch_tree_exit_condition = "LVDS";
                 $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
+              }
+              else
+              {
+                error_log("LogLvds: SOC is LOW, commanded to turn ON Shelly 1PM Grid switch - FAILED!!!!!!");
               }
             break;
 
             case ( $switch_release_LVDS ):
               $success_off = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'off' );
-              error_log("LogLvds: SOC has recovered, Solar is charging Battery, commanded to turn OFF Shelly 1PM Grid switch - Success: $success_off");
+              
               if ( $success_off )
               {
+                error_log("LogLvds: SOC has recovered, Solar is charging Battery, turn Grid switch OFF - SUCCESS");
                 $switch_tree_obj->switch_tree_exit_condition = "lvds_release";
                 $present_switch_tree_exit_condition = "lvds_release";
                 $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
+              }
+              else
+              {
+                error_log("LogLvds: SOC has recovered, Solar is charging Battery, turn Grid switch OFF - FAIL");
               }
             break;
 
             case ( $always_on_switch_release ):
               $success_off = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'off' );
 
-              error_log("LogAlways_on OFF:  commanded to turn OFF Shelly 1PM Grid switch - Success: $success_off");
-
               if ( $success_off )
               {
+                error_log("LogAlways_on OFF:  commanded to turn Grid switch OFF - SUCCESS");
                 $switch_tree_obj->switch_tree_exit_condition  = "always_on_release";
                 $present_switch_tree_exit_condition           = "always_on_release";
                 $switch_tree_obj->switch_tree_exit_timestamp  = $now_timestamp;
+              }
+              else
+              {
+                error_log("LogAlways_on OFF:  commanded to turn Grid switch OFF - FAIL");
               }
             break;
 
             case ( $keep_shelly_switch_closed_always ):
               $success_on = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'on' );
-              error_log("Log: Always ON - ommanded to turn ON Shelly 1PM Grid switch - Success: $success_on");
+              
               if ( $success_on )
               {
+                error_log("Log: Always ON - ommanded to turn ON Shelly 1PM Grid switch - SUCCESS");
                 $switch_tree_obj->switch_tree_exit_condition  = "always_on";
                 $present_switch_tree_exit_condition           = "always_on";
                 $switch_tree_obj->switch_tree_exit_timestamp  = $now_timestamp;
+              }
+              else
+              {
+                error_log("Log: Always ON - ommanded to turn ON Shelly 1PM Grid switch - FAIL");
               }
             break;
             
             default:
               // no switch action
-              $this->verbose ? error_log("NOMINAL - No switch Action was done in this cycle"): false;
+              $this->verbose ? error_log("NOMINAL - No Action"): false;
               $present_switch_tree_exit_condition = "no_action";
 
               // no change in switch_tree_obj

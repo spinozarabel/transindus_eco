@@ -1831,8 +1831,11 @@ class class_transindus_eco
           $soc_batt_charge_net_percent_today_studer_kwh = $kwh_batt_charge_net_today_studer_kwh / $battery_capacity_kwh * 100;
 
           // SOC% using STUDER Measurements
-          $soc_percentage_now_studer_kwh = round( $soc_percentage_at_midnight + $soc_batt_charge_net_percent_today_studer_kwh, 5);
-          error_log("SOC using studer energies: $soc_percentage_now_studer_kwh %");
+          $soc_percentage_now_studer_kwh = round( $soc_percentage_at_midnight + $soc_batt_charge_net_percent_today_studer_kwh, 1);
+          $shelly_readings_obj->soc_percentage_now_studer_kwh = $soc_percentage_now_studer_kwh;
+          $shelly_readings_obj->solar_kwh_today     = $solar_kwh_today;
+          $shelly_readings_obj->inverter_kwh_today  = $inverter_kwh_today;
+          $shelly_readings_obj->grid_kwh_today      = $grid_kwh_today;
         }
 
         if ( $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg >= $average_battery_float_voltage || $soc_percentage_now_calculated_using_studer_xcomlan > 100.1 )
@@ -2311,7 +2314,8 @@ class class_transindus_eco
           $log_string .= " PV: "    . number_format($pv_current_now_total_xcomlan,1) . " Inv: "  . number_format($inverter_current_xcomlan,1);
           $log_string .= " X-A: "   . number_format($batt_current_xcomlan,1);
           $log_string .= " S-A: "   . number_format($batt_amps_shellybm,1) . ' Vbat:'            .  number_format($batt_voltage_xcomlan_avg,1);
-          $log_string .= " SOC-S: " . number_format($soc_percentage_now_calculated_using_shelly_bm,1); // this is the shelly BM based soc%
+          $log_string .= " SOC-St: " . number_format($soc_percentage_now_studer_kwh,1); // this is the Studer based soc%
+          $log_string .= " SOC-B: " . number_format($soc_percentage_now_calculated_using_shelly_bm,1); // this is the shelly BM based soc%
           $log_string .= " SOC-X: " . number_format($soc_percentage_now,1 ) . '%';                     // this is the xcom-lan current based soc%
 
           error_log($log_string);

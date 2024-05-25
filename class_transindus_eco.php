@@ -1977,21 +1977,22 @@ class class_transindus_eco
           { // 1st preference for xcom-lan battery current based SOC
             case ( $xcom_lan_reading_is_ok_bool && $studer_reading_is_ok_bool && $xcom_lan_studer_kwh_diff_ok_bool ):
               error_log("All conditions for xcom-lan soc value satisfied");
-            
+            break;
 
             // 2nd preference for Shelly Battery current measurement based SOC, means xcom-lan SOC is not OK
             case ( $shelly_bm_reading_is_ok_bool && $studer_reading_is_ok_bool && $shelly_bm_studer_kwh_diff_ok_bool ):
               error_log("All conditions for shelly-bm soc value satisfied");
-            
+            break;
 
             // 3rd preference - Studer readings are not valid so use shelly Battery Current Measurement based SOC
             case ( ! $xcom_lan_reading_is_ok_bool && ! $studer_reading_is_ok_bool && $shelly_bm_reading_is_ok_bool  ):
               error_log("Shelly BM SOC is OK but Studer and xcom-lan out of bounds");
-            
+            break;
             
             // xcom-lan is OK but diff between Studer is more than 5 points
             case ( $xcom_lan_reading_is_ok_bool && $studer_reading_is_ok_bool && ! $xcom_lan_studer_kwh_diff_ok_bool ):
               error_log("xcom-lan SOC OK but delta is more than 5 points!");
+            break;
           }
 
           

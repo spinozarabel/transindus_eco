@@ -1275,12 +1275,12 @@ class class_transindus_eco
           $previous_batt_amps_xcomlan =   (float) get_transient( 'previous_batt_current_xcomlan' )              ?? $batt_amps_xcomlan_now;
 
           // set present values of shellybm for next cycle
-          set_transient( 'timestamp_battery_last_measurement',  $ts_shellybm_now,       5 * 60 );
-          set_transient( 'amps_battery_last_measurement',       $batt_amps_shelly_now,  5 * 60 );
+          set_transient( 'timestamp_battery_last_measurement',  $ts_shellybm_now,       5 * 60 * 60 );
+          set_transient( 'amps_battery_last_measurement',       $batt_amps_shelly_now,  5 * 60 * 60 );
 
           // set present values of xcomlan for next cycle
-          set_transient( 'timestamp_xcomlan_battery_last_measurement',  $ts_xcomlan_now,        5 * 60 );
-          set_transient( 'previous_batt_current_xcomlan',               $batt_amps_xcomlan_now, 5 * 60 );
+          set_transient( 'timestamp_xcomlan_battery_last_measurement',  $ts_xcomlan_now,        5 * 60 * 60 );
+          set_transient( 'previous_batt_current_xcomlan',               $batt_amps_xcomlan_now, 5 * 60 * 60 );
 
           // duration in seconds between timestamps for shelly_bm method
           $delta_secs_shellybm  = $ts_shellybm_now - $previous_ts_shellybm;
@@ -1289,6 +1289,9 @@ class class_transindus_eco
           // duration in secs between measurements
           $delta_secs_xcomlan   = $ts_xcomlan_now - $previous_ts_xcomlan;
           $delta_hours_xcomlan  = $delta_secs_xcomlan / 3600;
+
+          $battery_soc_since_midnight_obj->delta_secs_shellybm  = $delta_secs_shellybm;
+          $battery_soc_since_midnight_obj->delta_secs_xcomlan   = $delta_secs_xcomlan;
 
         break;
 
@@ -1309,12 +1312,15 @@ class class_transindus_eco
           $delta_hours_shellybm = $delta_secs_shellybm / 3600;
 
           // set present values of shellybm for next cycle
-          set_transient( 'timestamp_battery_last_measurement',  $ts_shellybm_now,       60 * 60 );
-          set_transient( 'amps_battery_last_measurement',       $batt_amps_shelly_now,  60 * 60 );
+          set_transient( 'timestamp_battery_last_measurement',  $ts_shellybm_now,       5 * 60 * 60 );
+          set_transient( 'amps_battery_last_measurement',       $batt_amps_shelly_now,  5 * 60 * 60 );
 
           // use values of shellybm for scomlan since xcomlan set is empty
-          set_transient( 'timestamp_xcomlan_battery_last_measurement',  $ts_shellybm_now,      60 * 60 );
-          set_transient( 'previous_batt_current_xcomlan',               $batt_amps_shelly_now, 60 * 60 );
+          set_transient( 'timestamp_xcomlan_battery_last_measurement',  $ts_shellybm_now,      5 * 60 * 60 );
+          set_transient( 'previous_batt_current_xcomlan',               $batt_amps_shelly_now, 5 * 60 * 60 );
+
+          $battery_soc_since_midnight_obj->delta_secs_shellybm  = $delta_secs_shellybm;
+          $battery_soc_since_midnight_obj->delta_secs_xcomlan   = null;
 
         break;
 
@@ -1335,12 +1341,15 @@ class class_transindus_eco
           $delta_secs_xcomlan   = $ts_xcomlan_now - $previous_ts_xcomlan;
           $delta_hours_xcomlan  = $delta_secs_xcomlan / 3600;
 
-          set_transient( 'timestamp_battery_last_measurement',  $ts_xcomlan_now,        60 * 60 );
-          set_transient( 'amps_battery_last_measurement',       $batt_amps_xcomlan_now, 60 * 60 );
+          set_transient( 'timestamp_battery_last_measurement',  $ts_xcomlan_now,        5 * 60 * 60 );
+          set_transient( 'amps_battery_last_measurement',       $batt_amps_xcomlan_now, 5 * 60 * 60 );
 
           // use values of shellybm for scomlan since xcomlan set is empty
-          set_transient( 'timestamp_xcomlan_battery_last_measurement',  $ts_xcomlan_now,        60 * 60 );
-          set_transient( 'previous_batt_current_xcomlan',               $batt_amps_xcomlan_now, 60 * 60 );
+          set_transient( 'timestamp_xcomlan_battery_last_measurement',  $ts_xcomlan_now,        5 * 60 * 60 );
+          set_transient( 'previous_batt_current_xcomlan',               $batt_amps_xcomlan_now, 5 * 60 * 60 );
+
+          $battery_soc_since_midnight_obj->delta_secs_shellybm  = null;
+          $battery_soc_since_midnight_obj->delta_secs_xcomlan   = $delta_secs_xcomlan;
 
         break;
         
@@ -1364,6 +1373,9 @@ class class_transindus_eco
 
           // set the default battery current
           $battery_soc_since_midnight_obj->batt_amps = 0;
+
+          $battery_soc_since_midnight_obj->delta_secs_shellybm  = null;
+          $battery_soc_since_midnight_obj->delta_secs_xcomlan   = null;
           
           return $battery_soc_since_midnight_obj;
 
@@ -1765,8 +1777,6 @@ class class_transindus_eco
             $shelly_readings_obj->xcomlan_studer_data_obj = $xcomlan_studer_data_obj;
 
             $shelly_readings_obj->psolar_kw = $psolar_kw;
-
-            // error_log(print_r($xcomlan_studer_data_obj, true));
           }
         }
 
@@ -1959,19 +1969,24 @@ class class_transindus_eco
                                           $soc_percentage_now_studer_kwh > 30      &&
                                           $soc_percentage_now_studer_kwh < 105;
 
-          $xcom_lan_reading_is_ok_bool  = ! empty( $soc_percentage_now_calculated_using_studer_xcomlan ) &&
-                                          $soc_percentage_now_calculated_using_studer_xcomlan > 30      &&
-                                          $soc_percentage_now_calculated_using_studer_xcomlan < 101;
+          $xcom_lan_reading_is_ok_bool  = ! empty( $soc_percentage_now_calculated_using_studer_xcomlan )  &&
+                                          $soc_percentage_now_calculated_using_studer_xcomlan > 30        &&
+                                          $soc_percentage_now_calculated_using_studer_xcomlan < 101       &&
+                                          $batt_soc_accumulation_obj->delta_secs_xcomlan < 300;
 
           $shelly_bm_reading_is_ok_bool = ! empty( $soc_percentage_now_calculated_using_shelly_bm ) &&
-                                          $soc_percentage_now_calculated_using_shelly_bm > 30      &&
-                                          $soc_percentage_now_calculated_using_shelly_bm < 101;  
+                                          $soc_percentage_now_calculated_using_shelly_bm  > 30      &&
+                                          $soc_percentage_now_calculated_using_shelly_bm  < 101     &&
+                                          $batt_soc_accumulation_obj->delta_secs_shellybm < 300; 
                                           
-          $xcom_lan_studer_kwh_diff_ok_bool = abs( $soc_percentage_now_calculated_using_studer_xcomlan - $soc_percentage_now_studer_kwh ) < 5;
+          $xcom_lan_studer_kwh_diff_ok_bool   = abs(  $soc_percentage_now_calculated_using_studer_xcomlan - 
+                                                      $soc_percentage_now_studer_kwh  ) < 5;
 
-          $shelly_bm_studer_kwh_diff_ok_bool = abs( $soc_percentage_now_calculated_using_shelly_bm - $soc_percentage_now_studer_kwh ) < 5;
+          $shelly_bm_studer_kwh_diff_ok_bool  = abs(  $soc_percentage_now_calculated_using_shelly_bm - 
+                                                      $soc_percentage_now_studer_kwh  ) < 5;
 
-          $xcom_lan_shelly_bm_diff_ok_bool = abs( $soc_percentage_now_calculated_using_studer_xcomlan - $soc_percentage_now_calculated_using_shelly_bm ) < 5;
+          $xcom_lan_shelly_bm_diff_ok_bool    = abs(  $soc_percentage_now_calculated_using_studer_xcomlan - 
+                                                      $soc_percentage_now_calculated_using_shelly_bm ) < 5;
 
           switch (true)
           { // 1st preference for xcom-lan battery current based SOC

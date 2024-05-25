@@ -1820,7 +1820,19 @@ class class_transindus_eco
             $shelly_readings_obj->battery_power_kw = round( 49.8 * $batt_amps * 0.001, 3 );
           }
           // calculate the SOC from the Studer readings over xcom-lan just as a backup
-          
+          $inverter_kwh_today = $xcomlan_studer_data_obj->inverter_kwh_today;
+          $solar_kwh_today    = $xcomlan_studer_data_obj->solar_kwh_today;
+          $grid_kwh_today     = $xcomlan_studer_data_obj->grid_kwh_today;
+
+          // Net battery charge in KWH (discharge if minus) as measured by STUDER
+          $kwh_batt_charge_net_today_studer_kwh  = $solar_kwh_today * 0.96 + (0.988 * $grid_kwh_today - $inverter_kwh_today) * 1.07;
+  
+          // Calculate in percentage of  installed battery capacity
+          $soc_batt_charge_net_percent_today_studer_kwh = $kwh_batt_charge_net_today_studer_kwh / $$battery_capacity_kwh * 100;
+
+          // SOC% using STUDER Measurements
+          $soc_percentage_now_studer_kwh = round( $soc_percentage_at_midnight + $soc_batt_charge_net_percent_today_studer_kwh, 5);
+          error_log("SOC using studer energies: $soc_percentage_now_studer_kwh %");
         }
 
         if ( $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg >= $average_battery_float_voltage || $soc_percentage_now_calculated_using_studer_xcomlan > 100.1 )

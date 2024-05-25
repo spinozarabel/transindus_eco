@@ -1937,7 +1937,7 @@ class class_transindus_eco
               $shelly_energy_counter_after_dark = (float) get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark',   true);
 
               // get the difference in energy consumed since last reading
-              $home_consumption_wh_after_dark_using_shellyem = $shelly_readings_obj->emeters[0]->total - $shelly_energy_counter_after_dark;
+              $home_consumption_wh_after_dark_using_shellyem = $shellyem_readings_obj->emeters[0]->total - $shelly_energy_counter_after_dark;
 
               // convert to KW and round to 3 decimal places
               $home_consumption_kwh_after_dark_using_shellyem = round( $home_consumption_wh_after_dark_using_shellyem * 0.001, 3);

@@ -1794,7 +1794,7 @@ class class_transindus_eco
           $soc_xcomlan_since_midnight                         = $batt_soc_accumulation_obj->soc_xcomlan_since_midnight;
           $soc_percentage_now_calculated_using_studer_xcomlan = $soc_percentage_at_midnight + $soc_xcomlan_since_midnight;
 
-          $batt_amps                                      = $batt_soc_accumulation_obj->batt_amps;
+          $batt_amps  = $batt_soc_accumulation_obj->batt_amps;  // best number from both methods
 
           
           // lets update the user meta for updated SOC
@@ -1803,6 +1803,7 @@ class class_transindus_eco
           // $surplus  power is any surplus from solar after load consumption, available for battery, etc.
           $surplus = round( $batt_amps * 49.8 * 0.001, 1 ); // in KW
 
+          // update readings object with SOC's
           $shelly_readings_obj->surplus  = $surplus;
           $shelly_readings_obj->soc_percentage_now_calculated_using_shelly_bm       = $soc_percentage_now_calculated_using_shelly_bm;
           $shelly_readings_obj->soc_percentage_now_calculated_using_studer_xcomlan  = $soc_percentage_now_calculated_using_studer_xcomlan;
@@ -1818,6 +1819,8 @@ class class_transindus_eco
             // if not use an average battery voltage of 49.8V over its cycle of 48.5 - 51.4 V
             $shelly_readings_obj->battery_power_kw = round( 49.8 * $batt_amps * 0.001, 3 );
           }
+          // calculate the SOC from the Studer readings over xcom-lan just as a backup
+          
         }
 
         if ( $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg >= $average_battery_float_voltage || $soc_percentage_now_calculated_using_studer_xcomlan > 100.1 )
@@ -4029,6 +4032,9 @@ class class_transindus_eco
         $xcomlan_studer_data_obj->psolar_kw                         = $psolar_kw;
         $xcomlan_studer_data_obj->batt_current_xcomlan              = $batt_current_xcomlan;
         $xcomlan_studer_data_obj->xcomlan_ts                        = $xcomlan_ts;
+        $xcomlan_studer_data_obj->inverter_kwh_today  = round(  $studer_data_via_xcomlan->inverter_kwh_today, 3);
+        $xcomlan_studer_data_obj->solar_kwh_today     = round(  $studer_data_via_xcomlan->solar_kwh_today, 3);
+        $xcomlan_studer_data_obj->grid_kwh_today      = round(  $studer_data_via_xcomlan->grid_kwh_today, 3);
 
         return $xcomlan_studer_data_obj;
       }

@@ -1819,30 +1819,32 @@ class class_transindus_eco
             // if not use an average battery voltage of 49.8V over its cycle of 48.5 - 51.4 V
             $shelly_readings_obj->battery_power_kw = round( 49.8 * $batt_amps * 0.001, 3 );
           }
-          // calculate the SOC from the Studer readings over xcom-lan just as a backup
-          $inverter_kwh_today = $xcomlan_studer_data_obj->inverter_kwh_today;
-          $solar_kwh_today    = $xcomlan_studer_data_obj->solar_kwh_today;
-          $grid_kwh_today     = $xcomlan_studer_data_obj->grid_kwh_today;
 
-          // Net battery charge in KWH (discharge if minus) as measured by STUDER
-          $kwh_batt_charge_net_today_studer_kwh  = $solar_kwh_today * 0.96 + (0.988 * $grid_kwh_today - $inverter_kwh_today) * 1.07;
-  
-          // Calculate in percentage of  installed battery capacity
-          $soc_batt_charge_net_percent_today_studer_kwh = $kwh_batt_charge_net_today_studer_kwh / $battery_capacity_kwh * 100;
+          { // calculate the SOC from the Studer readings of day energy balance over xcom-lan just as a backup
+            $inverter_kwh_today = $xcomlan_studer_data_obj->inverter_kwh_today;
+            $solar_kwh_today    = $xcomlan_studer_data_obj->solar_kwh_today;
+            $grid_kwh_today     = $xcomlan_studer_data_obj->grid_kwh_today;
 
-          // SOC% using STUDER Measurements
-          $soc_percentage_now_studer_kwh = round( $soc_percentage_at_midnight + $soc_batt_charge_net_percent_today_studer_kwh, 1);
-          $shelly_readings_obj->soc_percentage_now_studer_kwh = $soc_percentage_now_studer_kwh;
-          $shelly_readings_obj->solar_kwh_today     = $solar_kwh_today;
-          $shelly_readings_obj->inverter_kwh_today  = $inverter_kwh_today;
-          $shelly_readings_obj->grid_kwh_today      = $grid_kwh_today;
+            // Net battery charge in KWH (discharge if minus) as measured by STUDER
+            $kwh_batt_charge_net_today_studer_kwh  = $solar_kwh_today * 0.96 + (0.988 * $grid_kwh_today - $inverter_kwh_today) * 1.07;
+    
+            // Calculate in percentage of  installed battery capacity
+            $soc_batt_charge_net_percent_today_studer_kwh = $kwh_batt_charge_net_today_studer_kwh / $battery_capacity_kwh * 100;
+
+            // SOC% using STUDER Measurements
+            $soc_percentage_now_studer_kwh = round( $soc_percentage_at_midnight + $soc_batt_charge_net_percent_today_studer_kwh, 1);
+            $shelly_readings_obj->soc_percentage_now_studer_kwh = $soc_percentage_now_studer_kwh;
+            $shelly_readings_obj->solar_kwh_today     = $solar_kwh_today;
+            $shelly_readings_obj->inverter_kwh_today  = $inverter_kwh_today;
+            $shelly_readings_obj->grid_kwh_today      = $grid_kwh_today;
+          }
         }
 
-        if ( $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg >= $average_battery_float_voltage || $soc_percentage_now_calculated_using_studer_xcomlan > 100.1 )
-        {   // battery float voltage achieved OR soc-xcom-lan greater than 100% so use 100% clamp
+        // Battery FLOAT or SOC overflow past 100%, Clamp SOC at 100%
+        if ( $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg >= $average_battery_float_voltage || $soc_percentage_now_calculated_using_studer_xcomlan > 100 )
+        {   // adjust battery_xcomlan_soc_percentage_accumulated_since_midnight to implement the 100% clamp
             $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
 
-            // write this value back to the user meta
             update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
                                             $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight);
 
@@ -1943,9 +1945,62 @@ class class_transindus_eco
           $soc_capture_after_dark_happened = false;
         }
 
-        // This is the preferred SOC value as it is backed by shelly BM.
-        $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
-        $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;
+        { // select SOC based on most likely accurate one and use for switch control
+
+          /*  The a lgorithm for valid SOC determination is as follows:
+              1. Is the value between 30 and 100?
+              2. Is the difference between the SOC's less than 5 points?
+              3. 1st preference is for soc_xcomlan, 2nd is for soc_shelly_bm, 3rd is for soc_studer_kwh
+              4. If the difference ebtween studer_kwh method and the other 2 is more than 5 points,
+                  their values are adjusted to match that of the Studer. This can happen if there is a local LAN outage.
+          */
+
+          $studer_reading_is_ok_bool    = ! empty( $soc_percentage_now_studer_kwh ) &&
+                                          $soc_percentage_now_studer_kwh > 30      &&
+                                          $soc_percentage_now_studer_kwh < 105;
+
+          $xcom_lan_reading_is_ok_bool  = ! empty( $soc_percentage_now_calculated_using_studer_xcomlan ) &&
+                                          $soc_percentage_now_calculated_using_studer_xcomlan > 30      &&
+                                          $soc_percentage_now_calculated_using_studer_xcomlan < 101;
+
+          $shelly_bm_reading_is_ok_bool = ! empty( $soc_percentage_now_calculated_using_shelly_bm ) &&
+                                          $soc_percentage_now_calculated_using_shelly_bm > 30      &&
+                                          $soc_percentage_now_calculated_using_shelly_bm < 101;  
+                                          
+          $xcom_lan_studer_kwh_diff_ok_bool = abs( $soc_percentage_now_calculated_using_studer_xcomlan - $soc_percentage_now_studer_kwh ) < 5;
+
+          $shelly_bm_studer_kwh_diff_ok_bool = abs( $soc_percentage_now_calculated_using_shelly_bm - $soc_percentage_now_studer_kwh ) < 5;
+
+          $xcom_lan_shelly_bm_diff_ok_bool = abs( $soc_percentage_now_calculated_using_studer_xcomlan - $soc_percentage_now_calculated_using_shelly_bm ) < 5;
+
+          switch (true)
+          { // 1st preference for xcom-lan battery current based SOC
+            case ( $xcom_lan_reading_is_ok_bool && $studer_reading_is_ok_bool && $xcom_lan_studer_kwh_diff_ok_bool ):
+              error_log("All conditions for xcom-lan soc value satisfied");
+            
+
+            // 2nd preference for Shelly Battery current measurement based SOC, means xcom-lan SOC is not OK
+            case ( $shelly_bm_reading_is_ok_bool && $studer_reading_is_ok_bool && $shelly_bm_studer_kwh_diff_ok_bool ):
+              error_log("All conditions for shelly-bm soc value satisfied");
+            
+
+            // 3rd preference - Studer readings are not valid so use shelly Battery Current Measurement based SOC
+            case ( ! $xcom_lan_reading_is_ok_bool && ! $studer_reading_is_ok_bool && $shelly_bm_reading_is_ok_bool  ):
+              error_log("Shelly BM SOC is OK but Studer and xcom-lan out of bounds");
+            
+            
+            // xcom-lan is OK but diff between Studer is more than 5 points
+            case ( $xcom_lan_reading_is_ok_bool && $studer_reading_is_ok_bool && ! $xcom_lan_studer_kwh_diff_ok_bool ):
+              error_log("xcom-lan SOC OK but delta is more than 5 points!");
+          }
+
+          
+          // This is the default preferred SOC value as it is backed by shelly BM.
+          $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
+
+          $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;
+
+        }
 
         // midnight actions
         if ( $this->is_time_just_pass_midnight( $user_index, $wp_user_name ) )

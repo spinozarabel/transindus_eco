@@ -1852,25 +1852,39 @@ class class_transindus_eco
         }
 
         // Battery FLOAT or SOC overflow past 100%, Clamp SOC at 100%
-        if ( $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg >= $average_battery_float_voltage || $soc_percentage_now_calculated_using_studer_xcomlan > 100 )
-        {   // adjust battery_xcomlan_soc_percentage_accumulated_since_midnight to implement the 100% clamp
-            $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
+        if (  $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg  >= $average_battery_float_voltage ||
+              $soc_percentage_now_calculated_using_studer_xcomlan > 100                             ||
+              $soc_percentage_now_calculated_using_shelly_bm      > 100                             ||
+              $soc_percentage_now_studer_kwh                      > 100
+            )
+        {   // adjust common soc midnight value such that studer kwh computed soc is 100%
+            $new_soc_percentage_at_midnight = 100.0 - $soc_percentage_now_studer_kwh;
+
+            //check that this new value is not too different from the originally set value
+            if ( abs( $new_soc_percentage_at_midnight - $soc_percentage_at_midnight ) > 5 )
+            {
+              // ignore the change
+              $new_soc_percentage_at_midnight = $soc_percentage_at_midnight;
+            }
+
+            // adjust battery_xcomlan_soc_percentage_accumulated_since_midnight to implement the 100% clamp
+            $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight = 100 - $new_soc_percentage_at_midnight;
 
             update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
                                             $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight);
 
             // recalculate Battery SOC % accumulated since midnight as measured by Shelly battery measurement
-            $recal_battery_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
+            $recal_battery_soc_percentage_accumulated_since_midnight = 100 - $new_soc_percentage_at_midnight;
 
             // write this value back to the user meta using the shelly BM method
             update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
 
-            /*
-              Ideally, the daily SOC error should be 0.
-              The SOC error comes about due to decrease in battery capacity and or due to errors in the battery current measurement
-              and errors in numerical integration. If the average error changes slowly with time over months
-              then the most probable reason is degaradation in battery capacity due to age and charge cycling. 
-              */
+            // now lets also update the common soc value at last midnight with our adjusted new value
+            update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $new_soc_percentage_at_midnight );
+
+            error_log("updated SOC midnight value due to FLOAT from: $soc_percentage_at_midnight to $new_soc_percentage_at_midnight");
+
+
             if ( false === get_transient( 'soc_daily_error' ) )
             {
               // the transient does not exist so the daily error has not yet been captured so capture the error

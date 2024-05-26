@@ -1858,7 +1858,7 @@ class class_transindus_eco
               $soc_percentage_now_studer_kwh                      > 100
             )
         {   // adjust common soc midnight value such that studer kwh computed soc is 100%
-            $new_soc_percentage_at_midnight = 100.0 - $soc_percentage_now_studer_kwh;
+            $new_soc_percentage_at_midnight = 100.0 - $soc_batt_charge_net_percent_today_studer_kwh;
 
             //check that this new value is not too different from the originally set value
             if ( abs( $new_soc_percentage_at_midnight - $soc_percentage_at_midnight ) > 5 )

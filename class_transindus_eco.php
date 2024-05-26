@@ -1847,6 +1847,7 @@ class class_transindus_eco
             $shelly_readings_obj->solar_kwh_today     = $solar_kwh_today;
             $shelly_readings_obj->inverter_kwh_today  = $inverter_kwh_today;
             $shelly_readings_obj->grid_kwh_today      = $grid_kwh_today;
+            $shelly_readings_obj->soc_batt_charge_net_percent_today_studer_kwh = $soc_batt_charge_net_percent_today_studer_kwh;
           }
         }
 
@@ -1966,7 +1967,7 @@ class class_transindus_eco
           */
 
           $studer_reading_is_ok_bool    = ! empty( $soc_percentage_now_studer_kwh ) &&
-                                          $soc_percentage_now_studer_kwh > 30      &&
+                                          $soc_percentage_now_studer_kwh > 30       &&
                                           $soc_percentage_now_studer_kwh < 105;
 
           $xcom_lan_reading_is_ok_bool  = ! empty( $soc_percentage_now_calculated_using_studer_xcomlan )  &&
@@ -1994,6 +1995,8 @@ class class_transindus_eco
                     $studer_reading_is_ok_bool        && 
                     $xcom_lan_studer_kwh_diff_ok_bool       ):
               error_log("1st preference - All conditions for xcom-lan soc value satisfied");
+
+              $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
             break;
 
             // 2nd preference for Shelly BM even and xcom-lan is a don't care
@@ -2001,25 +2004,41 @@ class class_transindus_eco
                     $studer_reading_is_ok_bool        &&  
                     $shelly_bm_studer_kwh_diff_ok_bool  ):
               error_log("2nd preference - All conditions for shelly-bm soc value satisfied");
+
+              $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
             break;
 
             // 3rd preference - xcom-lan and Studer not OK so use shelly BM if OK
             case (  $shelly_bm_reading_is_ok_bool  ):
               error_log("3rd preference-Shelly BM SOC is OK - xcom-lan and studer probably failed");
+
+              $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
             break;
             
             // xcom-lan and shelly bm not OK probably offline briefly so use studer
             case ( $studer_reading_is_ok_bool ):
               error_log("4th preference - Using Studer KWH SOC");
+
+              // set the main soc value to the studer kwh derived value
+              $soc_percentage_now = $soc_percentage_now_studer_kwh;
+
+              // reset the xcom-lan and shell bm accumulated vlues based on studer kwh value
+              // make sure that time is not too close to midnight due to studer clock offest issues
+              if ( $this->nowIsWithinTimeLimits('00:15', '23:45') )
+              {
+                update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight',         $soc_batt_charge_net_percent_today_studer_kwh );
+                update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_batt_charge_net_percent_today_studer_kwh );
+
+                error_log("4th preference - Updating SOC since midnight values for xcom-lan, Shelly BM to: $soc_batt_charge_net_percent_today_studer_kwh%");
+              }
+              else
+              {
+                error_log("4th preference - Not updating since midnight values since close to midnight");
+              }
             break;
           }
 
-          
-          // This is the default preferred SOC value as it is backed by shelly BM.
-          $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
-
           $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;
-
         }
 
         // midnight actions

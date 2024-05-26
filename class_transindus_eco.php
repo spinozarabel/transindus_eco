@@ -1989,24 +1989,28 @@ class class_transindus_eco
                                                       $soc_percentage_now_calculated_using_shelly_bm ) < 5;
 
           switch (true)
-          { // 1st preference for xcom-lan battery current based SOC
-            case ( $xcom_lan_reading_is_ok_bool && $studer_reading_is_ok_bool && $xcom_lan_studer_kwh_diff_ok_bool ):
-              error_log("All conditions for xcom-lan soc value satisfied");
+          { // 1st preference for xcom-lan battery current based SOC, Shelly BM is a don't care
+            case (  $xcom_lan_reading_is_ok_bool      && 
+                    $studer_reading_is_ok_bool        && 
+                    $xcom_lan_studer_kwh_diff_ok_bool       ):
+              error_log("1st preference - All conditions for xcom-lan soc value satisfied");
             break;
 
-            // 2nd preference for Shelly Battery current measurement based SOC, means xcom-lan SOC is not OK
-            case ( $shelly_bm_reading_is_ok_bool && $studer_reading_is_ok_bool && $shelly_bm_studer_kwh_diff_ok_bool ):
-              error_log("All conditions for shelly-bm soc value satisfied");
+            // 2nd preference for Shelly BM even and xcom-lan is a don't care
+            case (  $shelly_bm_reading_is_ok_bool     &&
+                    $studer_reading_is_ok_bool        &&  
+                    $shelly_bm_studer_kwh_diff_ok_bool  ):
+              error_log("2nd preference - All conditions for shelly-bm soc value satisfied");
             break;
 
-            // 3rd preference - Studer readings are not valid so use shelly Battery Current Measurement based SOC
-            case ( ! $xcom_lan_reading_is_ok_bool && ! $studer_reading_is_ok_bool && $shelly_bm_reading_is_ok_bool  ):
-              error_log("Shelly BM SOC is OK but Studer and xcom-lan out of bounds");
+            // 3rd preference - xcom-lan and Studer not OK so use shelly BM if OK
+            case (  $shelly_bm_reading_is_ok_bool  ):
+              error_log("3rd preference-Shelly BM SOC is OK - xcom-lan and studer probably failed");
             break;
             
-            // xcom-lan is OK but diff between Studer is more than 5 points
-            case ( $xcom_lan_reading_is_ok_bool && $studer_reading_is_ok_bool && ! $xcom_lan_studer_kwh_diff_ok_bool ):
-              error_log("xcom-lan SOC OK but delta is more than 5 points!");
+            // xcom-lan and shelly bm not OK probably offline briefly so use studer
+            case ( $studer_reading_is_ok_bool ):
+              error_log("4th preference - Using Studer KWH SOC");
             break;
           }
 

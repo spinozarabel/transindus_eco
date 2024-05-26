@@ -1883,6 +1883,8 @@ class class_transindus_eco
             update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $new_soc_percentage_at_midnight );
 
             error_log("updated SOC midnight value due to FLOAT from: $soc_percentage_at_midnight to $new_soc_percentage_at_midnight");
+            error_log("Adjusted xcom-lan accumulated SOC to: $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight");
+            error_log("Adjusted xcom-lan accumulated SOC to: $recal_battery_soc_percentage_accumulated_since_midnight");
 
 
             if ( false === get_transient( 'soc_daily_error' ) )

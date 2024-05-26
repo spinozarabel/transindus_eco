@@ -2148,7 +2148,12 @@ class class_transindus_eco
             error_log("Cal-Midnight - The midnight update for Grid Home WH counter either failed or was unchanged");
           }
           // reset the SOC at midnight value to current update. This is only done once in 24h, at midnight
-          // we also have the option of using the variable: $soc_percentage_now_using_dark_shelly
+          // but check the value before reset
+          if ( $soc_percentage_now < 50 || $soc_percentage_now > 100 )
+          {
+            error_log("Cal-Midnight - SOC midnight value: $soc_percentage_now reset to 60 as it was out of bounds");
+            $soc_percentage_now = 60.0;
+          }
           update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $soc_percentage_now );
 
           // reset battery soc accumulated value to 0. This is only done once in 24h, at midnight

@@ -2010,7 +2010,7 @@ class class_transindus_eco
             case (  $xcom_lan_reading_is_ok_bool      && 
                     $studer_reading_is_ok_bool        && 
                     $xcom_lan_studer_kwh_diff_ok_bool       ):
-              error_log("1st preference - All conditions for xcom-lan soc value satisfied");
+              $this->verbose ? error_log("1st preference - All conditions for xcom-lan soc value satisfied"): false;
 
               $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
             break;
@@ -2125,12 +2125,12 @@ class class_transindus_eco
           if(!is_wp_error($post_id))
           {
             //the post is valid
-            error_log("Today's Daily Log CUstom Post was created successfully as Post ID:  $post_id");
+            error_log("Today's Daily Log Custom Post was created successfully as Post ID:  $post_id");
           }
           else
           {
             //there was an error in the post insertion, 
-            error_log("Error in Daily Log CUstom POst CReation:");
+            error_log("Error in Daily Log Custom Post CReation:");
             error_log($post_id->get_error_message());
           }
           
@@ -2433,7 +2433,7 @@ class class_transindus_eco
           $log_string .= " SOC-B: " . number_format($soc_percentage_now_calculated_using_shelly_bm,1); // this is the shelly BM based soc%
           $log_string .= " SOC-X: " . number_format($soc_percentage_now,1 ) . '%';                     // this is the xcom-lan current based soc%
 
-          error_log($log_string);
+          $this->verbose ? error_log($log_string): false;
         }
 
         // for remote pushed object we may add more data that is not needed for transient above

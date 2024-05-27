@@ -317,16 +317,17 @@ class class_transindus_eco
       }
 
       // Shelly EM API call was successfull and we have useful data. Round to 0 and convert to integer to get WattHours
-      $shelly_em_home_wh = (int) $shellyem_data_obj->emeters[0]->total;
+      $shelly_em_home_wh_counter_now = (int) $shellyem_data_obj->emeters[0]->total;
 
       // get the energy counter value set at midnight. Assumes that this is an integer
       $shelly_em_home_energy_counter_at_midnight = (int) ( get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', true) );
 
       // subtract the 2 integer counter readings to get the accumulated WH since midnight
-      $shelly_em_home_wh_since_midnight = $shelly_em_home_wh - $shelly_em_home_energy_counter_at_midnight;
+      $shelly_em_home_wh_since_midnight = $shelly_em_home_wh_counter_now - $shelly_em_home_energy_counter_at_midnight;
         
-      $shellyem_data_obj->wh_since_midnight      = $shelly_em_home_wh_since_midnight;
-      $shellyem_data_obj->wh_counter_at_midnight = $shelly_em_home_energy_counter_at_midnight;
+      $shellyem_data_obj->wh_since_midnight       = $shelly_em_home_wh_since_midnight;
+      $shellyem_data_obj->wh_counter_at_midnight  = $shelly_em_home_energy_counter_at_midnight;
+      $shellyem_data_obj->wh_counter_now          = $shelly_em_home_wh_counter_now;
 
       update_user_meta( $wp_user_ID, 'shelly_em_home_wh_since_midnight', $shelly_em_home_wh_since_midnight);
 
@@ -2162,7 +2163,7 @@ class class_transindus_eco
           // reset battery accumulated using xcomlan measurements
           update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 0);
 
-          error_log("Cal-Midnight - shelly_em_home_energy_counter_at_midnight: $shelly_readings_obj->emeters[0]->total");
+          error_log("Cal-Midnight - shelly_em_home_energy_counter_at_midnight: $shellyem_readings_obj->emeters[0]->total");
           error_log("Cal-Midnight - grid_wh_counter_at_midnight: $shellypro3em_3p_grid_obj->home_grid_wh_counter_now");
           error_log("Cal-Midnight - soc_percentage_at_midnight: $soc_percentage_now_calculated_using_shelly_bm");
           error_log("Cal-Midnight - battery_soc_percentage_accumulated_since_midnight: 0");

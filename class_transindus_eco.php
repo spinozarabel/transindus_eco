@@ -2006,35 +2006,33 @@ class class_transindus_eco
           $xcom_lan_shelly_bm_diff_ok_bool    = abs(  $soc_percentage_now_calculated_using_studer_xcomlan - 
                                                       $soc_percentage_now_calculated_using_shelly_bm ) < 5;
 
+          // 1st preference is for xcom-lan since it is a simple current measurement and it is backed by Shelly BM
+          //    As long as the Delta-T is less than 5m between successive measurements.
+          // 2nd preference is for shelly-bm since it is a simple current measurement as long as delta-T is < 5m
+          //  AND xcom-lan measureent has failed
+          // 3rd preference is for studer kw based if both xcom-lan and shelly bm fail or delta T is >5m
+          // 4th preference is for shelly bm if xcom-lan and studer fail even if delta-T > 5m
           switch (true)
           { // 1st preference for xcom-lan battery current based SOC, Shelly BM is a don't care
-            case (  $xcom_lan_reading_is_ok_bool      && 
-                    $studer_reading_is_ok_bool        && 
-                    $xcom_lan_studer_kwh_diff_ok_bool       ):
+            case (  $xcom_lan_reading_is_ok_bool      &&  // delta-T < 5m included in this
+                    $studer_reading_is_ok_bool        &&  // measurement exists and is in bounds 
+                    $xcom_lan_studer_kwh_diff_ok_bool ):  // delta-soc < 5 points
               $this->verbose ? error_log("1st preference - All conditions for xcom-lan soc value satisfied"): false;
 
               $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
             break;
 
-            // 2nd preference for Shelly BM even and xcom-lan is a don't care
-            case (  $shelly_bm_reading_is_ok_bool     &&
-                    $studer_reading_is_ok_bool        &&  
-                    $shelly_bm_studer_kwh_diff_ok_bool  ):
+            // 2nd preference for Shelly BM even and xcom-lan (and Studer) measurements are down
+            case (  $shelly_bm_reading_is_ok_bool ):      // delta-T < 5m included in this
+
               error_log("2nd preference - All conditions for shelly-bm soc value satisfied");
 
               $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
             break;
 
-            // 3rd preference - xcom-lan and Studer not OK so use shelly BM if OK
-            case (  $shelly_bm_reading_is_ok_bool  ):
-              error_log("3rd preference-Shelly BM SOC is OK - xcom-lan and studer probably failed");
-
-              $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
-            break;
-            
-            // xcom-lan and shelly bm not OK probably offline briefly so use studer
+            // 3rd preference - xcom-lan shelly BM are not OK for example because delta-T > 5m 
             case ( $studer_reading_is_ok_bool ):
-              error_log("4th preference - Using Studer KWH SOC");
+              error_log("3rd preference - Using Studer KWH SOC");
 
               // set the main soc value to the studer kwh derived value
               $soc_percentage_now = $soc_percentage_now_studer_kwh;
@@ -2046,11 +2044,11 @@ class class_transindus_eco
                 update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight',         $soc_batt_charge_net_percent_today_studer_kwh );
                 update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_batt_charge_net_percent_today_studer_kwh );
 
-                error_log("4th preference - Updating SOC since midnight values for xcom-lan, Shelly BM to: $soc_batt_charge_net_percent_today_studer_kwh%");
+                error_log("3rd preference - Updating SOC since midnight values for xcom-lan, Shelly BM to: $soc_batt_charge_net_percent_today_studer_kwh%");
               }
               else
               {
-                error_log("4th preference - Not updating since midnight values since close to midnight");
+                error_log("3rd preference - Not updating since midnight values since close to midnight");
               }
             break;
           }

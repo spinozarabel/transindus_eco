@@ -2044,7 +2044,8 @@ class class_transindus_eco
                 update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight',         $soc_batt_charge_net_percent_today_studer_kwh );
                 update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_batt_charge_net_percent_today_studer_kwh );
 
-                error_log("3rd preference - Updating SOC since midnight values for xcom-lan, Shelly BM to: $soc_batt_charge_net_percent_today_studer_kwh%");
+                error_log("3rd preference - Updating SOC since midnight value for xcom-lan to: $soc_batt_charge_net_percent_today_studer_kwh% from $soc_xcomlan_since_midnight%");
+                error_log("3rd preference - Updating SOC since midnight value for Shelly BM to: $soc_batt_charge_net_percent_today_studer_kwh% from $soc_shellybm_since_midnight%");
               }
               else
               {

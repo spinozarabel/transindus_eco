@@ -172,7 +172,7 @@ class class_transindus_eco
       //
 
       // set the logging
-      $this->verbose = true;
+      $this->verbose = false;
 
       // lat and lon at Trans Indus from Google Maps
       $this->lat        = 12.83463;
@@ -2014,9 +2014,7 @@ class class_transindus_eco
           // 4th preference is for shelly bm if xcom-lan and studer fail even if delta-T > 5m
           switch (true)
           { // 1st preference for xcom-lan battery current based SOC, Shelly BM is a don't care
-            case (  $xcom_lan_reading_is_ok_bool      &&  // delta-T < 5m included in this
-                    $studer_reading_is_ok_bool        &&  // measurement exists and is in bounds 
-                    $xcom_lan_studer_kwh_diff_ok_bool ):  // delta-soc < 5 points
+            case (  $xcom_lan_reading_is_ok_bool ):
               $this->verbose ? error_log("1st preference - All conditions for xcom-lan soc value satisfied"): false;
 
               $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;

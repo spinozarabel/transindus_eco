@@ -1984,23 +1984,24 @@ class class_transindus_eco
           */
 
           $studer_reading_is_ok_bool    = ! empty( $soc_percentage_now_studer_kwh ) &&
-                                          $soc_percentage_now_studer_kwh > 30       &&
-                                          $soc_percentage_now_studer_kwh < 105;
+                                          $soc_percentage_now_studer_kwh > 40       &&
+                                          $soc_percentage_now_studer_kwh < 101;
 
           $xcom_lan_reading_is_ok_bool  = ! empty( $soc_percentage_now_calculated_using_studer_xcomlan )  &&
-                                          $soc_percentage_now_calculated_using_studer_xcomlan > 30        &&
+                                          $soc_percentage_now_calculated_using_studer_xcomlan > 40        &&
                                           $soc_percentage_now_calculated_using_studer_xcomlan < 101       &&
                                           $batt_soc_accumulation_obj->delta_secs_xcomlan < 300;
 
           $shelly_bm_reading_is_ok_bool = ! empty( $soc_percentage_now_calculated_using_shelly_bm ) &&
-                                          $soc_percentage_now_calculated_using_shelly_bm  > 30      &&
+                                          $soc_percentage_now_calculated_using_shelly_bm  > 40      &&
                                           $soc_percentage_now_calculated_using_shelly_bm  < 101     &&
                                           $batt_soc_accumulation_obj->delta_secs_shellybm < 300; 
                                           
-          $xcom_lan_studer_kwh_diff_ok_bool   = abs(  $soc_percentage_now_calculated_using_studer_xcomlan - 
+          // xcom-lan soc is greater than studer soc but not more than 5 points
+          $xcom_lan_studer_kwh_diff_ok_bool   = (  $soc_percentage_now_calculated_using_studer_xcomlan - 
                                                       $soc_percentage_now_studer_kwh  ) < 5;
 
-          $shelly_bm_studer_kwh_diff_ok_bool  = abs(  $soc_percentage_now_calculated_using_shelly_bm - 
+          $shelly_bm_studer_kwh_diff_ok_bool  = (  $soc_percentage_now_calculated_using_shelly_bm - 
                                                       $soc_percentage_now_studer_kwh  ) < 5;
 
           $xcom_lan_shelly_bm_diff_ok_bool    = abs(  $soc_percentage_now_calculated_using_studer_xcomlan - 
@@ -2014,14 +2015,14 @@ class class_transindus_eco
           // 4th preference is for shelly bm if xcom-lan and studer fail even if delta-T > 5m
           switch (true)
           { // 1st preference for xcom-lan battery current based SOC, Shelly BM is a don't care
-            case (  $xcom_lan_reading_is_ok_bool ):
+            case (  $xcom_lan_reading_is_ok_bool && $studer_reading_is_ok_bool && $xcom_lan_studer_kwh_diff_ok_bool ):
               $this->verbose ? error_log("1st preference - All conditions for xcom-lan soc value satisfied"): false;
 
               $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
             break;
 
             // 2nd preference for Shelly BM even and xcom-lan (and Studer) measurements are down
-            case (  $shelly_bm_reading_is_ok_bool ):      // delta-T < 5m included in this
+            case (  $shelly_bm_reading_is_ok_bool && $studer_reading_is_ok_bool && $shelly_bm_studer_kwh_diff_ok_bool ):      // delta-T < 5m included in this
 
               error_log("2nd preference - All conditions for shelly-bm soc value satisfied");
 
@@ -2050,6 +2051,9 @@ class class_transindus_eco
                 error_log("3rd preference - Not updating since midnight values since close to midnight");
               }
             break;
+              
+              default:
+                $soc_percentage_now = 30;
           }
 
           $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;

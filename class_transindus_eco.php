@@ -2021,8 +2021,8 @@ class class_transindus_eco
               $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
             break;
 
-            // 2nd preference for Shelly BM even and xcom-lan (and Studer) measurements are down
-            case (  $shelly_bm_reading_is_ok_bool && $studer_reading_is_ok_bool && $shelly_bm_studer_kwh_diff_ok_bool ):      // delta-T < 5m included in this
+            // 2nd preference for Shelly BM in case xcom-lan and studer readings are not there
+            case (  $shelly_bm_reading_is_ok_bool ):      // delta-T < 5m included in this
 
               error_log("2nd preference - All conditions for shelly-bm soc value satisfied");
 
@@ -2038,7 +2038,7 @@ class class_transindus_eco
 
               // reset the xcom-lan and shell bm accumulated vlues based on studer kwh value
               // make sure that time is not too close to midnight due to studer clock offest issues
-              if ( $this->nowIsWithinTimeLimits('00:15', '23:45') )
+              if ( $this->nowIsWithinTimeLimits('00:15', '23:45') && ! empty( $soc_batt_charge_net_percent_today_studer_kwh ) )
               {
                 update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight',         $soc_batt_charge_net_percent_today_studer_kwh );
                 update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_batt_charge_net_percent_today_studer_kwh );

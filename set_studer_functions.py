@@ -33,5 +33,13 @@ with XcomLANTCP(port=4001) as xcom:
             amps = studer_settings_array["BATTERY_CHARGE_CURR"]
             if amps <= 40 and amps >= 0:
                 xcom.setValue(param.BATTERY_CHARGE_CURR, amps)
+        elif key == "BATTERY_PRIORITY":                                             # if key is BATTERY_PRIORITY
+            battery_priority_allowed = studer_settings_array["BATTERY_PRIORITY"]    # get value to be used from array
+            if battery_priority_allowed == 0  or  battery_priority_allowed == 1:    # check if value is in bounds
+                xcom.setValue(param.BATTERY_PRIORITY, battery_priority_allowed)     # set the value in Studer
+        elif key == "BATTERY_PRIORITY_VOLTAGE":
+            volts = studer_settings_array["BATTERY_PRIORITY_VOLTAGE"]
+            if volts <= 50 and volts >= 54:
+                xcom.setValue(param.BATTERY_PRIORITY_VOLTAGE, volts)
         else:
             print("key value does not match any - is equal to:", key, studer_settings_array[key] ) 

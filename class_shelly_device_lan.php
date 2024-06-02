@@ -198,7 +198,7 @@ class shelly_device
 
       // if we get here it means we have valid data from API call over LNA
       {
-        // otal energy WH counter values
+        // total energy WH counter values
         $shelly_device_data->emeters[0]->total = (int) round( $curlResponse->emeters[0]->total, 0 );  // channel 0 total energy WH counter
         $shelly_device_data->emeters[1]->total = (int) round( $curlResponse->emeters[1]->total, 0 );  // channel 1 total energy WH counter
 
@@ -671,7 +671,7 @@ class shelly_device
         }
         else
         {
-          error_log("Curl GET failed from Shelly Device" . print_r($curl_response,true));
+          error_log("Curl GET failed from Shelly Device: $this->shelly_device_model IP: $this->shelly_device_static_ip");
           return NULL;
         }
     }

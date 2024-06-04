@@ -3808,8 +3808,59 @@ class class_transindus_eco
             error_log( 'Error parsing JSON from MQTT studerxcomlan: '. json_last_error_msg() );
           }
           elseif( json_last_error() === JSON_ERROR_NONE )
-          {
-            // do all the flag updation here
+          { // do all the flag updation here
+
+
+            //----------------------- pump_duration_control enable/disable ---------------------------
+            if ( property_exists($flag_object, "pump_duration_control") )
+            {
+              $pump_duration_control_from_mqtt_update = (bool) $flag_object->pump_duration_control;
+
+              $pump_duration_control_present_setting  = (bool) get_user_meta($wp_user_ID, "pump_duration_control", true);
+
+              // compare the values and update if not the same
+              if ( $pump_duration_control_from_mqtt_update !== $pump_duration_control_present_setting )
+              {
+                update_user_meta($wp_user_ID, "pump_duration_control", $pump_duration_control_from_mqtt_update);
+                error_log(" Updated flag pump_duration_control From: $pump_duration_control_present_setting To $pump_duration_control_from_mqtt_update");
+              }
+            }
+
+
+            // ----------------------- pump_duration_secs_max ...................................
+            if ( property_exists($flag_object, "pump_duration_secs_max" ) )
+            {
+              $pump_duration_secs_max_from_mqtt_update = (float) $flag_object->pump_duration_secs_max;
+              $pump_duration_secs_max_present_setting  = (float) get_user_meta($wp_user_ID, "pump_duration_secs_max", true);
+
+              // compare the values and update if not the same provided update is meaningful
+              if (  $pump_duration_secs_max_from_mqtt_update != $pump_duration_secs_max_present_setting && 
+                    $pump_duration_secs_max_from_mqtt_update >= 600   &&
+                    $pump_duration_secs_max_from_mqtt_update <= 3600     )
+              {
+                update_user_meta($wp_user_ID, "pump_duration_secs_max", $pump_duration_secs_max_from_mqtt_update);
+                error_log(" Updated flag pump_duration_secs_max From: $pump_duration_secs_max_present_setting To $pump_duration_secs_max_from_mqtt_update");
+              }
+            }
+
+            // ----------------------- pump_power_restart_interval_secs ...................................
+            if ( property_exists($flag_object, "pump_power_restart_interval_secs" ) )
+            {
+              $pump_power_restart_interval_secs_from_mqtt_update = (float) $flag_object->pump_power_restart_interval_secs;
+              $pump_power_restart_interval_secs_present_setting  = (float) get_user_meta($wp_user_ID, "pump_power_restart_interval_secs", true);
+
+              // compare the values and update if not the same provided update is meaningful
+              if (  $pump_power_restart_interval_secs_from_mqtt_update != $pump_power_restart_interval_secs_present_setting && 
+                    $pump_power_restart_interval_secs_from_mqtt_update >= 3600   &&
+                    $pump_power_restart_interval_secs_from_mqtt_update <= 3600 * 4     )
+              {
+                update_user_meta($wp_user_ID, "pump_power_restart_interval_secs", $pump_power_restart_interval_secs_from_mqtt_update);
+                error_log(" Updated flag pump_power_restart_interval_secs From: $pump_power_restart_interval_secs_present_setting To $pump_power_restart_interval_secs_from_mqtt_update");
+              }
+            }
+            
+            // ----------------------- keep_shelly_switch_closed_always --------------------------
+
             if ( property_exists($flag_object, "keep_shelly_switch_closed_always") )
             {
               $keep_shelly_switch_closed_always_from_mqtt_update = (bool) $flag_object->keep_shelly_switch_closed_always;
@@ -3823,6 +3874,8 @@ class class_transindus_eco
                 error_log(" Updated flag keep_switch_closed_always From: $keep_shelly_switch_closed_always_present_setting To $keep_shelly_switch_closed_always_from_mqtt_update");
               }
             }
+
+            // ----------------------- Studer Charger Enable/Disable ------------------------------
 
             if ( property_exists($flag_object, "studer_charger_enabled") )
             {
@@ -3842,7 +3895,7 @@ class class_transindus_eco
             }
 
 
-            //                              BATTERY_PRIORITY enable/disable   studer_battery_priority_enabled
+            //----------------------- BATTERY_PRIORITY enable/disable ---------------------------
 
             if ( property_exists($flag_object, "studer_battery_priority_enabled") )
             {
@@ -3861,7 +3914,7 @@ class class_transindus_eco
               }
             }
 
-            //                            BATTERY_PRIORITY Voltage   studer_battery_priority_voltage
+            // --------------------------BATTERY_PRIORITY Voltage   studer_battery_priority_voltage
             if ( property_exists($flag_object, "studer_battery_priority_voltage" ) )
             {
               $studer_battery_priority_voltage_from_mqtt_update = (float) $flag_object->studer_battery_priority_voltage;
@@ -3880,7 +3933,7 @@ class class_transindus_eco
               }
             }
 
-
+            // ---------------------- Studer battery charging current -----------------------------
             if ( property_exists($flag_object, "studer_battery_charging_current" ) )
             {
               $studer_battery_charging_current_from_mqtt_update = (float) $flag_object->studer_battery_charging_current;
@@ -3899,7 +3952,7 @@ class class_transindus_eco
               }
             }
 
-
+            // ---------------------- average_battery_float_voltage -----------------------------
             if ( property_exists($flag_object, "average_battery_float_voltage" ) )
             {
               $average_battery_float_voltage_from_mqtt_update = (float) $flag_object->average_battery_float_voltage;
@@ -3915,6 +3968,7 @@ class class_transindus_eco
               }
             }
 
+            // ---------------------- soc_percentage_switch_release_setting -----------------------------
             if ( property_exists($flag_object, "soc_percentage_switch_release_setting" ) )
             {
               $soc_percentage_switch_release_setting_from_mqtt_update = (float) $flag_object->soc_percentage_switch_release_setting;
@@ -3932,8 +3986,10 @@ class class_transindus_eco
                 
           
             // do_shelly flag DOES NOT mirror the remote site
+
+
              
-            
+            // ---------------------- soc_percentage_lvds_setting -----------------------------
             if ( ! empty( $flag_object->soc_percentage_lvds_setting ) && $flag_object->soc_percentage_lvds_setting >= 45 && $flag_object->soc_percentage_lvds_setting < 99 )
             {
               $soc_percentage_lvds_setting_from_mqtt_update = (float) $flag_object->soc_percentage_lvds_setting;

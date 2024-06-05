@@ -327,7 +327,7 @@ class class_transindus_eco
         $defaults['do_minutely_updates']                              = ['default' => true,  'lower_limit' =>true,  'upper_limit' =>true];
         $defaults['do_shelly']                                        = ['default' => false,  'lower_limit' =>true,  'upper_limit' =>true];
         $defaults['keep_shelly_switch_closed_always']                 = ['default' => false,  'lower_limit' =>true,  'upper_limit' =>true];
-        $defaults['pump_duration_control']                            = ['default' => true,   'lower_limit' =>true,  'upper_limit' =>true];
+        $defaults['pump_duration_control']                            = ['default' => false,   'lower_limit' =>true,  'upper_limit' =>true];
         $defaults['pump_duration_secs_max']                           = ['default' => 2700,   'lower_limit' => 0,    'upper_limit' =>7200];
         $defaults['pump_power_restart_interval_secs']                 = ['default' => 120,    'lower_limit' => 0,    'upper_limit' =>86400];
         $defaults['studer_battery_charging_current']                  = ['default' => 5,      'lower_limit' => 0,    'upper_limit' =>30];   // studer supplied battery charging current DC Amps

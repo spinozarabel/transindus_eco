@@ -339,7 +339,9 @@ class class_transindus_eco
         foreach ($defaults as $user_meta_key => $default_row) {
           $user_meta_value  = get_user_meta($wp_user_ID, $user_meta_key,  true);
   
-          if ( empty( $user_meta_value ) ) {
+          // check that the user meta value is set or not. If not yet set, set it to the default from table above
+          if ( ! isset( $user_meta_value ) ) {
+            
             update_user_meta( $wp_user_ID, $user_meta_key, $default_row['default']);
           }
         }

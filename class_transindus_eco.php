@@ -977,8 +977,9 @@ class class_transindus_eco
             {
               // update the user meta with value from form since it is different from existing setting
               update_user_meta( $wp_user_ID, 'pump_duration_control', $submitted_field_value);
-
               error_log( "Updated User Meta - pump_duration_control - from Settings Form: " . $field[ 'value' ] );
+
+              $settings_obj_to_local_wp->pump_duration_control = (bool)  $submitted_field_value;
             }
           break;
 
@@ -1544,6 +1545,8 @@ class class_transindus_eco
               {
                 update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
                 error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+
+                $settings_obj_to_local_wp->pump_duration_secs_max = (int)  $field[ 'value' ];
               }
             }
             else
@@ -1572,6 +1575,8 @@ class class_transindus_eco
               {
                 update_user_meta( $wp_user_ID, $user_meta_key, $field[ 'value' ] );
                 error_log( "Updated User Meta - " . $user_meta_key . " - from Settings Form: " . $field[ 'value' ] );
+
+                $settings_obj_to_local_wp->pump_power_restart_interval_secs = (int)  $field[ 'value' ];
               }
             }
             else

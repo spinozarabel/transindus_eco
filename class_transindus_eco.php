@@ -5683,11 +5683,11 @@ class class_transindus_eco
     public function is_time_just_pass_midnight( int $user_index, string $wp_user_name ): bool
     {
       // if not within an hour of server clocks midnight return false. Studer offset will never be allowed to be more than 1h
-      if ($this->nowIsWithinTimeLimits("00:03:00", "23:59:00") )
+      if ($this->nowIsWithinTimeLimits("00:10:00", "23:50:00") )
       {
         return false;
       }
-      // we only get here betweeon 23:59:00 and 00:02:59
+      // we only get here betweeon 23:50:00 and 00:10:00
       // if the transient is expired it means we need to check
       if ( false === get_transient( 'is_time_just_pass_midnight' ) )
       {
@@ -5702,7 +5702,7 @@ class class_transindus_eco
 
         // if hours are 0 and offset adjusted minutes are 0 then we are just pass midnight per Studer clock
         // we added an additional offset of 1m just to be sure to account for any seconds offset
-        if( $h == 0 && $m  > ( $studer_time_offset_in_mins_lagging + 1 ) )
+        if( $h == 0 && ( $m - $studer_time_offset_in_mins_lagging ) > 1 )
         {
           // We are just past midnight on Studer clock, so return true after setiimg the transient
           set_transient( 'is_time_just_pass_midnight',  'yes', 5 * 60 );

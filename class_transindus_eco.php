@@ -2003,7 +2003,7 @@ class class_transindus_eco
           if ( $shelly_bm_reading_is_ok_bool )  $soc_array[]    = $soc_percentage_now_calculated_using_shelly_bm;
 
           // get the minimum value of SOC from the 3 methods available
-          $soc_minimum_from_all_methods = min( $soc_array );
+          $soc_minimum_from_all_methods = min( $soc_array ) ?? 30;
 
           error_log( "Minimum value of SOC from all 3 methods: $soc_minimum_from_all_methods" );
                                           
@@ -2025,27 +2025,29 @@ class class_transindus_eco
           // 4th preference is for shelly bm if xcom-lan and studer fail even if delta-T > 5m
 
           switch (true)
-          { // 1st preference for xcom-lan battery current based SOC, Shelly BM is a don't care
-            case (  $xcom_lan_reading_is_ok_bool && $studer_reading_is_ok_bool && $xcom_lan_studer_kwh_diff_ok_bool ):
+          { 
+            case ( $soc_percentage_now_calculated_using_studer_xcomlan == $soc_minimum_from_all_methods  ):
               $this->verbose ? error_log("1st preference - All conditions for xcom-lan soc value satisfied"): false;
 
-              $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
+              $soc_percentage_now = $soc_minimum_from_all_methods;
             break;
 
             // 2nd preference for Shelly BM in case xcom-lan and studer readings are not there
-            case (  $shelly_bm_reading_is_ok_bool ):      // delta-T < 5m included in this
+            case (  $soc_percentage_now_calculated_using_shelly_bm == $soc_minimum_from_all_methods ):
 
               error_log("2nd preference - All conditions for shelly-bm soc value satisfied");
 
-              $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
+              $soc_percentage_now = $soc_minimum_from_all_methods;
             break;
 
             // 3rd preference - xcom-lan shelly BM are not OK for example because delta-T > 5m 
-            case ( $studer_reading_is_ok_bool ):
+            case ( $soc_percentage_now_studer_kwh == $soc_minimum_from_all_methods ):
               error_log("3rd preference - Using Studer KWH SOC");
 
               // set the main soc value to the studer kwh derived value
-              $soc_percentage_now = $soc_percentage_now_studer_kwh;
+              $soc_percentage_now = $soc_minimum_from_all_methods;
+
+              /*
 
               // reset the xcom-lan and shell bm accumulated vlues based on studer kwh value
               // make sure that time is not too close to midnight due to studer clock offest issues
@@ -2061,6 +2063,7 @@ class class_transindus_eco
               {
                 error_log("3rd preference - Not updating since midnight values since close to midnight");
               }
+              */
             break;
               
               default:

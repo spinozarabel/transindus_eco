@@ -5229,7 +5229,7 @@ class class_transindus_eco
      *  @param int:obj
      * 
      *  The function checks that the time elapsed in seconds from now in Kolkata to the given timestamp in the past
-     *  It returns the elapsed time and also whether the elapsed time has exceeded the given duration.
+     *  It returns int seconds_elapsed, bool elapsed_time_exceeds_duration_given, int timestamp_now
      *  If it exceeds then true is returned if not a false is returned.
      */
     public function check_validity_of_timestamp( int $ts, int $duration_in_seconds) : object
@@ -5253,6 +5253,7 @@ class class_transindus_eco
         }
 
       $obj->seconds_elapsed = $seconds_elapsed;
+      $obj->timestamp_now   = $ts;
 
       return $obj;
     } 
@@ -5614,6 +5615,8 @@ class class_transindus_eco
     }
 
     /**
+     *  uses Studer API over internet to get this value. So internet access is required
+     * 
      *  @param int:$user_index in the config file
      *  @return int:$studer_time_offset_in_mins_lagging is the number of minutes that the Studer CLock is Lagging the server
      */
@@ -5624,7 +5627,7 @@ class class_transindus_eco
       $wp_user_name = $config['accounts'][$user_index]['wp_user_name'];
 
       // Get transient of Studer offset if it exists
-      if ( false === get_transient( $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' ) )
+      if ( false === get_transient( 'studer_time_offset_in_mins_lagging' ) )
       {
         // make an API call to get value of parameter 5002 which is the UNIX time stamp including the UTC offest
         $base_url  = $config['studer_api_baseurl'];
@@ -5639,35 +5642,29 @@ class class_transindus_eco
         // Make the API call to get the parameter value
         $studer_clock_unix_timestamp_with_utc_offset = $studer_api->get_parameter_value();
 
-        $this->verbose ? error_log( "studer_clock_unix_timestamp_with_utc_offset: " . $studer_clock_unix_timestamp_with_utc_offset ): false;
+        error_log( "studer_clock_unix_timestamp_with_utc_offset: " . $studer_clock_unix_timestamp_with_utc_offset );
         
         // if the value is null due to a bad API response then do nothing and return
         if ( empty( $studer_clock_unix_timestamp_with_utc_offset )) return;
 
-        // create datetime object from studer timestamp. Note that this already has the UTC offeset for India
-        $rcc_datetime_obj = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-        $rcc_datetime_obj->setTimeStamp($studer_clock_unix_timestamp_with_utc_offset);
-
-        $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-
-        // form interval object between now and Studer's time stamp under investigation
-        $diff = $now->diff( $rcc_datetime_obj );
+        // calculate the lag positive or lead negative of studer time with now
+        $clock_offset_obj = $this->check_validity_of_timestamp( $studer_clock_unix_timestamp_with_utc_offset, 3600);
 
         // positive means lagging behind, negative means leading ahead, of correct server time.
         // If Studer clock was correctr the offset should be 0 but Studer clock seems slow for some reason
         // 330 comes from pre-existing UTC offest of 5:30 already present in Studer's time stamp
-        $studer_time_offset_in_mins_lagging = 330 - ( $diff->i  + $diff->h *60);
+        $studer_time_offset_in_mins_lagging = (int) ( 330 - round( $clock_offset_obj->seconds_elapsed / 60, 0) );
 
-        set_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging',  
-                        $studer_time_offset_in_mins_lagging, 
-                        1*60*60 );
+        set_transient(  'studer_time_offset_in_mins_lagging', $studer_time_offset_in_mins_lagging, 1*60*60 );
 
-        $this->verbose ? error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins"): false;
+        error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins");
       }
       else
       {
         // offset already computed and transient still valid, just read in the value
-        $studer_time_offset_in_mins_lagging = get_transient(  $wp_user_name . '_' . 'studer_time_offset_in_mins_lagging' );
+        $studer_time_offset_in_mins_lagging = (int) get_transient( 'studer_time_offset_in_mins_lagging' );
+
+        error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins");
       }
       return $studer_time_offset_in_mins_lagging;
     }
@@ -5695,7 +5692,7 @@ class class_transindus_eco
       if ( false === get_transient( 'is_time_just_pass_midnight' ) )
       {
         // this could also be leading in which case the sign will be automatically negative
-        $studer_time_offset_in_mins_lagging = (int) 0;
+        $studer_time_offset_in_mins_lagging = (int) 0; // $this->get_studer_clock_offset( $user_index );
 
         // get current time compensated for our timezone
         $test = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
@@ -5704,8 +5701,8 @@ class class_transindus_eco
         $s=$test->format('s');
 
         // if hours are 0 and offset adjusted minutes are 0 then we are just pass midnight per Studer clock
-        // we added an additional offset just to be sure to account for any seconds offset
-        if( $h == 0 && $m  > 0 ) 
+        // we added an additional offset of 1m just to be sure to account for any seconds offset
+        if( $h == 0 && $m  > ( $studer_time_offset_in_mins_lagging + 1 ) )
         {
           // We are just past midnight on Studer clock, so return true after setiimg the transient
           set_transient( 'is_time_just_pass_midnight',  'yes', 5 * 60 );

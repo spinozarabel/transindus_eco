@@ -5716,7 +5716,7 @@ class class_transindus_eco
       // this will just return a transient or rebuild the transient every hour
       $studer_time_offset_in_mins_lagging = $this->get_studer_clock_offset( $user_index );
 
-      // if not within an hour of server clocks midnight return false. Studer offset will never be allowed to be more than 1h
+      // if not within a small window of server clocks midnight, return false. Studer offset will never be allowed to > 20m
       if ($this->nowIsWithinTimeLimits("00:20:00", "23:40:00") )
       {
         return false;

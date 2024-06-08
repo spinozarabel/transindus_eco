@@ -273,7 +273,7 @@ class class_transindus_eco
 
 
     /**
-     *  Turne Shelly Plus 1PM channel 0 to 'on' or 'off' as desired state passed in
+     *  Turne Shelly Plus 1PM GRID AC-IN switch to 'on' or 'off' as desired state passed in
      *  @param int:user_index 0
      *  @param string:desired_state 'on' | 'off' are the choices
      *  @return bool:operation_result true if final state is same as desired false otherwise
@@ -284,11 +284,14 @@ class class_transindus_eco
 
       $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
       $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+
+      // Load the GRID switch specific details
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_1pm'];
 
       $shellyplus1pm_grid_switch =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellyplus1pm' );
 
+      // We know that the Grid Switch is a ShellyPlus1PM so channel = 0
       $operation_result = $shellyplus1pm_grid_switch->turn_on_off_shelly_x_plus_pm_switch_over_lan( $desired_state, 0 );
 
       return $operation_result;

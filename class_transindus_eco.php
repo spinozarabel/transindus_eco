@@ -1852,7 +1852,7 @@ class class_transindus_eco
           }
         }
 
-        // Battery FLOAT or SOC overflow past 100%, Clamp SOC at 100%
+        // ..................... Battery FLOAT or SOC overflow past 100%, Clamp SOC at 100% ...................
         if (  $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg  >= $average_battery_float_voltage ||
               $soc_percentage_now_calculated_using_studer_xcomlan > 100                             ||
               $soc_percentage_now_calculated_using_shelly_bm      > 100                             ||

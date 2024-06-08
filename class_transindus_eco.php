@@ -273,7 +273,10 @@ class class_transindus_eco
 
 
     /**
-     *  
+     *  Turne Shelly Plus 1PM channel 0 to 'on' or 'off' as desired state passed in
+     *  @param int:user_index 0
+     *  @param string:desired_state 'on' | 'off' are the choices
+     *  @return bool:operation_result true if final state is same as desired false otherwise
      */
     public function turn_on_off_shellyplus1pm_grid_switch_over_lan( int $user_index, string $desired_state ) :  bool
     {

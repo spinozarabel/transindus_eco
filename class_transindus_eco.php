@@ -5706,7 +5706,7 @@ class class_transindus_eco
       if ( false === get_transient( 'is_time_just_pass_midnight' ) )
       {
         // this could also be leading in which case the sign will be automatically negative
-        $studer_time_offset_in_mins_lagging = (int) 0; // $this->get_studer_clock_offset( $user_index );
+        $studer_time_offset_in_mins_lagging = $this->get_studer_clock_offset( $user_index );
 
         // get current time compensated for our timezone
         $test = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));

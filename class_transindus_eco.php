@@ -5702,6 +5702,9 @@ class class_transindus_eco
      */
     public function is_time_just_pass_midnight( int $user_index, string $wp_user_name ): bool
     {
+      // this will just return a transient or rebuild the transient every hour
+      $studer_time_offset_in_mins_lagging = $this->get_studer_clock_offset( $user_index );
+
       // if not within an hour of server clocks midnight return false. Studer offset will never be allowed to be more than 1h
       if ($this->nowIsWithinTimeLimits("00:20:00", "23:40:00") )
       {
@@ -5711,9 +5714,6 @@ class class_transindus_eco
       // if the transient is expired it means we need to check
       if ( false === get_transient( 'is_time_just_pass_midnight' ) )
       {
-        // this could also be leading in which case the sign will be automatically negative
-        $studer_time_offset_in_mins_lagging = $this->get_studer_clock_offset( $user_index );
-
         // get current time compensated for our timezone
         $test = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
         $h=$test->format('H');

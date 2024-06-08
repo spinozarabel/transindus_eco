@@ -5680,6 +5680,12 @@ class class_transindus_eco
 
         error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins");
       }
+
+      if ( abs( $studer_time_offset_in_mins_lagging ) > 15 )
+      {
+        error_log( " Studer clock offset out of bounds and so 0 returned - check");
+        return 0;
+      }
       return $studer_time_offset_in_mins_lagging;
     }
 

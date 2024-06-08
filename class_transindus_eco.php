@@ -5670,7 +5670,7 @@ class class_transindus_eco
         $studer_time_offset_in_mins_lagging = (int) ( 330 + round( $clock_offset_obj->seconds_elapsed / 60, 0) );
         if ( abs( $studer_time_offset_in_mins_lagging ) > 10 )
         {
-          error_log( " Studer clock offset out of bounds and so 0 returned - check");
+          error_log( " Studer clock offset out of bounds and so 0 returned - check: $studer_time_offset_in_mins_lagging");
           $studer_time_offset_in_mins_lagging = 0;
         }
 

@@ -27,7 +27,7 @@
  * @author     Madhu Avasarala
  */
 
-// require_once(__DIR__."/studer_api.php");       
+require_once(__DIR__."/studer_api.php");       
 require_once(__DIR__."/class_solar_calculation.php");
 require_once(__DIR__."/openweather_api.php");         // contains openweather class
 require_once(__DIR__."/class_my_mqtt.php");

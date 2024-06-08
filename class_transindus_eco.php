@@ -5667,7 +5667,7 @@ class class_transindus_eco
         // positive means lagging behind, negative means leading ahead, of correct server time.
         // If Studer clock was correctr the offset should be 0 but Studer clock seems slow for some reason
         // 330 comes from pre-existing UTC offest of 5:30 already present in Studer's time stamp
-        $studer_time_offset_in_mins_lagging = (int) ( 330 - round( $clock_offset_obj->seconds_elapsed / 60, 0) );
+        $studer_time_offset_in_mins_lagging = (int) ( round( $clock_offset_obj->seconds_elapsed / 60, 0) - 330 );
 
         set_transient(  'studer_time_offset_in_mins_lagging', $studer_time_offset_in_mins_lagging, 1*60*60 );
 

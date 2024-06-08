@@ -1983,6 +1983,8 @@ class class_transindus_eco
                   their values are adjusted to match that of the Studer. This can happen if there is a local LAN outage.
           */
 
+          $soc_array = [];  // initialize to blank
+
           $studer_reading_is_ok_bool    = ! empty( $soc_percentage_now_studer_kwh ) &&
                                           $soc_percentage_now_studer_kwh > 40       &&
                                           $soc_percentage_now_studer_kwh < 101;
@@ -1996,6 +1998,14 @@ class class_transindus_eco
                                           $soc_percentage_now_calculated_using_shelly_bm  > 40      &&
                                           $soc_percentage_now_calculated_using_shelly_bm  < 101     &&
                                           $batt_soc_accumulation_obj->delta_secs_shellybm < 300; 
+          if ( $studer_reading_is_ok_bool )     $soc_array[]    = $soc_percentage_now_studer_kwh;
+          if ( $xcom_lan_reading_is_ok_bool )   $soc_array[]    = $soc_percentage_now_calculated_using_studer_xcomlan;
+          if ( $shelly_bm_reading_is_ok_bool )  $soc_array[]    = $soc_percentage_now_calculated_using_shelly_bm;
+
+          // get the minimum value of SOC from the 3 methods available
+          $soc_minimum_from_all_methods = min( $soc_array );
+
+          error_log( "Minimum value of SOC from all 3 methods: $soc_minimum_from_all_methods" );
                                           
           // xcom-lan soc is greater than studer soc but not more than 5 points
           $xcom_lan_studer_kwh_diff_ok_bool   = (  $soc_percentage_now_calculated_using_studer_xcomlan - 
@@ -2013,6 +2023,7 @@ class class_transindus_eco
           //  AND xcom-lan measureent has failed
           // 3rd preference is for studer kw based if both xcom-lan and shelly bm fail or delta T is >5m
           // 4th preference is for shelly bm if xcom-lan and studer fail even if delta-T > 5m
+
           switch (true)
           { // 1st preference for xcom-lan battery current based SOC, Shelly BM is a don't care
             case (  $xcom_lan_reading_is_ok_bool && $studer_reading_is_ok_bool && $xcom_lan_studer_kwh_diff_ok_bool ):
@@ -5683,11 +5694,11 @@ class class_transindus_eco
     public function is_time_just_pass_midnight( int $user_index, string $wp_user_name ): bool
     {
       // if not within an hour of server clocks midnight return false. Studer offset will never be allowed to be more than 1h
-      if ($this->nowIsWithinTimeLimits("00:10:00", "23:50:00") )
+      if ($this->nowIsWithinTimeLimits("00:20:00", "23:40:00") )
       {
         return false;
       }
-      // we only get here betweeon 23:50:00 and 00:10:00
+      // we only get here betweeon 23:40:00 and 00:20:00
       // if the transient is expired it means we need to check
       if ( false === get_transient( 'is_time_just_pass_midnight' ) )
       {

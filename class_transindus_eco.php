@@ -63,6 +63,7 @@ class class_transindus_eco
   public $verbose, $lat, $lon, $utc_offset, $cloudiness_forecast;
   public $index_of_logged_in_user, $wp_user_name_logged_in_user, $wp_user_obj;
   public $shelly_switch_acin_details;
+  public $studer_time_offset_in_mins_lagging;
 
   public $all_usermeta;
 
@@ -2188,6 +2189,9 @@ class class_transindus_eco
           error_log("Cal-Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
           error_log("Cal-Midnight - battery_xcomlan_soc_percentage_accumulated_since_midnight: 0");
         }
+
+        // add property of studer clock offest. The remote should send a notification if this is above a limit
+        $shelly_readings_obj->studer_time_offset_in_mins_lagging = $this->studer_time_offset_in_mins_lagging;
 
         { // Switch control Tree decision
 
@@ -5672,22 +5676,27 @@ class class_transindus_eco
         // If Studer clock was correctr the offset should be 0 but Studer clock seems slow for some reason
         // 330 comes from pre-existing UTC offest of 5:30 already present in Studer's time stamp
         $studer_time_offset_in_mins_lagging = (int) ( 330 + round( $clock_offset_obj->seconds_elapsed / 60, 0) );
+
+        $this->studer_time_offset_in_mins_lagging = $studer_time_offset_in_mins_lagging;
+
         if ( abs( $studer_time_offset_in_mins_lagging ) > 10 )
         {
           error_log( " Studer clock offset out of bounds and so 0 returned - check: $studer_time_offset_in_mins_lagging");
+
+          // @TODO send a message notification to adjust studer clock ahead
+
+          //reset value to a safe level. So this will result in a junp in SOC value of Studer KWH method, upward, briefly
           $studer_time_offset_in_mins_lagging = 0;
         }
 
         set_transient(  'studer_time_offset_in_mins_lagging', $studer_time_offset_in_mins_lagging, 1*60*60 );
 
-        error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins");
+        $this->verbose ? error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins"):false;
       }
       else
       {
         // offset already computed and transient still valid, just read in the value
         $studer_time_offset_in_mins_lagging = (int) get_transient( 'studer_time_offset_in_mins_lagging' );
-
-        error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins");
       }
 
       if ( abs( $studer_time_offset_in_mins_lagging ) > 10 )

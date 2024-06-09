@@ -29,8 +29,6 @@ with XcomLANTCP(port=4001) as xcom:
     pv_current_now_1        = xcom.getValue(param.PV_CURRENT_NOW, dstAddr=301)       # DC from VT1 into DC junction
     pv_current_now_2        = xcom.getValue(param.PV_CURRENT_NOW, dstAddr=302)       # DC from VT2 into DC junction
 
-    studer_timestamp        = xcom.getValue(param.TIME_STAMP)
-
     pv_current_now_total    = pv_current_now_1 + pv_current_now_2 # total PV DC current supplied into Battery interface
     solar_kwh_today         = solar_kwh_today1 + solar_kwh_today2 # Total solar energy supplied today from both panels
     
@@ -44,8 +42,7 @@ MyStuderData = {
     "timestamp_xcomlan_call":   timestamp_xcomlan_call,
     "inverter_kwh_today":       inverter_kwh_today,
     "solar_kwh_today":          solar_kwh_today,
-    "grid_kwh_today":           grid_kwh_today,
-    "studer_timestamp":         studer_timestamp
+    "grid_kwh_today":           grid_kwh_today
 }
 
 # convert to JSON

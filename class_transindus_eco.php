@@ -685,18 +685,22 @@ class class_transindus_eco
             $object_from_linux_home_desktop->seconds_elapsed_xcomlan_ts   = $seconds_elapsed_xcomlan_ts;
             $object_from_linux_home_desktop->seconds_elapsed_shellybm_ts  = $seconds_elapsed_shellybm_ts;
 
+            // get the timestamp of the last notification from transint
             if ( false === ( $last_notification_ts = get_transient('last_notification_ts') ) )
             {
+              // if transient is non-existent then re-enable the notifications
               $notifications_enabled = (bool) true;
             }
             else
             {
               if ( $this->check_validity_of_timestamp( $last_notification_ts, 1800 )->elapsed_time_exceeds_duration_given )
               {
+                // enable notifications since it has been more than 30m since last notification
                 $notifications_enabled = (bool) true;
               }
               else
               {
+                // disable notifications since less than 30m since last notification was issued
                 $notifications_enabled = (bool) false;
               }
             }
@@ -706,6 +710,17 @@ class class_transindus_eco
 
             // get the switch tree object
             $switch_tree_obj = $object_from_linux_home_desktop->switch_tree_obj;
+
+            // Get the studer clock offset lag in minutes from Linux home server clock
+            $studer_time_offset_in_mins_lagging = $object_from_linux_home_desktop->studer_time_offset_in_mins_lagging;
+
+            if ( $studer_time_offset_in_mins_lagging > 10 )
+            {
+              // issue notification if enabled
+              $notification_title   = "Studer Clock";
+              $notification_message = "Studer CLock lag " . $studer_time_offset_in_mins_lagging . "m";
+
+            }
 
             switch ( $object_from_linux_home_desktop->present_switch_tree_exit_condition )
             {

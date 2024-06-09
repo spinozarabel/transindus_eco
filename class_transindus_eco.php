@@ -5736,7 +5736,8 @@ class class_transindus_eco
         if( $h == 0 && ( $m - $studer_time_offset_in_mins_lagging ) > 1 )
         {
           // We are just past midnight on Studer clock, so return true after setiimg the transient
-          set_transient( 'is_time_just_pass_midnight',  'yes', 5 * 60 );
+          // we ensure that the transient lasts longer than the 40m window but less than 24h
+          set_transient( 'is_time_just_pass_midnight',  'yes', 45 * 60 );
           return true;
         }
       }

@@ -172,7 +172,7 @@ class class_transindus_eco
       //
 
       // set the logging
-      $this->verbose = true;
+      $this->verbose = false;
 
       // lat and lon at Trans Indus from Google Maps
       $this->lat        = 12.83463;
@@ -2039,14 +2039,14 @@ class class_transindus_eco
             // 2nd preference for Shelly BM in case xcom-lan and studer readings are not there
             case (  $soc_percentage_now_calculated_using_shelly_bm == $soc_minimum_from_all_methods ):
 
-              error_log("2nd preference - All conditions for shelly-bm soc value satisfied");
+              $this->verbose ? error_log("2nd preference - All conditions for shelly-bm soc value satisfied"): false;
 
               $soc_percentage_now = $soc_minimum_from_all_methods;
             break;
 
             // 3rd preference - xcom-lan shelly BM are not OK for example because delta-T > 5m 
             case ( $soc_percentage_now_studer_kwh == $soc_minimum_from_all_methods ):
-              error_log("3rd preference - Using Studer KWH SOC");
+              $this->verbose ? error_log("3rd preference - Using Studer KWH SOC"): false;
 
               // set the main soc value to the studer kwh derived value
               $soc_percentage_now = $soc_minimum_from_all_methods;
@@ -2453,7 +2453,7 @@ class class_transindus_eco
           $log_string .= " SOC-B: " . number_format($soc_percentage_now_calculated_using_shelly_bm,1); // this is the shelly BM based soc%
           $log_string .= " SOC-X: " . number_format($soc_percentage_now,1 ) . '%';                     // this is the xcom-lan current based soc%
 
-          $this->verbose ? error_log($log_string): false;
+          error_log($log_string);
         }
 
         // for remote pushed object we may add more data that is not needed for transient above

@@ -2010,8 +2010,6 @@ class class_transindus_eco
 
           // get the minimum value of SOC from the 3 methods available
           $soc_minimum_from_all_methods = min( $soc_array ) ?? 30;
-
-          error_log( "Minimum value of SOC from all 3 methods: $soc_minimum_from_all_methods" );
                                           
           // xcom-lan soc is greater than studer soc but not more than 5 points
           $xcom_lan_studer_kwh_diff_ok_bool   = (  $soc_percentage_now_calculated_using_studer_xcomlan - 

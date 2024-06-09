@@ -4131,10 +4131,6 @@ class class_transindus_eco
 
         $xcomlan_ts                   = (int)   $studer_data_via_xcomlan->timestamp_xcomlan_call;
 
-        $studer_timestamp             = $studer_data_via_xcomlan->studer_timestamp;
-
-        error_log("Studer TimeSTamp: $studer_timestamp");
-
         // battery current as measured by xcom-lan is got by adding + PV DC current amps and - inverter DC current amps
       
         $batt_current_xcomlan = ( $pv_current_now_total_xcomlan + $inverter_current_xcomlan );

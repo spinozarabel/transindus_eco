@@ -2158,7 +2158,7 @@ class class_transindus_eco
 
           // Then we reset values for the new day
           // reset Shelly EM Home WH counter to present reading in WH. This is only done once in 24h, at midnight
-          update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', $shelly_readings_obj->emeters[0]->total );
+          update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', $shellyem_readings_obj->emeters[0]->total );
 
           // reset Shelly 3EM Grid Energy counter to present reading. This is only done once in 24h, at midnight
           $update_operation = 
@@ -2170,10 +2170,10 @@ class class_transindus_eco
           }
           // reset the SOC at midnight value to current update. This is only done once in 24h, at midnight
           // but check the value before reset
-          if ( $soc_percentage_now < 50 || $soc_percentage_now > 100 )
+          if ( $soc_percentage_now < 40 || $soc_percentage_now > 100 )
           {
-            error_log("Cal-Midnight - SOC midnight value: $soc_percentage_now reset to 60 as it was out of bounds");
-            $soc_percentage_now = 60.0;
+            error_log("Cal-Midnight - SOC midnight value: $soc_percentage_now reset to 64 as it was out of bounds");
+            $soc_percentage_now = 40.0;
           }
           update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $soc_percentage_now );
 

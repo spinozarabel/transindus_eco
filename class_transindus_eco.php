@@ -2004,7 +2004,8 @@ class class_transindus_eco
           $shelly_bm_reading_is_ok_bool = ! empty( $soc_percentage_now_calculated_using_shelly_bm ) &&
                                           $soc_percentage_now_calculated_using_shelly_bm  > 40      &&
                                           $soc_percentage_now_calculated_using_shelly_bm  < 101     &&
-                                          $batt_soc_accumulation_obj->delta_secs_shellybm < 300; 
+                                          $batt_soc_accumulation_obj->delta_secs_shellybm < 300;
+                                           
           if ( $studer_reading_is_ok_bool )     $soc_array[]    = $soc_percentage_now_studer_kwh;
           if ( $xcom_lan_reading_is_ok_bool )   $soc_array[]    = $soc_percentage_now_calculated_using_studer_xcomlan;
           if ( $shelly_bm_reading_is_ok_bool )  $soc_array[]    = $soc_percentage_now_calculated_using_shelly_bm;
@@ -2031,26 +2032,26 @@ class class_transindus_eco
 
           switch (true)
           { 
-            case ( $soc_percentage_now_calculated_using_studer_xcomlan == $soc_minimum_from_all_methods  ):
+            case ( $xcom_lan_reading_is_ok_bool  ):
               $this->verbose ? error_log("1st preference - All conditions for xcom-lan soc value satisfied"): false;
 
-              $soc_percentage_now = $soc_minimum_from_all_methods;
+              $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
             break;
 
             // 2nd preference for Shelly BM in case xcom-lan and studer readings are not there
-            case (  $soc_percentage_now_calculated_using_shelly_bm == $soc_minimum_from_all_methods ):
+            case (  $shelly_bm_reading_is_ok_bool ):
 
               $this->verbose ? error_log("2nd preference - All conditions for shelly-bm soc value satisfied"): false;
 
-              $soc_percentage_now = $soc_minimum_from_all_methods;
+              $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
             break;
 
             // 3rd preference - xcom-lan shelly BM are not OK for example because delta-T > 5m 
-            case ( $soc_percentage_now_studer_kwh == $soc_minimum_from_all_methods ):
+            case ( $studer_reading_is_ok_bool ):
               $this->verbose ? error_log("3rd preference - Using Studer KWH SOC"): false;
 
               // set the main soc value to the studer kwh derived value
-              $soc_percentage_now = $soc_minimum_from_all_methods;
+              $soc_percentage_now = $soc_percentage_now_studer_kwh;
 
               /*
 
@@ -2086,18 +2087,17 @@ class class_transindus_eco
             Then write all of this daily data into a custom post for the day that just ended
           */
           // get the difference in counter redings to get home energy WH over last 24h before counter resets at midnight
-          $wh_energy_consumed_by_home_today  = $shelly_readings_obj->wh_since_midnight;
-          $kwh_energy_consumed_by_home_today = round( 0.001 * $wh_energy_consumed_by_home_today, 2) ?? 0;
+          $kwh_energy_consumed_by_home_today = $shelly_em_home_kwh_since_midnight;
 
           $wh_energy_from_grid_last_24h   = $shellypro3em_3p_grid_obj->home_grid_wh_counter_now - (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', true );
           $kwh_energy_from_grid_last_24h  = round( 0.001 * $wh_energy_from_grid_last_24h, 2);
 
-          $kwh_solar_generated_today          = get_transient( 'kwh_solar_generated_today' ) ?? 0;
-          // expire this transient soon with a value of 0. It will get restarted after sunrise for next day, in loop
-          set_transient( 'kwh_solar_generated_today', 0, 60 );
+          $kwh_solar_generated_today          = $solar_kwh_today; // data from syuder via xcom-lan
 
           // get the total SOC% accumulated in last 24h before it is reset for new day
-          $battery_soc_percentage_accumulated_last24h = (float) get_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', true );
+          $battery_soc_percentage_accumulated_last24h = 
+            (float) get_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', true );
+
           $kwh_accumulated_in_battery_today = round($battery_soc_percentage_accumulated_last24h * $battery_capacity_kwh / 100, 2);
 
           // get this for previous day as it will be reset to value for the upcoming new day

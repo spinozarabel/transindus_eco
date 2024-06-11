@@ -1681,6 +1681,8 @@ class class_transindus_eco
           { // ..................... water pump data acquisition -------------------------------------------
             $shellyplus1pm_water_pump_obj = $this->get_shellyplus1pm_water_pump_data_over_lan( $user_index );
 
+            $shellyplus1pm_water_pump_obj->pump_ON_duration_secs = 0;
+
             // If pump is NOT OFFLINE then check pump control duration
             if ( $shellyplus1pm_water_pump_obj->switch[0]->output_state_string !== "OFFLINE" )
             {

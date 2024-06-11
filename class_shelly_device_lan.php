@@ -33,19 +33,11 @@ class shelly_device
     
 
     public function __construct(    
-                                  string $auth_key, 
-                                  string $server_uri, 
-                                  string $shelly_device_id,
                                   string $shelly_device_static_ip, 
                                   string $shelly_device_model = "shellyplus1pm",  // defsult device
                                 )
     {
       $this->verbose  = self::VERBOSE;
-
-      $this->auth_key		              = $auth_key;                  // Auth key to access account
-	    $this->server_uri	              = $server_uri;                // The server uri can be obtained 
-                                                                    // on the same page where the authorization key is generated
-      $this->shelly_device_id         = $shelly_device_id;
 
       $this->shelly_device_static_ip  = $shelly_device_static_ip;
       $this->shelly_device_model      = $shelly_device_model;

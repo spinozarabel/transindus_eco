@@ -290,7 +290,7 @@ class class_transindus_eco
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_1pm'];
 
-      $shellyplus1pm_grid_switch =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellyplus1pm' );
+      $shellyplus1pm_grid_switch =  new shelly_device( $ip_static_shelly, 'shellyplus1pm' );
 
       // We know that the Grid Switch is a ShellyPlus1PM so channel = 0
       $operation_result = $shellyplus1pm_grid_switch->turn_on_off_shelly_x_plus_pm_switch_over_lan( $desired_state, 0 );
@@ -312,7 +312,7 @@ class class_transindus_eco
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_em'];
 
-      $shelly_device =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellyem' );
+      $shelly_device =  new shelly_device( $ip_static_shelly, 'shellyem' );
 
       $shellyem_data_obj = $shelly_device->get_shelly_device_data();
 
@@ -375,7 +375,7 @@ class class_transindus_eco
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin_3p'];
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_3em'];
 
-      $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellypro3em' );
+      $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellypro3em' );
 
       $shellypro3em_3p_grid_obj = $shelly_device->get_shelly_device_data();
 
@@ -802,9 +802,9 @@ class class_transindus_eco
     /**
      * 
      */
-    public function control_pump_on_duration( int $wp_user_ID, int $user_index, object $shellypro4pm_load_obj )
+    public function control_pump_on_duration( int $wp_user_ID, int $user_index, object $shellyplus1pm_water_pump_obj )
     {
-      if ( $shellypro4pm_load_obj->switch[3]->output_state_string === "OFFLINE" )
+      if ( $shellyplus1pm_water_pump_obj->switch[0]->output_state_string === "OFFLINE" )
       {
         // bad data passed in do nothing
         error_log( "Log-Pump bad data passed in do nothing in function control_pump_on_duration" );
@@ -827,19 +827,19 @@ class class_transindus_eco
       $pump_duration_secs_max           = $all_usermeta['pump_duration_secs_max'];
 
       // pump_duration_control flag
-      $pump_duration_control            = false;  // $all_usermeta['pump_duration_control'];
+      $pump_duration_control            = false; // $all_usermeta['pump_duration_control'];
 
       // pump_power_restart_interval_secs
       $pump_power_restart_interval_secs = $all_usermeta['pump_power_restart_interval_secs'];
 
       // set property in case pump was off so that this doesnt give a php notice otherwise
-      $shellypro4pm_load_obj->pump_ON_duration_secs = 0;
+      $shellyplus1pm_water_pump_obj->pump_ON_duration_secs = 0;
 
       // Is the pump enabled or not?
-      $power_to_pump_is_enabled = (bool) $shellypro4pm_load_obj->switch[0]->output_state_bool;
+      $power_to_pump_is_enabled = (bool) $shellyplus1pm_water_pump_obj->switch[0]->output_state_bool;
 
       // Pump power consumption in watts
-      $pump_power_watts = (int) round(  $shellypro4pm_load_obj->switch[0]->power, 0 );
+      $pump_power_watts = (int) round(  $shellyplus1pm_water_pump_obj->switch[0]->power, 0 );
 
       // determine if pump is drawing power or not
       $pump_is_drawing_power = ( $pump_power_watts > 50 );
@@ -1092,13 +1092,12 @@ class class_transindus_eco
         // Make an API call on the Shelly UNI device
         $config = $this->config;
 
-        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_plus_addon'];
         $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_addon'];
 
-        $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellyplus1-v' );
+        // new instance of shelly device for status and control over LAN
+        $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellyplus1-v' );
 
+        // device details and status
         $shellyplus1_batt_obj = $shelly_device->get_shelly_device_data();
 
         // check to make sure that response exists. If null call was fruitless
@@ -1130,9 +1129,12 @@ class class_transindus_eco
         // so to be conservative we are using a 10% reduction to see if this corrects the tendency.
         $batt_amps = -1.0 * round( $battery_amps_raw_measurement, 1) * 0.87;
 
-        $shellyplus1_batt_obj->batt_amps = $batt_amps;
-        $shellyplus1_batt_obj->timestamp = $timestamp;
-        
+        $shellyplus1_batt_obj->batt_amps      = $batt_amps;
+        $shellyplus1_batt_obj->timestamp      = $timestamp;
+
+        // add the API object as property to control included switch directly in the main routine
+        $shellyplus1_batt_obj->shelly_device  = $shelly_device;
+
         return $shellyplus1_batt_obj;
     }
 
@@ -1147,23 +1149,23 @@ class class_transindus_eco
         // get API and device ID from config based on user index
         $config = $this->config;
 
-        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
         $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_4pm'];
 
-        $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellypro4pm' );
+        $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellypro4pm' );
 
         $shellypro4pm_load_obj = $shelly_device->get_shelly_device_data();
 
         // check to make sure that it exists. If null API call was fruitless
-        if ( $shellypro4pm_load_obj->switch[3]->output_state_string === "OFFLINE" )
+        if ( $shellypro4pm_load_obj->switch[0]->output_state_string === "OFFLINE" )
         {
           error_log("LogApi: ShellyPro4PM LOAD switch API call failed");
-
           // no further processing. Object contains properties with no data except OFFLINE status as in above
-          
         }
+        else
+        {
+          $shellypro4pm_load_obj->shelly_device = $shelly_device;
+        }
+
         return $shellypro4pm_load_obj;
     }
 
@@ -1669,26 +1671,32 @@ class class_transindus_eco
             $shelly_readings_obj->timestamp_shellybm        = $timestamp_shellybm;
           }
 
-          { // ..................... ShellyPro4PM Home Load Measurement ..............................................
+          { // ..................... ShellyPro4PM Home Load Measurement ..........................--------
             $shellypro4pm_load_obj = $this->get_shellypro4pm_readings_over_lan( $user_index );
 
             // add the object as property to the main readings object
-            $shelly_readings_obj->shellypro4pm_load_obj        = $shellypro4pm_load_obj;
-
-            if ( $shellypro4pm_load_obj->switch[0]->output_state_string !== "OFFLINE" )
-            {   // there is a valid response from the Shelly 4PM device on the pump channel. 
-                // Control Pump ON max duration if enabled
-               
-                $this->control_pump_on_duration( $wp_user_ID, $user_index, $shellypro4pm_load_obj);
-            } 
+            $shelly_readings_obj->shellypro4pm_load_obj        = $shellypro4pm_load_obj; 
           }
 
-          { // ...................... water heater data acquisition
+          { // ..................... water pump data acquisition -------------------------------------------
+            $shellyplus1pm_water_pump_obj = $this->get_shellyplus1pm_water_pump_data_over_lan( $user_index );
+
+            // If pump is NOT OFFLINE then check pump control duration
+            if ( $shellyplus1pm_water_pump_obj->output_state_string !== "OFFLINE" )
+            {
+              // Control Pump ON max duration if enabled
+              // $this->control_pump_on_duration( $wp_user_ID, $user_index, $shellyplus1pm_water_pump_obj);
+            }
+
+            $shelly_readings_obj->shellyplus1pm_water_heater_obj = $shellyplus1pm_water_pump_obj;
+          }
+
+          { // ...................... water heater data acquisition -------------------------------------------------
             $shellyplus1pm_water_heater_obj = $this->get_shellyplus1pm_water_heater_data_over_lan( $user_index );
             $shelly_readings_obj->shellyplus1pm_water_heater_obj = $shellyplus1pm_water_heater_obj;
           }
 
-          { // ....................... Shelly EM device that captures total energy and power delivered to Home at Panel
+          { // ....................... Shelly EM device Home Energy, Power, and Voltage Measurements -----------------
             $shellyem_readings_obj = $this->get_shellyem_readings_over_lan( $user_index, $wp_user_name, $wp_user_ID );
 
             if ( $shellyem_readings_obj )   
@@ -1805,7 +1813,8 @@ class class_transindus_eco
             if ( abs( $new_soc_percentage_at_midnight - $soc_percentage_at_midnight ) > 5 )
             {
               // ignore the change
-              $new_soc_percentage_at_midnight = $soc_percentage_at_midnight;
+              // $new_soc_percentage_at_midnight = $soc_percentage_at_midnight;
+              error_log("Studer KWH based SOC reset at battery float change was more than 5 points");
             }
 
             // adjust battery_xcomlan_soc_percentage_accumulated_since_midnight to implement the 100% clamp
@@ -1968,7 +1977,7 @@ class class_transindus_eco
             case ( $xcom_lan_reading_is_ok_bool  ):
               $this->verbose ? error_log("1st preference - All conditions for xcom-lan soc value satisfied"): false;
 
-              $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
+              $soc_percentage_now = $soc_minimum_from_all_methods;
             break;
 
             // 2nd preference for Shelly BM in case xcom-lan and studer readings are not there
@@ -1976,7 +1985,7 @@ class class_transindus_eco
 
               $this->verbose ? error_log("2nd preference - All conditions for shelly-bm soc value satisfied"): false;
 
-              $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
+              $soc_percentage_now = $soc_minimum_from_all_methods;
             break;
 
             // 3rd preference - xcom-lan shelly BM are not OK for example because delta-T > 5m 
@@ -1984,7 +1993,7 @@ class class_transindus_eco
               $this->verbose ? error_log("3rd preference - Using Studer KWH SOC"): false;
 
               // set the main soc value to the studer kwh derived value
-              $soc_percentage_now = $soc_percentage_now_studer_kwh;
+              $soc_percentage_now = $soc_minimum_from_all_methods;
 
               /*
 
@@ -3628,7 +3637,7 @@ class class_transindus_eco
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_1pm'];
 
-      $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellyplus1pm' );
+      $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellyplus1pm' );
 
       $shellyplus1pm_grid_switch_obj = $shelly_device->get_shelly_device_data();
 
@@ -3648,11 +3657,34 @@ class class_transindus_eco
       $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_water_heater'];
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_water_heater'];
 
-      $shelly_device    =  new shelly_device( $shelly_auth_key, $shelly_server_uri, $shelly_device_id, $ip_static_shelly, 'shellyplus1pm' );
+      $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellyplus1pm' );
 
       $shellyplus1pm_water_heater_obj = $shelly_device->get_shelly_device_data();
 
       return $shellyplus1pm_water_heater_obj;
+    }
+
+
+
+    /**
+     * 
+     */
+    public function get_shellyplus1pm_water_pump_data_over_lan(int $user_index): ? object
+    {
+      // get API and device ID from config based on user index
+      $config = $this->config;
+      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_water_heater'];
+      $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_water_pump'];
+
+      $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellyplus1pm' );
+
+      $shellyplus1pm_water_pump_obj = $shelly_device->get_shelly_device_data();
+
+      $shellyplus1pm_water_pump_obj->shelly_device = $shelly_device;
+
+      return $shellyplus1pm_water_pump_obj;
     }
 
 
@@ -4951,23 +4983,19 @@ class class_transindus_eco
         
 
         // Shelly 4PM load breakout data
-        $power_total_to_home    = $readings_obj->shellypro4pm_load_obj->switch[2]->power +
-                                  $readings_obj->shellypro4pm_load_obj->switch[3]->power;
-        $power_total_to_home_kw = $readings_obj->shellypro4pm_load_obj->switch[3]->power_kw +
-                                  $readings_obj->shellypro4pm_load_obj->switch[2]->power_kw +
-                                  $readings_obj->shellypro4pm_load_obj->switch[1]->power_kw +
-                                  $readings_obj->shellypro4pm_load_obj->switch[0]->power_kw;
+        $power_to_ac_kw   = $readings_obj->shellypro4pm_load_obj->switch[0]->power_kw +
+                            $readings_obj->shellypro4pm_load_obj->switch[1]->power_kw +
+                            $readings_obj->shellypro4pm_load_obj->switch[2]->power_kw +
+                            $readings_obj->shellypro4pm_load_obj->switch[3]->power_kw;
 
-        $power_to_home_kw = $readings_obj->shellypro4pm_load_obj->switch[3]->power_kw +
-                            $readings_obj->shellypro4pm_load_obj->switch[2]->power_kw;
-        $power_to_ac_kw   = $readings_obj->shellypro4pm_load_obj->switch[1]->power_kw;
-        $power_to_pump_kw = $readings_obj->shellypro4pm_load_obj->switch[0]->power_kw;
+        $power_to_pump_kw = $readings_obj->shellyplus1pm_water_pump_obj->switch[0]->power_kw;
 
-        $pump_ON_duration_mins = (int) round( $readings_obj->shellypro4pm_load_obj->pump_ON_duration_secs / 60, 0);
+        $pump_ON_duration_mins = (int) round( $readings_obj->shellyplus1pm_water_pump_obj->pump_ON_duration_secs / 60, 0) ?? 0;
 
-        $pump_switch_status_bool  = $readings_obj->shellypro4pm_load_obj->switch[0]->output_state_bool;
-        $ac_switch_status_bool    = $readings_obj->shellypro4pm_load_obj->switch[1]->output_state_bool;
-        $home_switch_status_bool  = $readings_obj->shellypro4pm_load_obj->switch[2]->output_state_bool || 
+        $pump_switch_status_bool  = $readings_obj->shellyplus1pm_water_pump_obj->switch[0]->output_state_bool;
+        $ac_switch_status_bool    = $readings_obj->shellypro4pm_load_obj->switch[0]->output_state_bool || 
+                                    $readings_obj->shellypro4pm_load_obj->switch[1]->output_state_bool ||
+                                    $readings_obj->shellypro4pm_load_obj->switch[2]->output_state_bool ||
                                     $readings_obj->shellypro4pm_load_obj->switch[3]->output_state_bool;
 
         $switch_tree_obj            = $readings_obj->switch_tree_obj;
@@ -5052,7 +5080,7 @@ class class_transindus_eco
                                               </span>';
 
         $format_object->power_to_home_kw = '<span style="font-size: 18px;color: Black;">
-                                                <strong>' . $power_to_home_kw . ' KW</strong>
+                                                <strong>' . $shelly_em_home_kw . ' KW</strong>
                                             </span>';
 
         $format_object->power_to_ac_kw = '<span style="font-size: 18px;color: Black;">

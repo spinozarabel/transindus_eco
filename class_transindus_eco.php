@@ -1688,7 +1688,7 @@ class class_transindus_eco
               // $this->control_pump_on_duration( $wp_user_ID, $user_index, $shellyplus1pm_water_pump_obj);
             }
 
-            $shelly_readings_obj->shellyplus1pm_water_heater_obj = $shellyplus1pm_water_pump_obj;
+            $shelly_readings_obj->shellyplus1pm_water_pump_obj = $shellyplus1pm_water_pump_obj;
           }
 
           { // ...................... water heater data acquisition -------------------------------------------------
@@ -3632,9 +3632,7 @@ class class_transindus_eco
     {
       // get API and device ID from config based on user index
       $config = $this->config;
-      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
+      
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_1pm'];
 
       $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellyplus1pm' );
@@ -3652,9 +3650,7 @@ class class_transindus_eco
     {
       // get API and device ID from config based on user index
       $config = $this->config;
-      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_water_heater'];
+      
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_water_heater'];
 
       $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellyplus1pm' );

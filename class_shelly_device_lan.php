@@ -151,7 +151,12 @@ class shelly_device
 
 
     /**
-     *  @param object:$shelly_device_data
+     *  @param object:shelly_device_data
+     *  @return object:shelly_device_data Passed object returned with added properties
+     *  Properties are: 
+     *  shelly_device_details, emeters[0/1]->total, emeters[0/1]->voltage, emeters[0/1]->power_w, emeters[0/1]->power_kw
+     *  timestamp, static_ip, output_state_bool, output_state_string
+     *  
      *  Function takes in an object as parameter.
      *  An API call over local LAN is made to get the device data.
      *  The curlresponse is parsed and device data is extracted and added onto passed in object as properties
@@ -159,10 +164,10 @@ class shelly_device
      *  When device is OFFLINE, check property ($shelly_device_data->output_state_string === "OFFLINE")
      *  No other property exists when device is OFFLINE
      */
-    public function get_shellyem_data_over_lan( $shelly_device_data ): object
+    public function get_shellyem_data_over_lan( object $shelly_device_data ): object
     {
       
-      // assumes gen1
+      // shellyEM is a gen1 device
       $protocol_method = "/status";
 
       // parameters for query string
@@ -206,6 +211,9 @@ class shelly_device
         $shelly_device_data->emeters[0]->voltage  = (int)   round( $curlResponse->emeters[0]->voltage,        0 );
 
         // power as measured by Shelly EM on channel 0 and channel 1
+        $shelly_device_data->emeters[0]->power_w = (int) round( $curlResponse->emeters[0]->power,  0 );
+        $shelly_device_data->emeters[1]->power_w = (int) round( $curlResponse->emeters[1]->power,  0 );
+
         $shelly_device_data->emeters[0]->power_kw = (float) round( $curlResponse->emeters[0]->power * 0.001,  3 );
         $shelly_device_data->emeters[1]->power_kw = (float) round( $curlResponse->emeters[1]->power * 0.001,  3 );
 

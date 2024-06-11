@@ -154,7 +154,7 @@ class shelly_device
      *  @param object:shelly_device_data
      *  @return object:shelly_device_data Passed object returned with added properties
      *  Properties are: 
-     *  shelly_device_details, emeters[0/1]->total, emeters[0/1]->voltage, emeters[0/1]->power_w, emeters[0/1]->power_kw
+     *  shelly_device_details, emeters[0/1]->total, emeters[0/1]->voltage, emeters[0/1]->power, emeters[0/1]->power_kw
      *  timestamp, static_ip, output_state_bool, output_state_string
      *  
      *  Function takes in an object as parameter.
@@ -211,8 +211,8 @@ class shelly_device
         $shelly_device_data->emeters[0]->voltage  = (int)   round( $curlResponse->emeters[0]->voltage,        0 );
 
         // power as measured by Shelly EM on channel 0 and channel 1
-        $shelly_device_data->emeters[0]->power_w = (int) round( $curlResponse->emeters[0]->power,  0 );
-        $shelly_device_data->emeters[1]->power_w = (int) round( $curlResponse->emeters[1]->power,  0 );
+        $shelly_device_data->emeters[0]->power = (int) round( $curlResponse->emeters[0]->power,  0 );
+        $shelly_device_data->emeters[1]->power = (int) round( $curlResponse->emeters[1]->power,  0 );
 
         $shelly_device_data->emeters[0]->power_kw = (float) round( $curlResponse->emeters[0]->power * 0.001,  3 );
         $shelly_device_data->emeters[1]->power_kw = (float) round( $curlResponse->emeters[1]->power * 0.001,  3 );

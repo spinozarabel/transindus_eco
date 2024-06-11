@@ -3673,9 +3673,7 @@ class class_transindus_eco
     {
       // get API and device ID from config based on user index
       $config = $this->config;
-      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_water_heater'];
+      
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_water_pump'];
 
       $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellyplus1pm' );

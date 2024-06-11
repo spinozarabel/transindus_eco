@@ -379,6 +379,7 @@ class shelly_device
         $shelly_device_data->switch[0]->voltage             = (int)   0;
         $shelly_device_data->switch[0]->power               = (int)   0;
         $shelly_device_data->switch[0]->power_kw            = (float) 0;
+        $shelly_device_data->switch[0]->output_state_bool   = false;
         
         return $shelly_device_data;
       }

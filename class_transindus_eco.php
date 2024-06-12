@@ -2344,6 +2344,7 @@ class class_transindus_eco
       $shellyplus1pm_grid_switch_obj  = $readings_obj->shellyplus1pm_grid_switch_obj;
       $shellyem_readings_obj          = $readings_obj->shellyem_readings_obj;
       $shellyplus1pm_water_heater_obj = $readings_obj->shellyplus1pm_water_heater_obj;
+      $shellyplus1pm_water_pump_obj   = $readings_obj->shellyplus1pm_water_pump_obj;
 
       $shelly_water_heater_kw       = 0;
       $shelly_water_heater_status_bool   = null;
@@ -2684,13 +2685,21 @@ class class_transindus_eco
 
       $power_to_home_kw = $readings_obj->shellypro4pm_load_obj->switch[2]->power_kw + 
                           $readings_obj->shellypro4pm_load_obj->switch[3]->power_kw;
-      $power_to_ac_kw   = $readings_obj->shellypro4pm_load_obj->switch[1]->power_kw;
-      $power_to_pump_kw = $readings_obj->shellypro4pm_load_obj->switch[0]->power_kw;
 
-      $pump_ON_duration_mins = (int) round( $readings_obj->shellypro4pm_load_obj->pump_ON_duration_secs / 60, 0);
+      $power_to_ac_kw   = $readings_obj->shellypro4pm_load_obj->switch[0]->power_kw +
+                          $readings_obj->shellypro4pm_load_obj->switch[1]->power_kw +
+                          $readings_obj->shellypro4pm_load_obj->switch[2]->power_kw +
+                          $readings_obj->shellypro4pm_load_obj->switch[3]->power_kw;
+      $power_to_pump_kw = $readings_obj->shellyplus1pm_water_pump_obj->switch[0]->power_kw;
 
-      $pump_switch_status_bool  = $readings_obj->shellypro4pm_load_obj->switch[0]->output_state_bool;
-      $ac_switch_status_bool    = $readings_obj->shellypro4pm_load_obj->switch[1]->output_state_bool;
+      $pump_ON_duration_mins = (int) round( $readings_obj->shellyplus1pm_water_pump_obj->pump_ON_duration_secs / 60, 0);
+
+      $pump_switch_status_bool  = $readings_obj->shellyplus1pm_water_pump_obj->switch[0]->output_state_bool;
+      $ac_switch_status_bool    = $readings_obj->shellypro4pm_load_obj->switch[0]->output_state_bool ||
+                                  $readings_obj->shellypro4pm_load_obj->switch[1]->output_state_bool ||
+                                  $readings_obj->shellypro4pm_load_obj->switch[2]->output_state_bool ||
+                                  $readings_obj->shellypro4pm_load_obj->switch[3]->output_state_bool;
+
       $home_switch_status_bool  = $readings_obj->shellypro4pm_load_obj->switch[2]->output_state_bool;
 
       $switch_tree_obj            = $readings_obj->switch_tree_obj;

@@ -833,9 +833,9 @@ class class_transindus_eco
       $pump_power_restart_interval_secs = $all_usermeta['pump_power_restart_interval_secs'];
 
       // set property in case pump was off so that this doesnt give a php notice otherwise
-      $shellyplus1pm_water_pump_obj->pump_ON_duration_secs = 0;
+      // $shellyplus1pm_water_pump_obj->pump_ON_duration_secs = 0;
 
-      // Is the pump enabled or not?
+      // Has the pump been disabled?
       $power_to_pump_is_enabled = (bool) $shellyplus1pm_water_pump_obj->switch[0]->output_state_bool;
 
       // Pump power consumption in watts
@@ -892,7 +892,7 @@ class class_transindus_eco
             $pump_ON_duration_secs = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 );
 
             // Write the duration time as property of the object
-            $shellypro4pm_load_obj->pump_ON_duration_secs = $pump_ON_duration_secs;
+            $shellyplus1pm_water_pump_obj->pump_ON_duration_secs = $pump_ON_duration_secs;
 
             $this->verbose ? error_log("Log-Pump ON for: $pump_ON_duration_secs Seconds") : false;
 
@@ -972,7 +972,7 @@ class class_transindus_eco
           $pump_ON_duration_secs = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 );
 
           // Write the duration time as property of the object
-          $shellypro4pm_load_obj->pump_ON_duration_secs = $pump_ON_duration_secs;
+          $shellyplus1pm_water_pump_obj->pump_ON_duration_secs = $pump_ON_duration_secs;
 
           $this->verbose ? error_log("Log-Pump ON for: $pump_ON_duration_secs Seconds") : false;
 

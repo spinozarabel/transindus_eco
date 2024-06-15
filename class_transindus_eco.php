@@ -1891,7 +1891,7 @@ class class_transindus_eco
             { // Grid is supplying Load and since Solar is 0, battery current is 0 so no change in battery SOC
               
               // update the after dark energy counter to latest value
-              update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_readings_obj->emeters[0]->total);
+              update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shellyem_readings_obj->emeters[0]->total);
 
               // SOC is unchanging due to Grid ON however set the variables using the user meta since they are undefined.
               $soc_percentage_now_using_dark_shelly = (float) get_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  true);

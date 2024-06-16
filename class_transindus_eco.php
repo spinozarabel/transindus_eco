@@ -2399,7 +2399,7 @@ class class_transindus_eco
           $log_string .= " S-A: "   . number_format($batt_amps_shellybm,1) . ' Vbat:'            .  number_format($batt_voltage_xcomlan_avg,1);
           $log_string .= " SOC-St: " . number_format($soc_percentage_now_studer_kwh,1); // this is the Studer based soc%
           $log_string .= " SOC-B: " . number_format($soc_percentage_now_calculated_using_shelly_bm,1); // this is the shelly BM based soc%
-          $log_string .= " SOC-X: " . number_format($soc_percentage_now,1 ) . '%';                     // this is the xcom-lan current based soc%
+          $log_string .= " SOC-X: " . number_format($soc_percentage_now_calculated_using_studer_xcomlan,1 ) . '%';                     // this is the xcom-lan current based soc%
 
           error_log($log_string);
         }

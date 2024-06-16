@@ -1687,7 +1687,7 @@ class class_transindus_eco
             if ( $shellyplus1pm_water_pump_obj->switch[0]->output_state_string !== "OFFLINE" )
             {
               // Control Pump ON max duration if enabled
-              // $this->control_pump_on_duration( $wp_user_ID, $user_index, $shellyplus1pm_water_pump_obj);
+              $this->control_pump_on_duration( $wp_user_ID, $user_index, $shellyplus1pm_water_pump_obj);
             }
 
             $shelly_readings_obj->shellyplus1pm_water_pump_obj = $shellyplus1pm_water_pump_obj;

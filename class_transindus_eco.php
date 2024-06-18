@@ -1586,13 +1586,13 @@ class class_transindus_eco
           $soc_percentage_switch_release_setting  = (float) $all_usermeta['soc_percentage_switch_release_setting']  ?? 95.0; 
 
           // battery float voltage setting. Only used for SOC clamp for 100%
-          $average_battery_float_voltage          = (float) $all_usermeta['average_battery_float_voltage'] ?? 51.5;
+          $average_battery_float_voltage          = (float) $all_usermeta['average_battery_float_voltage'] ?? 51.8;
 
           // Min VOltage at ACIN for RDBC to switch to GRID
           $acin_min_voltage                       = (float) $all_usermeta['acin_min_voltage'] ?? 199;  
 
           // Max voltage at ACIN for RDBC to switch to GRID
-          $acin_max_voltage                       = (float) $all_usermeta['acin_max_voltage'] ?? 241; 
+          $acin_max_voltage                       = (float) $all_usermeta['acin_max_voltage'] ?? 247; 
 
           // Minimum Psolar before RDBC can be actiated
           $psolar_kw_min                          = (float) $all_usermeta['psolar_kw_min'] ?? 0.3;  
@@ -3686,7 +3686,14 @@ class class_transindus_eco
 
 
     /**
-     * 
+     *  Data from subscription to remote MQTT broker mqtt.avasarala.in using username/password authentication
+     *  If data is different from existing no action. 
+     *  If not, and if data is within limits, user meta is updated.
+     *  In addition, for certain applicable STUDER variables, are include in array to be sent to set Studer Settings
+     *  User Meta:  keep_shelly_switch_closed_always, studer_charger_enabled, studer_battery_priority_enabled,
+     *              studer_battery_priority_voltage, studer_battery_charging_current, average_battery_float_voltage,
+     *              soc_percentage_switch_release_setting, soc_percentage_lvds_setting,
+     *              pump_duration_control, pump_duration_secs_max, pump_power_restart_interval_secs, 
      */
     public function get_flag_data_from_master_remote( int $user_index, int $wp_user_ID):void
     {

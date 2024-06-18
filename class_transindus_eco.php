@@ -1616,11 +1616,10 @@ class class_transindus_eco
         { // get the SOCs from the user meta.
 
           // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only just past midnight once
-          // This is used for both shellyBM and xcom-lan battery current based SOC calculations
+          // This is used as base for all SOC calculations
           $soc_percentage_at_midnight = (float) get_user_meta($wp_user_ID, "soc_percentage_at_midnight",  true);
 
           // SOC percentage after dark. This gets captured at dark and gets updated every cycle
-          // using only shelly devices and does NOT involve Battery Current based measurements.
           $soc_percentage_after_dark  = (float) get_user_meta( $wp_user_ID, 'soc_percentage_after_dark',  true);
         }
 
@@ -1632,10 +1631,7 @@ class class_transindus_eco
           $this->verbose ? error_log("Shelly Grid Switch State: $shellyplus1pm_grid_switch_state_string"): false;
         }
 
-        
-        
-        {  // make all measurements
-
+        {  // .................... make all measurements .......................................................
           { // ..................... ShellyPro3EM power, voltage, and energy measuremnts of 3phase Grid at Bus Bars ...
             $shellypro3em_3p_grid_obj = $this->get_shellypro3em_3p_grid_wh_since_midnight_over_lan( $user_index, $wp_user_name, $wp_user_ID );
 
@@ -1655,7 +1651,7 @@ class class_transindus_eco
             $home_grid_voltage                        = $shellypro3em_3p_grid_obj->home_grid_voltage ?? 0;
           }
           
-          { // .....................shellyplus1 w/addon Battery current measurement using Hall Effect sensor
+          { // ..................... shellyplus1 w/addon Battery current measurement using Hall Effect sensor
             // Measure Battery current. Postitive is charging. Returns battery current and associated timestamp
 
             $shellyplus1_batt_obj = $this->get_shellyplus1_battery_readings_over_lan(  $user_index );
@@ -1671,7 +1667,7 @@ class class_transindus_eco
             $shelly_readings_obj->timestamp_shellybm        = $timestamp_shellybm;
           }
 
-          { // ..................... ShellyPro4PM Home Load Measurement ..........................--------
+          { // ..................... ShellyPro4PM Home AC Measurement and Control ..................--------
             $shellypro4pm_load_obj = $this->get_shellypro4pm_readings_over_lan( $user_index );
 
             // add the object as property to the main readings object
@@ -1693,12 +1689,12 @@ class class_transindus_eco
             $shelly_readings_obj->shellyplus1pm_water_pump_obj = $shellyplus1pm_water_pump_obj;
           }
 
-          { // ...................... water heater data acquisition -------------------------------------------------
+          { // ..................... water heater data acquisition -------------------------------------------------
             $shellyplus1pm_water_heater_obj = $this->get_shellyplus1pm_water_heater_data_over_lan( $user_index );
             $shelly_readings_obj->shellyplus1pm_water_heater_obj = $shellyplus1pm_water_heater_obj;
           }
 
-          { // ....................... Shelly EM device Home Energy, Power, and Voltage Measurements -----------------
+          { // ..................... Shelly EM device Home Energy, Power, and Voltage Measurements -----------------
             $shellyem_readings_obj = $this->get_shellyem_readings_over_lan( $user_index, $wp_user_name, $wp_user_ID );
 
             if ( $shellyem_readings_obj )   
@@ -1712,7 +1708,7 @@ class class_transindus_eco
             }
           }
 
-          { // run python script directly and get xcom-lan data without using mqtt
+          { // ..................... Studer data using xcom-lan python script ......................................
             $xcomlan_studer_data_obj = $this->get_studer_readings_over_xcomlan_without_mqtt();
 
             $batt_voltage_xcomlan_avg     = $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg;
@@ -1731,7 +1727,7 @@ class class_transindus_eco
           }
         }
 
-        { // calculate the SOC from Shelly BM and Xcom-Lan methods of battery current measurement
+        { // ..................... calculate the SOC for all methods using the measurement data ................"
 
           // 1st call the routine to accumulate the battery charge this cycle based on current measurements this cycle
           $batt_soc_accumulation_obj = $this->get_battery_delta_soc_for_both_methods
@@ -1750,9 +1746,9 @@ class class_transindus_eco
                                                 );
 
           $soc_shellybm_since_midnight                    = $batt_soc_accumulation_obj->soc_shellybm_since_midnight;
-          $soc_percentage_now_calculated_using_shelly_bm  = $soc_percentage_at_midnight + $soc_shellybm_since_midnight;
+          $soc_xcomlan_since_midnight                     = $batt_soc_accumulation_obj->soc_xcomlan_since_midnight;
 
-          $soc_xcomlan_since_midnight                         = $batt_soc_accumulation_obj->soc_xcomlan_since_midnight;
+          $soc_percentage_now_calculated_using_shelly_bm      = $soc_percentage_at_midnight + $soc_shellybm_since_midnight;
           $soc_percentage_now_calculated_using_studer_xcomlan = $soc_percentage_at_midnight + $soc_xcomlan_since_midnight;
 
           $batt_amps  = $batt_soc_accumulation_obj->batt_amps;  // best number from both methods
@@ -1761,7 +1757,7 @@ class class_transindus_eco
           // lets update the user meta for updated SOC
           update_user_meta( $wp_user_ID, 'soc_percentage_now_calculated_using_shelly_bm', $soc_percentage_now_calculated_using_shelly_bm);
 
-          // $surplus  power is any surplus from solar after load consumption, available for battery, etc.
+          // $surplus  power means any power available for battery charging. Wrong terminology!!!
           $surplus = round( $batt_amps * 49.8 * 0.001, 1 ); // in KW
 
           // update readings object with SOC's
@@ -1802,7 +1798,7 @@ class class_transindus_eco
           }
         }
 
-        // ..................... Battery FLOAT or SOC overflow past 100%, Clamp SOC at 100% ...................
+        // ....................... Battery FLOAT or SOC overflow past 100%, Clamp SOC at 100% ...................
         if (  $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg  >= $average_battery_float_voltage ||
               $soc_percentage_now_calculated_using_studer_xcomlan > 100                             ||
               $soc_percentage_now_calculated_using_shelly_bm      > 100                             ||
@@ -1925,14 +1921,6 @@ class class_transindus_eco
         }
 
         { // select SOC based on most likely accurate one and use for switch control
-
-          /*  The a lgorithm for valid SOC determination is as follows:
-              1. Is the value between 30 and 100?
-              2. Is the difference between the SOC's less than 5 points?
-              3. 1st preference is for soc_xcomlan, 2nd is for soc_shelly_bm, 3rd is for soc_studer_kwh
-              4. If the difference ebtween studer_kwh method and the other 2 is more than 5 points,
-                  their values are adjusted to match that of the Studer. This can happen if there is a local LAN outage.
-          */
 
           $soc_array = [];  // initialize to blank
 

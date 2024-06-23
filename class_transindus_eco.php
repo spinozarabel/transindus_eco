@@ -1712,6 +1712,7 @@ class class_transindus_eco
             $xcomlan_studer_data_obj = $this->get_studer_readings_over_xcomlan_without_mqtt();
 
             $batt_voltage_xcomlan_avg     = $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg;
+            $raw_batt_voltage_xcomlan     = $xcomlan_studer_data_obj->raw_batt_voltage_xcomlan;
             $east_panel_current_xcomlan   = $xcomlan_studer_data_obj->east_panel_current_xcomlan;
             $west_panel_current_xcomlan   = $xcomlan_studer_data_obj->west_panel_current_xcomlan;
             $pv_current_now_total_xcomlan = $xcomlan_studer_data_obj->pv_current_now_total_xcomlan;
@@ -2384,7 +2385,7 @@ class class_transindus_eco
           $log_string .= " E: "     . number_format($east_panel_current_xcomlan,1)   .  " W: "   . number_format($west_panel_current_xcomlan,1);
           $log_string .= " PV: "    . number_format($pv_current_now_total_xcomlan,1) . " Inv: "  . number_format($inverter_current_xcomlan,1);
           $log_string .= " X-A: "   . number_format($batt_current_xcomlan,1);
-          $log_string .= " S-A: "   . number_format($batt_amps_shellybm,1) . ' Vbat:'            .  number_format($batt_voltage_xcomlan_avg,1);
+          $log_string .= " S-A: "   . number_format($batt_amps_shellybm,1) . ' Vbat_raw:'            .  number_format($raw_batt_voltage_xcomlan,1);
           $log_string .= " SOC-St: " . number_format($soc_percentage_now_studer_kwh,1); // this is the Studer based soc%
           $log_string .= " SOC-B: " . number_format($soc_percentage_now_calculated_using_shelly_bm,1); // this is the shelly BM based soc%
           $log_string .= " SOC-X: " . number_format($soc_percentage_now_calculated_using_studer_xcomlan,1 ) . '%';                     // this is the xcom-lan current based soc%
@@ -4118,6 +4119,7 @@ class class_transindus_eco
 
         // pack these as properties onto the shelly readings object
         $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg          = $batt_voltage_xcomlan_avg;
+        $xcomlan_studer_data_obj->raw_batt_voltage_xcomlan          = $raw_batt_voltage_xcomlan;
         $xcomlan_studer_data_obj->east_panel_current_xcomlan        = $east_panel_current_xcomlan;
         $xcomlan_studer_data_obj->west_panel_current_xcomlan        = $west_panel_current_xcomlan;
         $xcomlan_studer_data_obj->pv_current_now_total_xcomlan      = $pv_current_now_total_xcomlan;

@@ -1925,9 +1925,12 @@ class class_transindus_eco
 
           $soc_array = [];  // initialize to blank
 
+          // consider Studer energy computed SOC value if value is reasonable.
+          // Do not considr during time window close to midnight as the value can shift abruptly
           $studer_reading_is_ok_bool    = ! empty( $soc_percentage_now_studer_kwh ) &&
                                           $soc_percentage_now_studer_kwh > 40       &&
-                                          $soc_percentage_now_studer_kwh < 101;
+                                          $soc_percentage_now_studer_kwh < 101      &&
+                                          ! $this->nowIsWithinTimeLimits("00:20:00", "23:40:00");
 
           $xcom_lan_reading_is_ok_bool  = ! empty( $soc_percentage_now_calculated_using_studer_xcomlan )  &&
                                           $soc_percentage_now_calculated_using_studer_xcomlan > 40        &&

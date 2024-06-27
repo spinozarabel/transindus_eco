@@ -1925,6 +1925,16 @@ class class_transindus_eco
 
           $soc_array = [];  // initialize to blank
 
+          // are values different from each other by less than 5 percentage points?
+          $xcom_lan_studer_kwh_diff_ok_bool   = abs(  $soc_percentage_now_calculated_using_studer_xcomlan - 
+                                                      $soc_percentage_now_studer_kwh  ) < 5;
+
+          $shelly_bm_studer_kwh_diff_ok_bool  = abs(  $soc_percentage_now_calculated_using_shelly_bm - 
+                                                      $soc_percentage_now_studer_kwh  ) < 5;
+
+          $xcom_lan_shelly_bm_diff_ok_bool    = abs(  $soc_percentage_now_calculated_using_studer_xcomlan - 
+                                                      $soc_percentage_now_calculated_using_shelly_bm ) < 5;
+
           // consider Studer energy computed SOC value if value is reasonable.
           // Do not considr during time window close to midnight as the value can shift abruptly
           $studer_reading_is_ok_bool    = ! empty( $soc_percentage_now_studer_kwh ) &&
@@ -1948,16 +1958,6 @@ class class_transindus_eco
 
           // get the minimum value of SOC from the 3 methods available
           $soc_minimum_from_all_methods = min( $soc_array ) ?? 30;
-                                          
-          // xcom-lan soc is greater than studer soc but not more than 5 points
-          $xcom_lan_studer_kwh_diff_ok_bool   = (  $soc_percentage_now_calculated_using_studer_xcomlan - 
-                                                      $soc_percentage_now_studer_kwh  ) < 5;
-
-          $shelly_bm_studer_kwh_diff_ok_bool  = (  $soc_percentage_now_calculated_using_shelly_bm - 
-                                                      $soc_percentage_now_studer_kwh  ) < 5;
-
-          $xcom_lan_shelly_bm_diff_ok_bool    = abs(  $soc_percentage_now_calculated_using_studer_xcomlan - 
-                                                      $soc_percentage_now_calculated_using_shelly_bm ) < 5;
 
           // 1st preference is for xcom-lan since it is a simple current measurement and it is backed by Shelly BM
           //    As long as the Delta-T is less than 5m between successive measurements.

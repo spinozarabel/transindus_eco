@@ -2018,19 +2018,16 @@ class class_transindus_eco
         // midnight actions
         if ( $this->is_time_just_pass_midnight( $user_index, $wp_user_name ) )
         {
-          /*
-            This is where we need to calculate all of the daily statistics and get other required data from transients
-            Then write all of this daily data into a custom post for the day that just ended
-          */
           // get the difference in counter redings to get home energy WH over last 24h before counter resets at midnight
           $kwh_energy_consumed_by_home_today = $shelly_em_home_kwh_since_midnight;
 
-          $wh_energy_from_grid_last_24h   = $shellypro3em_3p_grid_obj->home_grid_wh_counter_now - (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', true );
-          $kwh_energy_from_grid_last_24h  = round( 0.001 * $wh_energy_from_grid_last_24h, 2);
+          $wh_energy_from_grid_last_24h = $shellypro3em_3p_grid_obj->home_grid_wh_counter_now - 
+                                          (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', true );
 
-          $kwh_solar_generated_today          = $solar_kwh_today; // data from syuder via xcom-lan
+          $kwh_solar_generated_today    = $solar_kwh_today; // data from syuder via xcom-lan
 
-          // get the total SOC% accumulated in last 24h before it is reset for new day
+          // get the total SOC% accumulated in the battery during the last 24h before it is reset for new day
+          // This seems meaningleass to me on 2nd thought :-(
           $battery_soc_percentage_accumulated_last24h = 
             (float) get_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', true );
 
@@ -2092,7 +2089,7 @@ class class_transindus_eco
           }
           
 
-          // Then we reset values for the new day
+          // Now we reset values for the new day, starting at midnight
           // reset Shelly EM Home WH counter to present reading in WH. This is only done once in 24h, at midnight
           update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', $shellyem_readings_obj->emeters[0]->total );
 
@@ -2119,11 +2116,12 @@ class class_transindus_eco
           // reset battery accumulated using xcomlan measurements
           update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 0);
 
-          error_log("Cal-Midnight - shelly_em_home_energy_counter_at_midnight: $shellyem_readings_obj->emeters[0]->total");
+          error_log("Cal-Midnight - shelly_em_home_energy_counter_at_midnight: " . $shellyem_readings_obj->emeters[0]->total);
           error_log("Cal-Midnight - grid_wh_counter_at_midnight: $shellypro3em_3p_grid_obj->home_grid_wh_counter_now");
-          error_log("Cal-Midnight - soc_percentage_at_midnight: $soc_percentage_now_calculated_using_shelly_bm");
+          error_log("Cal-Midnight - soc_percentage_at_midnight: $soc_percentage_now");
           error_log("Cal-Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
           error_log("Cal-Midnight - battery_xcomlan_soc_percentage_accumulated_since_midnight: 0");
+          error_log("Cal-Midnight - Studer clock offset in minutes: $this->studer_time_offset_in_mins_lagging");
         }
 
         // add property of studer clock offest. The remote should send a notification if this is above a limit
@@ -5696,8 +5694,7 @@ class class_transindus_eco
         $s=$test->format('s');
 
         // if hours are 0 and offset adjusted minutes are 0 then we are just pass midnight per Studer clock
-        // we added an additional offset of 1m just to be sure to account for any seconds offset
-        if( $h == 0 && ( $m - $studer_time_offset_in_mins_lagging ) > 1 )
+        if( $h == 0 && ( $m - $studer_time_offset_in_mins_lagging ) > 0 )
         {
           // We are just past midnight on Studer clock, so return true after setiimg the transient
           // we ensure that the transient lasts longer than the 40m window but less than 24h

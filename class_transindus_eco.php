@@ -1921,19 +1921,9 @@ class class_transindus_eco
           $soc_capture_after_dark_happened = false;
         }
 
-        { // select SOC based on most likely accurate one and use for switch control
+        { // select likely SOC value from the 3 methods available
 
           $soc_array = [];  // initialize to blank
-
-          // are values different from each other by less than 5 percentage points?
-          $xcom_lan_studer_kwh_diff_ok_bool   = abs(  $soc_percentage_now_calculated_using_studer_xcomlan - 
-                                                      $soc_percentage_now_studer_kwh  ) < 5;
-
-          $shelly_bm_studer_kwh_diff_ok_bool  = abs(  $soc_percentage_now_calculated_using_shelly_bm - 
-                                                      $soc_percentage_now_studer_kwh  ) < 5;
-
-          $xcom_lan_shelly_bm_diff_ok_bool    = abs(  $soc_percentage_now_calculated_using_studer_xcomlan - 
-                                                      $soc_percentage_now_calculated_using_shelly_bm ) < 5;
 
           // consider Studer energy computed SOC value if value is reasonable.
           // Do not considr during time window close to midnight as the value can shift abruptly
@@ -1945,12 +1935,12 @@ class class_transindus_eco
           $xcom_lan_reading_is_ok_bool  = ! empty( $soc_percentage_now_calculated_using_studer_xcomlan )  &&
                                           $soc_percentage_now_calculated_using_studer_xcomlan > 40        &&
                                           $soc_percentage_now_calculated_using_studer_xcomlan < 101       &&
-                                          $batt_soc_accumulation_obj->delta_secs_xcomlan < 300;
+                                          $batt_soc_accumulation_obj->delta_secs_xcomlan < 240;
 
           $shelly_bm_reading_is_ok_bool = ! empty( $soc_percentage_now_calculated_using_shelly_bm ) &&
                                           $soc_percentage_now_calculated_using_shelly_bm  > 40      &&
                                           $soc_percentage_now_calculated_using_shelly_bm  < 101     &&
-                                          $batt_soc_accumulation_obj->delta_secs_shellybm < 300;
+                                          $batt_soc_accumulation_obj->delta_secs_shellybm < 240;
                                            
           if ( $studer_reading_is_ok_bool )     $soc_array[]    = $soc_percentage_now_studer_kwh;
           if ( $xcom_lan_reading_is_ok_bool )   $soc_array[]    = $soc_percentage_now_calculated_using_studer_xcomlan;
@@ -1958,6 +1948,16 @@ class class_transindus_eco
 
           // get the minimum value of SOC from the 3 methods available
           $soc_minimum_from_all_methods = min( $soc_array ) ?? 30;
+
+          // are values different from each other by less than 4 percentage points?
+          $xcom_lan_studer_kwh_diff_ok_bool   = abs(  $soc_percentage_now_calculated_using_studer_xcomlan - 
+                                                      $soc_percentage_now_studer_kwh  ) < 4;
+
+          $shelly_bm_studer_kwh_diff_ok_bool  = abs(  $soc_percentage_now_calculated_using_shelly_bm - 
+                                                      $soc_percentage_now_studer_kwh  ) < 4;
+
+          $xcom_lan_shelly_bm_diff_ok_bool    = abs(  $soc_percentage_now_calculated_using_studer_xcomlan - 
+                                                      $soc_percentage_now_calculated_using_shelly_bm ) < 4;
 
           // 1st preference is for xcom-lan since it is a simple current measurement and it is backed by Shelly BM
           //    As long as the Delta-T is less than 5m between successive measurements.
@@ -5624,7 +5624,7 @@ class class_transindus_eco
         // if the value is null due to a bad API response then do nothing and return
         if ( empty( $studer_clock_unix_timestamp_with_utc_offset )) return;
 
-        // calculate the lag positive or lead negative of studer time with now
+        // calculate the lag positive or lead negative of studer time with now. 3600 secs check is bogus
         $clock_offset_obj = $this->check_validity_of_timestamp( $studer_clock_unix_timestamp_with_utc_offset, 3600);
 
         // positive means lagging behind, negative means leading ahead, of correct server time.
@@ -5644,9 +5644,10 @@ class class_transindus_eco
           $studer_time_offset_in_mins_lagging = 0;
         }
 
-        set_transient(  'studer_time_offset_in_mins_lagging', $studer_time_offset_in_mins_lagging, 1*60*60 );
+        // transient shall exist for 8000 seconds or 2h 18m 20s
+        set_transient(  'studer_time_offset_in_mins_lagging', $studer_time_offset_in_mins_lagging, 8000 );
 
-        $this->verbose ? error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins"):false;
+        error_log( "Studer API call - clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins");
       }
       else
       {

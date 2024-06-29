@@ -2121,7 +2121,7 @@ class class_transindus_eco
           error_log("Cal-Midnight - soc_percentage_at_midnight: $soc_percentage_now");
           error_log("Cal-Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
           error_log("Cal-Midnight - battery_xcomlan_soc_percentage_accumulated_since_midnight: 0");
-          error_log("Cal-Midnight - Studer clock offset in minutes: $this->studer_time_offset_in_mins_lagging");
+          error_log("Cal-Midnight - Studer clock offset in minutes: " . $this->studer_time_offset_in_mins_lagging);
         }
 
         // add property of studer clock offest. The remote should send a notification if this is above a limit
@@ -5653,6 +5653,7 @@ class class_transindus_eco
       {
         // offset already computed and transient still valid, just read in the value
         $studer_time_offset_in_mins_lagging = (int) get_transient( 'studer_time_offset_in_mins_lagging' );
+        $this->studer_time_offset_in_mins_lagging = $studer_time_offset_in_mins_lagging;
       }
 
       if ( abs( $studer_time_offset_in_mins_lagging ) > 10 )

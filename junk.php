@@ -173,7 +173,7 @@ class class_transindus_eco
       //
 
       // set the logging
-      $this->verbose = false;
+      $this->verbose = true;
 
       // lat and lon at Trans Indus from Google Maps
       $this->lat        = 12.83463;
@@ -802,9 +802,9 @@ class class_transindus_eco
     /**
      * 
      */
-    public function control_pump_on_duration( int $wp_user_ID, int $user_index, object $shellypro4pm_load_obj )
+    public function control_pump_on_duration( int $wp_user_ID, int $user_index, object $shellyplus1pm_water_pump_obj )
     {
-      if ( $shellypro4pm_load_obj->switch[3]->output_state_string === "OFFLINE" )
+      if ( $shellyplus1pm_water_pump_obj->switch[0]->output_state_string === "OFFLINE" )
       {
         // bad data passed in do nothing
         error_log( "Log-Pump bad data passed in do nothing in function control_pump_on_duration" );
@@ -827,19 +827,19 @@ class class_transindus_eco
       $pump_duration_secs_max           = $all_usermeta['pump_duration_secs_max'];
 
       // pump_duration_control flag
-      $pump_duration_control            = false;  // $all_usermeta['pump_duration_control'];
+      $pump_duration_control            = false; // $all_usermeta['pump_duration_control'];
 
       // pump_power_restart_interval_secs
       $pump_power_restart_interval_secs = $all_usermeta['pump_power_restart_interval_secs'];
 
       // set property in case pump was off so that this doesnt give a php notice otherwise
-      $shellypro4pm_load_obj->pump_ON_duration_secs = 0;
+      // $shellyplus1pm_water_pump_obj->pump_ON_duration_secs = 0;
 
-      // Is the pump enabled or not?
-      $power_to_pump_is_enabled = (bool) $shellypro4pm_load_obj->switch[0]->output_state_bool;
+      // Has the pump been disabled?
+      $power_to_pump_is_enabled = (bool) $shellyplus1pm_water_pump_obj->switch[0]->output_state_bool;
 
       // Pump power consumption in watts
-      $pump_power_watts = (int) round(  $shellypro4pm_load_obj->switch[0]->power, 0 );
+      $pump_power_watts = (int) round(  $shellyplus1pm_water_pump_obj->switch[0]->power, 0 );
 
       // determine if pump is drawing power or not
       $pump_is_drawing_power = ( $pump_power_watts > 50 );
@@ -892,7 +892,7 @@ class class_transindus_eco
             $pump_ON_duration_secs = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 );
 
             // Write the duration time as property of the object
-            $shellypro4pm_load_obj->pump_ON_duration_secs = $pump_ON_duration_secs;
+            $shellyplus1pm_water_pump_obj->pump_ON_duration_secs = $pump_ON_duration_secs;
 
             $this->verbose ? error_log("Log-Pump ON for: $pump_ON_duration_secs Seconds") : false;
 
@@ -972,7 +972,7 @@ class class_transindus_eco
           $pump_ON_duration_secs = ( $diff->s + $diff->i * 60  + $diff->h * 60 * 60 );
 
           // Write the duration time as property of the object
-          $shellypro4pm_load_obj->pump_ON_duration_secs = $pump_ON_duration_secs;
+          $shellyplus1pm_water_pump_obj->pump_ON_duration_secs = $pump_ON_duration_secs;
 
           $this->verbose ? error_log("Log-Pump ON for: $pump_ON_duration_secs Seconds") : false;
 
@@ -1092,13 +1092,12 @@ class class_transindus_eco
         // Make an API call on the Shelly UNI device
         $config = $this->config;
 
-        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_plus_addon'];
         $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_addon'];
 
+        // new instance of shelly device for status and control over LAN
         $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellyplus1-v' );
 
+        // device details and status
         $shellyplus1_batt_obj = $shelly_device->get_shelly_device_data();
 
         // check to make sure that response exists. If null call was fruitless
@@ -1130,9 +1129,12 @@ class class_transindus_eco
         // so to be conservative we are using a 10% reduction to see if this corrects the tendency.
         $batt_amps = -1.0 * round( $battery_amps_raw_measurement, 1) * 0.87;
 
-        $shellyplus1_batt_obj->batt_amps = $batt_amps;
-        $shellyplus1_batt_obj->timestamp = $timestamp;
-        
+        $shellyplus1_batt_obj->batt_amps      = $batt_amps;
+        $shellyplus1_batt_obj->timestamp      = $timestamp;
+
+        // add the API object as property to control included switch directly in the main routine
+        $shellyplus1_batt_obj->shelly_device  = $shelly_device;
+
         return $shellyplus1_batt_obj;
     }
 
@@ -1147,9 +1149,6 @@ class class_transindus_eco
         // get API and device ID from config based on user index
         $config = $this->config;
 
-        $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-        $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-        $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
         $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_4pm'];
 
         $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellypro4pm' );
@@ -1157,13 +1156,16 @@ class class_transindus_eco
         $shellypro4pm_load_obj = $shelly_device->get_shelly_device_data();
 
         // check to make sure that it exists. If null API call was fruitless
-        if ( $shellypro4pm_load_obj->switch[3]->output_state_string === "OFFLINE" )
+        if ( $shellypro4pm_load_obj->switch[0]->output_state_string === "OFFLINE" )
         {
           error_log("LogApi: ShellyPro4PM LOAD switch API call failed");
-
           // no further processing. Object contains properties with no data except OFFLINE status as in above
-          
         }
+        else
+        {
+          $shellypro4pm_load_obj->shelly_device = $shelly_device;
+        }
+
         return $shellypro4pm_load_obj;
     }
 
@@ -1584,13 +1586,13 @@ class class_transindus_eco
           $soc_percentage_switch_release_setting  = (float) $all_usermeta['soc_percentage_switch_release_setting']  ?? 95.0; 
 
           // battery float voltage setting. Only used for SOC clamp for 100%
-          $average_battery_float_voltage          = (float) $all_usermeta['average_battery_float_voltage'] ?? 51.5;
+          $average_battery_float_voltage          = (float) $all_usermeta['average_battery_float_voltage'] ?? 51.8;
 
           // Min VOltage at ACIN for RDBC to switch to GRID
           $acin_min_voltage                       = (float) $all_usermeta['acin_min_voltage'] ?? 199;  
 
           // Max voltage at ACIN for RDBC to switch to GRID
-          $acin_max_voltage                       = (float) $all_usermeta['acin_max_voltage'] ?? 241; 
+          $acin_max_voltage                       = (float) $all_usermeta['acin_max_voltage'] ?? 247; 
 
           // Minimum Psolar before RDBC can be actiated
           $psolar_kw_min                          = (float) $all_usermeta['psolar_kw_min'] ?? 0.3;  
@@ -1614,11 +1616,10 @@ class class_transindus_eco
         { // get the SOCs from the user meta.
 
           // Get the SOC percentage at beginning of Dayfrom the user meta. This gets updated only just past midnight once
-          // This is used for both shellyBM and xcom-lan battery current based SOC calculations
+          // This is used as base for all SOC calculations
           $soc_percentage_at_midnight = (float) get_user_meta($wp_user_ID, "soc_percentage_at_midnight",  true);
 
           // SOC percentage after dark. This gets captured at dark and gets updated every cycle
-          // using only shelly devices and does NOT involve Battery Current based measurements.
           $soc_percentage_after_dark  = (float) get_user_meta( $wp_user_ID, 'soc_percentage_after_dark',  true);
         }
 
@@ -1630,10 +1631,7 @@ class class_transindus_eco
           $this->verbose ? error_log("Shelly Grid Switch State: $shellyplus1pm_grid_switch_state_string"): false;
         }
 
-        
-        
-        {  // make all measurements
-
+        {  // .................... make all measurements .......................................................
           { // ..................... ShellyPro3EM power, voltage, and energy measuremnts of 3phase Grid at Bus Bars ...
             $shellypro3em_3p_grid_obj = $this->get_shellypro3em_3p_grid_wh_since_midnight_over_lan( $user_index, $wp_user_name, $wp_user_ID );
 
@@ -1653,7 +1651,7 @@ class class_transindus_eco
             $home_grid_voltage                        = $shellypro3em_3p_grid_obj->home_grid_voltage ?? 0;
           }
           
-          { // .....................shellyplus1 w/addon Battery current measurement using Hall Effect sensor
+          { // ..................... shellyplus1 w/addon Battery current measurement using Hall Effect sensor
             // Measure Battery current. Postitive is charging. Returns battery current and associated timestamp
 
             $shellyplus1_batt_obj = $this->get_shellyplus1_battery_readings_over_lan(  $user_index );
@@ -1669,37 +1667,34 @@ class class_transindus_eco
             $shelly_readings_obj->timestamp_shellybm        = $timestamp_shellybm;
           }
 
-          { // ..................... ShellyPro4PM Home Load Measurement ..........................
+          { // ..................... ShellyPro4PM Home AC Measurement and Control ..................--------
             $shellypro4pm_load_obj = $this->get_shellypro4pm_readings_over_lan( $user_index );
 
             // add the object as property to the main readings object
-            $shelly_readings_obj->shellypro4pm_load_obj        = $shellypro4pm_load_obj;
-
-            if ( $shellypro4pm_load_obj->switch[0]->output_state_string !== "OFFLINE" )
-            {   // there is a valid response from the Shelly 4PM device on the pump channel. 
-                // Control Pump ON max duration if enabled
-               
-                $this->control_pump_on_duration( $wp_user_ID, $user_index, $shellypro4pm_load_obj);
-            } 
+            $shelly_readings_obj->shellypro4pm_load_obj        = $shellypro4pm_load_obj; 
           }
 
-          { // ..................... water pump data acquisition --------------------------------
+          { // ..................... water pump data acquisition -------------------------------------------
             $shellyplus1pm_water_pump_obj = $this->get_shellyplus1pm_water_pump_data_over_lan( $user_index );
 
+            $shellyplus1pm_water_pump_obj->pump_ON_duration_secs = 0;
+
             // If pump is NOT OFFLINE then check pump control duration
-            if ( $shellyplus1pm_water_pump_obj->output_state_string !== "OFFLINE" )
+            if ( $shellyplus1pm_water_pump_obj->switch[0]->output_state_string !== "OFFLINE" )
             {
-              
+              // Control Pump ON max duration if enabled
+              $this->control_pump_on_duration( $wp_user_ID, $user_index, $shellyplus1pm_water_pump_obj);
             }
-            $shelly_readings_obj->shellyplus1pm_water_heater_obj = $shellyplus1pm_water_pump_obj;
+
+            $shelly_readings_obj->shellyplus1pm_water_pump_obj = $shellyplus1pm_water_pump_obj;
           }
 
-          { // ...................... water heater data acquisition -----------------------------
+          { // ..................... water heater data acquisition -------------------------------------------------
             $shellyplus1pm_water_heater_obj = $this->get_shellyplus1pm_water_heater_data_over_lan( $user_index );
             $shelly_readings_obj->shellyplus1pm_water_heater_obj = $shellyplus1pm_water_heater_obj;
           }
 
-          { // ....................... Shelly EM device that captures total energy and power delivered to Home at Panel
+          { // ..................... Shelly EM device Home Energy, Power, and Voltage Measurements -----------------
             $shellyem_readings_obj = $this->get_shellyem_readings_over_lan( $user_index, $wp_user_name, $wp_user_ID );
 
             if ( $shellyem_readings_obj )   
@@ -1713,10 +1708,11 @@ class class_transindus_eco
             }
           }
 
-          { // run python script directly and get xcom-lan data without using mqtt
+          { // ..................... Studer data using xcom-lan python script ......................................
             $xcomlan_studer_data_obj = $this->get_studer_readings_over_xcomlan_without_mqtt();
 
             $batt_voltage_xcomlan_avg     = $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg;
+            $raw_batt_voltage_xcomlan     = $xcomlan_studer_data_obj->raw_batt_voltage_xcomlan;
             $east_panel_current_xcomlan   = $xcomlan_studer_data_obj->east_panel_current_xcomlan;
             $west_panel_current_xcomlan   = $xcomlan_studer_data_obj->west_panel_current_xcomlan;
             $pv_current_now_total_xcomlan = $xcomlan_studer_data_obj->pv_current_now_total_xcomlan;
@@ -1732,7 +1728,7 @@ class class_transindus_eco
           }
         }
 
-        { // calculate the SOC from Shelly BM and Xcom-Lan methods of battery current measurement
+        { // ..................... calculate the SOC for all methods using the measurement data ................"
 
           // 1st call the routine to accumulate the battery charge this cycle based on current measurements this cycle
           $batt_soc_accumulation_obj = $this->get_battery_delta_soc_for_both_methods
@@ -1751,9 +1747,9 @@ class class_transindus_eco
                                                 );
 
           $soc_shellybm_since_midnight                    = $batt_soc_accumulation_obj->soc_shellybm_since_midnight;
-          $soc_percentage_now_calculated_using_shelly_bm  = $soc_percentage_at_midnight + $soc_shellybm_since_midnight;
+          $soc_xcomlan_since_midnight                     = $batt_soc_accumulation_obj->soc_xcomlan_since_midnight;
 
-          $soc_xcomlan_since_midnight                         = $batt_soc_accumulation_obj->soc_xcomlan_since_midnight;
+          $soc_percentage_now_calculated_using_shelly_bm      = $soc_percentage_at_midnight + $soc_shellybm_since_midnight;
           $soc_percentage_now_calculated_using_studer_xcomlan = $soc_percentage_at_midnight + $soc_xcomlan_since_midnight;
 
           $batt_amps  = $batt_soc_accumulation_obj->batt_amps;  // best number from both methods
@@ -1762,7 +1758,7 @@ class class_transindus_eco
           // lets update the user meta for updated SOC
           update_user_meta( $wp_user_ID, 'soc_percentage_now_calculated_using_shelly_bm', $soc_percentage_now_calculated_using_shelly_bm);
 
-          // $surplus  power is any surplus from solar after load consumption, available for battery, etc.
+          // $surplus  power means any power available for battery charging. Wrong terminology!!!
           $surplus = round( $batt_amps * 49.8 * 0.001, 1 ); // in KW
 
           // update readings object with SOC's
@@ -1803,176 +1799,92 @@ class class_transindus_eco
           }
         }
 
-        // ..................... Battery FLOAT or SOC overflow past 100%, Clamp SOC at 100% ...................
-        if (  $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg  >= $average_battery_float_voltage ||
-              $soc_percentage_now_calculated_using_studer_xcomlan > 100                             ||
-              $soc_percentage_now_calculated_using_shelly_bm      > 100                             ||
-              $soc_percentage_now_studer_kwh                      > 100
-            )
-        {   // adjust common soc midnight value such that studer kwh computed soc is 100%
-            $new_soc_percentage_at_midnight = 100.0 - $soc_batt_charge_net_percent_today_studer_kwh;
-
-            //check that this new value is not too different from the originally set value
-            if ( abs( $new_soc_percentage_at_midnight - $soc_percentage_at_midnight ) > 5 )
-            {
-              // ignore the change
-              $new_soc_percentage_at_midnight = $soc_percentage_at_midnight;
-            }
-
-            // adjust battery_xcomlan_soc_percentage_accumulated_since_midnight to implement the 100% clamp
-            $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight = 100 - $new_soc_percentage_at_midnight;
-
-            update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
-                                            $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight);
-
-            // recalculate Battery SOC % accumulated since midnight as measured by Shelly battery measurement
-            $recal_battery_soc_percentage_accumulated_since_midnight = 100 - $new_soc_percentage_at_midnight;
-
-            // write this value back to the user meta using the shelly BM method
-            update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', $recal_battery_soc_percentage_accumulated_since_midnight);
-
-            // now lets also update the common soc value at last midnight with our adjusted new value
-            update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $new_soc_percentage_at_midnight );
-
-            error_log("updated SOC midnight value due to FLOAT from: $soc_percentage_at_midnight to $new_soc_percentage_at_midnight");
-            error_log("Adjusted xcom-lan accumulated SOC to: $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight");
-            error_log("Adjusted Shelly BM accumulated SOC to: $recal_battery_soc_percentage_accumulated_since_midnight");
-
-
-            if ( false === get_transient( 'soc_daily_error' ) )
-            {
-              // the transient does not exist so the daily error has not yet been captured so capture the error
-              $soc_daily_error = number_format( 100 - $soc_percentage_now_calculated_using_studer_xcomlan, 1 );
-
-              // write this as transient so it will be checked, will exist and so won't get overwritten and will last say till early AM next day
-              set_transient( 'soc_daily_error' , $soc_daily_error, 15 * 60 * 60 );
-
-              error_log("LogSocDailyError: $soc_daily_error");
-            }
-        }
-
-        if ( $it_is_still_dark )
-        { // Do all the SOC after Dark operations here - Capture and also update SOC
-          
-          // check if capture happened. now-event time < 12h since event can happen at 7PM and last till 6:30AM
-          $soc_capture_after_dark_happened = $this->check_if_soc_after_dark_happened($user_index, $wp_user_name, $wp_user_ID);
-
-          if (  $soc_capture_after_dark_happened === false  && $shellyem_readings_obj->emeters[0]->total && $time_window_for_soc_dark_capture_open )
-          { // event not happened yet so make it happen with valid value for the home energy EM counter reading
-
-            // 1st preference is given to SOC value calculated by xcom-LAN method. So let's check its value
-            if ( ! empty( $soc_percentage_now_calculated_using_studer_xcomlan )         && 
-                          $soc_percentage_now_calculated_using_studer_xcomlan <= 100    &&
-                          $soc_percentage_now_calculated_using_studer_xcomlan > 70
-                         )
-            {
-              $soc_used_for_dark_capture = $soc_percentage_now_calculated_using_studer_xcomlan;
-              error_log("xcom-lan SOC value used for dark capture");
-            }
-            else
-            {
-              $soc_used_for_dark_capture = $soc_percentage_now_calculated_using_shelly_bm;
-              error_log("shelly BM based SOC value used for dark capture");
-            }
-            
-            $this->capture_evening_soc_after_dark(  $user_index, 
-                                                    $wp_user_name, 
-                                                    $wp_user_ID, 
-                                                    $soc_used_for_dark_capture, 
-                                                    $shellyem_readings_obj->emeters[0]->total,
-                                                    $time_window_for_soc_dark_capture_open );
-          }
-
-          if ( $soc_capture_after_dark_happened === true )
-          { // SOC capture after dark is DONE and it is still dark, so use it to compute SOC after dark using only Shelly readings
-
-            // grid is supplying power only when switch os ON and Power > 0.1KW
-            if ( $shellyplus1pm_grid_switch_state_string == "ON" && $home_grid_kw_power > 0.1 )
-            { // Grid is supplying Load and since Solar is 0, battery current is 0 so no change in battery SOC
-              
-              // update the after dark energy counter to latest value
-              update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shelly_readings_obj->emeters[0]->total);
-
-              // SOC is unchanging due to Grid ON however set the variables using the user meta since they are undefined.
-              $soc_percentage_now_using_dark_shelly = (float) get_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  true);
-
-              $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
-            }
-            else
-            { // Inverter is supplying the home since the power from Grid is <= 0.1KW as measured by Shelly 3EM
-              
-              // get the accumulated SOC and energy counter values from user meta
-              $soc_percentage_after_dark        = (float) get_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  true);
-              $shelly_energy_counter_after_dark = (float) get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark',   true);
-
-              // get the difference in energy consumed since last reading
-              $home_consumption_wh_after_dark_using_shellyem = $shellyem_readings_obj->emeters[0]->total - $shelly_energy_counter_after_dark;
-
-              // convert to KW and round to 3 decimal places
-              $home_consumption_kwh_after_dark_using_shellyem = round( $home_consumption_wh_after_dark_using_shellyem * 0.001, 3);
-
-              // calculate SOC percentage discharge (since battery always discharges during dark as there is no solar)
-              $soc_percentage_discharge = $home_consumption_kwh_after_dark_using_shellyem / $battery_capacity_kwh * 100;
-
-              // round it to 3 decimal places for accuracy of arithmatic for accumulation
-              $soc_percentage_now_using_dark_shelly = $soc_percentage_after_dark - $soc_percentage_discharge;
-            }
-          }
-        }
-        else
-        {   // it is daylight now
-          $soc_capture_after_dark_happened = false;
-        }
-
-        { // select SOC based on most likely accurate one and use for switch control
-
-          /*  The a lgorithm for valid SOC determination is as follows:
-              1. Is the value between 30 and 100?
-              2. Is the difference between the SOC's less than 5 points?
-              3. 1st preference is for soc_xcomlan, 2nd is for soc_shelly_bm, 3rd is for soc_studer_kwh
-              4. If the difference ebtween studer_kwh method and the other 2 is more than 5 points,
-                  their values are adjusted to match that of the Studer. This can happen if there is a local LAN outage.
-          */
+        { // select most likely SOC value from the 3 methods available
+          // 1. Do a basic check to see if the new update is present and broadly within limits
+          // 2. For midnight capture Studer value is not used due to exact Studer midnight rollover
+          // 2. If a current based method is offline for more than 4m reset it using Studer Energy method
+          // 4. order of preference: xcom-lan (1), Studer Energy (2), ShellyBM (3) 
 
           $soc_array = [];  // initialize to blank
 
           $studer_reading_is_ok_bool    = ! empty( $soc_percentage_now_studer_kwh ) &&
-                                          $soc_percentage_now_studer_kwh > 40       &&
-                                          $soc_percentage_now_studer_kwh < 101;
+                                            $soc_percentage_now_studer_kwh > 40       &&
+                                            $soc_percentage_now_studer_kwh < 101;
 
           $xcom_lan_reading_is_ok_bool  = ! empty( $soc_percentage_now_calculated_using_studer_xcomlan )  &&
                                           $soc_percentage_now_calculated_using_studer_xcomlan > 40        &&
-                                          $soc_percentage_now_calculated_using_studer_xcomlan < 101       &&
-                                          $batt_soc_accumulation_obj->delta_secs_xcomlan < 300;
+                                          $soc_percentage_now_calculated_using_studer_xcomlan < 101;
+                                          
 
           $shelly_bm_reading_is_ok_bool = ! empty( $soc_percentage_now_calculated_using_shelly_bm ) &&
                                           $soc_percentage_now_calculated_using_shelly_bm  > 40      &&
-                                          $soc_percentage_now_calculated_using_shelly_bm  < 101     &&
-                                          $batt_soc_accumulation_obj->delta_secs_shellybm < 300;
+                                          $soc_percentage_now_calculated_using_shelly_bm  < 101;
+                          
+
+          if ( $this->nowIsWithinTimeLimits("00:20:00", "23:40:00") === true )
+          {
+            // we are not too close to Studer clock midnight rollover so that studer KWH based SOC is reliable
+            // if all readings are OK calculate offsets and set transients
+            if ( $studer_reading_is_ok_bool &&  $xcom_lan_reading_is_ok_bool 
+                                            && $batt_soc_accumulation_obj->delta_secs_xcomlan <= 240 )
+            { 
+              $offset_soc_studerkwh_xcomlan   = $soc_percentage_now_studer_kwh - $soc_percentage_now_calculated_using_studer_xcomlan;
+
+              set_transient('offset_soc_studerkwh_xcomlan',   $offset_soc_studerkwh_xcomlan,  1 * 60 * 60 );
+            }
+            elseif ( $studer_reading_is_ok_bool && $xcom_lan_reading_is_ok_bool 
+                                                && $batt_soc_accumulation_obj->delta_secs_xcomlan > 240 )
+            {
+              // reading is OK but there is a gap between xcom-lan measurements
+              // therefore get the offset from transient
+              $offset_soc_studerkwh_xcomlan   = get_transient( 'offset_soc_studerkwh_xcomlan' );
+
+              $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight =  
+                                        $soc_batt_charge_net_percent_today_studer_kwh - $offset_soc_studerkwh_xcomlan;
+
+              // update the usermeta xcomlan soc since midnight value
+              update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
+                                            $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight);
+
+
+              // calculate the new soc xcomlan value
+              $soc_percentage_now_calculated_using_studer_xcomlan = 
+                        $soc_percentage_at_midnight + $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight;
+            }
+
+            if ( $studer_reading_is_ok_bool &&  $shelly_bm_reading_is_ok_bool 
+                                            && $batt_soc_accumulation_obj->delta_secs_shellybm <= 240 )
+            { 
+              $offset_soc_studerkwh_shellybm   = $soc_percentage_now_studer_kwh - $soc_percentage_now_calculated_using_shelly_bm;
+
+              set_transient('offset_soc_studerkwh_shellybm',   $offset_soc_studerkwh_shellybm,  1 * 60 * 60 );
+            }
+            elseif ( $studer_reading_is_ok_bool && $shelly_bm_reading_is_ok_bool 
+                                                && $batt_soc_accumulation_obj->delta_secs_shellybm > 240 )
+            {
+              // reading is OK but there is a gap between xcom-lan measurements
+              // therefore get the offset from transient
+              $offset_soc_studerkwh_shellybm  = get_transient( 'offset_soc_studerkwh_shellybm' );
+
+              $recal_battery_soc_percentage_accumulated_since_midnight = 
+                                        $soc_batt_charge_net_percent_today_studer_kwh - $offset_soc_studerkwh_shellybm;
+
+              // update the usermeta shelly BM soc since midnight value    
+              update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', 
+                                              $recal_battery_soc_percentage_accumulated_since_midnight);
+              // calculate the new soc shellyBM value
+              $soc_percentage_now_calculated_using_shelly_bm = 
+                        $soc_percentage_at_midnight + $recal_battery_soc_percentage_accumulated_since_midnight;
+            }
+          }
+          
                                            
           if ( $studer_reading_is_ok_bool )     $soc_array[]    = $soc_percentage_now_studer_kwh;
           if ( $xcom_lan_reading_is_ok_bool )   $soc_array[]    = $soc_percentage_now_calculated_using_studer_xcomlan;
           if ( $shelly_bm_reading_is_ok_bool )  $soc_array[]    = $soc_percentage_now_calculated_using_shelly_bm;
 
           // get the minimum value of SOC from the 3 methods available
-          $soc_minimum_from_all_methods = min( $soc_array ) ?? 30;
-                                          
-          // xcom-lan soc is greater than studer soc but not more than 5 points
-          $xcom_lan_studer_kwh_diff_ok_bool   = (  $soc_percentage_now_calculated_using_studer_xcomlan - 
-                                                      $soc_percentage_now_studer_kwh  ) < 5;
-
-          $shelly_bm_studer_kwh_diff_ok_bool  = (  $soc_percentage_now_calculated_using_shelly_bm - 
-                                                      $soc_percentage_now_studer_kwh  ) < 5;
-
-          $xcom_lan_shelly_bm_diff_ok_bool    = abs(  $soc_percentage_now_calculated_using_studer_xcomlan - 
-                                                      $soc_percentage_now_calculated_using_shelly_bm ) < 5;
-
-          // 1st preference is for xcom-lan since it is a simple current measurement and it is backed by Shelly BM
-          //    As long as the Delta-T is less than 5m between successive measurements.
-          // 2nd preference is for shelly-bm since it is a simple current measurement as long as delta-T is < 5m
-          //  AND xcom-lan measureent has failed
-          // 3rd preference is for studer kw based if both xcom-lan and shelly bm fail or delta T is >5m
-          // 4th preference is for shelly bm if xcom-lan and studer fail even if delta-T > 5m
+          $soc_minimum_from_all_methods = min( $soc_array ) ?? 40;
 
           switch (true)
           { 
@@ -1980,6 +1892,8 @@ class class_transindus_eco
               $this->verbose ? error_log("1st preference - All conditions for xcom-lan soc value satisfied"): false;
 
               $soc_percentage_now = $soc_percentage_now_calculated_using_studer_xcomlan;
+
+              $soc_update_method = 'xcom-lan';
             break;
 
             // 2nd preference for Shelly BM in case xcom-lan and studer readings are not there
@@ -1988,6 +1902,8 @@ class class_transindus_eco
               $this->verbose ? error_log("2nd preference - All conditions for shelly-bm soc value satisfied"): false;
 
               $soc_percentage_now = $soc_percentage_now_calculated_using_shelly_bm;
+
+              $soc_update_method = 'shelly-bm';
             break;
 
             // 3rd preference - xcom-lan shelly BM are not OK for example because delta-T > 5m 
@@ -1997,48 +1913,82 @@ class class_transindus_eco
               // set the main soc value to the studer kwh derived value
               $soc_percentage_now = $soc_percentage_now_studer_kwh;
 
-              /*
-
-              // reset the xcom-lan and shell bm accumulated vlues based on studer kwh value
-              // make sure that time is not too close to midnight due to studer clock offest issues
-              if ( $this->nowIsWithinTimeLimits('00:15', '23:45') && ! empty( $soc_batt_charge_net_percent_today_studer_kwh ) )
-              {
-                update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight',         $soc_batt_charge_net_percent_today_studer_kwh );
-                update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', $soc_batt_charge_net_percent_today_studer_kwh );
-
-                error_log("3rd preference - Updating SOC since midnight value for xcom-lan to: $soc_batt_charge_net_percent_today_studer_kwh% from $soc_xcomlan_since_midnight%");
-                error_log("3rd preference - Updating SOC since midnight value for Shelly BM to: $soc_batt_charge_net_percent_today_studer_kwh% from $soc_shellybm_since_midnight%");
-              }
-              else
-              {
-                error_log("3rd preference - Not updating since midnight values since close to midnight");
-              }
-              */
+              $soc_update_method = 'studer-kwh';
             break;
               
-              default:
-                $soc_percentage_now = 30;
+            // in case everything breaks
+            default:
+              $soc_percentage_now = 40;
+
+              $soc_update_method = 'none';
           }
 
           $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;
         }
 
+        // ....................... Battery FLOAT or SOC overflow past 100%, Clamp SOC at 100% ...................
+        if (  $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg  >=  $average_battery_float_voltage ||
+              $soc_percentage_now                                 >   100 
+            )
+        {   
+            // findout which method was used to update the SOC this cycle.
+            // SOC from that method is > 100% so normalize the accumulation to keep SOC at 100%
+            // SOC's from other methods will continue without clamping
+            if ( $soc_update_method === 'xcom-lan' )
+            {
+              // since the SOC at float has to be 100% we keep the midnight value fixed and adjust the accumulation
+              $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
+
+              update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
+                                            $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight);
+
+              error_log("Adjusted xcom-lan accumulated SOC to: $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight");
+            }
+            elseif ( $soc_update_method === 'shelly-bm' )
+            {
+              $recal_battery_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
+
+              update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', 
+                                            $recal_battery_soc_percentage_accumulated_since_midnight);
+            }
+            elseif ( $soc_update_method === 'studer-kwh' )
+            {
+              // In this case the only adjustment possible is the soc midnight value itself
+              // adjust common soc midnight value such that studer kwh computed soc is 100%
+              $new_soc_percentage_at_midnight = 100.0 - $soc_batt_charge_net_percent_today_studer_kwh;
+
+              update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $new_soc_percentage_at_midnight );
+
+              error_log("updated SOC midnight value due to FLOAT from: $soc_percentage_at_midnight to $new_soc_percentage_at_midnight");
+            }
+
+            if ( false === get_transient( 'soc_daily_error' ) )
+            {
+              // the transient does not exist so the daily error has not yet been captured so capture the error
+              $soc_daily_error = number_format( 100 - $soc_percentage_now, 1 );
+
+              // write this as transient so it will be checked, will exist and so won't get overwritten and will last say till early AM next day
+              set_transient( 'soc_daily_error' , $soc_daily_error, 15 * 60 * 60 );
+
+              error_log("LogSocDailyError: $soc_daily_error");
+            }
+        }
+
+        
+
         // midnight actions
         if ( $this->is_time_just_pass_midnight( $user_index, $wp_user_name ) )
         {
-          /*
-            This is where we need to calculate all of the daily statistics and get other required data from transients
-            Then write all of this daily data into a custom post for the day that just ended
-          */
           // get the difference in counter redings to get home energy WH over last 24h before counter resets at midnight
           $kwh_energy_consumed_by_home_today = $shelly_em_home_kwh_since_midnight;
 
-          $wh_energy_from_grid_last_24h   = $shellypro3em_3p_grid_obj->home_grid_wh_counter_now - (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', true );
-          $kwh_energy_from_grid_last_24h  = round( 0.001 * $wh_energy_from_grid_last_24h, 2);
+          $wh_energy_from_grid_last_24h = $shellypro3em_3p_grid_obj->home_grid_wh_counter_now - 
+                                          (float) get_user_meta( $wp_user_ID, 'grid_wh_counter_at_midnight', true );
 
-          $kwh_solar_generated_today          = $solar_kwh_today; // data from syuder via xcom-lan
+          $kwh_solar_generated_today    = $solar_kwh_today; // data from syuder via xcom-lan
 
-          // get the total SOC% accumulated in last 24h before it is reset for new day
+          // get the total SOC% accumulated in the battery during the last 24h before it is reset for new day
+          // This seems meaningleass to me on 2nd thought :-(
           $battery_soc_percentage_accumulated_last24h = 
             (float) get_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', true );
 
@@ -2100,7 +2050,7 @@ class class_transindus_eco
           }
           
 
-          // Then we reset values for the new day
+          // Now we reset values for the new day, starting at midnight
           // reset Shelly EM Home WH counter to present reading in WH. This is only done once in 24h, at midnight
           update_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', $shellyem_readings_obj->emeters[0]->total );
 
@@ -2127,15 +2077,89 @@ class class_transindus_eco
           // reset battery accumulated using xcomlan measurements
           update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 0);
 
-          error_log("Cal-Midnight - shelly_em_home_energy_counter_at_midnight: $shellyem_readings_obj->emeters[0]->total");
+          error_log("Cal-Midnight - shelly_em_home_energy_counter_at_midnight: " . $shellyem_readings_obj->emeters[0]->total);
           error_log("Cal-Midnight - grid_wh_counter_at_midnight: $shellypro3em_3p_grid_obj->home_grid_wh_counter_now");
-          error_log("Cal-Midnight - soc_percentage_at_midnight: $soc_percentage_now_calculated_using_shelly_bm");
+          error_log("Cal-Midnight - soc_percentage_at_midnight: $soc_percentage_now");
           error_log("Cal-Midnight - battery_soc_percentage_accumulated_since_midnight: 0");
           error_log("Cal-Midnight - battery_xcomlan_soc_percentage_accumulated_since_midnight: 0");
+          error_log("Cal-Midnight - Studer clock offset in minutes: " . $this->studer_time_offset_in_mins_lagging);
         }
 
         // add property of studer clock offest. The remote should send a notification if this is above a limit
         $shelly_readings_obj->studer_time_offset_in_mins_lagging = $this->studer_time_offset_in_mins_lagging;
+
+        if ( $it_is_still_dark )
+        { // Do all the SOC after Dark operations here - Capture and also update SOC
+          
+          // check if capture happened. now-event time < 12h since event can happen at 7PM and last till 6:30AM
+          $soc_capture_after_dark_happened = $this->check_if_soc_after_dark_happened($user_index, $wp_user_name, $wp_user_ID);
+
+          if (  $soc_capture_after_dark_happened === false  && $shellyem_readings_obj->emeters[0]->total && $time_window_for_soc_dark_capture_open )
+          { // event not happened yet so make it happen with valid value for the home energy EM counter reading
+
+            // 1st preference is given to SOC value calculated by xcom-LAN method. So let's check its value
+            if ( ! empty( $soc_percentage_now_calculated_using_studer_xcomlan )         && 
+                          $soc_percentage_now_calculated_using_studer_xcomlan <= 100    &&
+                          $soc_percentage_now_calculated_using_studer_xcomlan > 70
+                         )
+            {
+              $soc_used_for_dark_capture = $soc_percentage_now_calculated_using_studer_xcomlan;
+              error_log("xcom-lan SOC value used for dark capture");
+            }
+            else
+            {
+              $soc_used_for_dark_capture = $soc_percentage_now_calculated_using_shelly_bm;
+              error_log("shelly BM based SOC value used for dark capture");
+            }
+            
+            $this->capture_evening_soc_after_dark(  $user_index, 
+                                                    $wp_user_name, 
+                                                    $wp_user_ID, 
+                                                    $soc_used_for_dark_capture, 
+                                                    $shellyem_readings_obj->emeters[0]->total,
+                                                    $time_window_for_soc_dark_capture_open );
+          }
+
+          if ( $soc_capture_after_dark_happened === true )
+          { // SOC capture after dark is DONE and it is still dark, so use it to compute SOC after dark using only Shelly readings
+
+            // grid is supplying power only when switch os ON and Power > 0.1KW
+            if ( $shellyplus1pm_grid_switch_state_string == "ON" && $home_grid_kw_power > 0.1 )
+            { // Grid is supplying Load and since Solar is 0, battery current is 0 so no change in battery SOC
+              
+              // update the after dark energy counter to latest value
+              update_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark', $shellyem_readings_obj->emeters[0]->total);
+
+              // SOC is unchanging due to Grid ON however set the variables using the user meta since they are undefined.
+              $soc_percentage_now_using_dark_shelly = (float) get_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  true);
+
+              $shelly_readings_obj->soc_percentage_now_using_dark_shelly = $soc_percentage_now_using_dark_shelly;
+            }
+            else
+            { // Inverter is supplying the home since the power from Grid is <= 0.1KW as measured by Shelly 3EM
+              
+              // get the accumulated SOC and energy counter values from user meta
+              $soc_percentage_after_dark        = (float) get_user_meta( $wp_user_ID, 'soc_percentage_update_after_dark',  true);
+              $shelly_energy_counter_after_dark = (float) get_user_meta( $wp_user_ID, 'shelly_energy_counter_after_dark',   true);
+
+              // get the difference in energy consumed since last reading
+              $home_consumption_wh_after_dark_using_shellyem = $shellyem_readings_obj->emeters[0]->total - $shelly_energy_counter_after_dark;
+
+              // convert to KW and round to 3 decimal places
+              $home_consumption_kwh_after_dark_using_shellyem = round( $home_consumption_wh_after_dark_using_shellyem * 0.001, 3);
+
+              // calculate SOC percentage discharge (since battery always discharges during dark as there is no solar)
+              $soc_percentage_discharge = $home_consumption_kwh_after_dark_using_shellyem / $battery_capacity_kwh * 100;
+
+              // round it to 3 decimal places for accuracy of arithmatic for accumulation
+              $soc_percentage_now_using_dark_shelly = $soc_percentage_after_dark - $soc_percentage_discharge;
+            }
+          }
+        }
+        else
+        {   // it is daylight now
+          $soc_capture_after_dark_happened = false;
+        }
 
         { // Switch control Tree decision
 
@@ -2396,10 +2420,10 @@ class class_transindus_eco
           $log_string .= " E: "     . number_format($east_panel_current_xcomlan,1)   .  " W: "   . number_format($west_panel_current_xcomlan,1);
           $log_string .= " PV: "    . number_format($pv_current_now_total_xcomlan,1) . " Inv: "  . number_format($inverter_current_xcomlan,1);
           $log_string .= " X-A: "   . number_format($batt_current_xcomlan,1);
-          $log_string .= " S-A: "   . number_format($batt_amps_shellybm,1) . ' Vbat:'            .  number_format($batt_voltage_xcomlan_avg,1);
+          $log_string .= " S-A: "   . number_format($batt_amps_shellybm,1) . ' Vbat_raw:'            .  number_format($raw_batt_voltage_xcomlan,1);
           $log_string .= " SOC-St: " . number_format($soc_percentage_now_studer_kwh,1); // this is the Studer based soc%
           $log_string .= " SOC-B: " . number_format($soc_percentage_now_calculated_using_shelly_bm,1); // this is the shelly BM based soc%
-          $log_string .= " SOC-X: " . number_format($soc_percentage_now,1 ) . '%';                     // this is the xcom-lan current based soc%
+          $log_string .= " SOC-X: " . number_format($soc_percentage_now_calculated_using_studer_xcomlan,1 ) . '%';                     // this is the xcom-lan current based soc%
 
           error_log($log_string);
         }
@@ -3634,9 +3658,7 @@ class class_transindus_eco
     {
       // get API and device ID from config based on user index
       $config = $this->config;
-      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
+      
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_1pm'];
 
       $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellyplus1pm' );
@@ -3654,9 +3676,7 @@ class class_transindus_eco
     {
       // get API and device ID from config based on user index
       $config = $this->config;
-      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_water_heater'];
+      
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_water_heater'];
 
       $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellyplus1pm' );
@@ -3675,9 +3695,7 @@ class class_transindus_eco
     {
       // get API and device ID from config based on user index
       $config = $this->config;
-      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_water_heater'];
+      
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_water_pump'];
 
       $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellyplus1pm' );
@@ -3692,7 +3710,14 @@ class class_transindus_eco
 
 
     /**
-     * 
+     *  Data from subscription to remote MQTT broker mqtt.avasarala.in using username/password authentication
+     *  If data is different from existing no action. 
+     *  If not, and if data is within limits, user meta is updated.
+     *  In addition, for certain applicable STUDER variables, are include in array to be sent to set Studer Settings
+     *  User Meta:  keep_shelly_switch_closed_always, studer_charger_enabled, studer_battery_priority_enabled,
+     *              studer_battery_priority_voltage, studer_battery_charging_current, average_battery_float_voltage,
+     *              soc_percentage_switch_release_setting, soc_percentage_lvds_setting,
+     *              pump_duration_control, pump_duration_secs_max, pump_power_restart_interval_secs, 
      */
     public function get_flag_data_from_master_remote( int $user_index, int $wp_user_ID):void
     {
@@ -4129,6 +4154,7 @@ class class_transindus_eco
 
         // pack these as properties onto the shelly readings object
         $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg          = $batt_voltage_xcomlan_avg;
+        $xcomlan_studer_data_obj->raw_batt_voltage_xcomlan          = $raw_batt_voltage_xcomlan;
         $xcomlan_studer_data_obj->east_panel_current_xcomlan        = $east_panel_current_xcomlan;
         $xcomlan_studer_data_obj->west_panel_current_xcomlan        = $west_panel_current_xcomlan;
         $xcomlan_studer_data_obj->pv_current_now_total_xcomlan      = $pv_current_now_total_xcomlan;
@@ -4985,23 +5011,19 @@ class class_transindus_eco
         
 
         // Shelly 4PM load breakout data
-        $power_total_to_home    = $readings_obj->shellypro4pm_load_obj->switch[2]->power +
-                                  $readings_obj->shellypro4pm_load_obj->switch[3]->power;
-        $power_total_to_home_kw = $readings_obj->shellypro4pm_load_obj->switch[3]->power_kw +
-                                  $readings_obj->shellypro4pm_load_obj->switch[2]->power_kw +
-                                  $readings_obj->shellypro4pm_load_obj->switch[1]->power_kw +
-                                  $readings_obj->shellypro4pm_load_obj->switch[0]->power_kw;
+        $power_to_ac_kw   = $readings_obj->shellypro4pm_load_obj->switch[0]->power_kw +
+                            $readings_obj->shellypro4pm_load_obj->switch[1]->power_kw +
+                            $readings_obj->shellypro4pm_load_obj->switch[2]->power_kw +
+                            $readings_obj->shellypro4pm_load_obj->switch[3]->power_kw;
 
-        $power_to_home_kw = $readings_obj->shellypro4pm_load_obj->switch[3]->power_kw +
-                            $readings_obj->shellypro4pm_load_obj->switch[2]->power_kw;
-        $power_to_ac_kw   = $readings_obj->shellypro4pm_load_obj->switch[1]->power_kw;
-        $power_to_pump_kw = $readings_obj->shellypro4pm_load_obj->switch[0]->power_kw;
+        $power_to_pump_kw = $readings_obj->shellyplus1pm_water_pump_obj->switch[0]->power_kw;
 
-        $pump_ON_duration_mins = (int) round( $readings_obj->shellypro4pm_load_obj->pump_ON_duration_secs / 60, 0);
+        $pump_ON_duration_mins = (int) round( $readings_obj->shellyplus1pm_water_pump_obj->pump_ON_duration_secs / 60, 0) ?? 0;
 
-        $pump_switch_status_bool  = $readings_obj->shellypro4pm_load_obj->switch[0]->output_state_bool;
-        $ac_switch_status_bool    = $readings_obj->shellypro4pm_load_obj->switch[1]->output_state_bool;
-        $home_switch_status_bool  = $readings_obj->shellypro4pm_load_obj->switch[2]->output_state_bool || 
+        $pump_switch_status_bool  = $readings_obj->shellyplus1pm_water_pump_obj->switch[0]->output_state_bool;
+        $ac_switch_status_bool    = $readings_obj->shellypro4pm_load_obj->switch[0]->output_state_bool || 
+                                    $readings_obj->shellypro4pm_load_obj->switch[1]->output_state_bool ||
+                                    $readings_obj->shellypro4pm_load_obj->switch[2]->output_state_bool ||
                                     $readings_obj->shellypro4pm_load_obj->switch[3]->output_state_bool;
 
         $switch_tree_obj            = $readings_obj->switch_tree_obj;
@@ -5086,7 +5108,7 @@ class class_transindus_eco
                                               </span>';
 
         $format_object->power_to_home_kw = '<span style="font-size: 18px;color: Black;">
-                                                <strong>' . $power_to_home_kw . ' KW</strong>
+                                                <strong>' . $shelly_em_home_kw . ' KW</strong>
                                             </span>';
 
         $format_object->power_to_ac_kw = '<span style="font-size: 18px;color: Black;">
@@ -5636,7 +5658,7 @@ class class_transindus_eco
         // if the value is null due to a bad API response then do nothing and return
         if ( empty( $studer_clock_unix_timestamp_with_utc_offset )) return;
 
-        // calculate the lag positive or lead negative of studer time with now
+        // calculate the lag positive or lead negative of studer time with now. 3600 secs check is bogus
         $clock_offset_obj = $this->check_validity_of_timestamp( $studer_clock_unix_timestamp_with_utc_offset, 3600);
 
         // positive means lagging behind, negative means leading ahead, of correct server time.
@@ -5656,14 +5678,16 @@ class class_transindus_eco
           $studer_time_offset_in_mins_lagging = 0;
         }
 
-        set_transient(  'studer_time_offset_in_mins_lagging', $studer_time_offset_in_mins_lagging, 1*60*60 );
+        // transient shall exist for 8000 seconds or 2h 18m 20s
+        set_transient(  'studer_time_offset_in_mins_lagging', $studer_time_offset_in_mins_lagging, 8000 );
 
-        $this->verbose ? error_log( "Studer clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins"):false;
+        error_log( "Studer API call - clock offset lags Server clock by: " . $studer_time_offset_in_mins_lagging . " mins");
       }
       else
       {
         // offset already computed and transient still valid, just read in the value
         $studer_time_offset_in_mins_lagging = (int) get_transient( 'studer_time_offset_in_mins_lagging' );
+        $this->studer_time_offset_in_mins_lagging = $studer_time_offset_in_mins_lagging;
       }
 
       if ( abs( $studer_time_offset_in_mins_lagging ) > 10 )
@@ -5706,8 +5730,7 @@ class class_transindus_eco
         $s=$test->format('s');
 
         // if hours are 0 and offset adjusted minutes are 0 then we are just pass midnight per Studer clock
-        // we added an additional offset of 1m just to be sure to account for any seconds offset
-        if( $h == 0 && ( $m - $studer_time_offset_in_mins_lagging ) > 1 )
+        if( $h == 0 && ( $m - $studer_time_offset_in_mins_lagging ) > 0 )
         {
           // We are just past midnight on Studer clock, so return true after setiimg the transient
           // we ensure that the transient lasts longer than the 40m window but less than 24h

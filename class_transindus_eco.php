@@ -1930,8 +1930,10 @@ class class_transindus_eco
         }
 
         // ....................... Battery FLOAT or SOC overflow past 100%, Clamp SOC at 100% ...................
-        if (  $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg  >=  $average_battery_float_voltage ||
-              $soc_percentage_now                                 >   100 
+        if (  ( $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg  >=  $average_battery_float_voltage &&
+                $batt_amps > 0 && $batt_amps < 10 )
+                ||
+              $soc_percentage_now > 100 
             )
         {   
             // findout which method was used to update the SOC this cycle.

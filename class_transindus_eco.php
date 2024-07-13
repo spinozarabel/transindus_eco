@@ -1934,7 +1934,7 @@ class class_transindus_eco
           $soc_percentage_now_is_greater_than_100 = $soc_percentage_now > 100;
 
           $battery_float_state_achieved = $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg  >=  $average_battery_float_voltage &&
-                                          $batt_amps > 0 && $batt_amps < 10;
+                                          abs($batt_amps) < 5;
           
           switch ( true )
           {

@@ -1930,75 +1930,81 @@ class class_transindus_eco
         }
 
         // ....................... Battery FLOAT or SOC overflow past 100%, Clamp SOC at 100% ...................
-        $soc_percentage_now_is_greater_than_100 = $soc_percentage_now > 100;
-        $battery_float_state_achieved = $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg  >=  $average_battery_float_voltage &&
-                                        $batt_amps > 0 && $batt_amps < 10;
+        {
+          $soc_percentage_now_is_greater_than_100 = $soc_percentage_now > 100;
 
-        if (  $battery_float_state_achieved ||  $soc_percentage_now_is_greater_than_100 )
-        {   
-          if ($battery_float_state_achieved ) error_log( "Battery in Float State" );
-          if ($soc_percentage_now_is_greater_than_100 ) error_log( "SOC > 100%" );
+          $battery_float_state_achieved = $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg  >=  $average_battery_float_voltage &&
+                                          $batt_amps > 0 && $batt_amps < 10;
           
-            // findout which method was used to update the SOC this cycle.
-            // SOC from that method is > 100% so normalize the accumulation to keep SOC at 100%
-            // SOC's from other methods will continue without clamping
-            if ( $soc_update_method === 'xcom-lan' )
-            {
-              // lets see if the Studer KWH based SOC is also more than 100%
-              if ( $soc_percentage_now_studer_kwh > 100 )
-              {
-                // since the studer kwh based soc is already greater than 100% we reduce the midnight value
-                // since it is common to all
-                // so we normalize studer kwh soc to 100% based on midnight value adjustment
-                // then we normaloze the soc xcom-lan by adjusting its accumulation today
+          switch ( true )
+          {
+              case ( $battery_float_state_achieved ):
+                // since battery float state means all SOC's must read 100% lets check for that condition first
+                error_log( "Battery in Float State - normalizing all SOCs to 100%" );
+
+                // Since Studer KWH based SOC can only be normalized using the midnight SOC value
                 $new_soc_percentage_at_midnight = 100.0 - $soc_batt_charge_net_percent_today_studer_kwh;
 
                 update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $new_soc_percentage_at_midnight );
 
                 error_log("updated SOC midnight value from: $soc_percentage_at_midnight to $new_soc_percentage_at_midnight");
+
                 $soc_percentage_at_midnight = $new_soc_percentage_at_midnight;
-              }
-              // since the SOC at float has to be 100% we keep the midnight value fixed and adjust the accumulation
-              $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
 
-              update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
-                                            $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight);
+                // Now lets adjust the accumulated values of xcom-lan SOC to make the SOC 100% for xcom-lan
+                $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
 
-              error_log("Adjusted xcom-lan accumulated SOC to: $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight");
-            }
-            elseif ( $soc_update_method === 'shelly-bm' )
-            {
-              $recal_battery_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
+                update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
+                                              $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight);
 
-              update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', 
-                                            $recal_battery_soc_percentage_accumulated_since_midnight);
-              error_log("Adjusted shelly-BM accumulated SOC to: $recal_battery_soc_percentage_accumulated_since_midnight");
-            }
-            elseif ( $soc_update_method === 'studer-kwh' )
-            {
-              // In this case the only adjustment possible is the soc midnight value itself
-              // adjust common soc midnight value such that studer kwh computed soc is 100%
-              $new_soc_percentage_at_midnight = 100.0 - $soc_batt_charge_net_percent_today_studer_kwh;
+                error_log("Adjusted xcom-lan accumulated SOC to: $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight");
 
-              update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $new_soc_percentage_at_midnight );
+                // Adjust accumulated value for Shelly-BM to make SOC of Shelly BM to 100% at float
+                $recal_battery_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
 
-              error_log("updated SOC midnight value from: $soc_percentage_at_midnight to $new_soc_percentage_at_midnight");
-            }
+                update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', 
+                                              $recal_battery_soc_percentage_accumulated_since_midnight);
+                error_log("Adjusted shelly-BM accumulated SOC to: $recal_battery_soc_percentage_accumulated_since_midnight");
+              break;
+   
+              case ( $soc_percentage_now_is_greater_than_100 && $soc_update_method === 'xcom-lan' ):
+                // Now lets adjust the accumulated values of xcom-lan SOC to make the SOC 100% for xcom-lan
+                $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
+                update_user_meta( $wp_user_ID, 'battery_xcomlan_soc_percentage_accumulated_since_midnight', 
+                                              $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight);
+                error_log("Adjusted xcom-lan accumulated SOC to: $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight");
+              break;
 
-            if ( false === get_transient( 'soc_daily_error' ) )
-            {
-              // the transient does not exist so the daily error has not yet been captured so capture the error
-              $soc_daily_error = number_format( 100 - $soc_percentage_now, 1 );
+              case ( $soc_percentage_now_is_greater_than_100 && $soc_update_method === 'shelly-bm' ):
+                $recal_battery_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
+                update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', 
+                                              $recal_battery_soc_percentage_accumulated_since_midnight);
+                error_log("Adjusted shelly-BM accumulated SOC to: $recal_battery_soc_percentage_accumulated_since_midnight");
+              break;
 
-              // write this as transient so it will be checked, will exist and so won't get overwritten and will last say till early AM next day
-              set_transient( 'soc_daily_error' , $soc_daily_error, 15 * 60 * 60 );
+              case ( $soc_percentage_now_is_greater_than_100 && $soc_update_method === 'studer-kwh' ):
+                // This is the case where the Studer SOC > 100 but it could be even if battery is NOT yet in FLOAT state
+                // This adjustment will also affect the other 2 methods since we are adjusting the midnight SOC value
+                $new_soc_percentage_at_midnight = 100.0 - $soc_batt_charge_net_percent_today_studer_kwh;
+                update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $new_soc_percentage_at_midnight );
+                error_log("updated SOC midnight value from: $soc_percentage_at_midnight to $new_soc_percentage_at_midnight");
+                $soc_percentage_at_midnight = $new_soc_percentage_at_midnight;
+              break;
+          }
 
-              error_log("LogSocDailyError: $soc_daily_error");
-            }
+          if ( false === get_transient( 'soc_daily_error' ) )
+          {
+            // the transient does not exist so the daily error has not yet been captured so capture the error
+            $soc_daily_error = number_format( 100 - $soc_percentage_now, 1 );
+
+            // write this as transient so it will be checked, will exist and so won't get overwritten and will last say till early AM next day
+            set_transient( 'soc_daily_error' , $soc_daily_error, 15 * 60 * 60 );
+
+            error_log("LogSocDailyError: $soc_daily_error");
+          }
+          
         }
-
         
-
         // midnight actions
         if ( $this->is_time_just_pass_midnight( $user_index, $wp_user_name ) )
         {

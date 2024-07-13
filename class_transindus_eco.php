@@ -1930,12 +1930,15 @@ class class_transindus_eco
         }
 
         // ....................... Battery FLOAT or SOC overflow past 100%, Clamp SOC at 100% ...................
-        if (  ( $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg  >=  $average_battery_float_voltage &&
-                $batt_amps > 0 && $batt_amps < 10 )
-                ||
-              $soc_percentage_now > 100 
-            )
+        $soc_percentage_now_is_greater_than_100 = $soc_percentage_now > 100;
+        $battery_float_state_achieved = $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg  >=  $average_battery_float_voltage &&
+                                        $batt_amps > 0 && $batt_amps < 10;
+
+        if (  $battery_float_state_achieved ||  $soc_percentage_now_is_greater_than_100 )
         {   
+          if ($battery_float_state_achieved ) error_log( "Battery in Float State" );
+          if ($soc_percentage_now_is_greater_than_100 ) error_log( "SOC > 100%" );
+          
             // findout which method was used to update the SOC this cycle.
             // SOC from that method is > 100% so normalize the accumulation to keep SOC at 100%
             // SOC's from other methods will continue without clamping
@@ -1955,6 +1958,7 @@ class class_transindus_eco
 
               update_user_meta( $wp_user_ID, 'battery_soc_percentage_accumulated_since_midnight', 
                                             $recal_battery_soc_percentage_accumulated_since_midnight);
+              error_log("Adjusted shelly-BM accumulated SOC to: $recal_battery_soc_percentage_accumulated_since_midnight");
             }
             elseif ( $soc_update_method === 'studer-kwh' )
             {
@@ -1964,7 +1968,7 @@ class class_transindus_eco
 
               update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $new_soc_percentage_at_midnight );
 
-              error_log("updated SOC midnight value due to FLOAT from: $soc_percentage_at_midnight to $new_soc_percentage_at_midnight");
+              error_log("updated SOC midnight value from: $soc_percentage_at_midnight to $new_soc_percentage_at_midnight");
             }
 
             if ( false === get_transient( 'soc_daily_error' ) )

@@ -3250,8 +3250,8 @@ class class_transindus_eco
         // push the new voltage reading to the holding array
         array_push( $bv_avg_arr, $new_battery_voltage_reading );
 
-        // If the array has more than 5 elements then drop the earliest one
-        if ( sizeof($bv_avg_arr) > 5 )  {   // drop the earliest reading
+        // If the array has more than 10 elements then drop the earliest one
+        if ( sizeof($bv_avg_arr) > 10 )  {   // drop the earliest reading
             array_shift($bv_avg_arr);
         }
         // Write it to this object for access elsewhere easily

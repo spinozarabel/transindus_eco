@@ -1944,6 +1944,20 @@ class class_transindus_eco
             // SOC's from other methods will continue without clamping
             if ( $soc_update_method === 'xcom-lan' )
             {
+              // lets see if the Studer KWH based SOC is also more than 100%
+              if ( $soc_percentage_now_studer_kwh > 100 )
+              {
+                // since the studer kwh based soc is already greater than 100% we reduce the midnight value
+                // since it is common to all
+                // so we normalize studer kwh soc to 100% based on midnight value adjustment
+                // then we normaloze the soc xcom-lan by adjusting its accumulation today
+                $new_soc_percentage_at_midnight = 100.0 - $soc_batt_charge_net_percent_today_studer_kwh;
+
+                update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $new_soc_percentage_at_midnight );
+
+                error_log("updated SOC midnight value from: $soc_percentage_at_midnight to $new_soc_percentage_at_midnight");
+                $soc_percentage_at_midnight = $new_soc_percentage_at_midnight;
+              }
               // since the SOC at float has to be 100% we keep the midnight value fixed and adjust the accumulation
               $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
 

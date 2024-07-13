@@ -1837,7 +1837,7 @@ class class_transindus_eco
             {
               // reading is OK but there is a gap between xcom-lan measurements
               // therefore get the offset from transient
-              $offset_soc_studerkwh_xcomlan   = get_transient( 'offset_soc_studerkwh_xcomlan' );
+              $offset_soc_studerkwh_xcomlan   = get_transient( 'offset_soc_studerkwh_xcomlan' ) ?? 0;
 
               $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight =  
                                         $soc_batt_charge_net_percent_today_studer_kwh - $offset_soc_studerkwh_xcomlan;
@@ -1850,8 +1850,10 @@ class class_transindus_eco
               // calculate the new soc xcomlan value
               $soc_percentage_now_calculated_using_studer_xcomlan = 
                         $soc_percentage_at_midnight + $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight;
+              error_log("SOC xcom-lan recalculated using offset from studer KWH");
             }
 
+            // do the same treament for SOC using Shelly BM method
             if ( $studer_reading_is_ok_bool &&  $shelly_bm_reading_is_ok_bool 
                                             && $batt_soc_accumulation_obj->delta_secs_shellybm <= 240 )
             { 
@@ -1875,6 +1877,7 @@ class class_transindus_eco
               // calculate the new soc shellyBM value
               $soc_percentage_now_calculated_using_shelly_bm = 
                         $soc_percentage_at_midnight + $recal_battery_soc_percentage_accumulated_since_midnight;
+              error_log("SOC Shelly BM recalculated using offset from studer KWH");
             }
           }
           

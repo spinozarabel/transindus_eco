@@ -1637,7 +1637,7 @@ class class_transindus_eco
 
             $shelly_readings_obj->shellypro3em_3p_grid_obj = $shellypro3em_3p_grid_obj;
 
-            $this->verbose ? error_log("Log-home_grid_wh_counter_now: $shellypro3em_3p_grid_obj->home_grid_wh_counter_now, wh since midnight: $shellypro3em_3p_grid_obj->home_grid_wh_since_midnight, Home Grid PowerKW: $shellypro3em_3p_grid_obj->home_grid_kw_power"): false;
+            // error_log("Log-home_grid_wh_counter_now: $shellypro3em_3p_grid_obj->home_grid_wh_counter_now, wh since midnight: $shellypro3em_3p_grid_obj->home_grid_wh_since_midnight, Home Grid PowerKW: $shellypro3em_3p_grid_obj->home_grid_kw_power"): false;
 
             $home_grid_wh_counter_now               = $shellypro3em_3p_grid_obj->home_grid_wh_counter_now;
             $evcharger_grid_wh_counter_now          = $shellypro3em_3p_grid_obj->evcharger_grid_wh_counter_now;

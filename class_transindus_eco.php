@@ -4118,7 +4118,7 @@ class class_transindus_eco
       // Check that the message is not empty
       if ( empty( $mystuder_readings_json_string ) )
       {
-          error_log( " Null output received from shell_exec command of python script " );
+          error_log( " Null output received from shell_exec command of python script xcom-lan call" );
 
           $xcomlan_studer_data_obj->batt_current_xcomlan = null;
           $xcomlan_studer_data_obj->xcomlan_ts           = null;

@@ -4122,6 +4122,7 @@ class class_transindus_eco
 
           $xcomlan_studer_data_obj->batt_current_xcomlan = null;
           $xcomlan_studer_data_obj->xcomlan_ts           = null;
+          $xcomlan_studer_data_obj->xcomlan_call_ok      = false;
 
           return $xcomlan_studer_data_obj;
       }
@@ -4136,32 +4137,48 @@ class class_transindus_eco
 
         $xcomlan_studer_data_obj->batt_current_xcomlan = null;
         $xcomlan_studer_data_obj->xcomlan_ts           = null;
+        $xcomlan_studer_data_obj->xcomlan_call_ok      = false;
 
         return $xcomlan_studer_data_obj;
       }
       elseif( json_last_error() === JSON_ERROR_NONE )
       {
-        // we have a non-empty object to work with
-        $raw_batt_voltage_xcomlan     =         $studer_data_via_xcomlan->battery_voltage_xtender;
+        // we have a non-empty object to work with. Check if property exists in each case
+        if ( property_exists($studer_data_via_xcomlan, 'battery_voltage_xtender') )
+            $raw_batt_voltage_xcomlan     =         $studer_data_via_xcomlan->battery_voltage_xtender;
 
-        $east_panel_current_xcomlan   = round(  $studer_data_via_xcomlan->pv_current_now_1, 1 );
+        if ( property_exists($studer_data_via_xcomlan, 'pv_current_now_1') )
+            $east_panel_current_xcomlan   = round(  $studer_data_via_xcomlan->pv_current_now_1, 1 );
 
-        $west_panel_current_xcomlan   = round(  $studer_data_via_xcomlan->pv_current_now_2, 1 );
+        if ( property_exists($studer_data_via_xcomlan, 'pv_current_now_2') )
+            $west_panel_current_xcomlan   = round(  $studer_data_via_xcomlan->pv_current_now_2, 1 );
 
-        $pv_current_now_total_xcomlan = round(  $studer_data_via_xcomlan->pv_current_now_total, 1 );
-
-        $inverter_current_xcomlan     = round(  $studer_data_via_xcomlan->inverter_current, 1);
-
-        $xcomlan_ts                   = (int)   $studer_data_via_xcomlan->timestamp_xcomlan_call;
-
-        // battery current as measured by xcom-lan is got by adding + PV DC current amps and - inverter DC current amps
-      
-        $batt_current_xcomlan = ( $pv_current_now_total_xcomlan + $inverter_current_xcomlan );
-
-        if ( $batt_current_xcomlan <= 0 )
+        if (  property_exists($studer_data_via_xcomlan, 'pv_current_now_total') && 
+              property_exists($studer_data_via_xcomlan, 'inverter_current')         )
         {
-          $batt_current_xcomlan = round( $batt_current_xcomlan * 0.960 , 1);
+          $pv_current_now_total_xcomlan = round(  $studer_data_via_xcomlan->pv_current_now_total, 1 );
+          $inverter_current_xcomlan     = round(  $studer_data_via_xcomlan->inverter_current, 1);
+
+          // battery current as measured by xcom-lan is got by adding + PV DC current amps and - inverter DC current amps
+          $batt_current_xcomlan = ( $pv_current_now_total_xcomlan + $inverter_current_xcomlan );
+
+          if ( $batt_current_xcomlan <= 0 )
+          {
+            $batt_current_xcomlan = round( $batt_current_xcomlan * 0.960 , 1);
+          }
         }
+        
+        if ( property_exists($studer_data_via_xcomlan, 'timestamp_xcomlan_call') )
+            $xcomlan_ts          = (int)   $studer_data_via_xcomlan->timestamp_xcomlan_call;
+
+        if ( property_exists($studer_data_via_xcomlan, 'inverter_kwh_today') )
+            $inverter_kwh_today  = round(  $studer_data_via_xcomlan->inverter_kwh_today, 3);
+
+        if ( property_exists($studer_data_via_xcomlan, 'solar_kwh_today') )
+            $solar_kwh_today     = round(  $studer_data_via_xcomlan->solar_kwh_today, 3);
+
+        if ( property_exists($studer_data_via_xcomlan, 'grid_kwh_today') )
+            $grid_kwh_today      = round(  $studer_data_via_xcomlan->grid_kwh_today, 3);
 
         // calculate the voltage drop due to the battery current taking into account the polarity. + current is charging
         // $battery_voltage_vdc = round($battery_voltage_vdc + abs( $inverter_current_amps ) * $Ra - abs( $battery_charge_amps ) * $Rb, 2);
@@ -4191,9 +4208,10 @@ class class_transindus_eco
         $xcomlan_studer_data_obj->psolar_kw                         = $psolar_kw;
         $xcomlan_studer_data_obj->batt_current_xcomlan              = $batt_current_xcomlan;
         $xcomlan_studer_data_obj->xcomlan_ts                        = $xcomlan_ts;
-        $xcomlan_studer_data_obj->inverter_kwh_today  = round(  $studer_data_via_xcomlan->inverter_kwh_today, 3);
-        $xcomlan_studer_data_obj->solar_kwh_today     = round(  $studer_data_via_xcomlan->solar_kwh_today, 3);
-        $xcomlan_studer_data_obj->grid_kwh_today      = round(  $studer_data_via_xcomlan->grid_kwh_today, 3);
+        $xcomlan_studer_data_obj->inverter_kwh_today                = $inverter_kwh_today;      
+        $xcomlan_studer_data_obj->solar_kwh_today                   = $solar_kwh_today;
+        $xcomlan_studer_data_obj->grid_kwh_today                    = $grid_kwh_today;
+        $xcomlan_studer_data_obj->xcomlan_call_ok                   = true;
 
         return $xcomlan_studer_data_obj;
       }
@@ -4204,6 +4222,7 @@ class class_transindus_eco
         error_log( print_r($studer_data_via_xcomlan , true) );
         $xcomlan_studer_data_obj->batt_current_xcomlan = null;
         $xcomlan_studer_data_obj->xcomlan_ts           = null;
+        $xcomlan_studer_data_obj->xcomlan_call_ok      = false;
 
          return $xcomlan_studer_data_obj;
       }

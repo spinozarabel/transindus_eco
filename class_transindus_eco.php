@@ -1628,7 +1628,7 @@ class class_transindus_eco
           $shelly_readings_obj->shellyplus1pm_grid_switch_obj = $shellyplus1pm_grid_switch_obj;
 
           $shellyplus1pm_grid_switch_state_string = $shellyplus1pm_grid_switch_obj->switch[0]->output_state_string;
-          $this->verbose ? error_log("Shelly Grid Switch State: $shellyplus1pm_grid_switch_state_string"): false;
+          // $this->verbose ? error_log("Shelly Grid Switch State: $shellyplus1pm_grid_switch_state_string"): false;
         }
 
         {  // .................... make all measurements .......................................................
@@ -1704,7 +1704,7 @@ class class_transindus_eco
               $shelly_em_home_kwh_since_midnight = round( $shellyem_readings_obj->wh_since_midnight * 0.001, 3 );
               $shelly_em_home_kw = (float) $shellyem_readings_obj->emeters[0]->power_kw;
 
-              $this->verbose ? error_log("Shelly EM Power to Home KW:  $shelly_em_home_kw"): false;
+              // $this->verbose ? error_log("Shelly EM Power to Home KW:  $shelly_em_home_kw"): false;
             }
           }
 
@@ -2338,7 +2338,7 @@ class class_transindus_eco
             
             default:
               // no switch action
-              $this->verbose ? error_log("NOMINAL - No Action"): false;
+              $this->verbose ? error_log("NOMINAL - No Action, Grid Switch: $shellyplus1pm_grid_switch_state_string"): false;
               $present_switch_tree_exit_condition = "no_action";
 
               // no change in switch_tree_obj

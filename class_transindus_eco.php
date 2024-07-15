@@ -1927,6 +1927,7 @@ class class_transindus_eco
           }
 
           $shelly_readings_obj->soc_percentage_now  = $soc_percentage_now;
+          $shelly_readings_obj->soc_update_method   = $soc_update_method;
         }
 
         // ....................... Battery FLOAT or SOC overflow past 100%, Clamp SOC at 100% ...................

@@ -2827,14 +2827,14 @@ class class_transindus_eco
 
       $soc_update_method = $readings_obj->soc_update_method;
 
-      $soc_percentage_now_calculated_using_shelly_bm  = round($readings_obj->soc_percentage_now_calculated_using_shelly_bm,   1);
-      $soc_percentage_now_calculated_using_xcomlan    = round($readings_obj->soc_percentage_now_calculated_using_xcomlan,     1);
-      $soc_percentage_now_calculated_using_studer_kwh = round($readings_obj->soc_percentage_now_calculated_using_studer_kwh,  1);
+      $soc_percentage_now_calculated_using_shelly_bm      = round($readings_obj->soc_percentage_now_calculated_using_shelly_bm,   1);
+      $soc_percentage_now_calculated_using_studer_xcomlan = round($readings_obj->soc_percentage_now_calculated_using_studer_xcomlan,     1);
+      $soc_percentage_now_using_studer_kwh                = round($readings_obj->soc_percentage_now_using_studer_kwh,  1);
 
       // string of all soc's soc_studer, soc_xcomlan, and soc_shellybm strung together as 1 string for display
-      $soc_all_methods =  $soc_percentage_now_calculated_using_studer_kwh . " " . 
+      $soc_all_methods =  $soc_percentage_now_using_studer_kwh . " " . 
                           $soc_percentage_now_calculated_using_shelly_bm . " " .
-                          $soc_percentage_now_calculated_using_xcomlan;
+                          $soc_percentage_now_calculated_using_studer_xcomlan;
 
       // $status .= " " . $now_format;
 

@@ -2400,11 +2400,12 @@ class class_transindus_eco
       // This is the AC voltage as measured by the Grid Switch to Studer AC IN
       $shellyplus1pm_grid_switch_voltage = (int) $shellyplus1pm_grid_switch_obj->switch[0]->voltage;
 
+      // This is the do_shelly value on the LAN Linux machine. This is only controlled locally over LAN.
+      // The remote settings don't do anything.
       $do_shelly         = (bool) $readings_obj->do_shelly;
 
+      // This is the value selected from the 3 possible methods available.
       $soc_percentage_now     = round($readings_obj->soc_percentage_now, 1);
-
-      $soc_percentage_now_calculated_using_shelly_bm  = round($readings_obj->soc_percentage_now_calculated_using_shelly_bm, 1);
 
       $keep_shelly_switch_closed_always = (bool) $readings_obj->keep_shelly_switch_closed_always;
 
@@ -2824,6 +2825,17 @@ class class_transindus_eco
       $xcomlan_status  = "Xcomlan TS: " . $readings_obj->seconds_elapsed_xcomlan_ts;
       $shellybm_status = "ShellyBM TS: " . $readings_obj->seconds_elapsed_shellybm_ts;
 
+      $soc_update_method = $readings_obj->soc_update_method;
+
+      $soc_percentage_now_calculated_using_shelly_bm  = round($readings_obj->soc_percentage_now_calculated_using_shelly_bm,   1);
+      $soc_percentage_now_calculated_using_xcomlan    = round($readings_obj->soc_percentage_now_calculated_using_xcomlan,     1);
+      $soc_percentage_now_calculated_using_studer_kwh = round($readings_obj->soc_percentage_now_calculated_using_studer_kwh,  1);
+
+      // string of all soc's soc_studer, soc_xcomlan, and soc_shellybm strung together as 1 string for display
+      $soc_all_methods =  $soc_percentage_now_calculated_using_studer_kwh . " " . 
+                          $soc_percentage_now_calculated_using_shelly_bm . " " .
+                          $soc_percentage_now_calculated_using_xcomlan;
+
       // $status .= " " . $now_format;
 
       
@@ -2838,7 +2850,7 @@ class class_transindus_eco
                           '<strong>' . $soc_percentage_now  . '</strong>%<br>' .
                       '</span>';
       $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
-                          $formatted_interval   . ' ' . $switch_tree_exit_condition  .
+                          $formatted_interval   . ' ' . $switch_tree_exit_condition  . " " . $soc_update_method .
                       '</span>';
 
       $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
@@ -2853,11 +2865,18 @@ class class_transindus_eco
                         '</span>';
       }
       else
-      {
+      { // don't display anything if charger is disabled to not clutter display
+        /*
         $status_html .= '<span style="color: red; display:block; text-align: center;">' .
                           'Charger Disabled: '  . $readings_obj->studer_battery_charging_current . 'A' .
                         '</span>';
+        */
       }
+
+      $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
+                          $soc_all_methods   . 
+                      '</span>';
+
   
       $format_object->status = $status_html;
 

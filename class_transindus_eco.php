@@ -1569,6 +1569,8 @@ class class_transindus_eco
           $it_is_still_dark = $this->nowIsWithinTimeLimits( $sunset_hms_format, "23:59:59" ) || 
                               $this->nowIsWithinTimeLimits( "00:00", $sunrise_hms_format );
 
+          $it_is_still_light = $this->nowIsWithinTimeLimits( $sunrise_hms_format, $sunset_hms_format );
+
           $shelly_readings_obj->time_window1_open_for_soc_capture_after_dark = $time_window_open_for_soc_capture_after_dark_using_studer;
           $shelly_readings_obj->time_window2_open_for_soc_capture_after_dark = $time_window_open_for_soc_capture_after_dark_using_shelly;
           $shelly_readings_obj->it_is_still_dark = $it_is_still_dark;
@@ -2245,6 +2247,14 @@ class class_transindus_eco
               $keep_shelly_switch_closed_always           === false                         &&    // keep switch ON always is true
               $switch_is_flapping                         === false;
 
+          // GRID switch OFF to prevent High Batt ery Voltage when close to Float Voltage and when Solar is active
+          $grid_switch_off_float_release =  
+            $it_is_still_light                          === true              &&    // has to be during daytime only
+            $shellyplus1pm_grid_switch_state_string     === "ON"              &&    // Grid switch is alreay ON
+            ( $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg >= 51.8  ||        // close to float state
+              $soc_percentage_now                                > 99 )       &&
+              $psolar_kw                                         > 0.1        &&    // Solar is still present
+
           //
           $keep_shelly_switch_closed_always = 
               $soc_percentage_now                     <  150      &&  // If Switch is OFF and keep always is True, this variable is TRUE
@@ -2272,6 +2282,23 @@ class class_transindus_eco
 
           switch (true) 
           { // decision tree to determine switching based on logic determined above
+            case ( $grid_switch_off_float_release ):
+
+              $success_off = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'off' );
+
+              if ( $success_off )
+              {
+                error_log("LogFloatRelease: Prevent Battery Over Voltage at Float due to Solar, turn Grid switch OFF - SUCCESS");
+                $switch_tree_obj->switch_tree_exit_condition = "float_release";
+                $present_switch_tree_exit_condition = "float_release";
+                $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
+              }
+              else
+              {
+                error_log("LogFloatRelease: Prevent Battery Over Voltage at Float due to Solar, turn Grid switch OFF - FAIL");
+              }
+            break;
+
             case ( $LVDS ):
 
               $success_on = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'on' );

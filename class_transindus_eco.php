@@ -2257,7 +2257,7 @@ class class_transindus_eco
 
           //
           $keep_shelly_switch_closed_always = 
-              $soc_percentage_now                     <  150      &&  // If Switch is OFF and keep always is True, this variable is TRUE
+              $soc_percentage_now                     <  94           &&        // hysterysis for 99%
               $shellyplus1pm_grid_switch_state_string === "OFF"       &&        // Grid switch is OFF
               $do_shelly                              === true        &&        // Grid Switch is Controllable
               $keep_shelly_switch_closed_always       === true        &&        // keep switch ON always flag is SET

@@ -1822,7 +1822,7 @@ class class_transindus_eco
                                           $soc_percentage_now_calculated_using_shelly_bm  > 40      &&
                                           $soc_percentage_now_calculated_using_shelly_bm  < 101;
                           
-
+          /*
           if ( $this->nowIsWithinTimeLimits("00:20:00", "23:40:00") === true )
           {
             // we are not too close to Studer clock midnight rollover so that studer KWH based SOC is reliable
@@ -1882,6 +1882,7 @@ class class_transindus_eco
               error_log("SOC Shelly BM recalculated using offset from studer KWH");
             }
           }
+          */
           
                                            
           if ( $studer_reading_is_ok_bool )     $soc_array[]    = $soc_percentage_now_studer_kwh;
@@ -1946,13 +1947,13 @@ class class_transindus_eco
                 error_log( "Battery in Float State - normalizing all SOCs to 100%" );
 
                 // Since Studer KWH based SOC can only be normalized using the midnight SOC value
-                $new_soc_percentage_at_midnight = 100.0 - $soc_batt_charge_net_percent_today_studer_kwh;
+                // $new_soc_percentage_at_midnight = 100.0 - $soc_batt_charge_net_percent_today_studer_kwh;
 
-                update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $new_soc_percentage_at_midnight );
+                // update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $new_soc_percentage_at_midnight );
 
-                error_log("updated SOC midnight value from: $soc_percentage_at_midnight to $new_soc_percentage_at_midnight");
+                // error_log("updated SOC midnight value from: $soc_percentage_at_midnight to $new_soc_percentage_at_midnight");
 
-                $soc_percentage_at_midnight = $new_soc_percentage_at_midnight;
+                // $soc_percentage_at_midnight = $new_soc_percentage_at_midnight;
 
                 // Now lets adjust the accumulated values of xcom-lan SOC to make the SOC 100% for xcom-lan
                 $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight = 100 - $soc_percentage_at_midnight;
@@ -1988,10 +1989,10 @@ class class_transindus_eco
               case ( $soc_percentage_now_is_greater_than_100 && $soc_update_method === 'studer-kwh' ):
                 // This is the case where the Studer SOC > 100 but it could be even if battery is NOT yet in FLOAT state
                 // This adjustment will also affect the other 2 methods since we are adjusting the midnight SOC value
-                $new_soc_percentage_at_midnight = 100.0 - $soc_batt_charge_net_percent_today_studer_kwh;
-                update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $new_soc_percentage_at_midnight );
-                error_log("updated SOC midnight value from: $soc_percentage_at_midnight to $new_soc_percentage_at_midnight");
-                $soc_percentage_at_midnight = $new_soc_percentage_at_midnight;
+                // $new_soc_percentage_at_midnight = 100.0 - $soc_batt_charge_net_percent_today_studer_kwh;
+                // update_user_meta( $wp_user_ID, 'soc_percentage_at_midnight', $new_soc_percentage_at_midnight );
+                // error_log("updated SOC midnight value from: $soc_percentage_at_midnight to $new_soc_percentage_at_midnight");
+                // $soc_percentage_at_midnight = $new_soc_percentage_at_midnight;
               break;
           }
 

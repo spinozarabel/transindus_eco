@@ -2070,7 +2070,7 @@ class class_transindus_eco
                                                     'kwh_accumulated_in_battery_today'  => $kwh_accumulated_in_battery_today,
                                                   ) ,
                           );
-
+          /*
           $post_id = wp_insert_post($post_arr);
 
           if(!is_wp_error($post_id))
@@ -2084,6 +2084,7 @@ class class_transindus_eco
             error_log("Error in Daily Log Custom Post CReation:");
             error_log($post_id->get_error_message());
           }
+          */
           
 
           // Now we reset values for the new day, starting at midnight

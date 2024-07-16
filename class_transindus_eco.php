@@ -1723,6 +1723,9 @@ class class_transindus_eco
             $batt_current_xcomlan         = $xcomlan_studer_data_obj->batt_current_xcomlan;
             $xcomlan_ts                   = $xcomlan_studer_data_obj->xcomlan_ts;
 
+            // this is the not averaged but IR compensated latest reading of Battery Voltage
+            $ir_drop_compensated_battery_voltage_xcomlan = $xcomlan_studer_data_obj->ir_drop_compensated_battery_voltage_xcomlan;
+
             // write this as property to the main readings object
             $shelly_readings_obj->xcomlan_studer_data_obj = $xcomlan_studer_data_obj;
 
@@ -2249,16 +2252,17 @@ class class_transindus_eco
               $switch_is_flapping                         === false;
 
           // GRID switch OFF to prevent High Batt ery Voltage when close to Float Voltage and when Solar is active
+          // Since this is important, no dependency on controllabilty or flapping are checked.
           $grid_switch_off_float_release =  
             $it_is_still_light                          === true              &&    // has to be during daytime only
             $shellyplus1pm_grid_switch_state_string     === "ON"              &&    // Grid switch is alreay ON
-            ( $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg >= 51.8  ||        // close to float state
-              $soc_percentage_now                                > 99 )       &&
+            ( $ir_drop_compensated_battery_voltage_xcomlan >= 51.8  ||              // non-averaged battery voltage
+              $soc_percentage_now                                > 99 )       &&    // soc close to 100%
               $psolar_kw                                         > 0.1;             // Solar is still present
 
-          //
+          // evaluate condition to keep Grid switch closed. This is dependen on keep_shelly_switch_closed_always flag
           $keep_shelly_switch_closed_always_bool = 
-              $soc_percentage_now                     <  94           &&        // hysterysis for 99%
+              $soc_percentage_now                     <  94           &&        // hysterysis from 99% float release
               $shellyplus1pm_grid_switch_state_string === "OFF"       &&        // Grid switch is OFF
               $do_shelly                              === true        &&        // Grid Switch is Controllable
               $keep_shelly_switch_closed_always       === true        &&        // keep switch ON always flag is SET
@@ -4241,6 +4245,8 @@ class class_transindus_eco
         $xcomlan_studer_data_obj->solar_kwh_today                   = $solar_kwh_today;
         $xcomlan_studer_data_obj->grid_kwh_today                    = $grid_kwh_today;
         $xcomlan_studer_data_obj->xcomlan_call_ok                   = true;
+
+        $xcomlan_studer_data_obj->ir_drop_compensated_battery_voltage_xcomlan = $ir_drop_compensated_battery_voltage_xcomlan;
 
         return $xcomlan_studer_data_obj;
       }

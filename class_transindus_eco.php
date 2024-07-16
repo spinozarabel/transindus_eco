@@ -2229,9 +2229,10 @@ class class_transindus_eco
           // Turn ON switch if SOC is below limit and Switch is now OFF and Servo control is enabled
           // ---------- most important Event in entire scheme of things ............
           $LVDS = 
-              $shellyplus1pm_grid_switch_state_string === "OFF" &&                        // Grid switch is OFF
-              $do_shelly                              === true  &&                        // Grid Switch is Controllable
-              $soc_percentage_now                     <   $soc_percentage_lvds_setting;   // SOC less than threshold setting
+              $shellyplus1pm_grid_switch_state_string === "OFF"             &&   // Grid switch is OFF
+              $do_shelly                              === true              &&   // Grid Switch is Controllable
+              ( $soc_percentage_now       < $soc_percentage_lvds_setting || 
+                $batt_voltage_xcomlan_avg < $average_battery_voltage_lvds_setting ); // less than threshold settings
 
           // -- GRID switch OFF as SOC has recovered from LVDS. Solarmust be greater than Load also 
           $switch_release_LVDS = 
@@ -2263,7 +2264,8 @@ class class_transindus_eco
 
           // evaluate condition to keep Grid switch closed. This is dependen on keep_shelly_switch_closed_always flag
           $keep_shelly_switch_closed_always_bool = 
-              $soc_percentage_now                     <  94           &&        // hysterysis from 99% float release
+              ( $soc_percentage_now       < 94 ||
+                $batt_voltage_xcomlan_avg < 50.8 )                    &&        // hysterysis from float release
               $shellyplus1pm_grid_switch_state_string === "OFF"       &&        // Grid switch is OFF
               $do_shelly                              === true        &&        // Grid Switch is Controllable
               $keep_shelly_switch_closed_always       === true        &&        // keep switch ON always flag is SET

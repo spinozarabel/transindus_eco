@@ -2254,7 +2254,7 @@ class class_transindus_eco
             $shellyplus1pm_grid_switch_state_string     === "ON"              &&    // Grid switch is alreay ON
             ( $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg >= 51.8  ||        // close to float state
               $soc_percentage_now                                > 99 )       &&
-              $psolar_kw                                         > 0.1        &&    // Solar is still present
+              $psolar_kw                                         > 0.1;             // Solar is still present
 
           //
           $keep_shelly_switch_closed_always_bool = 

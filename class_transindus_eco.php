@@ -2380,7 +2380,6 @@ class class_transindus_eco
 
           set_transient( 'switch_tree_obj', $switch_tree_obj, 60 * 60 );  // the transient contents get changed only if NOT no_action exit
 
-          
           $shelly_readings_obj->switch_tree_obj = $switch_tree_obj;       // this is to record how long since last significant event
 
           $shelly_readings_obj->present_switch_tree_exit_condition = $present_switch_tree_exit_condition; // this is to detect remote notification event

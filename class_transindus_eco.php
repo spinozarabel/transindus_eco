@@ -2257,7 +2257,7 @@ class class_transindus_eco
               $psolar_kw                                         > 0.1        &&    // Solar is still present
 
           //
-          $keep_shelly_switch_closed_always = 
+          $keep_shelly_switch_closed_always_bool = 
               $soc_percentage_now                     <  94           &&        // hysterysis for 99%
               $shellyplus1pm_grid_switch_state_string === "OFF"       &&        // Grid switch is OFF
               $do_shelly                              === true        &&        // Grid Switch is Controllable
@@ -2349,7 +2349,7 @@ class class_transindus_eco
               }
             break;
 
-            case ( $keep_shelly_switch_closed_always ):
+            case ( $keep_shelly_switch_closed_always_bool ):
               $success_on = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'on' );
               
               if ( $success_on )

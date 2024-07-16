@@ -2482,7 +2482,7 @@ class class_transindus_eco
           $log_string .= " E: "     . number_format($east_panel_current_xcomlan,1)   .  " W: "   . number_format($west_panel_current_xcomlan,1);
           $log_string .= " PV: "    . number_format($pv_current_now_total_xcomlan,1) . " Inv: "  . number_format($inverter_current_xcomlan,1);
           $log_string .= " X-A: "   . number_format($batt_current_xcomlan,1);
-          $log_string .= " S-A: "   . number_format($batt_amps_shellybm,1) . ' Vbat_raw:'            .  number_format($raw_batt_voltage_xcomlan,1);
+          $log_string .= " S-A: "   . number_format($batt_amps_shellybm,1) . ' Vbat_ir:'            .  number_format($ir_drop_compensated_battery_voltage_xcomlan,1);
           $log_string .= " SOC-St: " . number_format($soc_percentage_now_studer_kwh,1); // this is the Studer based soc%
           $log_string .= " SOC-B: " . number_format($soc_percentage_now_calculated_using_shelly_bm,1); // this is the shelly BM based soc%
           $log_string .= " SOC-X: " . number_format($soc_percentage_now_calculated_using_studer_xcomlan,1 ) . '%';                     // this is the xcom-lan current based soc%

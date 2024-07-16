@@ -2264,8 +2264,8 @@ class class_transindus_eco
 
           // evaluate condition to keep Grid switch closed. This is dependen on keep_shelly_switch_closed_always flag
           $keep_shelly_switch_closed_always_bool = 
-              ( $soc_percentage_now       < 94 ||
-                $batt_voltage_xcomlan_avg < 50.8 )                    &&        // hysterysis from float release
+              ( $soc_percentage_now       < 90 ||
+                $batt_voltage_xcomlan_avg < 50.5 )                    &&        // hysterysis from float release
               $shellyplus1pm_grid_switch_state_string === "OFF"       &&        // Grid switch is OFF
               $do_shelly                              === true        &&        // Grid Switch is Controllable
               $keep_shelly_switch_closed_always       === true        &&        // keep switch ON always flag is SET

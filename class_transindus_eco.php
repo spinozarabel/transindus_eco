@@ -1940,8 +1940,9 @@ class class_transindus_eco
         {
           $soc_percentage_now_is_greater_than_100 = $soc_percentage_now > 100;
 
-          $battery_float_state_achieved = $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg  >=  $average_battery_float_voltage &&
-                                          abs($batt_amps) < 5;
+          $battery_float_state_achieved = 
+            $xcomlan_studer_data_obj->batt_voltage_xcomlan_avg  >=  $average_battery_float_voltage &&
+            abs($batt_amps)                                     < 5;
           
           switch ( true )
           {
@@ -2253,19 +2254,20 @@ class class_transindus_eco
               $keep_shelly_switch_closed_always           === false                         &&    // keep switch ON always is true
               $switch_is_flapping                         === false;
 
-          // GRID switch OFF to prevent High Batt ery Voltage when close to Float Voltage and when Solar is active
+          // GRID switch OFF to prevent High Battery Voltage when close to Float Voltage and when Solar is active
           // Since this is important, no dependency on controllabilty or flapping are checked.
+          // If the condition is true then switch is OFF even if keep always on flag is still true
           $grid_switch_off_float_release =  
-            $it_is_still_light                          === true              &&    // has to be during daytime only
+            $it_is_still_light                          === true              &&    // Active only in daytime
             $shellyplus1pm_grid_switch_state_string     === "ON"              &&    // Grid switch is alreay ON
-            ( $ir_drop_compensated_battery_voltage_xcomlan >= 51.8  ||              // non-averaged battery voltage
-              $soc_percentage_now                                > 99 )       &&    // soc close to 100%
-              $psolar_kw                                         > 0.1;             // Solar is still present
+            ( $batt_voltage_xcomlan_avg                 >= 51.3  ||                 // Close to Float
+              $soc_percentage_now                       > 95        )         &&    // soc close to 100%
+              $psolar_kw                                > 0.1;                      // Solar is still present
 
           // evaluate condition to keep Grid switch closed. This is dependen on keep_shelly_switch_closed_always flag
           $keep_shelly_switch_closed_always_bool = 
               ( $soc_percentage_now       < 90 ||
-                $batt_voltage_xcomlan_avg < 50.5 )                    &&        // hysterysis from float release
+                $batt_voltage_xcomlan_avg < 50.3 )                    &&        // hysterysis from float release
               $shellyplus1pm_grid_switch_state_string === "OFF"       &&        // Grid switch is OFF
               $do_shelly                              === true        &&        // Grid Switch is Controllable
               $keep_shelly_switch_closed_always       === true        &&        // keep switch ON always flag is SET

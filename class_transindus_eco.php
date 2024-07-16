@@ -2840,7 +2840,8 @@ class class_transindus_eco
 
       
       $status_html = '<span style="color: Blue; display:block; text-align: center;">' .
-                        'LVDS: ' . $readings_obj->soc_percentage_lvds_setting  . '% ' . $readings_obj->average_battery_voltage_lvds_setting . 'V' .
+                        'LVDS: ' . $readings_obj->soc_percentage_lvds_setting  . '% ' . $readings_obj->average_battery_voltage_lvds_setting . 'V ' .
+                        $soc_update_method .
                       '</span>';
 
       
@@ -2850,7 +2851,7 @@ class class_transindus_eco
                           '<strong>' . $soc_percentage_now  . '</strong>%<br>' .
                       '</span>';
       $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
-                          $formatted_interval   . ' ' . $switch_tree_exit_condition  . " " . $soc_update_method .
+                          $formatted_interval   . ' ' . $switch_tree_exit_condition .
                       '</span>';
 
       $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .

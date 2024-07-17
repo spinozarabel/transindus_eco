@@ -1812,17 +1812,35 @@ class class_transindus_eco
 
           $soc_array = [];  // initialize to blank
 
+          // calculate the differences between the various SOC's in 3 different ways
+          $offset_soc_studerkwh_xcomlan   = $soc_percentage_now_studer_kwh  - $soc_percentage_now_calculated_using_studer_xcomlan;
+          $offset_soc_studerkwh_shellybm  = $soc_percentage_now_studer_kwh  - $soc_percentage_now_calculated_using_shelly_bm;
+          $offset_soc_xcomlan_shellybm    = $soc_percentage_now_calculated_using_studer_xcomlan  - $soc_percentage_now_calculated_using_shelly_bm;
+
+          if ( abs( $offset_soc_studerkwh_xcomlan ) < 5 )
+          {
+            $soc_studerkwh_tracks_xcomlan_bool = true;
+          }
+          if ( abs( $offset_soc_studerkwh_shellybm ) < 5 )
+          {
+            $soc_studerkwh_tracks_shellybm_bool = true;
+          }
+          if ( abs( $offset_soc_xcomlan_shellybm ) < 5 )
+          {
+            $soc_xcomlan_tracks_shellybm_bool = true;
+          }
+
           $studer_reading_is_ok_bool    = ! empty( $soc_percentage_now_studer_kwh ) &&
-                                            $soc_percentage_now_studer_kwh > 40       &&
+                                            $soc_percentage_now_studer_kwh >= ($soc_percentage_lvds_setting - 5) &&
                                             $soc_percentage_now_studer_kwh < 101;
 
           $xcom_lan_reading_is_ok_bool  = ! empty( $soc_percentage_now_calculated_using_studer_xcomlan )  &&
-                                          $soc_percentage_now_calculated_using_studer_xcomlan > 40        &&
+                                          $soc_percentage_now_calculated_using_studer_xcomlan >= ($soc_percentage_lvds_setting - 5) &&
                                           $soc_percentage_now_calculated_using_studer_xcomlan < 101;
                                           
 
           $shelly_bm_reading_is_ok_bool = ! empty( $soc_percentage_now_calculated_using_shelly_bm ) &&
-                                          $soc_percentage_now_calculated_using_shelly_bm  > 40      &&
+                                          $soc_percentage_now_calculated_using_shelly_bm  >= ($soc_percentage_lvds_setting - 5) &&
                                           $soc_percentage_now_calculated_using_shelly_bm  < 101;
                           
           /*

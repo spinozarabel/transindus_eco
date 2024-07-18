@@ -1789,7 +1789,7 @@ class class_transindus_eco
             $grid_kwh_today     = $xcomlan_studer_data_obj->grid_kwh_today;
 
             // Net battery charge in KWH (discharge if minus) as measured by STUDER
-            $kwh_batt_charge_net_today_studer_kwh  = $solar_kwh_today * 0.96 + (0.988 * $grid_kwh_today - $inverter_kwh_today) * 1.07;
+            $kwh_batt_charge_net_today_studer_kwh  = $solar_kwh_today * 0.96 + (0.97 * $grid_kwh_today - $inverter_kwh_today) * 1.07;
     
             // Calculate in percentage of  installed battery capacity
             $soc_batt_charge_net_percent_today_studer_kwh = $kwh_batt_charge_net_today_studer_kwh / $battery_capacity_kwh * 100;

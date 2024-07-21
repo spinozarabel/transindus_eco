@@ -182,7 +182,7 @@ class class_transindus_eco
       // Get this user's usermeta into an array and set it as property the class
       // $this->get_all_usermeta( $wp_user_ID );
 
-      // ................................ CLoudiness management ---------------------------------------------->
+      // ................................ Cloudiness management ---------------------------------------------->
 
       $window_open  = $this->nowIsWithinTimeLimits("05:00", "05:15");
 
@@ -193,7 +193,7 @@ class class_transindus_eco
         $invalid_ts   = $this->check_validity_of_timestamp( $ts, 86400 )->elapsed_time_exceeds_duration_given;
       }
       else
-      { // timestamp transient does not exist. 
+      { // cloudinesss acquisition timestamp transient does not exist. 
         $invalid_ts = true;
       }
       
@@ -271,7 +271,7 @@ class class_transindus_eco
 
 
     /**
-     *  Turne Shelly Plus 1PM GRID AC-IN switch to 'on' or 'off' as desired state passed in
+     *  Turn Shelly Plus 1PM GRID AC-IN switch to 'on' or 'off' as desired state passed in
      *  @param int:user_index 0
      *  @param string:desired_state 'on' | 'off' are the choices
      *  @return bool:operation_result true if final state is same as desired false otherwise

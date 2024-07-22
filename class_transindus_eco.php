@@ -1870,26 +1870,26 @@ class class_transindus_eco
             $soc_xcomlan_tracks_shellybm_bool = true;
           }
 
-          $studer_reading_is_ok_bool    =   $xcomlan_studer_data_obj->studer_call_ok && // valid reading and value in range
-                                          ! empty( $soc_percentage_now_studer_kwh )  && // soc value exists
+          $studer_reading_is_ok_bool    =  $xcomlan_studer_data_obj->studer_call_ok && // valid reading and value in range
+                                  ! empty( $soc_percentage_now_studer_kwh )  && // soc value exists
                                             // SOC value is between LVDS and 100 roughly
-                                            $soc_percentage_now_studer_kwh >= ($soc_percentage_lvds_setting - 5) &&
-                                            $soc_percentage_now_studer_kwh < 101;
+                                           $soc_percentage_now_studer_kwh >= ($soc_percentage_lvds_setting - 5) &&
+                                           $soc_percentage_now_studer_kwh < 101;
 
           $xcom_lan_reading_is_ok_bool  = 
-              $xcomlan_studer_data_obj->xcomlan_call_ok                     &&  // delta soc is present and valid
-            ! empty( $soc_percentage_now_calculated_using_studer_xcomlan )  &&  // SOC value exists
+                      $xcomlan_studer_data_obj->xcomlan_call_ok                     &&  // delta soc is present and valid
+            ! empty(  $soc_percentage_now_calculated_using_studer_xcomlan )  &&  // SOC value exists
               // soc value is roughly between LVDS and 100
-              $soc_percentage_now_calculated_using_studer_xcomlan >= ($soc_percentage_lvds_setting - 5) &&
-              $soc_percentage_now_calculated_using_studer_xcomlan < 101;
+                      $soc_percentage_now_calculated_using_studer_xcomlan >= ($soc_percentage_lvds_setting - 5) &&
+                      $soc_percentage_now_calculated_using_studer_xcomlan < 101;
                                           
 
           $shelly_bm_reading_is_ok_bool = 
-              $shellyplus1_batt_obj->shellybm_call_ok                 &&  // delta soc exists and is valid
-            ! empty( $soc_percentage_now_calculated_using_shelly_bm ) &&  // soc is not empty
+                      $shellyplus1_batt_obj->shellybm_call_ok                 &&  // delta soc exists and is valid
+            ! empty(  $soc_percentage_now_calculated_using_shelly_bm ) &&  // soc is not empty
               // SOC value is between LVDS and 100% roughly
-              $soc_percentage_now_calculated_using_shelly_bm  >= ($soc_percentage_lvds_setting - 5) &&
-              $soc_percentage_now_calculated_using_shelly_bm  < 101;
+                      $soc_percentage_now_calculated_using_shelly_bm  >= ($soc_percentage_lvds_setting - 5) &&
+                       $soc_percentage_now_calculated_using_shelly_bm  < 101;
                           
           // calculate offsets between studer method and other's when all methods are valid
           if ( $this->nowIsWithinTimeLimits("00:20:00", "23:40:00") === true )
@@ -2306,13 +2306,13 @@ class class_transindus_eco
 
           // -- GRID switch OFF as SOC has recovered from LVDS. Solarmust be greater than Load also 
           $switch_release_LVDS = 
-              $soc_percentage_now >= ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered 2 points past LVDS minimum setting
-             ($batt_amps_shellybm > 6   || $xcomlan_studer_data_obj->batt_current_xcomlan > 6) &&  // battery is charging. This cannot happen when dark
-              $psolar_kw          > (0.3 + $shelly_em_home_kw)                          &&  // Solar must exceed home consumption by 0.3KW
-              $shellyplus1pm_grid_switch_state_string === "ON"            &&                      // Grid switch is ON
-              $do_shelly                              === true            &&                      // Grid Switch is Controllable
-              $keep_shelly_switch_closed_always       === false           &&                      // keep switch ON always is False
-              $switch_is_flapping                     === false;                                  // switch is NOT flapping.
+              $soc_percentage_now >=  ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered 2 points past LVDS minimum setting
+              $batt_amps          >     6                                  &&  // battery is charging. This cannot happen when dark
+              $psolar_kw          >   ( 0.3 + $shelly_em_home_kw )         &&  // Solar must exceed home consumption by 0.3KW
+              $shellyplus1pm_grid_switch_state_string === "ON"             &&  // Grid switch is ON
+              $do_shelly                              === true             &&  // Grid Switch is Controllable
+              $keep_shelly_switch_closed_always       === false            &&  // keep switch ON always is False
+              $switch_is_flapping                     === false;               // switch is NOT flapping.
 
           // GRID switch OFF as keep_shelly_switch_closed_always changed from TRUE to FALSE
           // As soon as always_on is released if SOC > LVDS + 10 it releases GRID switch

@@ -1797,7 +1797,6 @@ class class_transindus_eco
           $soc_percentage_now_calculated_using_shelly_bm      = $soc_percentage_at_midnight + $soc_shellybm_since_midnight;
           $soc_percentage_now_calculated_using_studer_xcomlan = $soc_percentage_at_midnight + $soc_xcomlan_since_midnight;
 
-          // 1st preference is xcom-lan
           $batt_amps  = $batt_soc_accumulation_obj->batt_amps;
           
           // lets update the user meta for updated SOC for shelly bm this is not really used anymore
@@ -1854,9 +1853,9 @@ class class_transindus_eco
           $soc_array = [];  // initialize to blank
 
           // calculate the differences between the various SOC's in 3 different ways
-          $offset_soc_studerkwh_xcomlan   = $soc_percentage_now_studer_kwh  - $soc_percentage_now_calculated_using_studer_xcomlan;
-          $offset_soc_studerkwh_shellybm  = $soc_percentage_now_studer_kwh  - $soc_percentage_now_calculated_using_shelly_bm;
-          $offset_soc_xcomlan_shellybm    = $soc_percentage_now_calculated_using_studer_xcomlan  - $soc_percentage_now_calculated_using_shelly_bm;
+          $offset_soc_studerkwh_xcomlan   = $soc_percentage_now_studer_kwh - $soc_percentage_now_calculated_using_studer_xcomlan;
+          $offset_soc_studerkwh_shellybm  = $soc_percentage_now_studer_kwh - $soc_percentage_now_calculated_using_shelly_bm;
+          $offset_soc_xcomlan_shellybm    = $soc_percentage_now_calculated_using_studer_xcomlan - $soc_percentage_now_calculated_using_shelly_bm;
 
           if ( abs( $offset_soc_studerkwh_xcomlan ) < 5 )
           {

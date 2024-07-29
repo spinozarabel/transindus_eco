@@ -2301,8 +2301,7 @@ class class_transindus_eco
           $LVDS = 
               $shellyplus1pm_grid_switch_state_string === "OFF"             &&   // Grid switch is OFF
               $do_shelly                              === true              &&   // Grid Switch is Controllable
-              ( $soc_percentage_now       < $soc_percentage_lvds_setting || 
-                $batt_voltage_xcomlan_avg < $average_battery_voltage_lvds_setting ); // less than threshold settings
+              ( $soc_percentage_now                   < $soc_percentage_lvds_setting ); // less than threshold settings
 
           // -- GRID switch OFF as SOC has recovered from LVDS. Solarmust be greater than Load also 
           $switch_release_LVDS = 

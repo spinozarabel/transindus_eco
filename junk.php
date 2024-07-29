@@ -2311,14 +2311,14 @@ class class_transindus_eco
               $switch_is_flapping                     === false;               // switch is NOT flapping.
 
           // GRID switch to be OFF as keep_shelly_switch_closed_always changed by user from TRUE to FALSE
-          // As soon as always_on is released, if SOC > LVDS + 10, Grid Switch is released.
+          // As soon as always_on is released, if not LVDS, will release
           // 
           $always_on_switch_release = 
-              $soc_percentage_now                         >= ( $soc_percentage_lvds_setting + 10 )  &&
-              $shellyplus1pm_grid_switch_state_string     === "ON"                          &&    // Grid switch is ON
-              $do_shelly                                  === true                          &&    // Crid Switch is Controllable
-              $keep_shelly_switch_closed_always           === false                         &&    // keep switch ON always is false
-              $switch_is_flapping                         === false;                              // switch is NOT flapping
+              $LVDS                                       === false        &&    // must not override LVDS
+              $shellyplus1pm_grid_switch_state_string     === "ON"         &&    // Grid switch is ON
+              $do_shelly                                  === true         &&    // Crid Switch is Controllable
+              $keep_shelly_switch_closed_always           === false        &&    // keep switch ON always is false
+              $switch_is_flapping                         === false;             // switch is NOT flapping
 
           // GRID switch OFF to prevent High Battery Voltage when close to Float Voltage and when Solar is active
           // Since this is important, no dependency on controllabilty or flapping are checked.

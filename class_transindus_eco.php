@@ -167,8 +167,6 @@ class class_transindus_eco
      */
     public function init()
     {
-      //
-
       // set the logging
       $this->verbose = true;
 
@@ -280,11 +278,10 @@ class class_transindus_eco
     {
       $config = $this->config;
 
-      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+      // $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+      // $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+      // $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
 
-      // Load the GRID switch specific details
-      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_1pm'];
 
       $shellyplus1pm_grid_switch =  new shelly_device( $ip_static_shelly, 'shellyplus1pm' );
@@ -297,26 +294,29 @@ class class_transindus_eco
 
 
     /**
-     * 
+     *  Read the energy counter now
+     *  Subtract the reading captured at midnight
+     *  Use this as the energy accumulted since midnight delivered to home
      */
     public function get_shellyem_readings_over_lan( int $user_index, string $wp_user_name, int $wp_user_ID ): ? object
     {
       // get API and device ID from config based on user index
       $config = $this->config;
 
-      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
+      // $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+      // $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+      // $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_em_load'];
+
       $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_em'];
 
       $shelly_device =  new shelly_device( $ip_static_shelly, 'shellyem' );
 
       $shellyem_data_obj = $shelly_device->get_shelly_device_data();
 
-      // check to make sure that it exists. If null API call was fruitless
+      // check to make sure that it is online
       if ( $shellyem_data_obj->output_state_string === "OFFLINE" )
       {
-        $this->verbose ? error_log( "LogApi: Shelly EM Load Energy API call failed - See below for response" ): false;
+        $this->verbose ? error_log( "LogApi: Shelly EM Load Energy API call failed" ): false;
         return null;
       }
 
@@ -324,7 +324,9 @@ class class_transindus_eco
       $shelly_em_home_wh_counter_now = (int) $shellyem_data_obj->emeters[0]->total;
 
       // get the energy counter value set at midnight. Assumes that this is an integer
-      $shelly_em_home_energy_counter_at_midnight = (int) ( get_user_meta( $wp_user_ID, 'shelly_em_home_energy_counter_at_midnight', true) );
+      $shelly_em_home_energy_counter_at_midnight = (int) ( get_user_meta( $wp_user_ID, 
+                                                                          'shelly_em_home_energy_counter_at_midnight',
+                                                                           true) );
 
       // subtract the 2 integer counter readings to get the accumulated WH since midnight
       $shelly_em_home_wh_since_midnight = $shelly_em_home_wh_counter_now - $shelly_em_home_energy_counter_at_midnight;
@@ -333,6 +335,7 @@ class class_transindus_eco
       $shellyem_data_obj->wh_counter_at_midnight  = $shelly_em_home_energy_counter_at_midnight;
       $shellyem_data_obj->wh_counter_now          = $shelly_em_home_wh_counter_now;
 
+      // update the accumulatuon value in user meta for use in next cycle
       update_user_meta( $wp_user_ID, 'shelly_em_home_wh_since_midnight', $shelly_em_home_wh_since_midnight);
 
       return $shellyem_data_obj;
@@ -340,7 +343,7 @@ class class_transindus_eco
 
 
      /**
-     * 'grid_wh_counter_midnight' user meta is set at midnight elsewhere using the current reading then
+     * 'grid_wh_counter_midnight' user meta is set at midnight elsewhere
      *  At any time after, this midnight reading is subtracted from current reading to get consumption since midnight
      *  @param string:$phase defaults to 'c' as the home is supplied by the B phase of RYB
      *  @return object:$shelly_3p_grid_energy_measurement_obj contsining all the measurements
@@ -352,7 +355,7 @@ class class_transindus_eco
                                                                           string  $wp_user_name, 
                                                                           int     $wp_user_ID     ): object
     {
-      // Red phase of RYB is assigned to car charger sinside garage o this corresponds to a phase of abc sequence
+      // Red phase of RYB is assigned to 7.2KW car charger inside garage. This corresponds to a phase of abc sequence
       $index_evcharger    = 0;
 
       // Yellow phase feeds the wall charger outside the garage, with a 15A plug inside a box.
@@ -367,10 +370,11 @@ class class_transindus_eco
       // get API and device ID from config based on user index
       $config = $this->config;
 
-      $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
-      $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
-      $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin_3p'];
-      $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_acin_3em'];
+      // $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+      // $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+      // $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin_3p'];
+
+      $ip_static_shelly = $config['accounts'][$user_index]['ip_shelly_acin_3em'];
 
       $shelly_device    =  new shelly_device( $ip_static_shelly, 'shellypro3em' );
 
@@ -1538,7 +1542,7 @@ class class_transindus_eco
                                                         string  $wp_user_name, 
                                                         bool    $do_shelly      ) : void
     {
-        // This is the main object that we deal with  for storing and processing data gathered from our IOT devices
+        // This is the main object that we deal with for storing and processing data gathered from our IOT devices
         $shelly_readings_obj = new stdClass;
 
         { // Define boolean control variables required time intervals
@@ -1875,21 +1879,26 @@ class class_transindus_eco
                                             // SOC value is between LVDS and 100 roughly
                                            $soc_percentage_now_studer_kwh >= ($soc_percentage_lvds_setting - 5) &&
                                            $soc_percentage_now_studer_kwh < 101;
+          if ( $studer_reading_is_ok_bool === false && $solar_kwh_today && $inverter_kwh_today && $grid_kwh_today )
+          {
+            // log details to help in debugging
+            error_log( "Log-Studer Solar: $solar_kwh_today, Load: $inverter_kwh_today, Grid: $grid_kwh_today");
+          }
 
           $xcom_lan_reading_is_ok_bool  = 
-                      $xcomlan_studer_data_obj->xcomlan_call_ok                     &&  // delta soc is present and valid
+                      $xcomlan_studer_data_obj->xcomlan_call_ok              &&  // delta soc is present and valid
             ! empty(  $soc_percentage_now_calculated_using_studer_xcomlan )  &&  // SOC value exists
-              // soc value is roughly between LVDS and 100
+                      // soc value is roughly between LVDS and 100
                       $soc_percentage_now_calculated_using_studer_xcomlan >= ($soc_percentage_lvds_setting - 5) &&
                       $soc_percentage_now_calculated_using_studer_xcomlan < 101;
                                           
 
           $shelly_bm_reading_is_ok_bool = 
-                      $shellyplus1_batt_obj->shellybm_call_ok                 &&  // delta soc exists and is valid
+                      $shellyplus1_batt_obj->shellybm_call_ok          &&  // delta soc exists and is valid
             ! empty(  $soc_percentage_now_calculated_using_shelly_bm ) &&  // soc is not empty
-              // SOC value is between LVDS and 100% roughly
+                      // SOC value is between LVDS and 100% roughly
                       $soc_percentage_now_calculated_using_shelly_bm  >= ($soc_percentage_lvds_setting - 5) &&
-                       $soc_percentage_now_calculated_using_shelly_bm  < 101;
+                      $soc_percentage_now_calculated_using_shelly_bm  < 101;
                           
           // calculate offsets between studer method and other's when all methods are valid
           if ( $this->nowIsWithinTimeLimits("00:20:00", "23:40:00") === true )

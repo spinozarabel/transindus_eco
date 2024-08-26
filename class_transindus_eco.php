@@ -2567,7 +2567,11 @@ class class_transindus_eco
           $log_string .= " SOC-St: " . number_format($soc_percentage_now_studer_kwh,1); // this is the Studer based soc%
           $log_string .= " SOC-B: " . number_format($soc_percentage_now_calculated_using_shelly_bm,1); // this is the shelly BM based soc%
           $log_string .= " SOC-X: " . number_format($soc_percentage_now_calculated_using_studer_xcomlan,1 ) . '%';                     // this is the xcom-lan current based soc%
+          error_log($log_string);
 
+          $log_string = "LogKWH GridStd: $grid_kwh_today GridShly: $home_grid_kwh_since_midnight ";
+          $log_string .= "LoadStd: $inverter_kwh_today ";
+          $log_string .= "LoadShly: $shelly_em_home_kwh_since_midnight ";
           error_log($log_string);
         }
 

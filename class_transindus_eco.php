@@ -2301,16 +2301,22 @@ class class_transindus_eco
             }
           }
           
-        
           // $main_control_site_avasarala_is_offline_for_long = $this->check_if_main_control_site_avasarala_is_offline_for_long();
           // $shelly_readings_obj->main_control_site_avasarala_is_offline_for_long   = $main_control_site_avasarala_is_offline_for_long;
 
           // Turn ON switch if SOC is below limit and Switch is now OFF and Servo control is enabled
           // ---------- most important Event in entire scheme of things ............
+          $LVDS_VBAT =  
+              $xcomlan_studer_data_obj->xcomlan_call_ok === true                      &&
+              property_exists( $xcomlan_studer_data_obj, "batt_voltage_xcomlan_avg")  &&
+              $batt_voltage_xcomlan_avg < 48.3;
+
           $LVDS = 
               $shellyplus1pm_grid_switch_state_string === "OFF"             &&   // Grid switch is OFF
               $do_shelly                              === true              &&   // Grid Switch is Controllable
               ( $soc_percentage_now                   < $soc_percentage_lvds_setting ); // less than threshold settings
+
+          
 
           // -- GRID switch OFF as SOC has recovered from LVDS. Solarmust be greater than Load also 
           $switch_release_LVDS = 
@@ -2572,6 +2578,7 @@ class class_transindus_eco
           $log_string = "LogKWH GridStd: $grid_kwh_today GridShly: $home_grid_kwh_since_midnight ";
           $log_string .= "LoadStd: $inverter_kwh_today ";
           $log_string .= "LoadShly: $shelly_em_home_kwh_since_midnight ";
+          $log_string .= "LVDS_VBAT: $LVDS_VBAT ";
           error_log($log_string);
         }
 
@@ -4243,6 +4250,8 @@ class class_transindus_eco
           $xcomlan_studer_data_obj->xcomlan_call_ok      = false;
           $xcomlan_studer_data_obj->studer_call_ok       = false;
 
+          // do we need to set default battery voltage here also?
+
           return $xcomlan_studer_data_obj;
       }
       
@@ -4258,6 +4267,8 @@ class class_transindus_eco
         $xcomlan_studer_data_obj->xcomlan_ts           = null;
         $xcomlan_studer_data_obj->xcomlan_call_ok      = false;
         $xcomlan_studer_data_obj->studer_call_ok       = false;
+
+        // do we need to set default battery voltage here also?
 
         return $xcomlan_studer_data_obj;
       }

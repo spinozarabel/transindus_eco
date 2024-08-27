@@ -2309,7 +2309,7 @@ class class_transindus_eco
           $LVDS_VBAT =  
               $xcomlan_studer_data_obj->xcomlan_call_ok === true                      &&
               property_exists( $xcomlan_studer_data_obj, "batt_voltage_xcomlan_avg")  &&
-              $batt_voltage_xcomlan_avg < 48.3;
+              $batt_voltage_xcomlan_avg < 50.5;
 
           $LVDS = 
               $shellyplus1pm_grid_switch_state_string === "OFF"             &&   // Grid switch is OFF

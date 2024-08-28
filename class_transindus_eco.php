@@ -2578,7 +2578,9 @@ class class_transindus_eco
           $log_string = "LogKWH GridStd: $grid_kwh_today GridShly: $home_grid_kwh_since_midnight ";
           $log_string .= "LoadStd: $inverter_kwh_today ";
           $log_string .= "LoadShly: $shelly_em_home_kwh_since_midnight ";
-          $log_string .= "LVDS_VBAT: $LVDS_VBAT ";
+          $log_string .= "SolarStdr: $solar_kwh_today ";
+          if ( $LVDS_VBAT ) $log_string .= "LVDS_VBAT: $LVDS_VBAT ";
+          
           error_log($log_string);
         }
 

@@ -2314,7 +2314,7 @@ class class_transindus_eco
           $LVDS = 
               $shellyplus1pm_grid_switch_state_string === "OFF"             &&   // Grid switch is OFF
               $do_shelly                              === true              &&   // Grid Switch is Controllable
-              ( $soc_percentage_now < $soc_percentage_lvds_setting || $LVDS_VBAT ); // less than threshold settings
+              ( $soc_percentage_now < $soc_percentage_lvds_setting ); // less than threshold settings
 
           
 

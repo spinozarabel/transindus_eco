@@ -977,7 +977,9 @@ class class_transindus_eco
           // Write the duration time as property of the object
           $shellyplus1pm_water_pump_obj->pump_ON_duration_secs = $pump_ON_duration_secs;
 
-          $this->verbose ? error_log("Log-Pump ON for: $pump_ON_duration_secs Seconds") : false;
+          $log_string = "Log-Pump ON for: " . $pump_ON_duration_secs . "s Pump Watts: " .  $pump_power_watts;
+
+            $this->verbose ? error_log($log_string) : false;
 
           // if pump ON duration is more than 1h then switch the pump power OFF in Shelly 4PM channel 0
           if ( $pump_ON_duration_secs > 3600 && $pump_duration_control )

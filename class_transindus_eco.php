@@ -895,6 +895,8 @@ class class_transindus_eco
             // Write the duration time as property of the object
             $shellyplus1pm_water_pump_obj->pump_ON_duration_secs = $pump_ON_duration_secs;
 
+            $log_string = "Log-Pump ON for: " . $pump_ON_duration_secs . "s Pump Watts: " .  $pump_power_watts;
+
             $this->verbose ? error_log("Log-Pump ON for: $pump_ON_duration_secs Seconds") : false;
 
             // set pump start time as current time stamp. So the duration will be small from now on

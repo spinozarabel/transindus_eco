@@ -897,7 +897,7 @@ class class_transindus_eco
 
             $log_string = "Log-Pump ON for: " . $pump_ON_duration_secs . "s Pump Watts: " .  $pump_power_watts;
 
-            $this->verbose ? error_log("Log-Pump ON for: $pump_ON_duration_secs Seconds") : false;
+            $this->verbose ? error_log($log_string) : false;
 
             // set pump start time as current time stamp. So the duration will be small from now on
             set_transient( 'timestamp_pump_ON_start',  $timestamp,  1 * 60 * 60 );

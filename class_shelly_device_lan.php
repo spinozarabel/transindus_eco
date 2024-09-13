@@ -148,6 +148,7 @@ class shelly_device
      *  Properties are: 
      *  shelly_device_details, emeters[0/1]->total, emeters[0/1]->voltage, emeters[0/1]->power, emeters[0/1]->power_kw
      *  timestamp, static_ip, output_state_bool, output_state_string
+     *  output_state_string is OFFLINE when API call fails. Otherwise ON/OFFF indicates relay output state
      *  
      *  Function takes in an object as parameter.
      *  An API call over local LAN is made to get the device data.

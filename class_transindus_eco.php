@@ -313,6 +313,8 @@ class class_transindus_eco
 
       $shellyem_data_obj = $shelly_device->get_shelly_device_data();
 
+      error_log(print_r($shellyem_data_obj, true));
+
       // check to make sure that it is online
       if ( $shellyem_data_obj->output_state_string === "OFFLINE" )
       {

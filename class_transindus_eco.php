@@ -2346,6 +2346,12 @@ class class_transindus_eco
       $shellyplus1pm_water_heater_obj = $readings_obj->shellyplus1pm_water_heater_obj;
       $shellyplus1pm_water_pump_obj   = $readings_obj->shellyplus1pm_water_pump_obj;
 
+      // Status of the Shelly EM contactor: OFFLINE/ON/OFF
+      // ON means the contactor is active so the ATS bypass is Active. OFF means Solar is supplying all loads
+      // OFFLINE means the API call to SHelly EM has failed
+      $shellyem_contactor_status_string = (string) $shellyplus1pm_grid_switch_obj->output_state_string;
+      $shellyem_contactor_is_active     = $shellyem_contactor_status_string === "ON";
+
       $shelly_water_heater_kw       = 0;
       $shelly_water_heater_status_bool   = null;
 
@@ -2723,26 +2729,34 @@ class class_transindus_eco
       $format_object->load_arrow_icon  = $load_arrow_icon;
       $format_object->load_icon        = $load_icon;
 
-      If ( $power_to_ac_kw > 0.2 )
+      If ( $power_to_ac_kw > 0.2 && ! $shellyem_contactor_is_active )
       {
-        $ac_icon_color = 'blue';
+        $ac_icon_color = 'green';
+      }
+      elseif ( $power_to_ac_kw > 0.2 && $shellyem_contactor_is_active )
+      {
+        $ac_icon_color = 'red';
       }
       elseif ( ! $ac_switch_status_bool )
       {
-        $ac_icon_color = 'red';
+        $ac_icon_color = 'yellow';
       }
       else
       {
         $ac_icon_color = 'black';
       }
 
-      If ( $power_to_pump_kw > 0.1 )
+      If ( $power_to_pump_kw > 0.1 && ! $shellyem_contactor_is_active)
       {
-        $pump_icon_color = 'blue';
+        $pump_icon_color = 'green';
+      }
+      elseif ( $power_to_pump_kw > 0.1 && $shellyem_contactor_is_active)
+      {
+        $pump_icon_color = 'red';
       }
       elseif ( ! $pump_switch_status_bool )
       {
-        $pump_icon_color = 'red';
+        $pump_icon_color = 'yellow';
       }
       else
       {

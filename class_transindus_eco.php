@@ -2735,7 +2735,7 @@ class class_transindus_eco
       }
       elseif ( $power_to_ac_kw > 0.2 && $shellyem_contactor_is_active )
       {
-        $ac_icon_color = 'red';
+        $ac_icon_color = 'orange';
       }
       elseif ( ! $ac_switch_status_bool )
       {
@@ -2752,7 +2752,7 @@ class class_transindus_eco
       }
       elseif ( $power_to_pump_kw > 0.1 && $shellyem_contactor_is_active)
       {
-        $pump_icon_color = 'red';
+        $pump_icon_color = 'orange';
       }
       elseif ( ! $pump_switch_status_bool )
       {

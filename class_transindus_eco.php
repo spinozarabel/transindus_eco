@@ -2349,7 +2349,7 @@ class class_transindus_eco
       // Status of the Shelly EM contactor: OFFLINE/ON/OFF
       // ON means the contactor is active so the ATS bypass is Active. OFF means Solar is supplying all loads
       // OFFLINE means the API call to SHelly EM has failed
-      $shellyem_contactor_status_string = (string) $shellyplus1pm_grid_switch_obj->output_state_string;
+      $shellyem_contactor_status_string = (string) $shellyem_readings_obj->output_state_string;
       $shellyem_contactor_is_active     = $shellyem_contactor_status_string === "ON";
 
       $shelly_water_heater_kw       = 0;

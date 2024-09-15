@@ -2526,10 +2526,24 @@ class class_transindus_eco
             $wallcharger_grid_kw_power = 0;
           break;
 
-          // when wall charger is ONLINE and drawing power Indicate Blue icon and power actulas
+          // when wall charger is ONLINE and drawing power and Solar supplying power, Indicate Green icon and power actulas
           case (  $readings_obj->shellypro3em_3p_grid_obj->output_state_string === 'ONLINE' && 
+                ! $shellyem_contactor_is_active &&
                   $readings_obj->shellypro3em_3p_grid_obj->wallcharger_grid_kw_power > 0.05):
-            $wall_charge_icon = '<i class="fa-solid fa-2x fa-plug-circle-bolt" style="color: Blue;"></i>';
+            $wall_charge_icon = '<i class="fa-solid fa-2x fa-plug-circle-bolt" style="color: green;"></i>';
+
+            $wallcharger_grid_kw_power = round( $readings_obj->shellypro3em_3p_grid_obj->wallcharger_grid_kw_power, 2);
+
+            $wallcharger_grid_kw_power = '<span style="font-size: 18px;color: Black;">
+                                            <strong>' . $wallcharger_grid_kw_power . '</strong>
+                                          </span>';
+          break;
+
+          // when wall charger is ONLINE and drawing power and Grid is supplying power, Indicate Orange icon
+          case (  $readings_obj->shellypro3em_3p_grid_obj->output_state_string === 'ONLINE' && 
+                  $shellyem_contactor_is_active &&
+                  $readings_obj->shellypro3em_3p_grid_obj->wallcharger_grid_kw_power > 0.05):
+            $wall_charge_icon = '<i class="fa-solid fa-2x fa-plug-circle-bolt" style="color: orange;"></i>';
 
             $wallcharger_grid_kw_power = round( $readings_obj->shellypro3em_3p_grid_obj->wallcharger_grid_kw_power, 2);
 

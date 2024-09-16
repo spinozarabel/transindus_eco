@@ -532,12 +532,90 @@ class shelly_device
     }
 
 
+    /**
+     *  @return bool returns true if actual state is same as desired state, returns false otherwise or if api call failed
+     *  @param int:$channel is the channel to switch. For shellyem, it is 0
+     *  @param string:$desired_state can be either 'on' or 'off' to turn on the switch to ON or OFF respectively
+     */
+    public function turn_on_off_shellyem_switch_over_lan( string $desired_state, int $channel = 0 ) :  bool
+    {
+      // parse the desired state so end result is "on" or "off"
+      if ( strtolower($desired_state)     === "true"  || strtolower($desired_state) === "on")
+      {
+          $desired_switch_state = "on";
+      }
+      elseif ( strtolower($desired_state) === "false" || strtolower($desired_state) === "off" )
+      {
+          $desired_switch_state = "off";
+      }
+
+      //-------------------------------------Get the cutrrent state of switch ----------->
+      $shelly_device_data = $this->get_shelly_device_data();
+
+      // Get the present switch state in a string. Possible values are: "ON"/"OFF"/"OFFLINE"
+      $present_switch_state_string = (string) $shelly_device_data->output_state_string;
+
+      if ( $present_switch_state_string !== "OFFLINE" )   // we did get a valid response
+      {
+        // this is the present boolean state of the switch
+        $initial_switch_state_bool = (bool) $shelly_device_data->output_state_bool;
+
+        // if the existing switch state is same as desired, no need to do anything, we just exit with message
+        if (  ( $initial_switch_state_bool === true  &&   strtolower( $desired_switch_state) === "on"  ) || 
+              ( $initial_switch_state_bool === false &&   strtolower( $desired_switch_state) === "off" )      )
+        {
+          // esisting state is same as desired final state so return
+          error_log( "LogEMSw: No Action required - Initial Switch State: $initial_switch_state_bool, Desired State: $desired_state" );
+          return true;
+        }
+      }
+      else
+      {
+        // we didn't get a valid response for the initial state but we can continue and try switching
+        error_log( "LogEMSw: shelly switch initial status:  $present_switch_state_string, Try to switch anyway...");
+      }
+
+      //------------ do the switch ----------------------------------------------------->
+      // parameters for query string
+      $params     = array
+      (
+          'turn'          => $desired_switch_state  ,   // "on"/"off"
+      );
+      
+      $headers  = [];
+
+      $endpoint = $this->shelly_device_static_ip . "/relay/0";
+
+      // issue the switch.set command. The response will consist of was_on:true/false
+      $curlResponse   = $this->getCurl($endpoint, $headers, $params);
+
+      If ( empty( $curlResponse ) )
+      {
+        error_log( "LogEMSw: Danger-we didn't get a valid response for EM switch turn on/off" );
+        return false;
+      }
+
+      $final_switch_state_bool = (bool) $curlResponse->ison;
+
+      if (  ( $final_switch_state_bool === true  &&  ( strtolower( $desired_switch_state) === "on"  ) ) || 
+            ( $final_switch_state_bool === false &&  ( strtolower( $desired_switch_state) === "off" ) )
+              )
+      {
+        // Final state is same as desired final state so return success
+        return true;
+      }
+      else
+      {
+        error_log( "LogEMSw: Danger-EM Switch to desired state Failed - Desired State: $desired_state, Final State: $final_switch_state_bool" );
+        return false;
+      }
+    }
+
   
 
 
      /**
      *  @return bool returns true if actual state is same as desired state, returns false otherwise or if api call failed
-     *  @param object:$shelly_device_data is the shelly device object that has all the details
      *  @param int:$channel is the channel to switch. For shellyplus1pm it is 0
      *  @param string:$desired_state can be either 'on' or 'off' to turn on the switch to ON or OFF respectively
      *  

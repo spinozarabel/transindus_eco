@@ -294,6 +294,30 @@ class class_transindus_eco
 
 
     /**
+     * "on"  corresponds to the ATS transferring GRID to the load
+     * "off" corresponds to the ATS transferring Solar to the load
+     */
+    public function change_grid_ups_ats_using_shellyem_switch_over_lan( int $user_index, string $desired_state ) :  bool
+    {
+      $config = $this->config;
+
+      // $shelly_server_uri  = $config['accounts'][$user_index]['shelly_server_uri'];
+      // $shelly_auth_key    = $config['accounts'][$user_index]['shelly_auth_key'];
+      // $shelly_device_id   = $config['accounts'][$user_index]['shelly_device_id_acin'];
+
+      $ip_static_shelly   = $config['accounts'][$user_index]['ip_shelly_load_em'];
+
+      $shellyem =  new shelly_device( $ip_static_shelly, 'shellyem' );
+
+      // We know that the ATS contactor primary or Grid Side Switch is controlled by a Shelly EM so channel = 0
+      // The ATS secondary contactor is directly tied to the Solar Power
+      $operation_result = $shellyem->turn_on_off_shellyem_switch_over_lan( $desired_state, 0 );
+
+      return $operation_result;
+    }
+
+
+    /**
      *  Read the energy counter now
      *  Subtract the reading captured at midnight
      *  Use this as the energy accumulted since midnight delivered to home
@@ -2396,6 +2420,17 @@ class class_transindus_eco
               {
                 error_log("LogFloatRelease: Prevent Battery Over Voltage at Float due to Solar, turn Grid switch OFF - FAIL");
               }
+
+              $success_off = $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'off' );
+              if ( $success_off )
+              {
+                error_log("LogFloatRelease: turn ATS to Solar/Studer - SUCCESS");
+              }
+              else
+              {
+                error_log("LogFloatRelease: turn ATS to Solar/Studer - FAIL");
+              }
+
             break;
 
             case ( $LVDS ):
@@ -2413,6 +2448,17 @@ class class_transindus_eco
               {
                 error_log("LogLvds: SOC is LOW, commanded to turn ON Shelly 1PM Grid switch - FAILED!!!!!!");
               }
+
+              $success_on = $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'on' );
+              if ( $success_on )
+              {
+                error_log("LogFloatRelease: turn ATS to GRID - SUCCESS");
+              }
+              else
+              {
+                error_log("LogFloatRelease: turn ATS to GRID - FAIL");
+              }
+
             break;
 
             case ( $switch_release_LVDS ):
@@ -2429,6 +2475,17 @@ class class_transindus_eco
               {
                 error_log("LogLvds: SOC has recovered, Solar is charging Battery, turn Grid switch OFF - FAIL");
               }
+
+              $success_off = $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'off' );
+              if ( $success_off )
+              {
+                error_log("LogFloatRelease: turn ATS to Solar/Studer - SUCCESS");
+              }
+              else
+              {
+                error_log("LogFloatRelease: turn ATS to Solar/Studer - FAIL");
+              }
+
             break;
 
             case ( $always_on_switch_release ):
@@ -2445,6 +2502,16 @@ class class_transindus_eco
               {
                 error_log("LogAlways_on OFF:  commanded to turn Grid switch OFF - FAIL");
               }
+              $success_off = $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'off' );
+              if ( $success_off )
+              {
+                error_log("LogFloatRelease: turn ATS to Solar/Studer - SUCCESS");
+              }
+              else
+              {
+                error_log("LogFloatRelease: turn ATS to Solar/Studer - FAIL");
+              }
+
             break;
 
             case ( $keep_shelly_switch_closed_always_bool ):
@@ -2461,6 +2528,16 @@ class class_transindus_eco
               {
                 error_log("Log: Always ON - ommanded to turn ON Shelly 1PM Grid switch - FAIL");
               }
+              $success_on = $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'on' );
+              if ( $success_on )
+              {
+                error_log("LogFloatRelease: turn ATS to GRID - SUCCESS");
+              }
+              else
+              {
+                error_log("LogFloatRelease: turn ATS to GRID - FAIL");
+              }
+              
             break;
             
             default:

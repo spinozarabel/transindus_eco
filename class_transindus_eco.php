@@ -328,6 +328,7 @@ class class_transindus_eco
         $defaults['do_shelly']                                        = ['default' => false,  'lower_limit' =>true,  'upper_limit' =>true];
         $defaults['keep_shelly_switch_closed_always']                 = ['default' => false,  'lower_limit' =>true,  'upper_limit' =>true];
         $defaults['pump_duration_control']                            = ['default' => false,   'lower_limit' =>true,  'upper_limit' =>true];
+        $defaults['track_ats_switch_to_grid_switch']                  = ['default' => false,  'lower_limit' =>true,  'upper_limit' =>true];
         $defaults['pump_duration_secs_max']                           = ['default' => 2700,   'lower_limit' => 0,    'upper_limit' =>7200];
         $defaults['pump_power_restart_interval_secs']                 = ['default' => 120,    'lower_limit' => 0,    'upper_limit' =>86400];
         $defaults['studer_battery_charging_current']                  = ['default' => 5,      'lower_limit' => 0,    'upper_limit' =>30];   // studer supplied battery charging current DC Amps
@@ -398,6 +399,21 @@ class class_transindus_eco
               case ( stripos( $field[ 'settings' ][ 'key' ], 'do_shelly' )!== false ):
                 // get the user's metadata for this flag
                 $user_meta_value = get_user_meta($wp_user_ID, 'do_shelly',  true);
+
+                // Change the `default_value` setting of the checkbox field based on the retrieved user meta
+                if ($user_meta_value == true)
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'checked';
+                }
+                else
+                {
+                  $field[ 'settings' ][ 'default_value' ] = 'unchecked';
+                }
+              break;
+
+              case ( stripos( $field[ 'settings' ][ 'key' ], 'track_ats_switch_to_grid_switch' )!== false ):
+                // get the user's metadata for this flag
+                $user_meta_value = get_user_meta($wp_user_ID, 'track_ats_switch_to_grid_switch',  true);
 
                 // Change the `default_value` setting of the checkbox field based on the retrieved user meta
                 if ($user_meta_value == true)
@@ -973,6 +989,32 @@ class class_transindus_eco
               $settings_obj_to_local_wp->keep_shelly_switch_closed_always =  $submitted_field_value;
 
               error_log( "Updated User Meta - keep_shelly_switch_closed_always - from Settings Form: " . $field[ 'value' ] );
+            }
+          break;
+
+
+          case ( stripos( $field[ 'key' ], 'track_ats_switch_to_grid_switch' ) !== false ):
+            if ( $field[ 'value' ] )
+            {
+              $submitted_field_value = true;
+            }
+            else 
+            {
+              $submitted_field_value = false;
+            }
+
+            // get the existing user meta value
+            $existing_user_meta_value = get_user_meta($wp_user_ID, "track_ats_switch_to_grid_switch",  true);
+
+            if ( $existing_user_meta_value != $submitted_field_value )
+            {
+              // update the user meta with value from form since it is different from existing setting
+              update_user_meta( $wp_user_ID, 'track_ats_switch_to_grid_switch', $submitted_field_value);
+
+              // record this in the object that is then sent to the local Linux WP site where it is mirrored for implementation
+              $settings_obj_to_local_wp->track_ats_switch_to_grid_switch =  $submitted_field_value;
+
+              error_log( "Updated User Meta - track_ats_switch_to_grid_switch - from Settings Form: " . $field[ 'value' ] );
             }
           break;
 

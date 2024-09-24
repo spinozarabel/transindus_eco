@@ -2411,6 +2411,9 @@ class class_transindus_eco
             // switch exit transient exists and has been read into object for use
           }
 
+          $success_off = false;
+          $success_on  = false;
+
           switch (true) 
           { // decision tree to determine switching based on logic determined above
             case ( $grid_switch_off_float_release ):

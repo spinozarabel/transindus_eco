@@ -2378,7 +2378,7 @@ class class_transindus_eco
           $grid_switch_off_float_release =  
             $it_is_still_light                          === true              &&    // Active only in daytime
             $shellyplus1pm_grid_switch_state_string     === "ON"              &&    // Grid switch is alreay ON
-            ( $batt_voltage_xcomlan_avg                 >= 51.8  ||                 // Close to Float
+            ( $batt_voltage_xcomlan_avg                 >= 51.9  ||                 // Close to Float
               $soc_percentage_now                       >= 95        );
 
           // evaluate condition to keep Grid switch closed. This is dependen on keep_shelly_switch_closed_always flag

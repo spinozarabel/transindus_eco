@@ -1685,6 +1685,8 @@ class class_transindus_eco
 
           $studer_charger_enabled           = (bool)  $all_usermeta['studer_charger_enabled']           ?? false;
           $studer_battery_charging_current  = (float) $all_usermeta['studer_battery_charging_current']  ?? 0; 
+
+          $track_ats_switch_to_grid_switch  = (bool)  $all_usermeta['track_ats_switch_to_grid_switch']  ?? false;
         }
 
         { // get the SOCs from the user meta.
@@ -2330,6 +2332,9 @@ class class_transindus_eco
               $switch_is_flapping = false;
             }
           }
+
+          $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
+          $now_timestamp = $now->getTimestamp();
           
           // $main_control_site_avasarala_is_offline_for_long = $this->check_if_main_control_site_avasarala_is_offline_for_long();
           // $shelly_readings_obj->main_control_site_avasarala_is_offline_for_long   = $main_control_site_avasarala_is_offline_for_long;
@@ -2373,24 +2378,27 @@ class class_transindus_eco
           $grid_switch_off_float_release =  
             $it_is_still_light                          === true              &&    // Active only in daytime
             $shellyplus1pm_grid_switch_state_string     === "ON"              &&    // Grid switch is alreay ON
-            ( $batt_voltage_xcomlan_avg                 >= 51.3  ||                 // Close to Float
-              $soc_percentage_now                       > 95        )         &&    // soc close to 100%
-              $psolar_kw                                > 0.1;                      // Solar is still present
+            ( $batt_voltage_xcomlan_avg                 >= 51.8  ||                 // Close to Float
+              $soc_percentage_now                       >= 95        );
 
           // evaluate condition to keep Grid switch closed. This is dependen on keep_shelly_switch_closed_always flag
           $keep_shelly_switch_closed_always_bool = 
-              ( $soc_percentage_now       < 90 ||
-                $batt_voltage_xcomlan_avg < 50.3 )                    &&        // hysterysis from float release
+              ( $soc_percentage_now       < 90 )                      &&        // hysterysis from float release
               $shellyplus1pm_grid_switch_state_string === "OFF"       &&        // Grid switch is OFF
               $do_shelly                              === true        &&        // Grid Switch is Controllable
               $keep_shelly_switch_closed_always       === true        &&        // keep switch ON always flag is SET
               $switch_is_flapping                     === false;
 
-          $success_on   = false;
-          $success_off  = false;
+          // switch ATS to Grid if Grid Switch to Studer is also ON and currently ATS is on Solar
+          $switch_ats_to_grid_bool = $shellyem_readings_obj->output_state_bool === "OFF"  &&  // ATS on Solar
+                                    ( $keep_shelly_switch_closed_always_bool || $LVDS )   &&  // Studer on Grid
+                                    $track_ats_switch_to_grid_switch === true;                // ATS Tracking ON
 
-          $now = new DateTime('NOW', new DateTimeZone('Asia/Kolkata'));
-          $now_timestamp = $now->getTimestamp();
+          $switch_ats_to_solar_bool = $shellyem_readings_obj->output_state_bool === "ON"  &&  // ATS on GRID
+                                    ( $always_on_switch_release       ||                      // Studer on Solar
+                                      $grid_switch_off_float_release  ||                      // Studer on Solar
+                                      $switch_release_LVDS                )               &&
+                                      $track_ats_switch_to_grid_switch === false;             // ATS tracking OFF
 
           // get the switch tree exit condition from transient. Recreate if it doesn't exist
           if ( false === ( $switch_tree_obj = get_transient( 'switch_tree_obj') ) )
@@ -2564,7 +2572,7 @@ class class_transindus_eco
             }
             else
             {
-              // push a zero this iteration to record no witch
+              // push a zero this iteration to record no switch
               array_push( $switch_flap_array, 0 );
             }
 
@@ -4051,6 +4059,22 @@ class class_transindus_eco
               {
                 update_user_meta($wp_user_ID, "keep_shelly_switch_closed_always", $keep_shelly_switch_closed_always_from_mqtt_update);
                 error_log(" Updated flag keep_switch_closed_always From: $keep_shelly_switch_closed_always_present_setting To $keep_shelly_switch_closed_always_from_mqtt_update");
+              }
+            }
+
+            // ----------------------- track_ats_switch_to_grid_switch  --------------------------
+
+            if ( property_exists($flag_object, "track_ats_switch_to_grid_switch") )
+            {
+              $track_ats_switch_to_grid_switch_from_mqtt_update = (bool) $flag_object->track_ats_switch_to_grid_switch;
+
+              $track_ats_switch_to_grid_switch_present_setting = (bool) get_user_meta($wp_user_ID, "track_ats_switch_to_grid_switch", true);
+
+              // compare the values and update if not the same
+              if ( $track_ats_switch_to_grid_switch_from_mqtt_update !== $track_ats_switch_to_grid_switch_present_setting )
+              {
+                update_user_meta($wp_user_ID, "track_ats_switch_to_grid_switch", $track_ats_switch_to_grid_switch_from_mqtt_update);
+                error_log(" Updated flag track_ats_switch_to_grid_switch From: $track_ats_switch_to_grid_switch_present_setting To $track_ats_switch_to_grid_switch_from_mqtt_update");
               }
             }
 

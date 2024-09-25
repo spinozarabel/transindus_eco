@@ -1921,7 +1921,7 @@ class class_transindus_eco
                       $xcomlan_studer_data_obj->xcomlan_call_ok              &&  // delta soc is present and valid
             ! empty(  $soc_percentage_now_calculated_using_studer_xcomlan )  &&  // SOC value exists
                       // soc value is roughly between LVDS and 100
-                      $soc_percentage_now_calculated_using_studer_xcomlan >= ($soc_percentage_lvds_setting - 5) &&
+                      $soc_percentage_now_calculated_using_studer_xcomlan >= 40 &&
                       $soc_percentage_now_calculated_using_studer_xcomlan < 101;
                                           
 
@@ -1929,7 +1929,7 @@ class class_transindus_eco
                       $shellyplus1_batt_obj->shellybm_call_ok          &&  // delta soc exists and is valid
             ! empty(  $soc_percentage_now_calculated_using_shelly_bm ) &&  // soc is not empty
                       // SOC value is between LVDS and 100% roughly
-                      $soc_percentage_now_calculated_using_shelly_bm  >= ($soc_percentage_lvds_setting - 5) &&
+                      $soc_percentage_now_calculated_using_shelly_bm  >= 40 &&
                       $soc_percentage_now_calculated_using_shelly_bm  < 101;
                           
           // calculate offsets between studer method and other's when all methods are valid

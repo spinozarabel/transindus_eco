@@ -1704,7 +1704,6 @@ class class_transindus_eco
           $shelly_readings_obj->shellyplus1pm_grid_switch_obj = $shellyplus1pm_grid_switch_obj;
 
           $shellyplus1pm_grid_switch_state_string = $shellyplus1pm_grid_switch_obj->switch[0]->output_state_string;
-          // $this->verbose ? error_log("Shelly Grid Switch State: $shellyplus1pm_grid_switch_state_string"): false;
         }
 
         {  // .................... make all measurements .......................................................
@@ -1895,22 +1894,44 @@ class class_transindus_eco
 
           if ( abs( $offset_soc_studerkwh_xcomlan ) < 5 )
           {
+            // Studer KWH method tracks xcom-lan method to within 5 points
             $soc_studerkwh_tracks_xcomlan_bool = true;
           }
-          if ( abs( $offset_soc_studerkwh_shellybm ) < 5 )
+          else
           {
-            $soc_studerkwh_tracks_shellybm_bool = true;
-          }
-          if ( abs( $offset_soc_xcomlan_shellybm ) < 5 )
-          {
-            $soc_xcomlan_tracks_shellybm_bool = true;
+            $soc_studerkwh_tracks_xcomlan_bool = false;
           }
 
+
+          if ( abs( $offset_soc_studerkwh_shellybm ) < 5 )
+          {
+            // Studr KWH method tracks Shelly-BM current method to within 5 points
+            $soc_studerkwh_tracks_shellybm_bool = true;
+          }
+          else
+          {
+            $soc_studerkwh_tracks_shellybm_bool = false;
+          }
+
+
+
+          if ( abs( $offset_soc_xcomlan_shellybm ) < 5 )
+          {
+            // xcom-lan method and shelly-BM methods track to within 5 points
+            $soc_xcomlan_tracks_shellybm_bool = true;
+          }
+          else
+          {
+            $soc_xcomlan_tracks_shellybm_bool = false;
+          }
+
+          // Studer KWH method reading is OK when
+          //        The call was OK, The reading is not empty, the value is within 40 and 101
           $studer_reading_is_ok_bool    =  $xcomlan_studer_data_obj->studer_call_ok && // valid reading and value in range
-                                  ! empty( $soc_percentage_now_studer_kwh )  && // soc value exists
-                                            // SOC value is between LVDS and 100 roughly
-                                           $soc_percentage_now_studer_kwh >= ($soc_percentage_lvds_setting - 5) &&
+                                  ! empty( $soc_percentage_now_studer_kwh )         && // soc value exists
+                                           $soc_percentage_now_studer_kwh >= 40     &&
                                            $soc_percentage_now_studer_kwh < 101;
+
           if ( $studer_reading_is_ok_bool === false && $solar_kwh_today && $inverter_kwh_today && $grid_kwh_today )
           {
             // log details to help in debugging
@@ -1932,7 +1953,7 @@ class class_transindus_eco
                       $soc_percentage_now_calculated_using_shelly_bm  >= 40 &&
                       $soc_percentage_now_calculated_using_shelly_bm  < 101;
                           
-          // calculate offsets between studer method and other's when all methods are valid
+          // calculate offsets between studer method and other's when all methods are valid and not near midnight
           if ( $this->nowIsWithinTimeLimits("00:20:00", "23:40:00") === true )
           {
             // we are not too close to Studer clock midnight rollover so that studer KWH based SOC is reliable

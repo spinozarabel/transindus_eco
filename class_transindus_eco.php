@@ -685,8 +685,17 @@ class class_transindus_eco
           $xcomlan_ts   = $object_from_linux_home_desktop->xcomlan_studer_data_obj->xcomlan_ts;
           $shellybm_ts  = $object_from_linux_home_desktop->timestamp_shellybm;
 
-          $obj_check_ts_validity_xcomlan  = $this->check_validity_of_timestamp( $xcomlan_ts,  120 );
-          $obj_check_ts_validity_shellybm = $this->check_validity_of_timestamp( $shellybm_ts, 120 );
+          if ( ! empty( $xcomlan_ts ) )
+          {
+            $obj_check_ts_validity_xcomlan  = $this->check_validity_of_timestamp( $xcomlan_ts,  120 );
+          }
+
+          if ( ! empty( $xcomlan_ts ) )
+          {
+            $obj_check_ts_validity_shellybm = $this->check_validity_of_timestamp( $shellybm_ts, 120 );
+          }
+          
+          
 
           // check its validity - if it exceeds duration given, it is not valid. Use that
           

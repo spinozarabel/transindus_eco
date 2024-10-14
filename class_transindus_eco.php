@@ -5575,7 +5575,7 @@ class class_transindus_eco
      *  It returns int seconds_elapsed, bool elapsed_time_exceeds_duration_given, int timestamp_now
      *  If it exceeds then true is returned if not a false is returned.
      */
-    public function check_validity_of_timestamp( int $ts, int $duration_in_seconds) : object
+    public function check_validity_of_timestamp( ? int $ts, int $duration_in_seconds) : object
     {
       $obj = new stdClass;
 

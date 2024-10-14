@@ -701,7 +701,7 @@ class class_transindus_eco
           
           if (  $obj_check_ts_validity_xcomlan->elapsed_time_exceeds_duration_given   === false || 
                 $obj_check_ts_validity_shellybm->elapsed_time_exceeds_duration_given  === false     )
-          { // at least one timestamp is fresher than 3m so acceptable
+          { // at least one timestamp is fresher than 3m so acceptable. Set notifications and set transient using object
             // get the value of the duration since timestamp
             $seconds_elapsed_xcomlan_ts   =  $obj_check_ts_validity_xcomlan->seconds_elapsed;
             $seconds_elapsed_shellybm_ts  =  $obj_check_ts_validity_shellybm->seconds_elapsed;
@@ -809,7 +809,7 @@ class class_transindus_eco
             return $object_from_linux_home_desktop;
           }
           else
-          { // timestamp is stale so xcomlan data is not valid.
+          { // timestamp is stale so xcomlan data is not valid. Do not set transient of object
             return null;
           }
           

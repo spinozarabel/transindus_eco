@@ -690,7 +690,7 @@ class class_transindus_eco
             $obj_check_ts_validity_xcomlan  = $this->check_validity_of_timestamp( $xcomlan_ts,  120 );
           }
 
-          if ( ! empty( $xcomlan_ts ) )
+          if ( ! empty( $shellybm_ts ) )
           {
             $obj_check_ts_validity_shellybm = $this->check_validity_of_timestamp( $shellybm_ts, 120 );
           }

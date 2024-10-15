@@ -712,7 +712,10 @@ class class_transindus_eco
 
         $config = $this->get_config();
 
-        $account = $config['accounts'][0];
+        // we do for only 1 user with index = 0
+        $user_index = (int) 0;
+
+        $account = $config['accounts'][ $user_index ];
         
         $wp_user_name = $account['wp_user_name'];
 
@@ -721,8 +724,7 @@ class class_transindus_eco
 
         $wp_user_ID   = $wp_user_obj->ID;
 
-        $user_index = (int) 0;
-
+        // use MQTT to get the settings from remote. Any remote updates will be reflected locally
         $this->get_flag_data_from_master_remote($user_index, $wp_user_ID);
 
         if ( $wp_user_ID )
@@ -2374,7 +2376,7 @@ class class_transindus_eco
 
           
 
-          // -- GRID switch OFF as SOC has recovered from LVDS. Solarmust be greater than Load also 
+          // -- GRID switch OFF as SOC has recovered from LVDS. Solar must be greater than Load 
           $switch_release_LVDS = 
               $soc_percentage_now >=  ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered 2 points past LVDS minimum setting
               $batt_amps          >     6                                  &&  // battery is charging. This cannot happen when dark
@@ -2399,8 +2401,7 @@ class class_transindus_eco
           $grid_switch_off_float_release =  
             $it_is_still_light                          === true              &&    // Active only in daytime
             $shellyplus1pm_grid_switch_state_string     === "ON"              &&    // Grid switch is alreay ON
-            ( $batt_voltage_xcomlan_avg                 >= 51.9  ||                 // Close to Float
-              $soc_percentage_now                       >= 95        );
+            ( $battery_float_state_achieved             ||  $soc_percentage_now >= 96 );
 
           // evaluate condition to keep Grid switch closed. This is dependen on keep_shelly_switch_closed_always flag
           $keep_shelly_switch_closed_always_bool = 
@@ -2410,16 +2411,14 @@ class class_transindus_eco
               $keep_shelly_switch_closed_always       === true        &&        // keep switch ON always flag is SET
               $switch_is_flapping                     === false;
 
-          // switch ATS to Grid if Grid Switch to Studer is also ON and currently ATS is on Solar
-          $switch_ats_to_grid_bool = $shellyem_readings_obj->output_state_bool === "OFF"  &&  // ATS on Solar
-                                    ( $keep_shelly_switch_closed_always_bool || $LVDS )   &&  // Studer on Grid
-                                    $track_ats_switch_to_grid_switch === true;                // ATS Tracking ON
+          // switch ATS to Grid if Grid Switch is alreay ON and present ATS is still on Solar
+          $switch_ats_to_grid_bool =  $track_ats_switch_to_grid_switch          === true   &&  // ATS tracking ON
+                                      $shellyem_readings_obj->output_state_bool === "OFF"  &&  // ATS on Solar
+                                      $shellyplus1pm_grid_switch_state_string   === "ON";      // Studer on Grid
 
-          $switch_ats_to_solar_bool = $shellyem_readings_obj->output_state_bool === "ON"  &&  // ATS on GRID
-                                    ( $always_on_switch_release       ||                      // Studer on Solar
-                                      $grid_switch_off_float_release  ||                      // Studer on Solar
-                                      $switch_release_LVDS                )               &&
-                                      $track_ats_switch_to_grid_switch === false;             // ATS tracking OFF
+          $switch_ats_to_solar_bool = $track_ats_switch_to_grid_switch === true           &&  // ATS tracking ON
+                                      $shellyem_readings_obj->output_state_bool === "ON"  &&  // ATS on GRID
+                                      $shellyplus1pm_grid_switch_state_string   === "OFF";    // Studer OFF Grid
 
           // get the switch tree exit condition from transient. Recreate if it doesn't exist
           if ( false === ( $switch_tree_obj = get_transient( 'switch_tree_obj') ) )
@@ -2429,9 +2428,10 @@ class class_transindus_eco
             $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
           }
           {
-            // switch exit transient exists and has been read into object for use
+            // switch exit transient exists and has been read into object above
           }
 
+          // initialize switch result boolean variables
           $success_off = false;
           $success_on  = false;
 
@@ -3996,7 +3996,7 @@ class class_transindus_eco
 
       $studer_settings_array = [];
 
-      // set the topic to update flags from remote to local
+      // set the MQTT subscription topic
       $topic_flg_from_remote = $config['accounts'][$user_index]['topic_flag_from_remote'];
 
       { 
@@ -4214,7 +4214,7 @@ class class_transindus_eco
           
             // do_shelly flag DOES NOT mirror the remote site
 
-
+            // do_minutely_updates flag DOES NOT mirror the remote site
              
             // ---------------------- soc_percentage_lvds_setting -----------------------------
             if ( ! empty( $flag_object->soc_percentage_lvds_setting ) && $flag_object->soc_percentage_lvds_setting >= 45 && $flag_object->soc_percentage_lvds_setting < 99 )

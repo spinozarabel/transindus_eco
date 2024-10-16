@@ -2362,6 +2362,7 @@ class class_transindus_eco
           // $main_control_site_avasarala_is_offline_for_long = $this->check_if_main_control_site_avasarala_is_offline_for_long();
           // $shelly_readings_obj->main_control_site_avasarala_is_offline_for_long   = $main_control_site_avasarala_is_offline_for_long;
 
+
           // Turn ON switch if SOC is below limit and Switch is now OFF and Servo control is enabled
           // ---------- most important Event in entire scheme of things ............
           $LVDS_VBAT =  
@@ -2369,6 +2370,7 @@ class class_transindus_eco
               property_exists( $xcomlan_studer_data_obj, "batt_voltage_xcomlan_avg")  &&
               $batt_voltage_xcomlan_avg < $average_battery_voltage_lvds_setting;
 
+          // switch is OFF, AND controllable AND soc is less than threshold
           $LVDS = 
               $shellyplus1pm_grid_switch_state_string === "OFF"             &&   // Grid switch is OFF
               $do_shelly                              === true              &&   // Grid Switch is Controllable
@@ -2376,7 +2378,7 @@ class class_transindus_eco
 
           
 
-          // -- GRID switch OFF as SOC has recovered from LVDS. Solar must be greater than Load 
+          // Switch release due to LVDS recovery
           $switch_release_LVDS = 
               $soc_percentage_now >=  ( $soc_percentage_lvds_setting + 2 ) &&  // SOC has recovered 2 points past LVDS minimum setting
               $batt_amps          >     6                                  &&  // battery is charging. This cannot happen when dark
@@ -2386,8 +2388,7 @@ class class_transindus_eco
               $keep_shelly_switch_closed_always       === false            &&  // keep switch ON always is False
               $switch_is_flapping                     === false;               // switch is NOT flapping.
 
-          // GRID switch OFF as keep_shelly_switch_closed_always changed from TRUE to FALSE
-          // As soon as always_on is released if SOC > LVDS + 10 it releases GRID switch
+          // Switch release from ALWAYS ON
           $always_on_switch_release = 
               $soc_percentage_now                         >= ( $soc_percentage_lvds_setting + 10 )  &&    // If Grid switch is ON AND KEEP ALWAYS IS false, this variable is TRUE
               $shellyplus1pm_grid_switch_state_string     === "ON"                          &&    // Grid switch is ON
@@ -2395,17 +2396,16 @@ class class_transindus_eco
               $keep_shelly_switch_closed_always           === false                         &&    // keep switch ON always is true
               $switch_is_flapping                         === false;
 
-          // GRID switch OFF to prevent High Battery Voltage when close to Float Voltage and when Solar is active
-          // Since this is important, no dependency on controllabilty or flapping are checked.
-          // If the condition is true then switch is OFF even if keep always on flag is still true
+          // Switch release due to battery float to prevent over charging of battery
           $grid_switch_off_float_release =  
-            $it_is_still_light                          === true              &&    // Active only in daytime
-            $shellyplus1pm_grid_switch_state_string     === "ON"              &&    // Grid switch is alreay ON
-            ( $batt_voltage_xcomlan_avg >= 51.8 ||  $soc_percentage_now >= 95 );
+              $shellyplus1pm_grid_switch_state_string     === "ON"              &&    // Grid switch is still ON
+            ( $batt_voltage_xcomlan_avg                   >= 52 ||  
+              $soc_percentage_now                         >= 97 || 
+              $battery_float_state_achieved );
 
-          // evaluate condition to keep Grid switch closed. This is dependen on keep_shelly_switch_closed_always flag
+          // Keep Switch closed always
           $keep_shelly_switch_closed_always_bool = 
-              ( $soc_percentage_now       < 90 )                      &&        // hysterysis from float release
+              $soc_percentage_now                     < 92            &&        // hysterysis from float release
               $shellyplus1pm_grid_switch_state_string === "OFF"       &&        // Grid switch is OFF
               $do_shelly                              === true        &&        // Grid Switch is Controllable
               $keep_shelly_switch_closed_always       === true        &&        // keep switch ON always flag is SET
@@ -2606,7 +2606,7 @@ class class_transindus_eco
                 }
               }
             break;
-            
+
             
             default:
               // no switch action

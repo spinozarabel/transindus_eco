@@ -2398,10 +2398,10 @@ class class_transindus_eco
 
           // Switch release due to battery float to prevent over charging of battery
           $grid_switch_off_float_release =  
-              $shellyplus1pm_grid_switch_state_string     === "ON"              &&    // Grid switch is still ON
-            ( $batt_voltage_xcomlan_avg                   >= 52 ||  
-              $soc_percentage_now                         >= 97 || 
-              $battery_float_state_achieved );
+              $shellyplus1pm_grid_switch_state_string     === "ON"  &&      // Grid switch is still ON
+            ( $batt_voltage_xcomlan_avg                   >= 52.1 ||        // avg battery voltage past float setting  
+              $soc_percentage_now                         >= 97.0 ||        // SOC is close to 100% 
+              $battery_float_state_achieved );                              // battery float sate reached
 
           // Keep Switch closed always
           $keep_shelly_switch_closed_always_bool = 

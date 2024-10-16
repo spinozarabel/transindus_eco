@@ -2435,10 +2435,13 @@ class class_transindus_eco
           $success_off = false;
           $success_on  = false;
 
+          $ats_switch_grid_switch_track_success = false;
+
           switch (true) 
           { // decision tree to determine switching based on logic determined above
-            case ( $grid_switch_off_float_release ):
 
+            case ( $grid_switch_off_float_release ):
+              // Grid Switch OFF 
               $success_off = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'off' );
 
               if ( $success_off )
@@ -2453,20 +2456,26 @@ class class_transindus_eco
                 error_log("LogFloatRelease: Prevent Battery Over Voltage at Float due to Solar, turn Grid switch OFF - FAIL");
               }
 
-              $success_off = $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'off' );
-              if ( $success_off )
+              // if ATS tracking is set and switch action above was successfull switch ATS to Studer away from Grid
+              if ( $track_ats_switch_to_grid_switch && $success_off )
               {
-                error_log("LogFloatRelease: turn ATS to Solar/Studer - SUCCESS");
-              }
-              else
-              {
-                error_log("LogFloatRelease: turn ATS to Solar/Studer - FAIL");
-              }
+                $ats_switch_grid_switch_track_success = 
+                                    $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'off' );
 
+                if ( $ats_switch_grid_switch_track_success )
+                {
+                  error_log("LogFloatRelease: turn ATS to Studer Output - SUCCESS");
+                }
+                else
+                {
+                  error_log("LogFloatRelease: turn ATS to Studer Output - FAIL");
+                }
+              }
             break;
 
-            case ( $LVDS ):
 
+            case ( $LVDS ):
+              // Grid switch ON
               $success_on = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'on' );
 
               if ( $success_on )
@@ -2481,19 +2490,26 @@ class class_transindus_eco
                 error_log("LogLvds: SOC is LOW, commanded to turn ON Shelly 1PM Grid switch - FAILED!!!!!!");
               }
 
-              $success_on = $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'on' );
-              if ( $success_on )
+              // if ATS tracking is set and switch action above was successfull switch ATS to Grid away from Studer
+              if ( $track_ats_switch_to_grid_switch && $success_on )
               {
-                error_log("LogFloatRelease: turn ATS to GRID - SUCCESS");
-              }
-              else
-              {
-                error_log("LogFloatRelease: turn ATS to GRID - FAIL");
-              }
+                $ats_switch_grid_switch_track_success = 
+                              $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'on' );
 
+                if ( $ats_switch_grid_switch_track_success )
+                {
+                  error_log("LogFloatRelease: turn ATS to GRID - SUCCESS");
+                }
+                else
+                {
+                  error_log("LogFloatRelease: turn ATS to GRID - FAIL");
+                }
+              }
             break;
 
+
             case ( $switch_release_LVDS ):
+              // Grid switch OFF
               $success_off = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'off' );
               
               if ( $success_off )
@@ -2508,19 +2524,24 @@ class class_transindus_eco
                 error_log("LogLvds: SOC has recovered, Solar is charging Battery, turn Grid switch OFF - FAIL");
               }
 
-              $success_off = $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'off' );
-              if ( $success_off )
+              // if ATS tracking is set and switch action above was successfull switch ATS to Studer away from Grid
+              if ( $track_ats_switch_to_grid_switch && $success_off )
               {
-                error_log("LogFloatRelease: turn ATS to Solar/Studer - SUCCESS");
+                $ats_switch_grid_switch_track_success = 
+                        $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'off' );
+                if ( $ats_switch_grid_switch_track_success )
+                {
+                  error_log("LogFloatRelease: turn ATS to Solar/Studer - SUCCESS");
+                }
+                else
+                {
+                  error_log("LogFloatRelease: turn ATS to Solar/Studer - FAIL");
+                }
               }
-              else
-              {
-                error_log("LogFloatRelease: turn ATS to Solar/Studer - FAIL");
-              }
-
             break;
 
             case ( $always_on_switch_release ):
+              // Grid Switch OFF
               $success_off = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'off' );
 
               if ( $success_off )
@@ -2534,19 +2555,27 @@ class class_transindus_eco
               {
                 error_log("LogAlways_on OFF:  commanded to turn Grid switch OFF - FAIL");
               }
-              $success_off = $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'off' );
-              if ( $success_off )
-              {
-                error_log("LogFloatRelease: turn ATS to Solar/Studer - SUCCESS");
-              }
-              else
-              {
-                error_log("LogFloatRelease: turn ATS to Solar/Studer - FAIL");
-              }
 
+              // if ATS tracking is set and switch action above was successfull switch ATS to Studer away from Grid
+              if ( $track_ats_switch_to_grid_switch && $success_off )
+              {
+                $ats_switch_grid_switch_track_success = 
+                    $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'off' );
+
+                if ( $ats_switch_grid_switch_track_success )
+                {
+                  error_log("LogFloatRelease: turn ATS to Solar/Studer - SUCCESS");
+                }
+                else
+                {
+                  error_log("LogFloatRelease: turn ATS to Solar/Studer - FAIL");
+                }
+              }
             break;
 
+
             case ( $keep_shelly_switch_closed_always_bool ):
+              // Grid switch ON
               $success_on = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'on' );
               
               if ( $success_on )
@@ -2560,17 +2589,24 @@ class class_transindus_eco
               {
                 error_log("Log: Always ON - ommanded to turn ON Shelly 1PM Grid switch - FAIL");
               }
-              $success_on = $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'on' );
-              if ( $success_on )
+
+              // if ATS tracking is set and switch action above was successfull switch ATS to Grid away from Studer
+              if ( $track_ats_switch_to_grid_switch && $success_on )
               {
-                error_log("LogFloatRelease: turn ATS to GRID - SUCCESS");
+                $ats_switch_grid_switch_track_success = 
+                      $this->change_grid_ups_ats_using_shellyem_switch_over_lan( $user_index, 'on' );
+
+                if ( $ats_switch_grid_switch_track_success )
+                {
+                  error_log("LogFloatRelease: turn ATS to GRID - SUCCESS");
+                }
+                else
+                {
+                  error_log("LogFloatRelease: turn ATS to GRID - FAIL");
+                }
               }
-              else
-              {
-                error_log("LogFloatRelease: turn ATS to GRID - FAIL");
-              }
-              
             break;
+            
             
             default:
               // no switch action

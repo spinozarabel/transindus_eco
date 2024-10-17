@@ -1889,7 +1889,7 @@ class class_transindus_eco
 
           $soc_array = [];  // initialize to blank
 
-          // calculate the differences between the various SOC's in 3 different ways
+          // calculate the differences between the 3 SOC's in 3 different ways
           $offset_soc_studerkwh_xcomlan   = $soc_percentage_now_studer_kwh - $soc_percentage_now_calculated_using_studer_xcomlan;
           $offset_soc_studerkwh_shellybm  = $soc_percentage_now_studer_kwh - $soc_percentage_now_calculated_using_shelly_bm;
           $offset_soc_xcomlan_shellybm    = $soc_percentage_now_calculated_using_studer_xcomlan - $soc_percentage_now_calculated_using_shelly_bm;
@@ -1904,7 +1904,6 @@ class class_transindus_eco
             $soc_studerkwh_tracks_xcomlan_bool = false;
           }
 
-
           if ( abs( $offset_soc_studerkwh_shellybm ) < 5 )
           {
             // Studr KWH method tracks Shelly-BM current method to within 5 points
@@ -1914,8 +1913,6 @@ class class_transindus_eco
           {
             $soc_studerkwh_tracks_shellybm_bool = false;
           }
-
-
 
           if ( abs( $offset_soc_xcomlan_shellybm ) < 5 )
           {
@@ -1928,11 +1925,21 @@ class class_transindus_eco
           }
 
           // Studer KWH method reading is OK when
-          //        The call was OK, The reading is not empty, the value is within 40 and 101
+          //  The call was OK, The reading is not empty, the value is within 40 and 104
+          //  AND the Studer computed LoadKWH is within 10% of Shelly computed LoadKWH.
+          //  The most usual error with Studer method is when it does not reset its day values at midnight sometimes
+          //  to check this calculate the percentage difference in load KWH since midnight using Studer and Shelly methods
+          $percentage_difference_load_kwh_studer_shelly = 
+              ( $inverter_kwh_today - $shelly_em_home_kwh_since_midnight ) / ( $shelly_em_home_kwh_since_midnight + 0.001 ) * 100 ?? 100.0;
+
+          // log details to help in debugging
+          error_log( "Log-Studer-Load: $inverter_kwh_today, Shelly-Load: $shelly_em_home_kwh_since_midnight, Percentage Diff: $percentage_difference_load_kwh_studer_shelly");
+
           $studer_reading_is_ok_bool    =  $xcomlan_studer_data_obj->studer_call_ok && // valid reading and value in range
                                   ! empty( $soc_percentage_now_studer_kwh )         && // soc value exists
                                            $soc_percentage_now_studer_kwh >= 40     &&
-                                           $soc_percentage_now_studer_kwh < 101;
+                                           $soc_percentage_now_studer_kwh < 104     && //
+                                      abs( $percentage_difference_load_kwh_studer_shelly ) < 50;
 
           if ( $studer_reading_is_ok_bool === false && $solar_kwh_today && $inverter_kwh_today && $grid_kwh_today )
           {
@@ -1943,7 +1950,7 @@ class class_transindus_eco
           $xcom_lan_reading_is_ok_bool  = 
                       $xcomlan_studer_data_obj->xcomlan_call_ok              &&  // delta soc is present and valid
             ! empty(  $soc_percentage_now_calculated_using_studer_xcomlan )  &&  // SOC value exists
-                      // soc value is roughly between LVDS and 100
+                      // soc value is roughly between 40 and 101
                       $soc_percentage_now_calculated_using_studer_xcomlan >= 40 &&
                       $soc_percentage_now_calculated_using_studer_xcomlan < 101;
                                           
@@ -1951,9 +1958,8 @@ class class_transindus_eco
           $shelly_bm_reading_is_ok_bool = 
                       $shellyplus1_batt_obj->shellybm_call_ok          &&  // delta soc exists and is valid
             ! empty(  $soc_percentage_now_calculated_using_shelly_bm ) &&  // soc is not empty
-                      // SOC value is between LVDS and 100% roughly
                       $soc_percentage_now_calculated_using_shelly_bm  >= 40 &&
-                      $soc_percentage_now_calculated_using_shelly_bm  < 101;
+                      $soc_percentage_now_calculated_using_shelly_bm  < 104;
                           
           // calculate offsets between studer method and other's when all methods are valid and not near midnight
           if ( $this->nowIsWithinTimeLimits("00:20:00", "23:40:00") === true )
@@ -1963,7 +1969,7 @@ class class_transindus_eco
             if (  $studer_reading_is_ok_bool          &&  // Studer KWH based call is OK and values are in limits
                   $xcom_lan_reading_is_ok_bool        &&  // xcom-lan call was OK and values are in limits
                   $soc_studerkwh_tracks_xcomlan_bool  &&  // delta studer-xcomlan < 5
-                  // delta-T between latest measurement and past one is less than 5m
+                  // delta-T between latest measurement and one before is less than 5m
                   $batt_soc_accumulation_obj->delta_secs_xcomlan <= 240 || $batt_soc_accumulation_obj->delta_secs_shellybm <= 240 )
             { 
               set_transient('offset_soc_studerkwh_xcomlan',   $offset_soc_studerkwh_xcomlan,  1 * 60 * 60 );
@@ -1974,9 +1980,10 @@ class class_transindus_eco
                       $batt_soc_accumulation_obj->delta_secs_shellybm > 240    )
             {
               // reading is OK but there is a gap between xcom-lan measurements
-              // therefore get the offset from transient
+              // therefore get the offset from studer kwh method using transient if it exists else make it 0
               $offset_soc_studerkwh_xcomlan   = get_transient( 'offset_soc_studerkwh_xcomlan' ) ?? 0;
 
+              // oofset is stder - xcomlan so xcomlan = studer - offset
               $recal_battery_xcomlan_soc_percentage_accumulated_since_midnight =  
                                         $soc_batt_charge_net_percent_today_studer_kwh - $offset_soc_studerkwh_xcomlan;
 

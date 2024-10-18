@@ -2675,14 +2675,14 @@ class class_transindus_eco
       if ( $do_shelly === true )
       {
           // Local computer over LAN will be controlling the ACIN switch
-          // a green cloud icon signifies that local site is in control
+          // a green open eye icon signifies that local site is in control
           $shelly_servo_icon = '<span style="color: Green; display:block; text-align: center;">
                                     <i class="clickableIcon fa-solid fa-2x fa-eye"></i>
                                 </span>';
       }
       else
       {
-          // Local site is not in control
+          // Local site is not in control shows a red closed eye
           $shelly_servo_icon = '<span style="color: Red; display:block; text-align: center;">
                                     <i class="clickableIcon fa-solid fa-2x fa-eye-slash"></i>
                                 </span>';
@@ -2848,9 +2848,13 @@ class class_transindus_eco
       }
 
       // Water Heater Icon color determination tree
-      If ( $shelly_water_heater_kw > 0.1 )
+      If ( $shelly_water_heater_kw > 0.1 && ! $shellyem_contactor_is_active )
       {
-        $water_heater_icon_color = 'blue';
+        $water_heater_icon_color = 'green';
+      }
+      elseif ( $shelly_water_heater_kw > 0.1 && $shellyem_contactor_is_active )
+      {
+        $water_heater_icon_color = 'orange';
       }
       elseif ( $shelly_water_heater_status_bool === false )
       {

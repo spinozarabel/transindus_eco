@@ -2938,8 +2938,7 @@ class class_transindus_eco
                           $soc_percentage_now_calculated_using_shelly_bm . " " .
                           $soc_percentage_now_calculated_using_studer_xcomlan;
 
-      // $status .= " " . $now_format;
-
+      // Status lines are shown below all of the readings.
       // Status line 1: LVDS SOC and Battery Voltage, SOC method selected
       $status_html_line1 = '<span style="color: Blue; display:block; text-align: center;">' .
                               'LVDS: ' . $readings_obj->soc_percentage_lvds_setting  . '% ' . $readings_obj->average_battery_voltage_lvds_setting . 'V ' .
@@ -2969,7 +2968,7 @@ class class_transindus_eco
       // Status Line 4: COnditionalyy display charger current of charger is enabled
       if ( $readings_obj->studer_charger_enabled )
       {
-        $status_html_line4 = '<span style="color: green; display:block; text-align: center;">' .
+        $status_html_line4 = '<span style="color: red; display:block; text-align: center;">' .
                                   'Charger Enabled: '  . $readings_obj->studer_battery_charging_current . 'A' .
                               '</span>';
         $status_html .= $status_html_line4;
@@ -2987,7 +2986,7 @@ class class_transindus_eco
       $status_html_line5= '<span style="color: Blue; display:block; text-align: center;">' .
                               $soc_all_methods   . 
                           '</span>';
-                          
+
       $status_html .= $status_html_line5;
   
       $format_object->status = $status_html;

@@ -2134,7 +2134,7 @@ class class_transindus_eco
         // check for valid studer values. Return if empty.
         if( empty(  $readings_obj ) )
         {
-          $output .= "Could not get valid data from home server using mqtt";
+          $output .= "Empty data from home server using mqtt";
 
           return $output;
         }
@@ -2186,17 +2186,17 @@ class class_transindus_eco
         <table id="my-load-distribution-table">
             <tr>
                 <td id="water_heater_icon">'  . $format_object->water_heater_icon  . '</td>
-                <td id="ev_charge_icon">'     . $format_object->ev_charge_icon     .'</td>
+                <td id="ev_charge_icon">'     . $format_object->ev_charge_icon     . '</td>
                 <td id="ac_icon">'            . $format_object->ac_icon            . '</td>
                 <td id="wall_charge_icon">'   . $format_object->wall_charge_icon   . '</td>
                 <td id="pump_icon">'          . $format_object->pump_icon          . '</td>
             </tr>
             <tr>
-                <td id="shelly_water_heater_kw">' . $format_object->shelly_water_heater_kw    . '</td>
-                <td id="car_charger_grid_kw_power">'     . $format_object->car_charger_grid_kw_power        .'</td>
-                <td id="power_to_ac_kw">'   . $format_object->power_to_ac_kw      . '</td>
-                <td id="wallcharger_grid_kw_power">'   . $format_object->wallcharger_grid_kw_power      .'</td>
-                <td id="power_to_pump_kw">' . $format_object->power_to_pump_kw    . '</td>
+                <td id="shelly_water_heater_kw">'     . $format_object->shelly_water_heater_kw    . '</td>
+                <td id="car_charger_grid_kw_power">'  . $format_object->car_charger_grid_kw_power . '</td>
+                <td id="power_to_ac_kw">'             . $format_object->power_to_ac_kw            . '</td>
+                <td id="wallcharger_grid_kw_power">'  . $format_object->wallcharger_grid_kw_power . '</td>
+                <td id="power_to_pump_kw">'           . $format_object->power_to_pump_kw          . '</td>
             </tr>
             
         </table>';
@@ -2371,8 +2371,8 @@ class class_transindus_eco
     }    
     
     /**
-     * @param stdClass:studer_readings_obj contains details of all the readings
-     * @return stdClass:format_object contains html for all the icons to be updatd by JS on Ajax call return
+     * @param object:$readings_obj contains details of all the readings
+     * @return object:$format_object contains html for all the icons to be updatd by JS on Ajax call return
      * determine the icons based on updated data
      */
     public function prepare_data_for_mysolar_update( $wp_user_ID, $wp_user_name, $readings_obj )
@@ -2409,8 +2409,6 @@ class class_transindus_eco
       // extract and process Shelly 1PM switch water heater data
       if ( ! empty( $shellyplus1pm_water_heater_obj ) )
       {
-        
-
         $shelly_water_heater_kw            = (float)  $shellyplus1pm_water_heater_obj->switch[0]->power_kw;
         $shelly_water_heater_status_bool   = (bool)   $shellyplus1pm_water_heater_obj->switch[0]->output_state_bool;    // boolean variable
         $shelly_water_heater_status_string = (string) $shellyplus1pm_water_heater_obj->switch[0]->output_state_string;  // boolean variable
@@ -2421,7 +2419,7 @@ class class_transindus_eco
       $main_control_site_avasarala_is_offline_for_long = false; // $readings_obj->main_control_site_avasarala_is_offline_for_long;
 
       // solar power calculated from Shelly measurements of battery Grid and Load
-      $psolar_kw              =   round($readings_obj->psolar_kw, 2);
+      $psolar_kw          = round($readings_obj->psolar_kw, 2);
 
       // Esimated total solar power available now assuming a cloudless sky
       $est_solar_total_kw = $readings_obj->est_solar_total_kw;
@@ -2433,7 +2431,7 @@ class class_transindus_eco
       // approximate solar current into battery
       $solar_amps_at_49V      = $readings_obj->xcomlan_studer_data_obj->pv_current_now_total_xcomlan;
 
-      // 
+      // power delivered to Studer Load as measured by Shelly EM at the panel. 
       $shelly_em_home_kw      =   $shellyem_readings_obj->emeters[0]->power_kw;
 
       // Positive is charging and negative is discharging We use this as the readings have faster update rate
@@ -2444,7 +2442,19 @@ class class_transindus_eco
       $battery_avg_voltage    =   $readings_obj->xcomlan_studer_data_obj->batt_voltage_xcomlan_avg;
 
       // $home_grid_kw_power  is as measured by ShellyPro3PM at the busbars just after the energy meter
-      $home_grid_kw_power     =   $readings_obj->shellypro3em_3p_grid_obj->home_grid_kw_power;
+      $blue_phase_grid_kw_power = $readings_obj->shellypro3em_3p_grid_obj->home_grid_kw_power;
+
+      // $home_grid_kw_power is the power from grid as supplied to Studer Input
+      if ( $shellyem_contactor_is_active )
+      {
+        // subtract any load connected to Blue Phase at ATS if ATS is on Grid, to indicate grid power coming thru studer
+        $home_grid_kw_power = $blue_phase_grid_kw_power - 0;
+      }
+      else
+      {
+        $home_grid_kw_power = $blue_phase_grid_kw_power;
+      }
+      
 
       // $home_grid_voltage  is as measured by ShellyPro3PM at the busbars just after the energy meter
       $home_grid_voltage      =   $readings_obj->shellypro3em_3p_grid_obj->home_grid_voltage;
@@ -2464,6 +2474,7 @@ class class_transindus_eco
       // This is the value selected from the 3 possible methods available.
       $soc_percentage_now     = round($readings_obj->soc_percentage_now, 1);
 
+      // This is controlled by remote and reflected to local and back up using MQTT
       $keep_shelly_switch_closed_always = (bool) $readings_obj->keep_shelly_switch_closed_always;
 
       if ( ! empty( $readings_obj->soc_percentage_now_using_dark_shelly ) )
@@ -2649,8 +2660,16 @@ class class_transindus_eco
       $format_object->pv_arrow_icon = $pv_arrow_icon;
       $format_object->psolar_info   = $psolar_info;
 
-      // Studer Inverter icon
-      $studer_icon = '<i style="display:block; text-align: center;" class="clickableIcon fa-solid fa-3x fa-cog" style="color: Green;"></i>';
+      // Studer Inverter icon is green when ATS is on Solar and Orange when ATS is on Grid
+      if ( $shellyem_contactor_is_active )
+      {
+        $studer_icon = '<i style="display:block; text-align: center;" class="clickableIcon fa-solid fa-3x fa-bolt" style="color: Green;"></i>';
+      }
+      else
+      {
+        $studer_icon = '<i style="display:block; text-align: center;" class="clickableIcon fa-solid fa-3x fa-bolt" style="color: Orange;"></i>';
+      }
+      
       $format_object->studer_icon = $studer_icon;
 
       if ( $do_shelly === true )

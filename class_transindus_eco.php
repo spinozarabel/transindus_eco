@@ -2931,7 +2931,7 @@ class class_transindus_eco
 
       $soc_percentage_now_calculated_using_shelly_bm      = round($readings_obj->soc_percentage_now_calculated_using_shelly_bm,   1);
       $soc_percentage_now_calculated_using_studer_xcomlan = round($readings_obj->soc_percentage_now_calculated_using_studer_xcomlan,     1);
-      $soc_percentage_now_studer_kwh                = round($readings_obj->soc_percentage_now_studer_kwh,  1);
+      $soc_percentage_now_studer_kwh                      = round($readings_obj->soc_percentage_now_studer_kwh,  1);
 
       // string of all soc's soc_studer, soc_xcomlan, and soc_shellybm strung together as 1 string for display
       $soc_all_methods =  $soc_percentage_now_studer_kwh . " " . 
@@ -2940,32 +2940,39 @@ class class_transindus_eco
 
       // $status .= " " . $now_format;
 
-      
-      $status_html = '<span style="color: Blue; display:block; text-align: center;">' .
-                        'LVDS: ' . $readings_obj->soc_percentage_lvds_setting  . '% ' . $readings_obj->average_battery_voltage_lvds_setting . 'V ' .
-                        $soc_update_method .
-                      '</span>';
+      // Status line 1: LVDS SOC and Battery Voltage, SOC method selected
+      $status_html_line1 = '<span style="color: Blue; display:block; text-align: center;">' .
+                              'LVDS: ' . $readings_obj->soc_percentage_lvds_setting  . '% ' . $readings_obj->average_battery_voltage_lvds_setting . 'V ' .
+                                         $soc_update_method .
+                            '</span>';
 
       
-      
+      // I don't think this is used anymore
       $format_object->soc_percentage_now_html = 
                       '<span style="font-size: 20px;color: Blue; display:block; text-align: center;">' . 
                           '<strong>' . $soc_percentage_now  . '</strong>%<br>' .
                       '</span>';
-      $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
-                          $formatted_interval   . ' ' . $switch_tree_exit_condition .
-                      '</span>';
 
-      $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
-                          $xcomlan_status   . ' ' . $shellybm_status  .
-                      '</span>';
+      // Status Line 2: Shows the Latest prominent exit condition and time since the event happened
+      $status_html_line2 = '<span style="color: Blue; display:block; text-align: center;">' .
+                                $formatted_interval   . ' ' . $switch_tree_exit_condition .
+                            '</span>';
 
-                      
+      // Status Line 3: The time elapsed since last updates for BM and XCOMLAN measurements
+      $status_html_line3 = '<span style="color: Blue; display:block; text-align: center;">' .
+                                $xcomlan_status   . ' ' . $shellybm_status  .
+                            '</span>';
+
+      $status_html = $status_html_line1 . $status_html_line2 . $status_html_line3;
+
+                     
+      // Status Line 4: COnditionalyy display charger current of charger is enabled
       if ( $readings_obj->studer_charger_enabled )
       {
-        $status_html .= '<span style="color: green; display:block; text-align: center;">' .
-                          'Charger Enabled: '  . $readings_obj->studer_battery_charging_current . 'A' .
-                        '</span>';
+        $status_html_line4 = '<span style="color: green; display:block; text-align: center;">' .
+                                  'Charger Enabled: '  . $readings_obj->studer_battery_charging_current . 'A' .
+                              '</span>';
+        $status_html .= $status_html_line4;
       }
       else
       { // don't display anything if charger is disabled to not clutter display
@@ -2976,10 +2983,12 @@ class class_transindus_eco
         */
       }
 
-      $status_html .= '<span style="color: Blue; display:block; text-align: center;">' .
-                          $soc_all_methods   . 
-                      '</span>';
-
+      // Status line 5: Show values from all SOC methods
+      $status_html_line5= '<span style="color: Blue; display:block; text-align: center;">' .
+                              $soc_all_methods   . 
+                          '</span>';
+                          
+      $status_html .= $status_html_line5;
   
       $format_object->status = $status_html;
 

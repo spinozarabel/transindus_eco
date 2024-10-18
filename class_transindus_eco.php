@@ -2677,14 +2677,14 @@ class class_transindus_eco
           // Local computer over LAN will be controlling the ACIN switch
           // a green cloud icon signifies that local site is in control
           $shelly_servo_icon = '<span style="color: Green; display:block; text-align: center;">
-                                    <i class="clickableIcon fa-solid fa-2x fa-cloud"></i>
+                                    <i class="clickableIcon fa-solid fa-2x fa-eye"></i>
                                 </span>';
       }
       else
       {
           // Local site is not in control
           $shelly_servo_icon = '<span style="color: Red; display:block; text-align: center;">
-                                    <i class="clickableIcon fa-solid fa-2x fa-cloud"></i>
+                                    <i class="clickableIcon fa-solid fa-2x fa-eye-slash"></i>
                                 </span>';
       }
       $format_object->shelly_servo_icon = $shelly_servo_icon;

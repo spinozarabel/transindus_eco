@@ -131,13 +131,16 @@ jQuery(document).ready(function($) {
             // update Shelly Servo icon
             $('#shelly_servo_icon').html( data.shelly_servo_icon);
 
+            // update the Central Studer Inverter Icon
+            $('#studer_icon').html( data.studer_icon);
+
             // update the percentage cloudiness information
             $('#cloud_info').html( data.cloud_info);
 
-            // update Shelly Servo icon
+            // update soc_percentage_now
             $('#soc_percentage_now').html( data.soc_percentage_now_html);
 
-            // update CRON exit condition and time it happened
+            // update the status lines
             $('#cron_exit_condition').html( data.status);
 
             // Update the load splits

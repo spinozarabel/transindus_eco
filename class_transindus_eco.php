@@ -2663,11 +2663,11 @@ class class_transindus_eco
       // Studer Inverter icon is green when ATS is on Solar and Orange when ATS is on Grid
       if ( $shellyem_contactor_is_active )
       {
-        $studer_icon = '<i style="color: Orange;" class="fa-solid fa-3x fa-bolt"></i>';
+        $studer_icon = '<i style="display:block; text-align: center; color: Green;" class="fa-solid fa-3x fa-bolt"></i>';
       }
       else
       {
-        $studer_icon = '<i style="display:block; text-align: center color: Green;" class="fa-solid fa-3x fa-bolt"></i>';
+        $studer_icon = '<i style="display:block; text-align: center; color: Green;" class="fa-solid fa-3x fa-bolt"></i>';
       }
       
       $format_object->studer_icon = $studer_icon;

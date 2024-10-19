@@ -2946,7 +2946,7 @@ class class_transindus_eco
                             '</span>';
 
       
-      // I don't think this is used anymore
+      // This is the SOC value printed in Bold at the center between Battery and Home Icons
       $format_object->soc_percentage_now_html = 
                       '<span style="font-size: 20px;color: Blue; display:block; text-align: center;">' . 
                           '<strong>' . $soc_percentage_now  . '</strong>%<br>' .

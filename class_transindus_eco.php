@@ -2667,7 +2667,7 @@ class class_transindus_eco
       }
       else
       {
-        $studer_icon = '<i style="display:block; text-align: center; color: Orange;" class="fa-solid fa-3x fa-wave-square"></i>';
+        $studer_icon = '<i style="display:block; text-align: center; color: Tomato;" class="fa-solid fa-3x fa-wave-square"></i>';
       }
       
       $format_object->studer_icon = $studer_icon;

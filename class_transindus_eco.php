@@ -2660,16 +2660,33 @@ class class_transindus_eco
       $format_object->pv_arrow_icon = $pv_arrow_icon;
       $format_object->psolar_info   = $psolar_info;
 
-      // Studer Inverter icon is green when ATS is on Solar and Orange when ATS is on Grid
-      if ( $shellyem_contactor_is_active )
+      // Studer icon is an inverter and green when ATS is on Solar and Grid switch is OFF
+      if ( $shellyplus1pm_grid_switch_output_status_string !== "ON" && $shellyem_contactor_is_active === false )
+      {
+        $studer_icon = '<span style="color: green; display:block; text-align: center;">
+                              <i class="fa-solid fa-3x fa-wave-square"></i>
+                        </span>';
+      }
+      // Studer icon is an inverter and orange when Grid Switch is OFF and ATS is on Grid
+      elseif ( $shellyplus1pm_grid_switch_output_status_string !== "ON" && $shellyem_contactor_is_active === true )
       {
         $studer_icon = '<span style="color: orange; display:block; text-align: center;">
                               <i class="fa-solid fa-3x fa-wave-square"></i>
                         </span>';
       }
-      else
+      // Shelly Icon is an arrow and Orange when Grid Switch is ON ATS is on Grid
+      elseif ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $shellyem_contactor_is_active === true )
       {
-        $studer_icon = '<i style="display:block; text-align: center; color: Tomato;" class="fa-solid fa-3x fa-wave-square"></i>';
+        $studer_icon = '<span style="color: orange; display:block; text-align: center;">
+                              <i class="fa-solid fa-3x fa-arrow"></i>
+                        </span>';
+      }
+      // Shelly Icon is an arrow and Red when Grid Switch is ON ATS is on Solar
+      elseif ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $shellyem_contactor_is_active === false )
+      {
+        $studer_icon = '<span style="color: red; display:block; text-align: center;">
+                              <i class="fa-solid fa-3x fa-arrow"></i>
+                        </span>';
       }
       
       $format_object->studer_icon = $studer_icon;

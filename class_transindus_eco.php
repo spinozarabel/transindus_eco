@@ -2678,14 +2678,14 @@ class class_transindus_eco
       elseif ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $shellyem_contactor_is_active === true )
       {
         $studer_icon = '<span style="color: orange; display:block; text-align: center;">
-                              <i class="fa-solid fa-3x fa-arrow"></i>
+                              <i class="fa-solid fa-3x fa-arrow-right"></i>
                         </span>';
       }
       // Shelly Icon is an arrow and Red when Grid Switch is ON ATS is on Solar
       elseif ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $shellyem_contactor_is_active === false )
       {
         $studer_icon = '<span style="color: red; display:block; text-align: center;">
-                              <i class="fa-solid fa-3x fa-arrow"></i>
+                              <i class="fa-solid fa-3x fa-arrow-right"></i>
                         </span>';
       }
       

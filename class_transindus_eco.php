@@ -2671,8 +2671,8 @@ class class_transindus_eco
       elseif ( $shellyplus1pm_grid_switch_output_status_string !== "ON" && $shellyem_contactor_is_active === true )
       {
         $studer_icon = '<span class="fa-stack fa-3x">
-                            <i class="fa-regular fa-3x fa-square"></i>
-                            <i class="fa-solid fa-2x fa-wave-square"></i>
+                            <i class="fa-regular fa-square fa-stack-3x"></i>
+                            <i class="fa-solid fa-wave-square fa-stack-2x"></i>
                           </span>';
       }
       // Shelly Icon is an arrow and Orange when Grid Switch is ON ATS is on Grid

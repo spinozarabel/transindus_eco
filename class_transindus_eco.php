@@ -2670,7 +2670,7 @@ class class_transindus_eco
       // Studer icon is an inverter and orange when Grid Switch is OFF and ATS is on Grid
       elseif ( $shellyplus1pm_grid_switch_output_status_string !== "ON" && $shellyem_contactor_is_active === true )
       {
-        $studer_icon = '<span class="fa-stack fa-3x" style="color: Orange; display:block; text-align: center;">
+        $studer_icon = '<span class="fa-stack fa-3x">
                             <i class="fa-regular fa-3x fa-square"></i>
                             <i class="fa-solid fa-2x fa-wave-square"></i>
                           </span>';

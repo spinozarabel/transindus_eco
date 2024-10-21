@@ -1689,6 +1689,7 @@ class class_transindus_eco
           $studer_battery_charging_current  = (float) $all_usermeta['studer_battery_charging_current']  ?? 0; 
 
           $track_ats_switch_to_grid_switch  = (bool)  $all_usermeta['track_ats_switch_to_grid_switch']  ?? false;
+          $studer_battery_priority_enabled  = (bool)  $all_usermeta['studer_battery_priority_enabled']  ?? false;
         }
 
         { // get the SOCs from the user meta.
@@ -2757,6 +2758,7 @@ class class_transindus_eco
           $shelly_readings_obj->shelly_xcomlan_ok_bool  = $batt_soc_accumulation_obj->shelly_xcomlan_ok_bool;
           $shelly_readings_obj->studer_charger_enabled = get_user_meta($wp_user_ID, 'studer_charger_enabled', true);
           $shelly_readings_obj->studer_battery_charging_current = get_user_meta($wp_user_ID, 'studer_battery_charging_current', true);
+          $shelly_readings_obj->studer_battery_priority_enabled = (bool) get_user_meta($wp_user_ID, 'studer_battery_priority_enabled', true);
           $shelly_readings_obj->do_shelly = $do_shelly;
           $shelly_readings_obj->keep_shelly_switch_closed_always = $keep_shelly_switch_closed_always;
         }

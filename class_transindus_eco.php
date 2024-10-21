@@ -2660,37 +2660,52 @@ class class_transindus_eco
       $format_object->pv_arrow_icon = $pv_arrow_icon;
       $format_object->psolar_info   = $psolar_info;
 
-      // Studer icon is an inverter and green when ATS is on Solar and Grid switch is OFF
-      if ( $shellyplus1pm_grid_switch_output_status_string !== "ON" && $shellyem_contactor_is_active === false )
+      // Studer Icon determination tree
+      switch ( true )
       {
-        $studer_icon = '<div class="fa-3x">
+        // Grid is OFF AND ATS is on Solar Side - Studer Icon is a green square wave
+        case ( $shellyplus1pm_grid_switch_output_status_string !== "ON" && $shellyem_contactor_is_active === false ):
+
+          $studer_icon = '<div class="fa-3x">
                             <span class="fa-layers fa-fw" style="background:MistyRose">
                                 <i class="fa-solid fa-wave-square" style="color: Green;"></i>
                             </span>
-                        </div>';
-      }
-      // Studer icon is an inverter and orange when Grid Switch is OFF and ATS is on Grid
-      elseif ( $shellyplus1pm_grid_switch_output_status_string !== "ON" && $shellyem_contactor_is_active === true )
-      {
-        $studer_icon = '<div class="fa-3x">
+                          </div>';
+        break;
+
+
+        // Grid is OFF AND ATS is on Grid Side - Studer Icon is an Orange square wave
+        case ( $shellyplus1pm_grid_switch_output_status_string !== "ON" && $shellyem_contactor_is_active === true ):
+
+          $studer_icon = '<div class="fa-3x">
                             <span class="fa-layers fa-fw" style="background:MistyRose">
                                 <i class="fa-solid fa-wave-square" style="color: Orange;"></i>
                             </span>
+                          </div>';
+        break;
+
+        // Grid is ON and ATS switch is on Grid side - Studer Icon is a red arrow
+        case ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $shellyem_contactor_is_active === true ):
+
+          $studer_icon = '<div class="fa-3x">
+                            <span class="fa-layers fa-fw" style="background:MistyRose">
+                                <i class="fa-solid fa-arrow-right" style="color: Red;"></i>
+                            </span>
                         </div>';
-      }
-      // Shelly Icon is an arrow and Orange when Grid Switch is ON ATS is on Grid
-      elseif ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $shellyem_contactor_is_active === true )
-      {
-        $studer_icon = '<span style="color: orange; display:block; text-align: center;">
-                              <i class="fa-solid fa-3x fa-arrow-right fa-rotate-by" style="--fa-rotate-angle: 45deg;"></i>
-                        </span>';
-      }
-      // Shelly Icon is an arrow and Red when Grid Switch is ON ATS is on Solar
-      elseif ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $shellyem_contactor_is_active === false )
-      {
-        $studer_icon = '<span style="color: red; display:block; text-align: center;">
-                              <i class="fa-solid fa-3x fa-arrow-right fa-rotate-by" style="--fa-rotate-angle: 45deg;"></i>
-                        </span>';
+
+        break;
+
+        // Grid is ON and ATS switch is on Solar side - Studer Icon is an Orange arrow
+        case ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $shellyem_contactor_is_active === true ):
+
+          $studer_icon = '<div class="fa-3x">
+                            <span class="fa-layers fa-fw" style="background:MistyRose">
+                                <i class="fa-solid fa-arrow-right" style="color: Orange;"></i>
+                            </span>
+                        </div>';
+
+        break;
+
       }
       
       $format_object->studer_icon = $studer_icon;

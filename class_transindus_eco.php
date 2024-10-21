@@ -2664,8 +2664,8 @@ class class_transindus_eco
       if ( $shellyplus1pm_grid_switch_output_status_string !== "ON" && $shellyem_contactor_is_active === false )
       {
         $studer_icon = '<div class="fa-3x">
-                            <span class="fa-layers fa-fw" style="background:Green">
-                                <i class="fa-solid fa-wave-square"></i>
+                            <span class="fa-layers fa-fw" style="background:MistyRose">
+                                <i class="fa-solid fa-wave-square" style="color: Green;"></i>
                             </span>
                         </div>';
       }

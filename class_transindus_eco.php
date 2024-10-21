@@ -2684,8 +2684,10 @@ class class_transindus_eco
                           </div>';
         break;
 
-        // Grid is ON and ATS switch is on Grid side - Studer Icon is a red arrow
-        case ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $shellyem_contactor_is_active === true ):
+        // Grid is ON and ATS switch is on Grid side and Battery Priority is disabled - Studer Icon is a red arrow
+        case (  $shellyplus1pm_grid_switch_output_status_string === "ON" && 
+                $shellyem_contactor_is_active                   === true &&
+                $readings_obj->studer_battery_priority_enabled  ==  false      ):
 
           $studer_icon = '<div class="fa-3x">
                             <span class="fa-layers fa-fw" style="background:MistyRose">
@@ -2695,12 +2697,47 @@ class class_transindus_eco
 
         break;
 
-        // Grid is ON and ATS switch is on Solar side - Studer Icon is an Orange arrow
-        case ( $shellyplus1pm_grid_switch_output_status_string === "ON" && $shellyem_contactor_is_active === true ):
+        // Grid is ON and ATS switch is on Solar side and battery priority is disabled - Studer Icon is an Orange arrow
+        case (  $shellyplus1pm_grid_switch_output_status_string === "ON"  && 
+                $shellyem_contactor_is_active                   === false && 
+                $readings_obj->studer_battery_priority_enabled  ==  false      ):
 
           $studer_icon = '<div class="fa-3x">
                             <span class="fa-layers fa-fw" style="background:MistyRose">
                                 <i class="fa-solid fa-arrow-right" style="color: Orange;"></i>
+                            </span>
+                        </div>';
+
+        break;
+
+
+        // Grid is ON and ATS switch is on Grid and Battery Priority Enabled - Studer Icon is a green wave over an orange arrow
+        //  The green wave represents any battery priority to the load and orange arrow for 3P grid in action
+        case (  $shellyplus1pm_grid_switch_output_status_string === "ON"  && 
+                $shellyem_contactor_is_active                   === true  &&
+                $psolar_kw                                      > 0.1     &&
+                $readings_obj->studer_battery_priority_enabled  === true      ):
+
+          $studer_icon = '<div class="fa-3x">
+                            <span class="fa-layers fa-fw" style="background:MistyRose">
+                                <i class="fa-solid fa-wave-square" style="color: Green;"></i>
+                                <i class="fa-solid fa-arrow-right" style="color: Orange;"></i>
+                            </span>
+                        </div>';
+
+        break;
+
+        // Grid is ON and ATS switch is on Solar and Battery Priority Enabled - Studer Icon is a green wave over a red arrow
+        //  The green wave represents any battery priority to the load and red arrow for grid supplying all the loads
+        case (  $shellyplus1pm_grid_switch_output_status_string === "ON"  && 
+                $shellyem_contactor_is_active                   === false &&
+                $psolar_kw                                      > 0.1     &&
+                $readings_obj->studer_battery_priority_enabled  === true      ):
+
+          $studer_icon = '<div class="fa-3x">
+                            <span class="fa-layers fa-fw" style="background:MistyRose">
+                                <i class="fa-solid fa-wave-square" style="color: Green;"></i>
+                                <i class="fa-solid fa-arrow-right" style="color: Red;"></i>
                             </span>
                         </div>';
 

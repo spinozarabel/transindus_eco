@@ -2715,7 +2715,6 @@ class class_transindus_eco
         //  The green wave represents any battery priority to the load and orange arrow for 3P grid in action
         case (  $shellyplus1pm_grid_switch_output_status_string === "ON"  && 
                 $shellyem_contactor_is_active                   === true  &&
-                $psolar_kw                                      > 0.1     &&
                 $readings_obj->studer_battery_priority_enabled  === true      ):
 
           $studer_icon = '<div class="fa-3x">
@@ -2731,7 +2730,6 @@ class class_transindus_eco
         //  The green wave represents any battery priority to the load and red arrow for grid supplying all the loads
         case (  $shellyplus1pm_grid_switch_output_status_string === "ON"  && 
                 $shellyem_contactor_is_active                   === false &&
-                $psolar_kw                                      > 0.1     &&
                 $readings_obj->studer_battery_priority_enabled  === true      ):
 
           $studer_icon = '<div class="fa-3x">

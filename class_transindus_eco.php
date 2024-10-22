@@ -2446,23 +2446,25 @@ class class_transindus_eco
 
           $ats_switch_grid_switch_track_success = false;
 
+          // decision tree to determine switching based on logic determined above
           switch (true) 
-          { // decision tree to determine switching based on logic determined above
-
+          {
+                          // Grid Switch OFF Due to Battery in Float condition
             case ( $grid_switch_off_float_release ):
-              // Grid Switch OFF 
+
+              // turn Grid switch OFF
               $success_off = $this->turn_on_off_shellyplus1pm_grid_switch_over_lan( $user_index, 'off' );
 
               if ( $success_off )
               {
-                error_log("LogFloatRelease: Prevent Battery Over Voltage at Float due to Solar, turn Grid switch OFF - SUCCESS");
+                error_log("LogFloatRelease: Prevent Battery Over Voltage at Float, turned Grid switch OFF - SUCCESS");
                 $switch_tree_obj->switch_tree_exit_condition = "float_release";
                 $present_switch_tree_exit_condition = "float_release";
                 $switch_tree_obj->switch_tree_exit_timestamp = $now_timestamp;
               }
               else
               {
-                error_log("LogFloatRelease: Prevent Battery Over Voltage at Float due to Solar, turn Grid switch OFF - FAIL");
+                error_log("LogFloatRelease: Prevent Battery Over Voltage at Float, Grid switch OFF - FAIL");
               }
 
               // if ATS tracking is set and switch action above was successfull switch ATS to Studer away from Grid

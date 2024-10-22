@@ -3023,7 +3023,7 @@ class class_transindus_eco
       // Status line 1: LVDS SOC and Battery Voltage, SOC method selected
       $status_html_line1 = '<span style="color: Blue; display:block; text-align: center;">' .
                               'LVDS: ' . $readings_obj->soc_percentage_lvds_setting  . '% ' . $readings_obj->average_battery_voltage_lvds_setting . 'V ' .
-                                         $soc_update_method . $keep_shelly_switch_closed_always_string .
+                                         $soc_update_method . 
                             '</span>';
 
       

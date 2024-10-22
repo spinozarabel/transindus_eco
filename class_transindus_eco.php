@@ -3011,11 +3011,19 @@ class class_transindus_eco
                           $soc_percentage_now_calculated_using_shelly_bm . " " .
                           $soc_percentage_now_calculated_using_studer_xcomlan;
 
+      if ( $keep_shelly_switch_closed_always === true )
+      {
+        $keep_shelly_switch_closed_always_string = "Keep Grid Switch Always ON";
+      }
+      else
+      {
+        $keep_shelly_switch_closed_always_string = "";
+      }
       // Status lines are shown below all of the readings.
       // Status line 1: LVDS SOC and Battery Voltage, SOC method selected
       $status_html_line1 = '<span style="color: Blue; display:block; text-align: center;">' .
                               'LVDS: ' . $readings_obj->soc_percentage_lvds_setting  . '% ' . $readings_obj->average_battery_voltage_lvds_setting . 'V ' .
-                                         $soc_update_method .
+                                         $soc_update_method . $keep_shelly_switch_closed_always_string .
                             '</span>';
 
       
